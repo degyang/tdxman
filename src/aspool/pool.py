@@ -143,7 +143,7 @@ class DataPool:
             price_adjustment="raw",
         )
 
-    def read_fundamentals(self, *, symbols=None, as_of=None):
+    def _read_fundamentals(self, *, symbols=None, as_of=None):
         """Return the latest low-frequency fundamentals and ratios at a bar close.
 
         Shares are shares.  PE and PB use the selected daily close with the
@@ -177,37 +177,11 @@ class DataPool:
         return frame.drop(columns="symbol_id")
 
     def read_research_daily(self, *, symbols=None, start=None, end=None, lookback=None):
-        """Return daily bars joined with the latest maintained fundamentals.
+        """Return the stable daily research contract for Fundwise.
 
-        This is the Fundwise integration API.  Fundamental columns describe the
-        latest snapshot and are repeated by symbol across the requested window;
-        callers must use ``fundamentals_refreshed_at`` for point-in-time work.
+        The internal fundamentals snapshot is deliberately not exposed.  It is
+        only used by aspool writers to maintain the primary daily data store.
         """
         bars = self.read_daily(symbols=symbols, start=start, end=end, lookback=lookback)
-        requested = bars.symbol.drop_duplicates().tolist()
-        if not requested:
-            return bars
-        snapshots = self.read_fundamentals(symbols=requested, as_of=end)
-        columns = [
-            "market",
-            "code",
-            "total_share",
-            "float_share",
-            "eps",
-            "ttm_eps",
-            "net_assets",
-            "refreshed_at",
-            "source",
-        ]
-        snapshots = snapshots[columns].rename(
-            columns={"refreshed_at": "fundamentals_refreshed_at", "source": "fundamentals_source"}
-        )
-        frame = bars.merge(snapshots, on=["market", "code"], how="left", validate="many_to_one")
-        frame["total_mv"] = frame.close * frame.total_share
-        frame["float_mv"] = frame.close * frame.float_share
-        frame["pe_ttm"] = frame.close / frame.ttm_eps
-        frame.loc[frame.ttm_eps <= 0, "pe_ttm"] = None
-        frame["pb"] = frame.close / frame.net_assets
-        frame.loc[frame.net_assets <= 0, "pb"] = None
-        frame.attrs.update(bars.attrs, contract_version=2, fundamentals_point_in_time=False)
-        return frame
+        bars.attrs.update(bars.attrs, contract_version=1)
+        return bars

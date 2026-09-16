@@ -15,9 +15,9 @@ aspool 是 A 股长期数据池，保存全市场未复权日线、可选分钟�
 `total_share`、`float_share`、`eps`、`ttm_eps`、`net_assets`、`refreshed_at`、`source`。
 股本单位统一为股。日线新增或修补时以快照补齐股本和估值字段；不以最新快照回填早期历史。
 
-日线读取 API `DataPool.read_daily()` 对外提供稳定字段：`symbol`、`market`、`code`、`date`、
-OHLC、`volume`、`amount`、`turnover_rate`。`DataPool.read_fundamentals()` 以指定日收盘价和
-最新快照计算市值、PE(TTM) 与 PB。
+日线读取 API `DataPool.read_daily()` 与 `DataPool.read_research_daily()` 对外提供稳定字段：
+`symbol`、`market`、`code`、`date`、OHLC、`volume`、`amount`、`turnover_rate`。基本面快照
+是内部维护数据，不属于 Fundwise API。
 
 ## 命令语义
 

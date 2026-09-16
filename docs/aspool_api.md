@@ -19,11 +19,9 @@ Fundwise 应使用 `read_research_daily()`，不要读取 lake 文件、DuckDB c
 bars = pool.read_research_daily(end='2026-09-16', lookback=121)
 ```
 
-该方法返回日线契约 v1 的全部列，并增加 `total_share`、`float_share`、`eps`、`ttm_eps`、
-`net_assets`、`total_mv`、`float_mv`、`pe_ttm`、`pb`、`fundamentals_refreshed_at` 和
-`fundamentals_source`。市值、PE、PB以每一行的收盘价计算；基本面快照在同一标的的窗口行中
-重复。它适用于当前 Screen；因快照只保留最新版，`fundamentals_refreshed_at` 之前的窗口不能
-作为无前视偏差的历史回测输入。
+该方法等同稳定的日线契约 v1，返回 OHLCV、成交额和换手率。它不暴露基本面快照、快照时间或
+快照来源；这些均是 aspool 用于维护主库字段的内部实现。Fundwise 当前 Screen 和回测只能把
+该 API 的返回值当作输入，不能读取或依赖 aspool 的内部 lake 文件。
 
 日期先截断，再逐证券取最近 N 根有效记录。日期边界包含当日。
 证券标识为 `市场.代码`，并保留 `market`、`code`；六位代码保持前导零。
