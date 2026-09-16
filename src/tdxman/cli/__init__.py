@@ -13,6 +13,7 @@ from .cmd_finance import finance, fund_flow
 from .cmd_info import markets, server_info, symbol_info
 from .cmd_kline import kline
 from .cmd_monitor import market_stat, unusual
+from .cmd_offline import offline
 from .cmd_quote import quote, quote_list
 from .cmd_tick import tick
 from .cmd_transaction import transaction
@@ -41,6 +42,7 @@ class TdxmanGroup(click.Group):
             "市场资料与板块",
             ("belong-board", "board-list", "board-members", "server-info"),
         ),
+        ("本地数据", ("offline",)),
         ("扩展市场", ("ex",)),
         ("工具", ("markets", "ping", "version")),
     )
@@ -105,4 +107,5 @@ cli.add_command(symbol_info)
 cli.add_command(markets)
 cli.add_command(finance)
 cli.add_command(fund_flow)
+cli.add_command(offline)
 cli.add_command(ex)

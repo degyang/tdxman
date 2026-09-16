@@ -19,6 +19,29 @@ _UNIX_CANDIDATES = [
 ]
 
 
+def _read_vipdoc_setting() -> Path | None:
+    """Read ``offline.vipdoc`` from the project's small YAML settings file."""
+    setting_file = Path(os.environ.get("TDXMAN_SETTINGS", Path.cwd() / "settings" / "config.yaml"))
+    if not setting_file.is_file():
+        return None
+
+    in_offline = False
+    for raw_line in setting_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.split("#", 1)[0].rstrip()
+        if not line.strip():
+            continue
+        if line == "offline:":
+            in_offline = True
+            continue
+        if not line.startswith((" ", "\t")):
+            in_offline = False
+            continue
+        if in_offline and line.strip().startswith("vipdoc:"):
+            value = line.strip().split(":", 1)[1].strip().strip("'\"")
+            return Path(os.path.expandvars(value)).expanduser() if value else None
+    return None
+
+
 def detect_tdx_home() -> Path | None:
     """按优先级检测通达信安装目录。
 
@@ -54,10 +77,18 @@ def resolve_vipdoc(path: str | Path | None = None) -> Path:
         if p.is_dir():
             return p
         raise TdxOfflineError(f"指定的 vipdoc 路径不存在: {p}")
+    configured = os.getenv("TDXMAN_VIPDOC") or _read_vipdoc_setting()
+    if configured:
+        configured_path = Path(configured).expanduser()
+        if configured_path.is_dir():
+            return configured_path
+        raise TdxOfflineError(f"settings/config.yaml 中的 vipdoc 目录不存在: {configured_path}")
+
     home = detect_tdx_home()
     if home is None:
         raise TdxOfflineError(
-            "无法定位通达信安装目录，请设置 TDX_HOME 环境变量或显式传入 vipdoc 路径"
+            "无法定位 vipdoc 目录，请在 settings/config.yaml 设置 offline.vipdoc、"
+            "设置 TDXMAN_VIPDOC 或 TDX_HOME，或显式传入 vipdoc 路径"
         )
     vipdoc = home / "vipdoc"
     if not vipdoc.is_dir():

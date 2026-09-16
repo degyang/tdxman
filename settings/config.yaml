@@ -1,0 +1,3 @@
+# 本地通达信目录设置。将 vipdoc 改为实际目录；留空时自动探测 TDX_HOME。
+offline:
+  vipdoc: "/mnt/d/Stock/new_tdx/vipdoc"

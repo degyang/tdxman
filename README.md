@@ -38,6 +38,15 @@ tdxman quote "SZ 000001,SH 600519" --format table --output data/quotes
 多标的 `quote` 必须将 `--output` 指向目录，命令会为每个标的分别创建响应文件。
 表格默认只显示常用字段；使用 `--fields all` 查看完整返回字段。JSON 和 CSV 始终保留完整字段。
 
+本地通达信数据使用 `offline` 命令组。默认 `vipdoc` 目录写在 `settings/config.yaml` 的
+`offline.vipdoc`；也可临时指定 `--vipdoc`：
+
+```bash
+tdxman offline quote SH 600519
+tdxman offline kline SZ 000001 --count 30 --format table
+tdxman offline --vipdoc /mnt/d/Stock/new_tdx/vipdoc kline SH 600519
+```
+
 ### 基础
 
 ```bash
