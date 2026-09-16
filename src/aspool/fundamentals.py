@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +12,7 @@ import pyarrow.parquet as pq
 
 from .free_stockdb import _market
 from .pool import writer
-from .store import catalog, initialize
+from .store import bars_path, catalog, initialize, record_coverage
 
 # Like adjustment factors, this is an independent, single-file dataset rather
 # than columns periodically copied into every daily bar.
@@ -130,6 +130,111 @@ def _markets(symbols: list[str], market_type: Any) -> list[tuple[Any, str]]:
         )
         markets.append((market, code))
     return markets
+
+
+def quote_update_allowed(now: datetime) -> bool:
+    """Quote updates are forbidden during the mainland continuous session."""
+    return not (now.weekday() < 5 and time(9, 0) <= now.time() <= time(15, 30))
+
+
+def _quote_date(value: object, fallback: date) -> date:
+    raw = str(value or "")[:8]
+    if len(raw) == 8 and raw.isdigit():
+        try:
+            return date(int(raw[:4]), int(raw[4:6]), int(raw[6:8]))
+        except ValueError:
+            pass
+    return fallback
+
+
+def _quote_bar(quote: dict[str, object], trade_date: date) -> dict[str, object]:
+    close = quote.get("close")
+    pre_close = quote.get("pre_close")
+    high, low = quote.get("high"), quote.get("low")
+    row: dict[str, object] = {
+        "trade_date": trade_date,
+        "symbol": str(quote["code"]),
+        "code": str(quote["code"]),
+        "name": quote.get("name"),
+        "pre_close": pre_close,
+        "open": quote.get("open"),
+        "high": high,
+        "low": low,
+        "close": close,
+        # MAC quote vol is lots; the aspool/free-stockdb contract stores shares.
+        "volume": float(quote["vol"]) * 100 if quote.get("vol") is not None else None,
+        "amount": quote.get("amount"),
+        "vol_ratio": quote.get("vol_ratio"),
+        "turnover": quote.get("turnover"),
+    }
+    if close is not None and pre_close and float(pre_close) != 0:
+        row["pct_chg"] = (float(close) / float(pre_close) - 1) * 100
+        if high is not None and low is not None:
+            row["amplitude"] = (float(high) - float(low)) / float(pre_close) * 100
+    return row
+
+
+@writer
+def update_from_quotes(
+    root: Path, limit: int | None = None, now: datetime | None = None
+) -> tuple[int, int]:
+    """Refresh the latest daily bar and fundamentals from full quote records."""
+    now = now or datetime.now().astimezone()
+    if not quote_update_allowed(now):
+        raise ValueError("工作日 09:00 至 15:30 不允许运行 aspool update")
+    initialize(root)
+    MacClient, _, PresetField, FieldBit, Market = _load_tdxman()
+    from .free_stockdb import _normalize, _write_daily
+    from .tdx_online import _enrich_daily, _fill_close_vol_ratio, _merge_rows
+
+    symbols = _symbols(root, limit)
+    snapshots: list[dict[str, object]] = []
+    bars: dict[str, dict[str, object]] = {}
+    today = now.date()
+    with MacClient.from_best_host() as client:
+        for offset in range(0, len(symbols), 80):
+            frame = client.get_stock_quotes(
+                _markets(symbols[offset : offset + 80], Market),
+                PresetField.COMMON + FieldBit.SERVER_UPDATE_DATE + FieldBit.SERVER_UPDATE_TIME,
+            )
+            records = frame.to_dict(orient="records")
+            snapshots.extend(_snapshot_rows(frame, now.replace(tzinfo=None)))
+            for quote in records:
+                code = str(quote.get("code", ""))
+                if code:
+                    quote_day = _quote_date(quote.get("server_update_date"), today)
+                    bars[code] = _quote_bar(quote, quote_day)
+    _write(root, snapshots)
+    snapshot_by_symbol = {row["symbol"]: row for row in snapshots}
+    written = count = 0
+    for symbol in symbols:
+        path = bars_path(root, "daily", _market(symbol), symbol)
+        if not path.exists() or symbol not in bars:
+            continue
+        prior = _normalize(pq.read_table(path).to_pylist(), symbol)
+        if not prior:
+            continue
+        quote = bars[symbol]
+        last_date = prior[-1]["trade_date"]
+        # A weekend/non-trading server timestamp must not create a phantom bar.
+        if quote["trade_date"].weekday() >= 5 or quote["trade_date"] < last_date:
+            quote["trade_date"] = last_date
+        incoming = _normalize(_enrich_daily([quote], snapshot_by_symbol.get(symbol)), symbol)
+        rows = _fill_close_vol_ratio(_merge_rows(prior, incoming, "trade_date"))
+        _write_daily(root, _market(symbol), symbol, rows)
+        record_coverage(
+            root,
+            symbol,
+            _market(symbol),
+            rows[0]["trade_date"],
+            rows[-1]["trade_date"],
+            len(rows),
+            "tdxman:quote",
+            "daily",
+        )
+        count += 1
+        written += len(incoming)
+    return count, written
 
 
 def _refresh_sync(root: Path, symbols: list[str]) -> tuple[int, int]:

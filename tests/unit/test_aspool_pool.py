@@ -118,6 +118,14 @@ def test_online_daily_rows_use_manual_snapshot_with_free_stockdb_field_names():
     ]
 
 
+def test_quote_turnover_is_not_replaced_by_the_derived_value():
+    rows = _enrich_daily(
+        [{"close": 10.0, "volume": 100_000.0, "turnover": 10.0}],
+        {"total_share": 1_000_000.0, "float_share": 800_000.0, "ttm_eps": 2.0, "net_assets": 20.0},
+    )
+    assert rows[0]["turnover"] == 10.0
+
+
 def test_pool_reader_waits_for_batch_writer(tmp_path):
     import subprocess
     import sys

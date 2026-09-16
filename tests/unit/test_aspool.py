@@ -2,7 +2,7 @@ import unittest
 from datetime import date, datetime
 
 from aspool.free_stockdb import _normalize
-from aspool.tdx_online import _merge_rows
+from aspool.tdx_online import _fill_close_vol_ratio, _merge_rows
 
 
 class DataSemanticsTest(unittest.TestCase):
@@ -30,6 +30,11 @@ class DataSemanticsTest(unittest.TestCase):
             ),
             [{"timestamp": stamp, "close": 1, "volume": 2}],
         )
+
+    def test_close_volume_ratio_uses_previous_five_days(self):
+        rows = [{"trade_date": date(2026, 1, day), "volume": 100.0} for day in range(1, 6)]
+        rows.append({"trade_date": date(2026, 1, 6), "volume": 150.0})
+        self.assertEqual(_fill_close_vol_ratio(rows)[-1]["vol_ratio"], 1.5)
 
 
 if __name__ == "__main__":

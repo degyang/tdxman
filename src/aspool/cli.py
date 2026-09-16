@@ -9,9 +9,9 @@ import pyarrow.csv as pacsv
 
 from .config import free_stockdb_root
 from .free_stockdb import import_adjustments, import_daily, import_minutes, validate_period
-from .fundamentals import refresh_fundamentals
+from .fundamentals import refresh_fundamentals, update_from_quotes
 from .store import default_root, initialize
-from .tdx_online import update_online
+from .tdx_online import update_daily_offline, update_online
 
 PERIODS = ["daily", "minutes"]
 
@@ -83,13 +83,23 @@ def import_free_stockdb(
 )
 @click.option("--period", type=click.Choice(PERIODS), default="daily", show_default=True)
 @click.option(
+    "--tdx-mode",
+    type=click.Choice(["online", "offline"]),
+    default="online",
+    show_default=True,
+    help="source=tdx 时使用在线 MAC K 线或本地 vipdoc K 线。",
+)
+@click.option(
     "--async", "async_mode", is_flag=True, help="使用 tdxman 异步 MAC 客户端补齐在线尾部。"
 )
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
-def sync(source: str, period: str, async_mode: bool, root: Path | None, limit: int | None) -> None:
+def sync(
+    source: str, period: str, tdx_mode: str, async_mode: bool, root: Path | None, limit: int | None
+) -> None:
     """从指定源校准历史数据，并补齐至最新在线行情。"""
     target = _root(root)
+    initialize(target)
     if source == "free-stockdb":
         history = _free_stockdb_root()
         _validate_source(history)
@@ -102,20 +112,25 @@ def sync(source: str, period: str, async_mode: bool, root: Path | None, limit: i
         if check["duplicates"] or check["invalid"]:
             raise click.ClickException(f"历史导入校验失败：{check}")
         click.echo(f"历史校准：{stats.symbols} 个标的，{stats.rows} 行 {period} K；校验通过")
-    symbols, rows = update_online(target, period, async_mode, limit)
+    if source == "tdx" and tdx_mode == "offline":
+        if period != "daily":
+            raise click.UsageError("tdx 离线同步当前仅支持 daily；分钟线请使用 free-stockdb 导入")
+        symbols, rows = update_daily_offline(target, limit)
+    else:
+        symbols, rows = update_online(target, period, async_mode, limit)
     click.echo(f"在线补齐：{symbols} 个标的，新增或更新 {rows} 行 {period} K")
 
 
 @cli.command()
-@click.option("--period", type=click.Choice(PERIODS), default="daily", show_default=True)
-@click.option("--async", "async_mode", is_flag=True, help="使用 tdxman 异步 MAC 客户端。")
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
-def update(period: str, async_mode: bool, root: Path | None, limit: int | None) -> None:
-    """通过 tdxman 将已导入的数据补齐到最新行情。"""
-    target = _root(root)
-    symbols, rows = update_online(target, period, async_mode, limit)
-    click.echo(f"更新完成：{symbols} 个标的，新增或更新 {rows} 行 {period} K")
+def update(root: Path | None, limit: int | None) -> None:
+    """收盘后用 quote 更新当前或最近交易日的完整日线记录。"""
+    try:
+        symbols, rows = update_from_quotes(_root(root), limit)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"报价更新完成：{symbols} 个标的，更新 {rows} 行最新日线并刷新基本面快照")
 
 
 @cli.command("fundamentals")

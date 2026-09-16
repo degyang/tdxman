@@ -43,7 +43,12 @@ def _enrich_daily(rows: list[dict[str, object]], snapshot: dict[str, object] | N
             values["pe_ttm"] = float(close) / float(ttm_eps)
         if close is not None and net_assets and float(net_assets) > 0:
             values["pb"] = float(close) / float(net_assets)
-        if volume is not None and float_share and float(float_share) > 0:
+        if (
+            row.get("turnover") is None
+            and volume is not None
+            and float_share
+            and float(float_share) > 0
+        ):
             values["turnover"] = float(volume) / float(float_share) * 100
         enriched.append({**row, **values})
     return enriched
@@ -100,6 +105,19 @@ def _merge_rows(
     return [merged[value] for value in sorted(merged)]
 
 
+def _fill_close_vol_ratio(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Fill only missing daily volume ratios with the close-of-day five-day definition."""
+    for index, row in enumerate(rows):
+        if row.get("vol_ratio") is not None or index < 5 or row.get("volume") is None:
+            continue
+        previous = [item.get("volume") for item in rows[index - 5 : index]]
+        if all(value is not None for value in previous):
+            average = sum(float(value) for value in previous) / 5
+            if average > 0:
+                row["vol_ratio"] = float(row["volume"]) / average
+    return rows
+
+
 def _symbols(root: Path, period: str, limit: int | None) -> list[str]:
     table = "coverage" if period == "daily" else "coverage_minutes"
     with catalog(root) as conn:
@@ -139,7 +157,7 @@ def update_daily(root: Path, limit: int | None = None) -> tuple[int, int]:
                     if field not in identity and prior_row.get(field) is not None:
                         identity[field] = prior_row[field]
             incoming = [{**identity, **row} for row in incoming]
-            rows = _merge_rows(prior, incoming, "trade_date")
+            rows = _fill_close_vol_ratio(_merge_rows(prior, incoming, "trade_date"))
             _write_daily(root, _market(symbol), symbol, rows)
             record_coverage(
                 root,
@@ -181,7 +199,7 @@ async def update_daily_async(root: Path, limit: int | None = None) -> tuple[int,
                     if field not in identity and prior_row.get(field) is not None:
                         identity[field] = prior_row[field]
             incoming = [{**identity, **row} for row in incoming]
-            rows = _merge_rows(prior, incoming, "trade_date")
+            rows = _fill_close_vol_ratio(_merge_rows(prior, incoming, "trade_date"))
             _write_daily(root, _market(symbol), symbol, rows)
             record_coverage(
                 root,
@@ -233,6 +251,56 @@ def update_minutes(root: Path, limit: int | None = None) -> tuple[int, int]:
             count += 1
             rows_written += len(incoming)
     return count, rows_written
+
+
+def update_daily_offline(root: Path, limit: int | None = None) -> tuple[int, int]:
+    """Merge local vipdoc daily bars into the pool, preserving static snapshots."""
+    from tdxman.models.enums import Market
+    from tdxman.offline import find_daily_bar_file, read_daily_bars
+
+    count = written = 0
+    fundamentals = _fundamentals(root)
+    for symbol in _symbols(root, "daily", limit):
+        market = _tdx_market(symbol, Market)
+        if market == Market.BJ:
+            continue
+        path = bars_path(root, "daily", _market(symbol), symbol)
+        prior = _normalize(pq.read_table(path).to_pylist(), symbol) if path.exists() else []
+        try:
+            source = read_daily_bars(find_daily_bar_file(market, symbol))[-30:]
+        except Exception:
+            continue
+        raw = [
+            {
+                "trade_date": date(bar.year, bar.month, bar.day),
+                "symbol": symbol,
+                "open": bar.open,
+                "high": bar.high,
+                "low": bar.low,
+                "close": bar.close,
+                "volume": bar.vol * 100,
+                "amount": bar.amount,
+            }
+            for bar in source
+        ]
+        incoming = _normalize(_enrich_daily(raw, fundamentals.get(symbol)), symbol)
+        if not incoming:
+            continue
+        rows = _fill_close_vol_ratio(_merge_rows(prior, incoming, "trade_date"))
+        _write_daily(root, _market(symbol), symbol, rows)
+        record_coverage(
+            root,
+            symbol,
+            _market(symbol),
+            rows[0]["trade_date"],
+            rows[-1]["trade_date"],
+            len(rows),
+            "tdxman:offline",
+            "daily",
+        )
+        count += 1
+        written += len(incoming)
+    return count, written
 
 
 async def update_minutes_async(root: Path, limit: int | None = None) -> tuple[int, int]:

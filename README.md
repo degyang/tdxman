@@ -505,8 +505,9 @@ aspool import --period minutes
 aspool import --factor
 
 # 日常更新已导入的全表；默认同步，可选异步 MAC 客户端
-aspool update --period daily
-aspool update --period minutes --async
+aspool update
+aspool sync --source tdx --tdx-mode online --period daily
+aspool sync --source tdx --tdx-mode offline --period daily
 
 # 手动全量维护财报类基本面快照；建议在财报披露后按周或按月执行
 aspool fundamentals

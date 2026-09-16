@@ -43,7 +43,8 @@ aspool:
 ```
 
 Fundwise 自己安装相邻项目（其 uv 配置已声明本地 tdxman 依赖），不解析 aspool CLI 输出。
-日常先运行 `aspool update --period daily`，随后运行 Fundwise Screen。
+收盘后运行 `aspool update` 更新最新交易日；工作日 09:00 至 15:30（含）该命令会拒绝执行。
+历史修补使用 `aspool sync --source tdx --tdx-mode online|offline`，随后运行 Fundwise Screen。
 日线和分钟线更新不会调用报价接口。财报类字段是与复权因子平行的独立数据集，保存在
 `lake/fundamentals/snapshots.parquet`；使用手动命令维护：
 
@@ -56,7 +57,7 @@ aspool fundamentals
 以指定日的本地日 K 收盘价计算总/流通市值、PE(TTM) 与 PB，因此价格每日变化不会导致
 全市场重复请求 `quote`。字段单位为股、元和人民币元；PE/PB 无意义或不可计算时为 null。
 
-`aspool update --period daily` 对新增在线日线使用该快照补齐与 free-stockdb 一致的
+`aspool update` 和 `aspool sync` 对新增在线日线使用该快照补齐与 free-stockdb 一致的
 `total_share`、`float_share`、`total_mv`、`float_mv`、`pe_ttm`、`pb` 和 `turnover` 字段。
 OHLCV 与成交额始终直接来自 tdxman；未先维护快照时只写行情字段，不伪造基本面数值。
 快照不是本阶段前提；运行保留输入指纹和原始价格口径，但不声称可以重放历史版本。
