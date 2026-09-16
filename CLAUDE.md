@@ -79,8 +79,9 @@ tdxman quote "SH 600519"
 实时 `quote` 默认包含 `vol_ratio`（量比）、`turnover`（换手率）、`vol`（成交量）和 `float_shares`（流通股本）。日 K 不包含 `vol_ratio` 或 `turnover`，但收盘后可推算：
 
 ```python
-# vol 的单位为手；float_shares 的单位为万股，结果为百分比数值。
-bars["turnover_pct"] = bars["vol"] / float_shares
+# MAC 日 K 的 vol 单位为股，float_shares 单位为万股；结果为百分比数值。
+# 实时报价的 vol 使用手，不能与日 K 混用。
+bars["turnover_pct"] = bars["vol"] / (bars["float_shares"] * 100)
 
 # 收盘量比：当日成交量 / 前 5 个交易日平均成交量。
 bars = bars.sort_values("datetime")

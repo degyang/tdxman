@@ -492,6 +492,8 @@ commands 层不依赖 transport，可独立单测。
 
 ## aspool：A 股长期数据池
 
+Fundwise 通过公开 `DataPool` API 直接读取数据池，见 [读取契约与对接说明](docs/aspool.md)。
+
 `aspool` 与 `tdxman` 一起安装，代码位于 `src/aspool`。默认路径由 `settings/config.yaml` 的 `aspool.free_stockdb.root` 设置。
 
 ```bash
@@ -505,6 +507,9 @@ aspool import --factor
 # 日常更新已导入的全表；默认同步，可选异步 MAC 客户端
 aspool update --period daily
 aspool update --period minutes --async
+
+# 手动全量维护财报类基本面快照；建议在财报披露后按周或按月执行
+aspool fundamentals
 
 # 以 free-stockdb 重新校准历史后补齐在线行情
 aspool sync --source free-stockdb --period daily

@@ -9,6 +9,7 @@ import pyarrow.csv as pacsv
 
 from .config import free_stockdb_root
 from .free_stockdb import import_adjustments, import_daily, import_minutes, validate_period
+from .fundamentals import refresh_fundamentals
 from .store import default_root, initialize
 from .tdx_online import update_online
 
@@ -112,8 +113,19 @@ def sync(source: str, period: str, async_mode: bool, root: Path | None, limit: i
 @click.option("--limit", type=click.IntRange(min=1))
 def update(period: str, async_mode: bool, root: Path | None, limit: int | None) -> None:
     """通过 tdxman 将已导入的数据补齐到最新行情。"""
-    symbols, rows = update_online(_root(root), period, async_mode, limit)
+    target = _root(root)
+    symbols, rows = update_online(target, period, async_mode, limit)
     click.echo(f"更新完成：{symbols} 个标的，新增或更新 {rows} 行 {period} K")
+
+
+@cli.command("fundamentals")
+@click.option("--async", "async_mode", is_flag=True, help="使用 tdxman 异步 MAC 客户端。")
+@click.option("--root", type=click.Path(path_type=Path))
+@click.option("--limit", type=click.IntRange(min=1), help="仅维护前 N 个标的，用于验证。")
+def fundamentals(async_mode: bool, root: Path | None, limit: int | None) -> None:
+    """手动维护全市场低频基本面快照。"""
+    symbols, rows = refresh_fundamentals(_root(root), async_mode=async_mode, limit=limit)
+    click.echo(f"基本面快照完成：{symbols} 个标的，写入 {rows} 条")
 
 
 @cli.command()

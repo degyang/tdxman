@@ -21,6 +21,7 @@ def _coverage_table(period: str) -> str:
 def initialize(root: Path) -> None:
     for period in ("daily", "minutes"):
         (root / "lake" / "bars" / period).mkdir(parents=True, exist_ok=True)
+    (root / "lake" / "fundamentals").mkdir(parents=True, exist_ok=True)
     with catalog(root) as conn:
         for table in ("coverage", "coverage_minutes"):
             conn.execute(

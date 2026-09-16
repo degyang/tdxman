@@ -8,7 +8,45 @@ from typing import Any
 import pyarrow.parquet as pq
 
 from .free_stockdb import _market, _normalize, _write_daily
-from .store import bars_path, catalog, last_date, last_marker, record_coverage
+from .pool import writer
+from .store import bars_path, catalog, last_marker, record_coverage
+
+
+def _fundamentals(root: Path) -> dict[str, dict[str, object]]:
+    """Read manual fundamentals snapshots for daily-bar enrichment, if present."""
+    path = root / "lake/fundamentals/snapshots.parquet"
+    if not path.exists():
+        return {}
+    return {row["symbol"]: row for row in pq.read_table(path).to_pylist()}
+
+
+def _enrich_daily(rows: list[dict[str, object]], snapshot: dict[str, object] | None):
+    """Add free-stockdb-compatible valuation fields to online daily bars."""
+    if snapshot is None:
+        return rows
+    total_share = snapshot.get("total_share")
+    float_share = snapshot.get("float_share")
+    ttm_eps = snapshot.get("ttm_eps")
+    net_assets = snapshot.get("net_assets")
+    enriched: list[dict[str, object]] = []
+    for row in rows:
+        close = row.get("close")
+        volume = row.get("volume")
+        values: dict[str, object] = {
+            "total_share": total_share,
+            "float_share": float_share,
+        }
+        if close is not None and total_share and float_share:
+            values["total_mv"] = float(close) * float(total_share)
+            values["float_mv"] = float(close) * float(float_share)
+        if close is not None and ttm_eps and float(ttm_eps) > 0:
+            values["pe_ttm"] = float(close) / float(ttm_eps)
+        if close is not None and net_assets and float(net_assets) > 0:
+            values["pb"] = float(close) / float(net_assets)
+        if volume is not None and float_share and float(float_share) > 0:
+            values["turnover"] = float(volume) / float(float_share) * 100
+        enriched.append({**row, **values})
+    return enriched
 
 
 def _load_tdxman() -> tuple[Any, Any, Any, Any]:
@@ -31,7 +69,9 @@ def _daily_rows(frame: Any, symbol: str, start: date | None = None) -> list[dict
         value = row.get("datetime") or row.get("date")
         parsed = value.date() if hasattr(value, "date") else date.fromisoformat(str(value)[:10])
         if not start or parsed >= start:
-            rows.append({**row, "trade_date": parsed, "symbol": symbol})
+            rows.append(
+                {**row, "trade_date": parsed, "symbol": symbol, "volume": float(row["vol"])}
+            )
     return rows
 
 
@@ -74,13 +114,21 @@ def update_daily(root: Path, limit: int | None = None) -> tuple[int, int]:
     MacClient, _, enums, Market = _load_tdxman()
     Adjust, Period = enums
     count = rows_written = 0
+    fundamentals = _fundamentals(root)
     with MacClient.from_best_host() as client:
         for symbol in _symbols(root, "daily", limit):
-            start = last_date(root, symbol)
+            start = None  # Refresh the overlap, including previously missing online volume.
             frame = client.get_stock_kline(
-                _tdx_market(symbol, Market), symbol, Period.DAILY, 0, 30, Adjust.NONE
+                _tdx_market(symbol, Market),
+                symbol,
+                Period.DAILY,
+                start=0,
+                count=30,
+                adjust=Adjust.NONE,
             )
-            incoming = _normalize(_daily_rows(frame, symbol, start), symbol)
+            incoming = _normalize(
+                _enrich_daily(_daily_rows(frame, symbol, start), fundamentals.get(symbol)), symbol
+            )
             if not incoming:
                 continue
             path = bars_path(root, "daily", _market(symbol), symbol)
@@ -113,13 +161,16 @@ async def update_daily_async(root: Path, limit: int | None = None) -> tuple[int,
     _, AsyncMacClient, enums, Market = _load_tdxman()
     Adjust, Period = enums
     count = rows_written = 0
+    fundamentals = _fundamentals(root)
     async with AsyncMacClient.from_best_host() as client:
         for symbol in _symbols(root, "daily", limit):
-            start = last_date(root, symbol)
+            start = None  # Refresh the overlap, including previously missing online volume.
             frame = await client.get_stock_kline(
                 _tdx_market(symbol, Market), symbol, Period.DAILY, 0, 30, 1, Adjust.NONE
             )
-            incoming = _normalize(_daily_rows(frame, symbol, start), symbol)
+            incoming = _normalize(
+                _enrich_daily(_daily_rows(frame, symbol, start), fundamentals.get(symbol)), symbol
+            )
             if not incoming:
                 continue
             path = bars_path(root, "daily", _market(symbol), symbol)
@@ -155,7 +206,12 @@ def update_minutes(root: Path, limit: int | None = None) -> tuple[int, int]:
         for symbol in _symbols(root, "minutes", limit):
             start = last_marker(root, symbol, "minutes")
             frame = client.get_stock_kline(
-                _tdx_market(symbol, Market), symbol, Period.MIN_1, 0, 800, Adjust.NONE
+                _tdx_market(symbol, Market),
+                symbol,
+                Period.MIN_1,
+                start=0,
+                count=800,
+                adjust=Adjust.NONE,
             )
             incoming = _minute_rows(frame, symbol, start if isinstance(start, datetime) else None)
             if not incoming:
@@ -222,6 +278,7 @@ def _write_period(path: Path, rows: list[dict[str, object]]) -> None:
     temporary.replace(path)
 
 
+@writer
 def update_online(
     root: Path, period: str, async_mode: bool, limit: int | None = None
 ) -> tuple[int, int]:

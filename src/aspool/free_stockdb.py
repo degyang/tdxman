@@ -14,6 +14,7 @@ from uuid import uuid4
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from .pool import writer
 from .store import bars_path, catalog, daily_path, initialize, last_date, record_coverage
 
 
@@ -131,10 +132,13 @@ def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, obje
     target = daily_path(root, market, symbol)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(f".{uuid4().hex}.part")
-    pq.write_table(pa.Table.from_pylist(rows), temporary, compression="zstd")
+    keys = dict.fromkeys(key for row in rows for key in row)
+    table = pa.Table.from_pylist([{key: row.get(key) for key in keys} for row in rows])
+    pq.write_table(table, temporary, compression="zstd")
     temporary.replace(target)
 
 
+@writer
 def import_daily(
     root: Path, source_root: Path, incremental: bool, limit: int | None = None
 ) -> ImportStats:
@@ -206,6 +210,7 @@ def import_daily(
     return stats
 
 
+@writer
 def import_adjustments(root: Path, source_root: Path) -> int:
     """Import free-stockdb cumulative adjustment factors as a separate dataset."""
     initialize(root)
@@ -228,7 +233,9 @@ def import_adjustments(root: Path, source_root: Path) -> int:
     target = root / "lake" / "adjustments" / "factors.parquet"
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(f".{uuid4().hex}.part")
-    pq.write_table(pa.Table.from_pylist(rows), temporary, compression="zstd")
+    keys = dict.fromkeys(key for row in rows for key in row)
+    table = pa.Table.from_pylist([{key: row.get(key) for key in keys} for row in rows])
+    pq.write_table(table, temporary, compression="zstd")
     temporary.replace(target)
     return len(rows)
 
