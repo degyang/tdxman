@@ -492,7 +492,7 @@ commands 层不依赖 transport，可独立单测。
 
 ## aspool：A 股长期数据池
 
-Fundwise 通过公开 `DataPool` API 直接读取数据池，见 [读取契约与对接说明](docs/aspool.md)。
+Fundwise 通过公开 `DataPool` API 直接读取数据池，见 [aspool API](docs/aspool_api.md)。
 
 `aspool` 与 `tdxman` 一起安装，代码位于 `src/aspool`。默认路径由 `settings/config.yaml` 的 `aspool.free_stockdb.root` 设置。
 

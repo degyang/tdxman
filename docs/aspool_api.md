@@ -1,4 +1,4 @@
-# aspool 数据底座与 Fundwise
+# aspool API
 
 aspool 维护市场数据，Fundwise 通过 `from aspool import DataPool` 只读查询。
 安装 tdxman 同时提供 `tdxman`、`aspool` 两个 CLI 和 Python 包。
