@@ -490,6 +490,29 @@ src/tdxman/
 
 commands 层不依赖 transport，可独立单测。
 
+## aspool：A 股长期数据池
+
+`aspool` 与 `tdxman` 一起安装，代码位于 `src/aspool`。默认路径由 `settings/config.yaml` 的 `aspool.free_stockdb.root` 设置。
+
+```bash
+# 一次性导入未复权历史数据；分钟线仅在需要时导入
+aspool import --period daily
+aspool import --period minutes
+
+# 单独导入日线和分钟线共用的复权因子
+aspool import --factor
+
+# 日常更新已导入的全表；默认同步，可选异步 MAC 客户端
+aspool update --period daily
+aspool update --period minutes --async
+
+# 以 free-stockdb 重新校准历史后补齐在线行情
+aspool sync --source free-stockdb --period daily
+aspool status
+```
+
+原始 K 线不复权；前复权和后复权由独立复权因子计算。
+
 ## 开发
 
 ```bash

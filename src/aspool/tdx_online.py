@@ -1,0 +1,238 @@
+from __future__ import annotations
+
+import asyncio
+from datetime import date, datetime
+from pathlib import Path
+from typing import Any
+
+import pyarrow.parquet as pq
+
+from .free_stockdb import _market, _normalize, _write_daily
+from .store import bars_path, catalog, last_date, last_marker, record_coverage
+
+
+def _load_tdxman() -> tuple[Any, Any, Any, Any]:
+    from tdxman.mac.client import AsyncMacClient, MacClient
+    from tdxman.mac.enums import Adjust, Period
+    from tdxman.models.enums import Market
+
+    return MacClient, AsyncMacClient, (Adjust, Period), Market
+
+
+def _tdx_market(symbol: str, market_type: Any) -> Any:
+    if symbol.startswith(("4", "8")):
+        return market_type.BJ
+    return market_type.SH if symbol.startswith(("5", "6", "9")) else market_type.SZ
+
+
+def _daily_rows(frame: Any, symbol: str, start: date | None = None) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for row in frame.to_dict(orient="records"):
+        value = row.get("datetime") or row.get("date")
+        parsed = value.date() if hasattr(value, "date") else date.fromisoformat(str(value)[:10])
+        if not start or parsed >= start:
+            rows.append({**row, "trade_date": parsed, "symbol": symbol})
+    return rows
+
+
+def _minute_rows(frame: Any, symbol: str, start: datetime | None = None) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for row in frame.to_dict(orient="records"):
+        value = row.get("datetime") or row.get("date")
+        stamp = value.to_pydatetime() if hasattr(value, "to_pydatetime") else value
+        if not isinstance(stamp, datetime):
+            stamp = datetime.fromisoformat(str(stamp))
+        if not start or stamp >= start:
+            rows.append({**row, "timestamp": stamp.replace(tzinfo=None), "symbol": symbol})
+    return rows
+
+
+def _merge_rows(
+    prior: list[dict[str, object]], incoming: list[dict[str, object]], key: str
+) -> list[dict[str, object]]:
+    merged: dict[object, dict[str, object]] = {}
+    for row in prior + incoming:
+        previous = merged.get(row[key], {})
+        merged[row[key]] = {
+            **previous,
+            **{field: value for field, value in row.items() if value is not None},
+        }
+    return [merged[value] for value in sorted(merged)]
+
+
+def _symbols(root: Path, period: str, limit: int | None) -> list[str]:
+    table = "coverage" if period == "daily" else "coverage_minutes"
+    with catalog(root) as conn:
+        values = [
+            row[0] for row in conn.execute(f"select symbol from {table} order by symbol").fetchall()
+        ]
+    return values[:limit] if limit else values
+
+
+def update_daily(root: Path, limit: int | None = None) -> tuple[int, int]:
+    """Update all imported daily symbols with one reusable synchronous MAC connection."""
+    MacClient, _, enums, Market = _load_tdxman()
+    Adjust, Period = enums
+    count = rows_written = 0
+    with MacClient.from_best_host() as client:
+        for symbol in _symbols(root, "daily", limit):
+            start = last_date(root, symbol)
+            frame = client.get_stock_kline(
+                _tdx_market(symbol, Market), symbol, Period.DAILY, 0, 30, Adjust.NONE
+            )
+            incoming = _normalize(_daily_rows(frame, symbol, start), symbol)
+            if not incoming:
+                continue
+            path = bars_path(root, "daily", _market(symbol), symbol)
+            prior = _normalize(pq.read_table(path).to_pylist(), symbol) if path.exists() else []
+            identity = {}
+            for prior_row in reversed(prior):
+                for field in ("code", "name", "market"):
+                    if field not in identity and prior_row.get(field) is not None:
+                        identity[field] = prior_row[field]
+            incoming = [{**identity, **row} for row in incoming]
+            rows = _merge_rows(prior, incoming, "trade_date")
+            _write_daily(root, _market(symbol), symbol, rows)
+            record_coverage(
+                root,
+                symbol,
+                _market(symbol),
+                rows[0]["trade_date"],
+                rows[-1]["trade_date"],
+                len(rows),
+                "tdxman",
+                "daily",
+            )
+            count += 1
+            rows_written += len(incoming)
+    return count, rows_written
+
+
+async def update_daily_async(root: Path, limit: int | None = None) -> tuple[int, int]:
+    """Update daily data through tdxman's asynchronous MAC client."""
+    _, AsyncMacClient, enums, Market = _load_tdxman()
+    Adjust, Period = enums
+    count = rows_written = 0
+    async with AsyncMacClient.from_best_host() as client:
+        for symbol in _symbols(root, "daily", limit):
+            start = last_date(root, symbol)
+            frame = await client.get_stock_kline(
+                _tdx_market(symbol, Market), symbol, Period.DAILY, 0, 30, 1, Adjust.NONE
+            )
+            incoming = _normalize(_daily_rows(frame, symbol, start), symbol)
+            if not incoming:
+                continue
+            path = bars_path(root, "daily", _market(symbol), symbol)
+            prior = _normalize(pq.read_table(path).to_pylist(), symbol) if path.exists() else []
+            identity = {}
+            for prior_row in reversed(prior):
+                for field in ("code", "name", "market"):
+                    if field not in identity and prior_row.get(field) is not None:
+                        identity[field] = prior_row[field]
+            incoming = [{**identity, **row} for row in incoming]
+            rows = _merge_rows(prior, incoming, "trade_date")
+            _write_daily(root, _market(symbol), symbol, rows)
+            record_coverage(
+                root,
+                symbol,
+                _market(symbol),
+                rows[0]["trade_date"],
+                rows[-1]["trade_date"],
+                len(rows),
+                "tdxman",
+                "daily",
+            )
+            count += 1
+            rows_written += len(incoming)
+    return count, rows_written
+
+
+def update_minutes(root: Path, limit: int | None = None) -> tuple[int, int]:
+    MacClient, _, enums, Market = _load_tdxman()
+    Adjust, Period = enums
+    count = rows_written = 0
+    with MacClient.from_best_host() as client:
+        for symbol in _symbols(root, "minutes", limit):
+            start = last_marker(root, symbol, "minutes")
+            frame = client.get_stock_kline(
+                _tdx_market(symbol, Market), symbol, Period.MIN_1, 0, 800, Adjust.NONE
+            )
+            incoming = _minute_rows(frame, symbol, start if isinstance(start, datetime) else None)
+            if not incoming:
+                continue
+            path = bars_path(root, "minutes", _market(symbol), symbol)
+            prior = pq.read_table(path).to_pylist() if path.exists() else []
+            rows = _merge_rows(prior, incoming, "timestamp")
+            _write_period(path, rows)
+            record_coverage(
+                root,
+                symbol,
+                _market(symbol),
+                rows[0]["timestamp"],
+                rows[-1]["timestamp"],
+                len(rows),
+                "tdxman",
+                "minutes",
+            )
+            count += 1
+            rows_written += len(incoming)
+    return count, rows_written
+
+
+async def update_minutes_async(root: Path, limit: int | None = None) -> tuple[int, int]:
+    _, AsyncMacClient, enums, Market = _load_tdxman()
+    Adjust, Period = enums
+    count = rows_written = 0
+    async with AsyncMacClient.from_best_host() as client:
+        for symbol in _symbols(root, "minutes", limit):
+            start = last_marker(root, symbol, "minutes")
+            frame = await client.get_stock_kline(
+                _tdx_market(symbol, Market), symbol, Period.MIN_1, 0, 800, 1, Adjust.NONE
+            )
+            incoming = _minute_rows(frame, symbol, start if isinstance(start, datetime) else None)
+            if not incoming:
+                continue
+            path = bars_path(root, "minutes", _market(symbol), symbol)
+            prior = pq.read_table(path).to_pylist() if path.exists() else []
+            rows = _merge_rows(prior, incoming, "timestamp")
+            _write_period(path, rows)
+            record_coverage(
+                root,
+                symbol,
+                _market(symbol),
+                rows[0]["timestamp"],
+                rows[-1]["timestamp"],
+                len(rows),
+                "tdxman",
+                "minutes",
+            )
+            count += 1
+            rows_written += len(incoming)
+    return count, rows_written
+
+
+def _write_period(path: Path, rows: list[dict[str, object]]) -> None:
+    from uuid import uuid4
+
+    import pyarrow as pa
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(f".{uuid4().hex}.part")
+    pq.write_table(pa.Table.from_pylist(rows), temporary, compression="zstd")
+    temporary.replace(path)
+
+
+def update_online(
+    root: Path, period: str, async_mode: bool, limit: int | None = None
+) -> tuple[int, int]:
+    if period == "daily":
+        return (
+            asyncio.run(update_daily_async(root, limit))
+            if async_mode
+            else update_daily(root, limit)
+        )
+    return (
+        asyncio.run(update_minutes_async(root, limit))
+        if async_mode
+        else update_minutes(root, limit)
+    )

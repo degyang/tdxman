@@ -1,3 +1,11 @@
 # 本地通达信目录设置。将 vipdoc 改为实际目录；留空时自动探测 TDX_HOME。
 offline:
   vipdoc: "/mnt/d/Stock/new_tdx/vipdoc"
+
+# A 股长期数据池设置。free_stockdb.root 指向已解压的发布目录。
+aspool:
+  free_stockdb:
+    root: "/mnt/d/Workstation/Developments/finances/free-stockdb/data/release-manylinux/unpacked/stockdb"
+  update:
+    mode: sync
+    batch_size: 100
