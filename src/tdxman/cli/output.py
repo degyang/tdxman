@@ -44,6 +44,8 @@ _BASIC_TABLE_COLUMNS = (
     "small_net",
     "mid_net",
     "large_net",
+    "up_count",
+    "down_count",
     "zong_zichan",
     "jing_zichan",
     "zhuying_shouru",

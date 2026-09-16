@@ -6,7 +6,7 @@ from .._binary import unpack_from
 from ..codec.datetime_ import get_datetime
 from ..codec.price import get_price
 from ..codec.volume import get_volume
-from ..models.bar import SecurityBar
+from ..models.bar import IndexBar, SecurityBar
 from ..models.enums import KlineCategory, Market
 from .base import BaseCommand
 
@@ -106,13 +106,13 @@ class GetIndexBarsCmd(GetSecurityBarsCmd):
     """获取指数 K 线。
 
     请求格式与股票 K 线相同，但响应每条记录在 vol+amt 后多 4 字节
-    （上涨家数 uint16 + 下跌家数 uint16），必须跳过否则后续记录错位。
+    （上涨家数 uint16 + 下跌家数 uint16）。
     """
 
-    def parse_response(self, body: bytes) -> list[SecurityBar]:
+    def parse_response(self, body: bytes) -> list[IndexBar]:
         (ret_count,) = unpack_from("<H", body, 0, "security_bars header")
         pos = 2
-        bars: list[SecurityBar] = []
+        bars: list[IndexBar] = []
         pre_diff_base = 0
         cat = int(self.category)
 
@@ -129,6 +129,7 @@ class GetIndexBarsCmd(GetSecurityBarsCmd):
             amount, pos = get_volume(body, pos)
 
             # 指数记录额外 4 字节：上涨家数 + 下跌家数（各 uint16 LE）
+            up_count, down_count = struct.unpack("<HH", body[pos : pos + 4])
             pos += 4
 
             open_abs = open_diff + pre_diff_base
@@ -138,7 +139,7 @@ class GetIndexBarsCmd(GetSecurityBarsCmd):
             pre_diff_base = open_abs + close_diff
 
             bars.append(
-                SecurityBar(
+                IndexBar(
                     open=open_abs / 1000.0,
                     close=close_abs / 1000.0,
                     high=high_abs / 1000.0,
@@ -150,6 +151,8 @@ class GetIndexBarsCmd(GetSecurityBarsCmd):
                     day=day,
                     hour=hour,
                     minute=minute,
+                    up_count=up_count,
+                    down_count=down_count,
                     _raw=body[record_start:pos],
                 )
             )

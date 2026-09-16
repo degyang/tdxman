@@ -37,6 +37,7 @@ _CONFIG_FILE = _CONFIG_DIR / "config.json"
 # ---------------------------------------------------------------------------
 
 _FALLBACK_HOSTS: list[str] = [
+    "117.34.114.27",
     "111.229.247.189",
     "150.158.160.2",
     "180.153.18.170",
@@ -170,7 +171,8 @@ def get_known_hosts() -> list[str]:
     if env:
         return [h.strip() for h in env.split(",") if h.strip()]
     cfg = _load()
-    return cfg.get("known_hosts", list(_FALLBACK_HOSTS))
+    configured = cfg.get("known_hosts", [])
+    return list(dict.fromkeys([*_FALLBACK_HOSTS, *configured]))
 
 
 def get_calc_hosts() -> list[str]:

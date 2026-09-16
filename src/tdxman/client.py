@@ -326,6 +326,31 @@ class TdxClient:
                     last_exc = e
             raise last_exc  # type: ignore[misc]
 
+    def _execute_on_alternative_host(self, cmd: "BaseCommand[_T]", error: Exception) -> _T:
+        """在当前线路返回无效数据时，尝试其他标准行情服务器。"""
+        last_error: Exception = error
+        for host in get_known_hosts():
+            if host == self._host:
+                continue
+            candidate = TdxClient(
+                host,
+                self._port,
+                self._timeout,
+                auto_reconnect=False,
+                heartbeat_interval=0,
+            )
+            try:
+                candidate.connect()
+                result = candidate._execute(cmd)
+            except (TdxConnectionError, TdxDecodeError) as exc:
+                last_error = exc
+            else:
+                save_best_host(host)
+                return result
+            finally:
+                candidate.close()
+        raise last_error
+
     # ------------------------------------------------------------------ #
     # 市场信息
     # ------------------------------------------------------------------ #
@@ -460,7 +485,12 @@ class TdxClient:
         count: int = 800,
     ) -> pd.DataFrame:
         """获取指数 K 线数据。"""
-        df = _to_df(self._execute(GetIndexBarsCmd(market, code, category, start, count)))
+        cmd = GetIndexBarsCmd(market, code, category, start, count)
+        try:
+            bars = self._execute(cmd)
+        except (TdxConnectionError, TdxDecodeError) as exc:
+            bars = self._execute_on_alternative_host(cmd, exc)
+        df = _to_df(bars)
         return _merge_bar_datetime(df, category in _DAILY_PLUS)
 
     # ------------------------------------------------------------------ #
