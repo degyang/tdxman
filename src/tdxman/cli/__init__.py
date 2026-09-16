@@ -37,12 +37,11 @@ class TdxmanGroup(click.Group):
                 "unusual",
             ),
         ),
-        ("历史与财务", ("finance", "fund-flow", "kline", "offline")),
+        ("历史与财务", ("ex", "finance", "fund-flow", "kline", "offline")),
         (
             "市场资料与板块",
             ("belong-board", "board-list", "board-members", "server-info"),
         ),
-        ("扩展市场", ("ex",)),
         ("工具", ("markets", "ping", "version")),
     )
 
