@@ -42,9 +42,9 @@ tdxman quote "SZ 000001,SH 600519" --format table --output data/quotes
 `offline.vipdoc`；也可临时指定 `--vipdoc`：
 
 ```bash
-tdxman offline quote SH 600519
-tdxman offline kline SZ 000001 --count 30 --format table
-tdxman offline --vipdoc /mnt/d/Stock/new_tdx/vipdoc kline SH 600519
+tdxman offline SH 600519 --period DAILY --count 30
+tdxman offline SZ 000001 --period 5MIN --format table
+tdxman offline SH 600519 --vipdoc /mnt/d/Stock/new_tdx/vipdoc
 ```
 
 ### 基础

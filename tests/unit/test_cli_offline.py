@@ -18,13 +18,13 @@ def _write_daily_file(vipdoc, code: str = "600519") -> None:
     )
 
 
-def test_offline_quote_reads_the_latest_local_daily_bar(tmp_path) -> None:
+def test_offline_reads_the_latest_local_daily_bar_with_count(tmp_path) -> None:
     vipdoc = tmp_path / "vipdoc"
     _write_daily_file(vipdoc)
 
     result = CliRunner().invoke(
         cli,
-        ["offline", "--vipdoc", str(vipdoc), "quote", "SH", "600519", "--format", "table"],
+        ["offline", "SH", "600519", "--vipdoc", str(vipdoc), "--count", "1", "--format", "table"],
     )
 
     assert result.exit_code == 0, result.output
@@ -38,7 +38,7 @@ def test_offline_kline_honours_latest_based_paging(tmp_path) -> None:
 
     result = CliRunner().invoke(
         cli,
-        ["offline", "--vipdoc", str(vipdoc), "kline", "SH", "600519", "--count", "1"],
+        ["offline", "SH", "600519", "--vipdoc", str(vipdoc), "--count", "1"],
     )
 
     assert result.exit_code == 0, result.output

@@ -86,4 +86,4 @@ tdxman ex tick HK_MAIN_BOARD 00700 --format table
 
 The CLI uses MAC protocol clients for normal A-share and extended-market queries. `finance` and `fund-flow` use the standard protocol APIs; the historical fund-flow fallback uses MAC daily bars when standard day-bar responses are incomplete.
 
-Use `tdxman offline quote MARKET CODE` for the latest local daily record and `tdxman offline kline MARKET CODE` for local daily bars. The default vipdoc path is `offline.vipdoc` in `settings/config.yaml`; use `tdxman offline --vipdoc PATH ...` to override it. Python module `tdxman.offline` also supports `.lc1`, `.lc5`, block, capital-change, and historical finance files.
+Use `tdxman offline MARKET CODE --period DAILY|1MIN|5MIN` for local K lines. The default vipdoc path is `offline.vipdoc` in `settings/config.yaml`; use `--vipdoc PATH` to override it. Python module `tdxman.offline` also supports `.lc1`, `.lc5`, block, capital-change, and historical finance files.
