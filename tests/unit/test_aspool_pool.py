@@ -133,6 +133,37 @@ def test_public_errors_and_projection_validation(tmp_path):
     assert DataPool(tmp_path).describe()["capabilities"]["point_in_time"] is False
 
 
+@pytest.mark.parametrize("lookback", [None, 1, 2])
+@pytest.mark.parametrize("duplicate_day", [11, 16])
+def test_duplicate_daily_keys_rejected_before_window(tmp_path, lookback, duplicate_day):
+    from aspool import DataPoolError
+
+    put(tmp_path, "000001", [bar(11), bar(16), bar(duplicate_day)])
+    with pytest.raises(DataPoolError, match="Duplicate daily keys") as error:
+        DataPool(tmp_path).read_research_daily(lookback=lookback, fields=["close"])
+    assert error.value.code == "DAILY_INVALID"
+
+
+def test_duplicate_check_respects_date_and_symbol_filters(tmp_path):
+    put(tmp_path, "000001", [bar(10), bar(10), bar(11), bar(16), bar(16)])
+    put(tmp_path, "000002", [bar(11)])
+    # Duplicates outside the requested dates or securities do not invalidate the read.
+    pool = DataPool(tmp_path)
+    frame = pool.read_research_daily(
+        symbols=["SZ.000001"], start="2026-09-11", end="2026-09-15", lookback=1
+    )
+    assert frame.date.dt.day.tolist() == [11]
+    assert pool.read_research_daily(symbols="SZ.000002", lookback=1).code.tolist() == ["000002"]
+    assert pool.read_research_daily(symbols=[], lookback=1).empty
+
+
+def test_same_date_code_in_different_markets_is_not_duplicate(tmp_path):
+    put(tmp_path, "000001", [bar(16)])
+    _write_daily(tmp_path, "SH", "000001", [bar(16)])
+    frame = DataPool(tmp_path).read_research_daily(lookback=1)
+    assert frame.symbol.tolist() == ["SH.000001", "SZ.000001"]
+
+
 def test_online_daily_rows_use_manual_snapshot_with_free_stockdb_field_names():
     rows = _enrich_daily(
         [{"close": 10.0, "volume": 100_000.0}],

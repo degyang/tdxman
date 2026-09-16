@@ -111,6 +111,14 @@ class DataPool:
                     clauses.append("market || '.' || symbol IN (SELECT unnest(?))")
                     params.append(symbols)
                 where = " WHERE " + " AND ".join(clauses) if clauses else ""
+                # Validate the filtered population before a window can hide duplicates.
+                duplicate = conn.execute(
+                    f"SELECT market, symbol, trade_date FROM bars{where} "
+                    "GROUP BY market, symbol, trade_date HAVING count(*) > 1 LIMIT 1",
+                    params,
+                ).fetchone()
+                if duplicate is not None:
+                    raise DataPoolError("DAILY_INVALID", "Duplicate daily keys")
                 extensions = ", ".join(
                     f'CAST("{key}" AS {dtype}) AS "{key}"'
                     if key in names
@@ -138,8 +146,6 @@ class DataPool:
                 raise DataPoolError("DAILY_INVALID", "Non-finite daily values")
             if (frame[required] < 0).any().any() or (frame.high < frame.low).any():
                 raise DataPoolError("DAILY_INVALID", "Invalid daily values")
-            if frame.duplicated(["symbol", "date"]).any():
-                raise DataPoolError("DAILY_INVALID", "Duplicate daily keys")
         frame.attrs.update(
             contract_version=2,
             price_adjustment="raw",
