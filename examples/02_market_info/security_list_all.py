@@ -11,7 +11,7 @@
   5. 为每只股票匹配行业分类
 
 缓存机制：
-  - pages="all"（默认）时，结果会缓存到 ~/.easy_tdx/cache/security_list_all.json
+  - pages="all"（默认）时，结果会缓存到 ~/.tdxman/cache/security_list_all.json
   - 缓存有效期 1 天（86400 秒）
   - 传入整数 N 可只拉取前 N 页（不缓存，速度快）
 
@@ -36,7 +36,7 @@ import logging
 
 import pandas as pd
 
-from easy_tdx import TdxClient
+from tdxman import TdxClient
 
 # 启用日志，查看分页进度
 logging.basicConfig(level=logging.INFO, format="%(message)s")

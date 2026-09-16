@@ -29,7 +29,7 @@ BoardInfo dataclass 字段:
 返回 DataFrame 列说明: 同 BoardInfo 字段（每行一个板块）。
 """
 
-from easy_tdx import BoardType, MacClient
+from tdxman import BoardType, MacClient
 
 with MacClient.from_best_host() as c:
     # 行业板块（取前 10 个）

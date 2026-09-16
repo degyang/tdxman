@@ -27,7 +27,7 @@ DataFrame 列说明:
   - 部分服务器不支持 Category 22，此时自动回退到逐笔重算模式（较慢）
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     df = c.get_history_fund_flow(Market.SH, "600519", 0, 10)

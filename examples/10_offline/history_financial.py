@@ -22,7 +22,7 @@ fields 字段含义:
     字段 11-30:  资产负债表项目（总资产、流动资产、固定资产、负债等）
     字段 31-50:  利润表项目（营业收入、营业利润、净利润等）
     字段 51-70:  现金流量表项目（经营现金流、投资现金流、筹资现金流等）
-  具体索引对照请参考通达信官方文档或 easy_tdx/codec/financial.py 中的字段定义。
+  具体索引对照请参考通达信官方文档或 tdxman/codec/financial.py 中的字段定义。
 
 文件存放位置（按搜索优先级）:
   1. vipdoc/fin/
@@ -35,7 +35,7 @@ fields 字段含义:
 
 from pathlib import Path
 
-from easy_tdx.offline import detect_tdx_home, read_history_financial
+from tdxman.offline import detect_tdx_home, read_history_financial
 
 home = detect_tdx_home()
 if home is None:

@@ -39,7 +39,7 @@ K 线返回 DataFrame 列说明（分钟线周期）：
 
 import asyncio
 
-from easy_tdx import AsyncTdxClient, KlineCategory, Market
+from tdxman import AsyncTdxClient, KlineCategory, Market
 
 
 async def main():

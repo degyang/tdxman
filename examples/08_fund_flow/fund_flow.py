@@ -31,7 +31,7 @@ DataFrame 列说明:
 
 import pandas as pd
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     flow = c.get_fund_flow(Market.SH, "600519")

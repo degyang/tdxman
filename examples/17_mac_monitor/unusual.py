@@ -28,7 +28,7 @@ UnusualItem dataclass 字段:
     unusual_type  int      异动类型代码
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 获取沪市异动数据（最近 20 条）

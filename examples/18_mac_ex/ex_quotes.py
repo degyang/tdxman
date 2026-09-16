@@ -20,7 +20,7 @@ stocks 参数为 [(ExMarket, 代码), ...] 列表，单次最多 80 只。
     amount     float   成交额
 """
 
-from easy_tdx import ExMarket, MacExClient
+from tdxman import ExMarket, MacExClient
 
 with MacExClient.from_best_host() as client:
     stocks = [

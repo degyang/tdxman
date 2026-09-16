@@ -12,7 +12,7 @@ K 线总数和数据偏移位置。通常用于确认服务器上的 K 线数据
     returned  int   本次返回的条数
 """
 
-from easy_tdx import MacClient
+from tdxman import MacClient
 
 with MacClient.from_best_host() as c:
     df = c.get_kline_offset()

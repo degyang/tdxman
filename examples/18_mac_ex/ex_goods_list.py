@@ -26,7 +26,7 @@ goods_list 返回 DataFrame 列说明:
 goods_count 返回: int，该市场商品总数。
 """
 
-from easy_tdx import ExMarket, MacExClient
+from tdxman import ExMarket, MacExClient
 
 with MacExClient.from_best_host() as client:
     # 获取港股主板前 20 只商品

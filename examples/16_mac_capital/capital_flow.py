@@ -37,7 +37,7 @@ CapitalFlowData dataclass 字段:
     large_net  float    大单净流入金额
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 获取贵州茅台资金流向

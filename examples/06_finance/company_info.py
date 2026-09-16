@@ -21,7 +21,7 @@ get_company_info_category() 返回 CompanyInfoCategory DataFrame，列说明:
   - 内容更新频率取决于上市公司公告发布节奏
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 CODE = "600519"
 NAME = "贵州茅台"

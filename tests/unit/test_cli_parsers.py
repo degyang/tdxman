@@ -1,7 +1,7 @@
 """CLI parameter parser tests."""
 
-from easy_tdx.cli.parsers import parse_board_type
-from easy_tdx.mac.enums import BoardType
+from tdxman.cli.parsers import parse_board_type
+from tdxman.mac.enums import BoardType
 
 
 def test_parse_board_type_supports_second_level_industry() -> None:

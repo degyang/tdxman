@@ -23,7 +23,7 @@ BelongBoardInfo dataclass 字段:
     pre_close   float   板块昨收指数
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 查询贵州茅台所属板块

@@ -37,7 +37,7 @@
 返回类型：pd.DataFrame
 """
 
-from easy_tdx import KlineCategory, Market, TdxClient
+from tdxman import KlineCategory, Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     # 获取上证指数最近 10 条日 K 线

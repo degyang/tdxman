@@ -31,9 +31,9 @@ CustomerBlock dataclass 字段（自定义板块）:
 
 from pathlib import Path
 
-from easy_tdx import TdxClient
-from easy_tdx.models.finance import TdxBlock
-from easy_tdx.offline import detect_tdx_home, read_block_dat, read_customer_blocks
+from tdxman import TdxClient
+from tdxman.models.finance import TdxBlock
+from tdxman.offline import detect_tdx_home, read_block_dat, read_customer_blocks
 
 
 def _print_blocks(blocks: list[TdxBlock], title: str) -> None:

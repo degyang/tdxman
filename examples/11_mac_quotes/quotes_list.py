@@ -30,7 +30,7 @@ SortOrder 枚举:
     amount      float   成交额
 """
 
-from easy_tdx import Category, MacClient, SortOrder, SortType
+from tdxman import Category, MacClient, SortOrder, SortType
 
 with MacClient.from_best_host() as c:
     # 全部 A 股，按涨幅降序，取前 10 名

@@ -2,7 +2,7 @@
 
 import struct
 
-from easy_tdx.codec.volume import get_volume
+from tdxman.codec.volume import get_volume
 
 
 def _pack(ivol: int) -> bytes:
@@ -18,7 +18,7 @@ class TestGetVolume:
     def test_known_value_4098(self):
         # pytdx 注释 "4098 ---> 3.0" 含义：raw 4098 对应真实股数 3.0亿，
         # 但 get_volume(4098) ≈ 5.88e-39（接近零），说明 xdxr_info 里对股本字段
-        # 调用 get_volume 是错误用法。easy-tdx 在 xdxr_info 命令中会用正确的解码方式。
+        # 调用 get_volume 是错误用法。tdxman 在 xdxr_info 命令中会用正确的解码方式。
         val, pos = get_volume(_pack(4098), 0)
         assert abs(val) < 1e-30  # 接近零，与 pytdx 行为一致
 

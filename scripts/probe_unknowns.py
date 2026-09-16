@@ -2,7 +2,7 @@
 
 import sys
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 
 def probe_minute_averages(client, market, code):

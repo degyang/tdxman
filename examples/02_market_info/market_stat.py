@@ -25,7 +25,7 @@
 返回类型：pd.DataFrame（单行）
 """
 
-from easy_tdx import TdxClient
+from tdxman import TdxClient
 
 with TdxClient.from_best_host() as c:
     stat = c.get_market_stat()

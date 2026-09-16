@@ -16,7 +16,7 @@ DataFrame 列说明:
   - 可用于历史成交分布分析、大单统计、资金流向计算等
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     date = 20250110

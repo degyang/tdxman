@@ -14,7 +14,7 @@ DataFrame 列说明:
   - 数据覆盖历史较深，可追溯数年前的分时数据
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     date = 20250110

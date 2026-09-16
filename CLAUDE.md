@@ -22,7 +22,7 @@ ruff format --check src/ tests/
 ## 架构
 
 ```
-src/easy_tdx/
+src/tdxman/
 ├── client.py          # TdxClient / AsyncTdxClient（高层 API）
 ├── transport/
 │   ├── sync.py        # TdxConnection（socket）+ ping_host / ping_all
@@ -52,20 +52,20 @@ commands 层不依赖 transport，可独立单测。修改 codec 或 commands �
 ### 服务器测速与优选
 
 ```bash
-easy-tdx ping --timeout 3 --output json
+tdxman ping --timeout 3
 ```
 
-`ping` 只展示候选服务器的测速结果，不会保存最佳地址。`TdxClient.from_best_host()`、`MacClient.from_best_host()` 等 Python 工厂方法会选择最低延迟的可用服务器，并将最佳地址保存到 `~/.easy_tdx/config.json`。候选 IP 池默认维护在 `config.py`；本地配置文件或 `EASY_TDX_KNOWN_HOSTS` 可覆盖标准行情候选池。
+`ping` 只展示候选服务器的测速结果，不会保存最佳地址。`TdxClient.from_best_host()`、`MacClient.from_best_host()` 等 Python 工厂方法会选择最低延迟的可用服务器，并将最佳地址保存到 `~/.tdxman/config.json`。候选 IP 池默认维护在 `config.py`；本地配置文件或 `TDXMAN_KNOWN_HOSTS` 可覆盖标准行情候选池。
 
 ### 行业板块与行业日 K
 
 ```bash
 # 通达信一级、二级行业板块完整目录
-easy-tdx board-list --type HY --output csv
-easy-tdx board-list --type HY2 --output csv
+tdxman board-list --type HY --format csv
+tdxman board-list --type HY2 --format csv
 
 # 使用目录返回的 market、code 查询行业板块日 K，例如 market=SH、code=881165
-easy-tdx kline SH 881165 --period DAILY --count 250 --output csv
+tdxman kline SH 881165 --period DAILY --count 250 --format csv
 ```
 
 `board-list` 返回行业板块的 `market`、`code`、`name` 等字段。CLI 的 `kline` 走 MAC 协议的 `MacClient.get_stock_kline()`，可查询行业板块代码；不要改用标准协议的 `TdxClient.get_index_bars()` 查询此类 `88xxxx` 板块代码，该接口可能返回空响应。
@@ -73,7 +73,7 @@ easy-tdx kline SH 881165 --period DAILY --count 250 --output csv
 ### 实时指标与日 K 衍生指标
 
 ```bash
-easy-tdx quote "SH 600519" --output json
+tdxman quote "SH 600519"
 ```
 
 实时 `quote` 默认包含 `vol_ratio`（量比）、`turnover`（换手率）、`vol`（成交量）和 `float_shares`（流通股本）。日 K 不包含 `vol_ratio` 或 `turnover`，但收盘后可推算：

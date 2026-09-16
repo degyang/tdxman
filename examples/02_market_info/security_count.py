@@ -17,7 +17,7 @@ Market 枚举说明：
 返回类型：int
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     sh_count = c.get_security_count(Market.SH)

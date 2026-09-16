@@ -46,8 +46,8 @@ SecurityBar dataclass 字段（日线和分钟线共用）:
 需要本地已安装通达信并下载过分钟数据。
 """
 
-from easy_tdx import Market
-from easy_tdx.offline import (
+from tdxman import Market
+from tdxman.offline import (
     detect_tdx_home,
     find_5min_bar_file,
     find_lc1_bar_file,

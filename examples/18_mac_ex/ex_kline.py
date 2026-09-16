@@ -28,7 +28,7 @@ ExMarket 枚举常用值:
     amount    float     成交额
 """
 
-from easy_tdx import ExMarket, MacExClient, Period
+from tdxman import ExMarket, MacExClient, Period
 
 with MacExClient.from_best_host() as client:
     # 港股主板 -- 腾讯控股 日K线

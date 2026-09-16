@@ -2,8 +2,8 @@
 
 import sys
 
-from easy_tdx import Market, TdxClient
-from easy_tdx.models.enums import KlineCategory
+from tdxman import Market, TdxClient
+from tdxman.models.enums import KlineCategory
 
 
 def main():

@@ -27,7 +27,7 @@ A 股方法（get_stock_kline 等）代理到 MacClient，扩展市场方法（g
     goods_transaction
 """
 
-from easy_tdx import ExMarket, Market, Period, UnifiedTdxClient
+from tdxman import ExMarket, Market, Period, UnifiedTdxClient
 
 with UnifiedTdxClient() as client:
     # A 股 -- 贵州茅台 日K线

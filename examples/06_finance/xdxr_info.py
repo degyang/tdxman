@@ -35,7 +35,7 @@ DataFrame 列说明:
   但 get_xdxr_info() 已自动转换为"每股"单位。
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     df = c.get_xdxr_info(Market.SH, "600519")

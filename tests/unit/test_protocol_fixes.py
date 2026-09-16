@@ -3,12 +3,12 @@
 import struct
 from unittest.mock import patch
 
-from easy_tdx.codec.price_rules import compute_price_limits
-from easy_tdx.commands.fund_flow import GetHistoryFundFlowCmd
-from easy_tdx.commands.security_bars import GetSecurityBarsCmd
-from easy_tdx.commands.security_list import GetSecurityListCmd
-from easy_tdx.commands.security_quotes import GetSecurityQuotesCmd
-from easy_tdx.models.enums import KlineCategory, Market
+from tdxman.codec.price_rules import compute_price_limits
+from tdxman.commands.fund_flow import GetHistoryFundFlowCmd
+from tdxman.commands.security_bars import GetSecurityBarsCmd
+from tdxman.commands.security_list import GetSecurityListCmd
+from tdxman.commands.security_quotes import GetSecurityQuotesCmd
+from tdxman.models.enums import KlineCategory, Market
 
 
 def test_security_bars_exact_layout():
@@ -53,7 +53,7 @@ def test_security_list_request_length():
 
 def test_security_quotes_limit_mapping():
     """验证涨跌停价现在返回 None，且 pre_close 正确。"""
-    from easy_tdx.codec.price import put_price
+    from tdxman.codec.price import put_price
 
     cmd = GetSecurityQuotesCmd([(Market.SH, "600000")])
     
@@ -96,7 +96,7 @@ def test_security_quotes_limit_mapping():
 
 def test_security_quotes_server_time_format():
     """服务器时间应按“小时 + 百万分之一小时”统一解码。"""
-    from easy_tdx.commands.security_quotes import _format_server_time
+    from tdxman.commands.security_quotes import _format_server_time
 
     assert _format_server_time(9500000) == "09:30:00.000"
     assert _format_server_time(14999212) == "14:59:57.163"
@@ -156,7 +156,7 @@ def test_history_fund_flow_uses_uint32_volume_words():
         seen.append(raw)
         return float(raw)
 
-    with patch("easy_tdx.commands.fund_flow._decode_volume", side_effect=fake_decode):
+    with patch("tdxman.commands.fund_flow._decode_volume", side_effect=fake_decode):
         records = GetHistoryFundFlowCmd(Market.SH, "600000", 0, 1).parse_response(bytes(body))
 
     assert seen == raw_words

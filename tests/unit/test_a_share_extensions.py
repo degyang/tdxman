@@ -6,25 +6,25 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from easy_tdx import AsyncTdxClient, Market, TdxClient
-from easy_tdx.client import _classify_fund_flow
-from easy_tdx.commands.minute_time import (
+from tdxman import AsyncTdxClient, Market, TdxClient
+from tdxman.client import _classify_fund_flow
+from tdxman.commands.minute_time import (
     GetHistoryMinuteTimeDataCmd,
 )
-from easy_tdx.commands.security_bars import GetSecurityBarsCmd
-from easy_tdx.commands.security_list import GetSecurityListCmd
-from easy_tdx.commands.security_quotes import GetSecurityQuotesCmd
-from easy_tdx.commands.transaction import (
+from tdxman.commands.security_bars import GetSecurityBarsCmd
+from tdxman.commands.security_list import GetSecurityListCmd
+from tdxman.commands.security_quotes import GetSecurityQuotesCmd
+from tdxman.commands.transaction import (
     GetHistoryTransactionDataCmd,
     GetTransactionDataCmd,
 )
-from easy_tdx.models.bar import SecurityBar
-from easy_tdx.models.quote import SecurityQuote
-from easy_tdx.models.security import SecurityInfo
-from easy_tdx.models.timeseries import MinuteBar, TransactionRecord
+from tdxman.models.bar import SecurityBar
+from tdxman.models.quote import SecurityQuote
+from tdxman.models.security import SecurityInfo
+from tdxman.models.timeseries import MinuteBar, TransactionRecord
 
 
-@patch("easy_tdx.client.TdxConnection")
+@patch("tdxman.client.TdxConnection")
 def test_get_fund_flow_logic(_mock_conn_cls):
     """测试资金流分类计算逻辑。"""
     client = TdxClient("127.0.0.1")
@@ -64,7 +64,7 @@ def test_classify_fund_flow_exact_thresholds_use_lower_bucket():
     assert flow.small_in == 40000.0
 
 
-@patch("easy_tdx.client.TdxConnection")
+@patch("tdxman.client.TdxConnection")
 def test_get_security_list_all_filtering(_mock_conn_cls):
     """测试三市 A 股过滤与行业挂载逻辑。"""
     client = TdxClient("127.0.0.1")
@@ -100,7 +100,7 @@ def test_get_security_list_all_filtering(_mock_conn_cls):
         assert row["industry_tdx"] == "T01"
 
 
-@patch("easy_tdx.client.TdxConnection")
+@patch("tdxman.client.TdxConnection")
 def test_get_market_stat_mapping(_mock_conn_cls):
     """测试市场统计字段映射。"""
     client = TdxClient("127.0.0.1")
@@ -161,7 +161,7 @@ def test_get_market_stat_mapping(_mock_conn_cls):
 
 def test_get_history_fund_flow_parsing():
     """测试历史资金流序列解析逻辑。"""
-    from easy_tdx.commands.fund_flow import GetHistoryFundFlowCmd
+    from tdxman.commands.fund_flow import GetHistoryFundFlowCmd
 
     body = bytearray(9)
     body.extend(struct.pack("<H", 1))
@@ -179,10 +179,10 @@ def test_get_history_fund_flow_parsing():
     assert res[0].day == 8
 
 
-@patch("easy_tdx.client.TdxConnection")
+@patch("tdxman.client.TdxConnection")
 def test_get_history_fund_flow_fallback(_mock_conn_cls):
     """Category 22 空回包时，自动回退到历史逐笔重算。"""
-    from easy_tdx.commands.fund_flow import GetHistoryFundFlowCmd
+    from tdxman.commands.fund_flow import GetHistoryFundFlowCmd
 
     client = TdxClient("127.0.0.1")
 
@@ -223,7 +223,7 @@ def test_get_history_fund_flow_fallback(_mock_conn_cls):
     assert row1["small_in"] == 10000.0
 
 
-@patch("easy_tdx.client.TdxConnection")
+@patch("tdxman.client.TdxConnection")
 def test_get_price_limits_uses_listing_window(_mock_conn_cls):
     """client.get_price_limits 应结合日 K 条数判断上市初期限价窗口。"""
     client = TdxClient("127.0.0.1")
@@ -251,7 +251,7 @@ def test_get_price_limits_uses_listing_window(_mock_conn_cls):
         )
 
 
-@patch("easy_tdx.client.TdxConnection")
+@patch("tdxman.client.TdxConnection")
 def test_get_minute_time_data_uses_history_endpoint(_mock_conn_cls):
     """今日分时走历史分时接口。"""
     client = TdxClient("127.0.0.1")
@@ -263,7 +263,7 @@ def test_get_minute_time_data_uses_history_endpoint(_mock_conn_cls):
         return []
 
     with (
-        patch("easy_tdx.client._today_in_shanghai", return_value=20260422),
+        patch("tdxman.client._today_in_shanghai", return_value=20260422),
         patch.object(TdxClient, "_execute", side_effect=mock_execute) as mock_exec,
     ):
         result = client.get_minute_time_data(Market.SH, "600000")
@@ -281,7 +281,7 @@ def test_async_get_minute_time_data_uses_history_endpoint():
     expected = [MinuteBar(price=9.7, vol=13694)]
 
     async def run_test() -> None:
-        with patch("easy_tdx.client.AsyncTdxConnection"):
+        with patch("tdxman.client.AsyncTdxConnection"):
             client = AsyncTdxClient("127.0.0.1")
 
             async def mock_execute(cmd):
@@ -290,7 +290,7 @@ def test_async_get_minute_time_data_uses_history_endpoint():
                 return []
 
             with (
-                patch("easy_tdx.client._today_in_shanghai", return_value=20260422),
+                patch("tdxman.client._today_in_shanghai", return_value=20260422),
                 patch.object(AsyncTdxClient, "_execute", side_effect=mock_execute),
             ):
                 result = await client.get_minute_time_data(Market.SH, "600000")

@@ -10,7 +10,7 @@ import os
 
 import pytest
 
-from easy_tdx import AsyncTdxClient, Market, TdxClient
+from tdxman import AsyncTdxClient, Market, TdxClient
 
 _LIVE_ENABLED = os.getenv("XMTDX_LIVE") == "1"
 _LIVE_HOST = os.getenv("XMTDX_HOST", "180.153.18.170")

@@ -2,8 +2,8 @@
 
 import struct
 
-from easy_tdx.codec.financial import parse_financial_dat, parse_financial_file_list
-from easy_tdx.models.finance import FinancialFileInfo, FinancialRecord
+from tdxman.codec.financial import parse_financial_dat, parse_financial_file_list
+from tdxman.models.finance import FinancialFileInfo, FinancialRecord
 
 
 class TestParseFinancialFileList:
@@ -109,7 +109,7 @@ class TestFinancialModels:
         assert fi.filesize == 100
 
     def test_record(self) -> None:
-        from easy_tdx.models.enums import Market
+        from tdxman.models.enums import Market
 
         r = FinancialRecord(
             code="600519", market=Market.SH, report_date=20260331, fields=[1.0, 2.0]

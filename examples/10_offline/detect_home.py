@@ -61,8 +61,8 @@ vipdoc 完整目录结构:
       定位 .lc5 五分钟线文件。
 """
 
-from easy_tdx import Market
-from easy_tdx.offline import (
+from tdxman import Market
+from tdxman.offline import (
     detect_tdx_home,
     find_5min_bar_file,
     find_daily_bar_file,

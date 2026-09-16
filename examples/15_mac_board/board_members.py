@@ -35,7 +35,7 @@ SortOrder 枚举:
     amount      float   成交额
 """
 
-from easy_tdx import MacClient, SortOrder, SortType
+from tdxman import MacClient, SortOrder, SortType
 
 with MacClient.from_best_host() as c:
     # 获取行业板块 881001（酒店餐饮）的成分股，按涨幅降序

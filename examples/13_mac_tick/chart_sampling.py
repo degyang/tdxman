@@ -12,7 +12,7 @@
     price   float   采样点价格（共约 240 行）
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 获取贵州茅台分时采样（240 个价格点）

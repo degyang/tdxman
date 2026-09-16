@@ -14,7 +14,7 @@ DataFrame 列说明:
   - 非交易时段调用返回空 DataFrame
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     df = c.get_minute_time_data(Market.SH, "600000")

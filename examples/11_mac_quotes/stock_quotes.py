@@ -23,7 +23,7 @@
     amount      float   成交额
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 批量查询多只股票报价（最多 80 只/次）

@@ -25,7 +25,7 @@
 
 import pandas as pd
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     df = c.get_security_list(Market.SH, start=0)

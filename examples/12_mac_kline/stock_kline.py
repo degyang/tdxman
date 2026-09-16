@@ -29,7 +29,7 @@ Adjust 枚举:
     amount    float     成交额
 """
 
-from easy_tdx import Adjust, MacClient, Market, Period
+from tdxman import Adjust, MacClient, Market, Period
 
 with MacClient.from_best_host() as c:
     # --- 三种复权模式对比（日线，各取 5 条） ---

@@ -29,7 +29,7 @@ MacSymbolInfo dataclass 字段:
 返回 DataFrame 列说明: 同 MacSymbolInfo 字段（单行 DataFrame）。
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 获取贵州茅台特征快照

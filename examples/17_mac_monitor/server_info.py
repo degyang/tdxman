@@ -18,7 +18,7 @@ ServerSession dataclass 字段:
 返回 DataFrame 列说明: 同 ServerSession 字段（单行 DataFrame，sessions 为嵌套结构）。
 """
 
-from easy_tdx import MacClient
+from tdxman import MacClient
 
 with MacClient.from_best_host() as c:
     df = c.get_server_info()

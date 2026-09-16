@@ -50,7 +50,7 @@ DataFrame 主要列说明（字段名为拼音缩写）:
     meigujing_zichan    float   每股净资产
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     info = c.get_finance_info(Market.SH, "600519")

@@ -20,7 +20,7 @@ TdxClient.ping_all() 是一个静态方法，对候选服务器列表并发执�
 
 import pandas as pd
 
-from easy_tdx import TdxClient
+from tdxman import TdxClient
 
 results = TdxClient.ping_all()
 df = pd.DataFrame(results, columns=["服务器", "延迟(s)"])

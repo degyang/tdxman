@@ -41,7 +41,7 @@
 返回类型：pd.DataFrame
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     stocks = [

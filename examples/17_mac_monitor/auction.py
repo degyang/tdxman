@@ -20,7 +20,7 @@ AuctionItem dataclass 字段:
     unmatched  int      未匹配量
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 获取贵州茅台集合竞价数据

@@ -28,7 +28,7 @@ ExDailyBar dataclass 字段:
 
 from pathlib import Path
 
-from easy_tdx.offline import detect_tdx_home, read_ex_daily_bars
+from tdxman.offline import detect_tdx_home, read_ex_daily_bars
 
 home = detect_tdx_home()
 if home is None:

@@ -16,7 +16,7 @@
   - 结果按四舍五入保留两位小数
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 CODE = "600519"
 NAME = "贵州茅台"

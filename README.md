@@ -1,20 +1,20 @@
-# easy-tdx
+# tdxman
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/easy-tdx.svg)](https://pypi.org/project/easy-tdx/)
+[![PyPI](https://img.shields.io/pypi/v/tdxman.svg)](https://pypi.org/project/tdxman/)
 
-通达信 TCP 行情协议客户端。支持 A 股、港股、美股、期货全市场；内置 `easy-tdx` CLI 工具，默认 JSON 输出，天然适配 Claude Code、OpenClaw、Hermes 等 AI Agent 工具链。提供同步 + asyncio 双接口；strict mypy 通过；每一层编解码都有离线 fixture 测试覆盖。
+通达信 TCP 行情协议客户端。支持 A 股、港股、美股、期货全市场；内置 `tdxman` CLI 工具，默认 JSON 输出，天然适配 Claude Code、OpenClaw、Hermes 等 AI Agent 工具链。提供同步 + asyncio 双接口；strict mypy 通过；每一层编解码都有离线 fixture 测试覆盖。
 
 ## 安装
 
 ```bash
-pip install easy-tdx
+pip install tdxman
 ```
 
-安装后自动注册 `easy-tdx` CLI 命令：
+安装后自动注册 `tdxman` CLI 命令：
 
 ```bash
-easy-tdx --help
+tdxman --help
 ```
 
 开发模式：
@@ -25,78 +25,95 @@ pip install -e ".[dev]"
 
 ## CLI 参考
 
-`easy-tdx` 默认输出 JSON（一行一条记录），`--table` 切换表格，`--output csv` 输出 CSV。
+`tdxman` 默认将 JSON 输出到标准输出。使用 `--format json|table|csv` 选择格式；`table`
+在终端保持网格表格显示。使用 `--output` 将结果写入文件或目录：未指定 `--format` 时
+按 JSON 写入；目录中的默认文件名为标的代码。`--format table` 写入 Markdown 表格（`.md`）。
+
+```bash
+tdxman kline SH 600519 --format csv --output data/600519.csv
+tdxman finance SZ 006324 --format json --output data/006324.json
+tdxman quote "SZ 000001,SH 600519" --format table --output data/quotes
+```
+
+多标的 `quote` 必须将 `--output` 指向目录，命令会为每个标的分别创建响应文件。
+表格默认只显示常用字段；使用 `--fields all` 查看完整返回字段。JSON 和 CSV 始终保留完整字段。
 
 ### 基础
 
 ```bash
-easy-tdx ping                    # 服务器测速
-easy-tdx version                 # 版本号
+tdxman ping                    # 服务器测速
+tdxman version                 # 版本号
+tdxman markets                 # A 股市场代码与示例
 ```
 
 ### 行情
 
 ```bash
 # K 线
-easy-tdx kline SZ 000001 --count 30 --table
-easy-tdx kline SH 600519 --period 5MIN --adjust QFQ
+tdxman kline SZ 000001 --count 30 --format table
+tdxman kline SH 600519 --period 5MIN --adjust QFQ
 
 # 实时报价
-easy-tdx quote "SZ 000001,SH 600519" --table
+tdxman quote "SZ 000001,SH 600519" --format table
 
 # 市场分类报价（按涨幅排序）
-easy-tdx quote-list A --count 20 --table
-easy-tdx quote-list KCB --sort TOTAL_AMOUNT --order ASC
-easy-tdx quote-list CYB --count 50
+tdxman quote-list A --count 20 --format table
+tdxman quote-list KCB --sort TOTAL_AMOUNT --order ASC
+tdxman quote-list CYB --count 50
 ```
 
 ### 分时 / 成交
 
 ```bash
-easy-tdx tick SZ 000001 --table
-easy-tdx tick SH 600519 --days 5
-easy-tdx tick SZ 000001 --date 20250115
+tdxman tick SZ 000001 --format table
+tdxman tick SH 600519 --days 5
+tdxman tick SZ 000001 --date 20250115
 
-easy-tdx transaction SZ 000001 --count 100 --table
-easy-tdx transaction SH 600519 --date 20250115
+tdxman transaction SZ 000001 --count 100 --format table
+tdxman transaction SH 600519 --date 20250115
 ```
 
 ### 板块
 
 ```bash
-easy-tdx board-list --type GN --table
-easy-tdx board-list --type HY --count 200
-easy-tdx board-members 881001 --table
-easy-tdx belong-board SZ 000001 --table
+tdxman board-list --type GN --format table
+tdxman board-list --type HY --count 200
+tdxman board-members 881001 --format table
+tdxman belong-board SZ 000001 --format table
 ```
 
 ### 资金 / 监控
 
 ```bash
-easy-tdx capital-flow SH 600519 --table
-easy-tdx auction SZ 000001 --table
-easy-tdx unusual SH --count 100 --table
-easy-tdx market-stat --table
-easy-tdx server-info --table
-easy-tdx symbol-info SZ 000001 --table
+tdxman capital-flow SH 600519 --format table   # 当日资金流向快照
+tdxman auction SZ 000001 --format table
+tdxman unusual SH --count 100 --format table
+tdxman market-stat --format table
+tdxman server-info --format table
+tdxman symbol-info SZ 000001 --format table
 ```
+
+`market-stat` 输出涨跌家数、
+成交额、成交量、总市值和涨跌停家数。`suspended_count` 是总家数减去涨、跌、平盘家数的
+残差估算，并非独立停牌字段；`total_market_cap` 沿用原命令的 `880001.close × 1e10`
+换算。服务器返回空数据或缺少必要字段时，命令会报错，不会用零填充。
 
 ### 财务
 
 ```bash
-easy-tdx f10 SH 600519              # F10 公司信息
-easy-tdx fund-flow SH 600519        # 历史资金流向
+tdxman finance SH 600519                         # 最新财务摘要
+tdxman fund-flow SH 600519 --closed-only     # 历史资金流向，排除当天未完整数据
 ```
 
 ### 扩展市场（港股/美股/期货）
 
 ```bash
-easy-tdx ex markets                                       # 列出可用市场
-easy-tdx ex kline HK_MAIN_BOARD 00700 --count 30 --table  # 港股 K 线
-easy-tdx ex kline US_STOCK AAPL --table                    # 美股 K 线
-easy-tdx ex quote US_STOCK TSLA --table                    # 美股报价
-easy-tdx ex quote-list HK_MAIN_BOARD --table               # 港股商品列表
-easy-tdx ex tick HK_MAIN_BOARD 00700 --table               # 港股分时
+tdxman ex markets                                       # 列出可用市场
+tdxman ex kline HK_MAIN_BOARD 00700 --count 30 --format table  # 港股 K 线
+tdxman ex kline US_STOCK AAPL --format table                    # 美股 K 线
+tdxman ex quote US_STOCK TSLA --format table                    # 美股报价
+tdxman ex quote-list HK_MAIN_BOARD --format table               # 港股商品列表
+tdxman ex tick HK_MAIN_BOARD 00700 --format table               # 港股分时
 ```
 
 ## CLI 命令汇总
@@ -113,14 +130,15 @@ easy-tdx ex tick HK_MAIN_BOARD 00700 --table               # 港股分时
 | `board-list` | 板块列表（行业/概念/风格） |
 | `board-members` | 板块成分股报价 |
 | `belong-board` | 个股所属板块 |
-| `capital-flow` | 资金流向 |
+| `capital-flow` | 当日资金流向快照 |
 | `auction` | 集合竞价 |
 | `unusual` | 市场异动 |
 | `market-stat` | 全市场涨跌统计 |
 | `server-info` | 服务器交易时段 |
 | `symbol-info` | 个股特征快照 |
-| `f10` | F10 公司信息 |
-| `fund-flow` | 历史资金流向 |
+| `finance` / `finance` | 最新财务摘要 |
+| `fund-flow` | 按交易日统计的历史资金流向 |
+| `markets` | 列出 A 股市场代码 |
 | `ex kline` | 扩展市场 K 线 |
 | `ex quote` | 扩展市场报价 |
 | `ex quote-list` | 扩展市场商品列表 |
@@ -134,7 +152,7 @@ easy-tdx ex tick HK_MAIN_BOARD 00700 --table               # 港股分时
 所有客户端支持 `from_best_host()` 自动选最低延迟服务器：
 
 ```python
-from easy_tdx import MacClient
+from tdxman import MacClient
 
 with MacClient.from_best_host() as c:
     df = c.get_stock_kline(...)
@@ -152,7 +170,7 @@ with MacClient.from_best_host() as c:
 #### 报价
 
 ```python
-from easy_tdx import MacClient, Market, Category, SortType, SortOrder
+from tdxman import MacClient, Market, Category, SortType, SortOrder
 
 with MacClient.from_best_host() as c:
     # 批量报价（最多 80 只/次）
@@ -171,7 +189,7 @@ with MacClient.from_best_host() as c:
 #### K 线（支持复权）
 
 ```python
-from easy_tdx import MacClient, Market, Period, Adjust
+from tdxman import MacClient, Market, Period, Adjust
 
 with MacClient.from_best_host() as c:
     # 日K前复权
@@ -202,7 +220,7 @@ with MacClient.from_best_host() as c:
 #### 板块
 
 ```python
-from easy_tdx import BoardType
+from tdxman import BoardType
 
 with MacClient.from_best_host() as c:
     df = c.get_board_list(BoardType.GN)                       # 概念板块
@@ -232,7 +250,7 @@ with MacClient.from_best_host() as c:
 ### 扩展市场
 
 ```python
-from easy_tdx import MacExClient, ExMarket, Period
+from tdxman import MacExClient, ExMarket, Period
 
 with MacExClient.from_best_host() as c:
     count = c.goods_count(ExMarket.HK_MAIN_BOARD)
@@ -246,7 +264,7 @@ with MacExClient.from_best_host() as c:
 ### 统一客户端
 
 ```python
-from easy_tdx import UnifiedTdxClient, ExMarket, Market, Period
+from tdxman import UnifiedTdxClient, ExMarket, Market, Period
 
 with UnifiedTdxClient() as client:
     # A 股 -- 自动路由到 MacClient
@@ -261,7 +279,7 @@ with UnifiedTdxClient() as client:
 ### 标准协议
 
 ```python
-from easy_tdx import TdxClient, Market, KlineCategory
+from tdxman import TdxClient, Market, KlineCategory
 
 with TdxClient.from_best_host() as c:
     count = c.get_security_count(Market.SH)
@@ -283,8 +301,8 @@ with TdxClient.from_best_host() as c:
 无需网络，从本地通达信安装目录直接读取：
 
 ```python
-from easy_tdx.offline import detect_tdx_home, read_daily_bars, find_daily_bar_file
-from easy_tdx import Market
+from tdxman.offline import detect_tdx_home, read_daily_bars, find_daily_bar_file
+from tdxman import Market
 
 home = detect_tdx_home()
 filepath = find_daily_bar_file(Market.SH, "600000")
@@ -438,7 +456,7 @@ bars = read_daily_bars(filepath)
 ## 架构
 
 ```
-src/easy_tdx/
+src/tdxman/
 ├── client.py          # TdxClient / AsyncTdxClient（标准协议）
 ├── unified.py         # UnifiedTdxClient（统一入口）
 ├── config.py          # 服务器地址、端口、超时配置
@@ -458,7 +476,7 @@ src/easy_tdx/
 ├── codec/             # price / volume / datetime / frame / bitmap 编解码
 ├── models/            # 纯 dataclass，无业务逻辑
 ├── offline/           # 离线数据读取模块
-└── cli/               # easy-tdx CLI（click）
+└── cli/               # tdxman CLI（click）
 ```
 
 commands 层不依赖 transport，可独立单测。

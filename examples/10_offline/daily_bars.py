@@ -29,8 +29,8 @@ SecurityBar dataclass 字段:
 需要本地已安装通达信并下载过日线数据。
 """
 
-from easy_tdx import Market
-from easy_tdx.offline import detect_tdx_home, find_daily_bar_file, read_daily_bars
+from tdxman import Market
+from tdxman.offline import detect_tdx_home, find_daily_bar_file, read_daily_bars
 
 home = detect_tdx_home()
 if home is None:

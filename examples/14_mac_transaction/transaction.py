@@ -29,7 +29,7 @@ MacTransaction dataclass 字段:
     bs_flag      int      买卖方向（0=买/1=卖/2=中性/5=盘后）
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 当日逐笔成交（取最近 20 笔）

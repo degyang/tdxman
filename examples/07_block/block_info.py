@@ -20,7 +20,7 @@ DataFrame 列说明:
   - 同一只股票可能同时属于多个概念板块
 """
 
-from easy_tdx import TdxClient
+from tdxman import TdxClient
 
 with TdxClient.from_best_host() as c:
     df = c.get_block_info("block_gn.dat")

@@ -18,7 +18,7 @@ goods_chart_sampling 返回 DataFrame 列说明:
     price       float    采样点价格（共约 240 行，适合绘制缩略走势图）
 """
 
-from easy_tdx import ExMarket, MacExClient
+from tdxman import ExMarket, MacExClient
 
 with MacExClient.from_best_host() as client:
     # 腾讯控股 当日分时图

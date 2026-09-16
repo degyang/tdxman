@@ -38,7 +38,7 @@ MacTick dataclass 字段:
     momentum  float    动量指标
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 获取贵州茅台当日分时图

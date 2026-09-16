@@ -1,5 +1,5 @@
-easy-tdx
-========
+tdxman
+======
 
 This project is an independent implementation of the TongDaXin (TDX)
 TCP protocol client for Chinese A-share market data.

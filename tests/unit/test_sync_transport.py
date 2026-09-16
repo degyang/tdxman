@@ -2,8 +2,8 @@
 
 from unittest.mock import patch
 
-from easy_tdx.exceptions import TdxConnectionError
-from easy_tdx.transport.sync import TdxConnection, ping_all, ping_host
+from tdxman.exceptions import TdxConnectionError
+from tdxman.transport.sync import TdxConnection, ping_all, ping_host
 
 
 class _FakeSocket:
@@ -26,7 +26,7 @@ def test_sync_connection_closes_socket_when_setup_fails() -> None:
     sock = _FakeSocket()
     conn = TdxConnection("127.0.0.1", port=7709, timeout=0.2)
 
-    with patch("easy_tdx.transport.sync.socket.socket", return_value=sock), patch.object(
+    with patch("tdxman.transport.sync.socket.socket", return_value=sock), patch.object(
         TdxConnection,
         "_send_setup",
         side_effect=TdxConnectionError("setup failed"),
@@ -53,7 +53,7 @@ def test_ping_host_returns_none_when_server_closes_during_handshake() -> None:
             return b""
 
     sock = ClosingSocket()
-    with patch("easy_tdx.transport.sync.socket.socket", return_value=sock):
+    with patch("tdxman.transport.sync.socket.socket", return_value=sock):
         assert ping_host("127.0.0.1", port=7709, timeout=0.2) is None
 
     assert sock.closed is True
@@ -66,7 +66,7 @@ def test_ping_all_ignores_a_handshake_failure_from_one_host() -> None:
         return 0.01
 
     with patch(
-        "easy_tdx.transport.sync.ping_host",
+        "tdxman.transport.sync.ping_host",
         side_effect=ping_with_one_closed_host,
     ):
         assert ping_all(["available", "closed"], port=7709, timeout=0.2) == [("available", 0.01)]

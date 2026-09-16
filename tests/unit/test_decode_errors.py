@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from easy_tdx.codec.frame import FrameHeader, decompress_body
-from easy_tdx.commands.company_info import GetCompanyInfoCategoryCmd
-from easy_tdx.commands.security_count import GetSecurityCountCmd
-from easy_tdx.commands.xdxr_info import GetXdxrInfoCmd
-from easy_tdx.exceptions import TdxDecodeError
-from easy_tdx.models.enums import Market
+from tdxman.codec.frame import FrameHeader, decompress_body
+from tdxman.commands.company_info import GetCompanyInfoCategoryCmd
+from tdxman.commands.security_count import GetSecurityCountCmd
+from tdxman.commands.xdxr_info import GetXdxrInfoCmd
+from tdxman.exceptions import TdxDecodeError
+from tdxman.models.enums import Market
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 

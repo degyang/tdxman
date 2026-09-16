@@ -2,7 +2,7 @@
 
 import struct
 
-from easy_tdx.codec.datetime_ import get_datetime, get_datetime_day, get_datetime_minute, get_time
+from tdxman.codec.datetime_ import get_datetime, get_datetime_day, get_datetime_minute, get_time
 
 
 def _pack_minute(year: int, month: int, day: int, hour: int, minute: int) -> bytes:

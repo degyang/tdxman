@@ -6,10 +6,10 @@ import asyncio
 import struct
 import time
 
-from easy_tdx import AsyncTdxClient, Market
-from easy_tdx.commands.security_count import GetSecurityCountCmd
-from easy_tdx.commands.setup import SETUP_COMMANDS
-from easy_tdx.exceptions import TdxConnectionError
+from tdxman import AsyncTdxClient, Market
+from tdxman.commands.security_count import GetSecurityCountCmd
+from tdxman.commands.setup import SETUP_COMMANDS
+from tdxman.exceptions import TdxConnectionError
 
 
 def _pack_frame(body: bytes) -> bytes:

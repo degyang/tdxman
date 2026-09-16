@@ -6,19 +6,19 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from easy_tdx.client import AsyncTdxClient, TdxClient
-from easy_tdx.codec.block import parse_block_dat
-from easy_tdx.models.finance import TdxBlock
+from tdxman.client import AsyncTdxClient, TdxClient
+from tdxman.codec.block import parse_block_dat
+from tdxman.models.finance import TdxBlock
 
 
-@patch("easy_tdx.client.AsyncTdxConnection")
+@patch("tdxman.client.AsyncTdxConnection")
 def test_async_get_block_info_logic(mock_conn_cls):
     """测试 AsyncTdxClient.get_block_info 的异步拉取逻辑。"""
     mock_conn = mock_conn_cls.return_value
 
     # 模拟异步 execute
     async def mock_execute(cmd):
-        from easy_tdx.commands.block_info import GetBlockInfoCmd, GetBlockInfoMetaCmd
+        from tdxman.commands.block_info import GetBlockInfoCmd, GetBlockInfoMetaCmd
 
         if isinstance(cmd, GetBlockInfoMetaCmd):
             return 100, "hash"
@@ -32,7 +32,7 @@ def test_async_get_block_info_logic(mock_conn_cls):
 
     async def main():
         client = AsyncTdxClient("127.0.0.1")
-        with patch("easy_tdx.client.parse_block_dat") as mock_parse:
+        with patch("tdxman.client.parse_block_dat") as mock_parse:
             mock_parse.return_value = []
             res = await client.get_block_info("test.dat")
 
@@ -74,7 +74,7 @@ def test_parse_block_dat_basic():
     assert b.codes == ["600000", "000001"]
 
 
-@patch("easy_tdx.client.TdxConnection")
+@patch("tdxman.client.TdxConnection")
 def test_get_block_info_logic(mock_conn_cls):
     """测试 TdxClient.get_block_info 的分片拉取逻辑。"""
     mock_conn = mock_conn_cls.return_value
@@ -83,7 +83,7 @@ def test_get_block_info_logic(mock_conn_cls):
 
     # 模拟 GetBlockInfoMeta 响应：size=35000 (需要2次拉取)
     def mock_execute(cmd):
-        from easy_tdx.commands.block_info import GetBlockInfoCmd, GetBlockInfoMetaCmd
+        from tdxman.commands.block_info import GetBlockInfoCmd, GetBlockInfoMetaCmd
 
         if isinstance(cmd, GetBlockInfoMetaCmd):
             return 35000, "dummy_hash"
@@ -95,7 +95,7 @@ def test_get_block_info_logic(mock_conn_cls):
     mock_conn.execute.side_effect = mock_execute
 
     # 我们主要测试循环是否正确
-    with patch("easy_tdx.client.parse_block_dat") as mock_parse:
+    with patch("tdxman.client.parse_block_dat") as mock_parse:
         mock_parse.return_value = [TdxBlock("Test", 1, 0, [])]
         res = client.get_block_info("test.dat")
 

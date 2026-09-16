@@ -25,7 +25,7 @@ MacMultiTickDay dataclass 字段:
     pre_close float    该交易日昨收价
 """
 
-from easy_tdx import MacClient, Market
+from tdxman import MacClient, Market
 
 with MacClient.from_best_host() as c:
     # 获取贵州茅台最近 3 个交易日的分时图

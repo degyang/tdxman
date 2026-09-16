@@ -16,7 +16,7 @@ DataFrame 列说明:
   - buyorsell 是根据内外盘判断的方向，2（中性）表示买卖方向不明确的撮合成交
 """
 
-from easy_tdx import Market, TdxClient
+from tdxman import Market, TdxClient
 
 with TdxClient.from_best_host() as c:
     df = c.get_transaction_data(Market.SH, "600000", 0, 20)

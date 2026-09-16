@@ -1,4 +1,4 @@
-# easy_tdx API 参考文档
+# tdxman API 参考文档
 
 > 版本: 0.1.1 | 纯标准库，零运行时依赖 | 需要网络连接通达信行情服务器
 
@@ -28,7 +28,7 @@
 ## 快速开始
 
 ```python
-from easy_tdx import TdxClient, Market, KlineCategory
+from tdxman import TdxClient, Market, KlineCategory
 
 # 自动选择最优服务器
 with TdxClient.from_best_host() as c:
@@ -597,7 +597,7 @@ c.get_price_limits(market: Market, code: str, name: str,
 ### compute_price_limits（独立函数）
 
 ```python
-from easy_tdx.codec.price_rules import compute_price_limits
+from tdxman.codec.price_rules import compute_price_limits
 
 compute_price_limits(market, code, name, pre_close, listed_days=None)
     -> tuple[float | None, float | None]

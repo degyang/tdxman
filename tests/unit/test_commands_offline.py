@@ -23,8 +23,8 @@ def load_hex(name: str) -> bytes:
 
 
 def test_security_count_parse():
-    from easy_tdx.commands.security_count import GetSecurityCountCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.security_count import GetSecurityCountCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("security_count")
     cmd = GetSecurityCountCmd(Market.SH)
@@ -42,8 +42,8 @@ def test_security_count_parse():
 
 
 def test_security_list_parse():
-    from easy_tdx.commands.security_list import GetSecurityListCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.security_list import GetSecurityListCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("security_list")
     cmd = GetSecurityListCmd(Market.SH, 0)
@@ -61,8 +61,8 @@ def test_security_list_parse():
 
 
 def test_security_list_pre_close_uses_tdx_float_for_a_share():
-    from easy_tdx.commands.security_list import GetSecurityListCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.security_list import GetSecurityListCmd
+    from tdxman.models.enums import Market
 
     body = struct.pack("<H", 1) + struct.pack(
         "<6sH8s4sBI4s",
@@ -84,8 +84,8 @@ def test_security_list_pre_close_uses_tdx_float_for_a_share():
 
 def test_security_list_gbk_no_crash():
     """Bug #2 修复验证：GBK 解码不崩溃，所有记录均有 code。"""
-    from easy_tdx.commands.security_list import GetSecurityListCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.security_list import GetSecurityListCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("security_list")
     cmd = GetSecurityListCmd(Market.SH, 0)
@@ -99,8 +99,8 @@ def test_security_list_gbk_no_crash():
 
 
 def test_security_bars_parse():
-    from easy_tdx.commands.security_bars import GetSecurityBarsCmd
-    from easy_tdx.models.enums import KlineCategory, Market
+    from tdxman.commands.security_bars import GetSecurityBarsCmd
+    from tdxman.models.enums import KlineCategory, Market
 
     body = load_hex("security_bars")
     cmd = GetSecurityBarsCmd(Market.SH, "600000", KlineCategory.DAY, 0, 5)
@@ -131,8 +131,8 @@ def test_security_bars_parse():
 
 
 def test_security_quotes_parse():
-    from easy_tdx.commands.security_quotes import GetSecurityQuotesCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.security_quotes import GetSecurityQuotesCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("security_quotes")
     cmd = GetSecurityQuotesCmd([(Market.SH, "600000")])
@@ -165,8 +165,8 @@ def test_security_quotes_parse():
 
 
 def test_minute_time_parse():
-    from easy_tdx.commands.minute_time import GetMinuteTimeDataCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.minute_time import GetMinuteTimeDataCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("minute_time")
     cmd = GetMinuteTimeDataCmd(Market.SH, "600000")
@@ -194,8 +194,8 @@ def test_minute_time_parse():
 
 
 def test_history_minute_time_parse():
-    from easy_tdx.commands.minute_time import GetHistoryMinuteTimeDataCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.minute_time import GetHistoryMinuteTimeDataCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("history_minute_time")
     cmd = GetHistoryMinuteTimeDataCmd(Market.SH, "600000", 20250108)
@@ -216,8 +216,8 @@ def test_history_minute_time_parse():
 
 
 def test_transaction_parse():
-    from easy_tdx.commands.transaction import GetTransactionDataCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.transaction import GetTransactionDataCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("transaction")
     cmd = GetTransactionDataCmd(Market.SH, "600000", 0, 10)
@@ -246,8 +246,8 @@ def test_transaction_parse():
 
 
 def test_history_transaction_parse():
-    from easy_tdx.commands.transaction import GetHistoryTransactionDataCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.transaction import GetHistoryTransactionDataCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("history_transaction")
     cmd = GetHistoryTransactionDataCmd(Market.SH, "600000", 20250108, 0, 10)
@@ -274,8 +274,8 @@ def test_history_transaction_parse():
 
 
 def test_xdxr_info_parse():
-    from easy_tdx.commands.xdxr_info import GetXdxrInfoCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.xdxr_info import GetXdxrInfoCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("xdxr_info")
     cmd = GetXdxrInfoCmd(Market.SH, "600000")
@@ -313,8 +313,8 @@ def test_xdxr_info_parse():
 
 
 def test_xdxr_info_category_1_normalizes_per_10_share_fields():
-    from easy_tdx.commands.xdxr_info import GetXdxrInfoCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.xdxr_info import GetXdxrInfoCmd
+    from tdxman.models.enums import Market
 
     body = bytearray(b"\x00" * 9)
     body.extend(struct.pack("<H", 1))
@@ -338,8 +338,8 @@ def test_xdxr_info_category_1_normalizes_per_10_share_fields():
 
 
 def test_finance_info_parse():
-    from easy_tdx.commands.finance_info import GetFinanceInfoCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.finance_info import GetFinanceInfoCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("finance_info")
     cmd = GetFinanceInfoCmd(Market.SH, "600000")
@@ -364,8 +364,8 @@ def test_finance_info_parse():
 
 
 def test_company_info_category_parse():
-    from easy_tdx.commands.company_info import GetCompanyInfoCategoryCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.company_info import GetCompanyInfoCategoryCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("company_info_category")
     cmd = GetCompanyInfoCategoryCmd(Market.SH, "600000")
@@ -386,8 +386,8 @@ def test_company_info_category_parse():
 
 
 def test_company_info_content_parse():
-    from easy_tdx.commands.company_info import GetCompanyInfoContentCmd
-    from easy_tdx.models.enums import Market
+    from tdxman.commands.company_info import GetCompanyInfoContentCmd
+    from tdxman.models.enums import Market
 
     body = load_hex("company_info_content")
     cmd = GetCompanyInfoContentCmd(Market.SH, "600000", "600000.txt", 0, 11426)
