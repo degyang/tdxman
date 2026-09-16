@@ -96,6 +96,10 @@ def test_fundamentals_snapshot_uses_current_bar_for_valuation(tmp_path):
     assert row.float_mv == 8_000_000
     assert row.pe_ttm == 5.0
     assert row.pb == 0.5
+    research = DataPool(tmp_path).read_research_daily(end="2026-09-16")
+    assert research.attrs["contract_version"] == 2
+    assert research.total_share.iloc[0] == 1_000_000
+    assert research.pe_ttm.iloc[0] == 5.0
 
 
 def test_online_daily_rows_use_manual_snapshot_with_free_stockdb_field_names():
