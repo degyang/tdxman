@@ -10,6 +10,8 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
+from .api_contract import DAILY_FIELDS, OPTIONAL_FIELDS, DataPoolError, public_read
+
 
 @contextmanager
 def pool_lock(root: Path, *, write: bool = False):
@@ -48,17 +50,38 @@ class DataPool:
     def __init__(self, root: str | Path = "~/.aspool"):
         self.root = Path(root).expanduser().resolve()
 
-    def read_daily(self, *, symbols=None, start=None, end=None, lookback=None):
-        if lookback is not None and (not isinstance(lookback, int) or lookback < 1):
-            raise ValueError("lookback must be a positive integer")
-        start = pd.Timestamp(start).date() if start is not None else None
-        end = pd.Timestamp(end).date() if end is not None else None
+    @public_read
+    def read_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
+        selected = (
+            list(DAILY_FIELDS)
+            if fields is None
+            else ([fields] if isinstance(fields, str) else list(fields))
+        )
+        if (
+            not selected
+            or len(set(selected)) != len(selected)
+            or set(selected) - DAILY_FIELDS.keys()
+        ):
+            raise DataPoolError(
+                "FIELD_UNSUPPORTED", "fields must contain unique public daily fields"
+            )
+        if lookback is not None and (
+            isinstance(lookback, bool) or not isinstance(lookback, int) or lookback < 1
+        ):
+            raise DataPoolError("INVALID_ARGUMENT", "lookback must be a positive integer")
+        try:
+            start = pd.Timestamp(start).date() if start is not None else None
+            end = pd.Timestamp(end).date() if end is not None else None
+            if (start is not None and pd.isna(start)) or (end is not None and pd.isna(end)):
+                raise ValueError("Missing date boundary")
+        except (ValueError, TypeError) as exc:
+            raise DataPoolError("INVALID_ARGUMENT", "Invalid date boundary") from exc
         if start and end and start > end:
-            raise ValueError("start must not be after end")
+            raise DataPoolError("INVALID_ARGUMENT", "start must not be after end")
         with pool_lock(self.root):
             files = sorted((self.root / "lake/bars/daily").glob("market=*/symbol=*/bars.parquet"))
             if not files:
-                raise FileNotFoundError("No daily bars in aspool")
+                raise DataPoolError("DAILY_NOT_FOUND", "No daily bars in aspool")
             with duckdb.connect() as conn:
                 conn.read_parquet(
                     [str(p) for p in files], union_by_name=True, hive_partitioning=True
@@ -88,9 +111,16 @@ class DataPool:
                     clauses.append("market || '.' || symbol IN (SELECT unnest(?))")
                     params.append(symbols)
                 where = " WHERE " + " AND ".join(clauses) if clauses else ""
+                extensions = ", ".join(
+                    f'CAST("{key}" AS {dtype}) AS "{key}"'
+                    if key in names
+                    else f'CAST(NULL AS {dtype}) AS "{key}"'
+                    for key, (dtype, _) in OPTIONAL_FIELDS.items()
+                )
                 sql = f"""SELECT market || '.' || symbol AS symbol, market,
                     symbol AS code, trade_date AS date, open, high, low, close,
-                    {volume} AS volume, amount, {rate} AS turnover_rate FROM bars{where}"""
+                    {volume} AS volume, amount, {rate} AS turnover_rate,
+                    {extensions} FROM bars{where}"""
                 if lookback:
                     sql += (
                         " QUALIFY row_number() OVER "
@@ -100,26 +130,29 @@ class DataPool:
                 frame = conn.execute(sql + " ORDER BY symbol, date", params).fetchdf()
         required = ["open", "high", "low", "close", "volume", "amount"]
         if frame[required].isna().any().any():
-            raise ValueError("Daily OHLCV/amount is incomplete; repair aspool before screening")
+            raise DataPoolError("DAILY_INVALID", "Daily OHLCV/amount is incomplete; repair aspool")
         if not frame.empty:
             import numpy as np
 
             if not np.isfinite(frame[required].to_numpy(dtype=float)).all():
-                raise ValueError("Non-finite daily values")
+                raise DataPoolError("DAILY_INVALID", "Non-finite daily values")
             if (frame[required] < 0).any().any() or (frame.high < frame.low).any():
-                raise ValueError("Invalid daily values")
+                raise DataPoolError("DAILY_INVALID", "Invalid daily values")
             if frame.duplicated(["symbol", "date"]).any():
-                raise ValueError("Duplicate daily keys")
+                raise DataPoolError("DAILY_INVALID", "Duplicate daily keys")
         frame.attrs.update(
-            contract_version=1,
+            contract_version=2,
             price_adjustment="raw",
             volume_unit="share",
             amount_unit="CNY",
             turnover_rate_unit="percent",
             available_at=None,
+            point_in_time=False,
+            dataset_version=None,
         )
-        return frame
+        return frame[selected].copy()
 
+    @public_read
     def status(self):
         with pool_lock(self.root):
             files = sorted((self.root / "lake/bars/daily").glob("market=*/symbol=*/bars.parquet"))
@@ -176,12 +209,42 @@ class DataPool:
         frame.loc[frame.net_assets <= 0, "pb"] = None
         return frame.drop(columns="symbol_id")
 
-    def read_research_daily(self, *, symbols=None, start=None, end=None, lookback=None):
+    def describe(self):
+        """Return the implemented public contract and explicit capability limits."""
+        return {
+            "contract_version": 2,
+            "primary_key": ["symbol", "date"],
+            "price_adjustment": "raw",
+            "fields": {
+                key: {
+                    "type": dtype,
+                    "unit": unit,
+                    "nullable": key in OPTIONAL_FIELDS or key == "turnover_rate",
+                }
+                for key, (dtype, unit) in DAILY_FIELDS.items()
+            },
+            "capabilities": {
+                "daily": True,
+                "field_projection": True,
+                "immutable_versions": False,
+                "point_in_time": False,
+                "calendar": False,
+                "historical_universe": False,
+                "trading_status": False,
+                "corporate_actions": False,
+                "adjustments": False,
+                "minute_bars": False,
+            },
+        }
+
+    def read_research_daily(
+        self, *, symbols=None, start=None, end=None, lookback=None, fields=None
+    ):
         """Return the stable daily research contract for Fundwise.
 
         The internal fundamentals snapshot is deliberately not exposed.  It is
         only used by aspool writers to maintain the primary daily data store.
         """
-        bars = self.read_daily(symbols=symbols, start=start, end=end, lookback=lookback)
-        bars.attrs.update(bars.attrs, contract_version=1)
-        return bars
+        return self.read_daily(
+            symbols=symbols, start=start, end=end, lookback=lookback, fields=fields
+        )

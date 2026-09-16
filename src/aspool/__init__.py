@@ -1,6 +1,6 @@
 """A-share market data pool and read-only research API."""
 
-from .fundamentals import refresh_fundamentals
+from .api_contract import DataPoolError
 from .pool import DataPool
 
-__all__ = ["DataPool", "refresh_fundamentals"]
+__all__ = ["DataPool", "DataPoolError"]
