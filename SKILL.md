@@ -1,11 +1,11 @@
 ---
 name: tdxman
-description: Use the tdxman command-line client to retrieve TongDaXin A-share, Hong Kong, US, and futures market data. Use when a task needs this repository's CLI rather than direct Python API calls.
+description: Use tdxman to retrieve TongDaXin market data and aspool to maintain local stock and index daily data pools, run daily synchronization, and provide data to Fundwise.
 ---
 
 # tdxman
 
-`tdxman` is the CLI provided by this repository. It fetches online TongDaXin market data and writes JSON by default.
+`tdxman` retrieves market data and writes JSON by default. `aspool` maintains the local stock and index data pools. Both CLIs are installed by this repository.
 
 ## Run the CLI
 
@@ -42,6 +42,61 @@ tdxman tick SH 600519 --days 5 --format table
 ```
 
 CLI output normalizes numeric presentation: prices, amounts, market caps, finance amounts, and fund-flow amounts use two decimal places; quantities and counts use integers; other ratios retain up to four decimal places. JSON values remain numeric, so insignificant trailing zeroes may not appear.
+
+## aspool daily workflow
+
+Use `aspool` for persistent data maintenance and `tdxman` for individual queries. Run from the repository root. The pool defaults to `~/.aspool`; use the same `--root PATH` on every command when selecting another pool. In `settings/config.yaml`, `aspool.free_stockdb.root` is the import source, and `offline.vipdoc` is the local TongDaXin source, not the pool destination.
+
+For an existing stock daily pool, run after 15:30 Asia/Shanghai on a trading day (for example 16:00):
+
+```bash
+source .venv/bin/activate
+export TZ=Asia/Shanghai
+
+aspool sync --type stock --source tdx --tdx-mode online --period daily &&
+aspool update &&
+aspool sync --type index --source tdx --tdx-mode online --period daily &&
+aspool status
+```
+
+This is a daily workflow, not an `aspool daily` command. Preserve the order: repair stock bars first, then refresh the latest stock record with quotes, then synchronize indices. If stock history needs no repair, omit the first stock sync. Do not use `--limit` for a complete pool update.
+
+- Stock sync repairs at most the latest 30 bars per imported symbol, combining K lines with stored low-frequency fields and calculated ratios. It does not repair arbitrary older gaps or bootstrap new securities.
+- Update refreshes only the current/latest trading day's stock record and low-frequency snapshots from quotes. It has no `--type`, `--period`, or `--async` option. It rejects weekdays 09:00–15:30 inclusive using process-local time; set `TZ=Asia/Shanghai`. This is a weekday guard, not a holiday calendar.
+- Index sync reads **all available history** on every run and merges revisions; it is not a 30-bar tail update. Only `--source tdx --period daily` is supported. Online sync supports `--async`; offline reads only vipdoc and cannot guarantee online freshness.
+- Sync can run intraday and save an incomplete current-day bar. For daily closed-data consumption, run after close and select an explicitly confirmed closed trading date.
+- `&&` stops subsequent commands on failure. Inspect failures, correct their cause, and rerun as appropriate; successful index writes remain saved. Index reports under `ROOT/reports/index-sync/` include per-index coverage and rejected source rows. Do not report full success solely from process completion.
+
+### Bootstrap and occasional maintenance
+
+For an empty stock pool, run `aspool import --source free-stockdb --period daily` once; the command validates imported data. `aspool init` creates structure only. An existing pool does not need daily reimport. Import shared adjustment factors separately with `aspool import --source free-stockdb --factor`; do not import minute history as part of this daily workflow.
+
+Index sync can bootstrap an empty index pool using `settings/board_index.json`. It covers HY/HY2/GN/FG plus selected ZS common indices, excludes names starting with `昨日`, and preserves source categories. Maintain the list manually:
+
+```bash
+python scripts/maintain_board_lists.py          # Preview added/removed/changed entries
+python scripts/maintain_board_lists.py --write  # Apply the refreshed list
+```
+
+Removing a list entry does not delete stored history. Use `aspool fundamentals` for a separate low-frequency refresh when needed; daily update already refreshes these snapshots. Use `aspool sync --type stock --source free-stockdb --period daily` only for requested full stock-history recalibration. Index synchronization does not use free-stockdb.
+
+### Verify and hand off to Fundwise
+
+`aspool status` reports stock coverage, not index coverage. Use `DataPool.list_indices()` to inspect stored index names, dates and row counts; compare with the configured list and target trading date. Do not treat a global maximum date as proof that all securities are current. Account for suspensions and unavailable source data.
+
+```python
+from aspool import DataPool
+
+pool = DataPool('~/.aspool')  # Match the maintenance root
+print(pool.status())
+print(pool.list_indices().to_string(index=False))
+# Replace with the required confirmed closed trading date.
+frame = pool.read_index_daily(symbols='SH.000300', end='2026-09-16', lookback=120)
+```
+
+For Fundwise integration, read [aspool API](docs/aspool_api.md). Use the public stock and index APIs instead of internal fundamental snapshots. Index data contains OHLCV, amount and up_count/down_count; absent breadth is stored as zero, not proof of no advancing/declining securities. Index volume uses source units, unlike stock shares. Current APIs do not guarantee immutable versions or point-in-time historical constituents.
+
+See [README daily workflow](README.md#daily-工作流每日收盘后同步股票和指数) for the user-facing procedure and [index design](docs/aspool_index_design.md) for storage and synchronization details.
 
 ## Commands
 

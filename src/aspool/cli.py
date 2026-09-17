@@ -90,6 +90,14 @@ def import_free_stockdb(
 
 @cli.command(cls=AspoolCommand)
 @click.option(
+    "--type",
+    "asset_type",
+    type=click.Choice(["stock", "index"]),
+    default="stock",
+    show_default=True,
+    help="维护股票或指数日线数据池",
+)
+@click.option(
     "--source", type=click.Choice(["tdx", "free-stockdb"]), default="tdx", show_default=True
 )
 @click.option("--period", type=click.Choice(PERIODS), default="daily", show_default=True)
@@ -98,18 +106,44 @@ def import_free_stockdb(
     type=click.Choice(["online", "offline"]),
     default="online",
     show_default=True,
-    help="source=tdx 时使用在线 MAC K 线或本地 vipdoc K 线。",
+    help="source=tdx 时使用在线 K 线或本地 vipdoc K 线。",
 )
-@click.option(
-    "--async", "async_mode", is_flag=True, help="使用 tdxman 异步 MAC 客户端补齐在线尾部。"
-)
+@click.option("--async", "async_mode", is_flag=True, help="使用异步客户端获取在线 K 线。")
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
 def sync(
-    source: str, period: str, tdx_mode: str, async_mode: bool, root: Path | None, limit: int | None
+    source: str,
+    period: str,
+    tdx_mode: str,
+    async_mode: bool,
+    root: Path | None,
+    limit: int | None,
+    asset_type: str = "stock",
 ) -> None:
     """从指定源校准历史数据，并补齐至最新在线行情。"""
     target = _root(root)
+    if asset_type == "index":
+        if source != "tdx" or period != "daily":
+            raise click.UsageError("指数仅支持 --source tdx --period daily")
+        from tdxman.exceptions import TdxError
+
+        from .index_pool import sync_indices
+
+        try:
+            report, path = sync_indices(target, tdx_mode, async_mode, limit)
+        except (OSError, ValueError, TdxError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        successes = report["success"]
+        click.echo(
+            f"指数日线：成功 {len(successes)}，失败 {len(report['failed'])}；"
+            f"新增 {sum(r['added'] for r in successes)}，"
+            f"修改 {sum(r['changed'] for r in successes)}，"
+            f"未变 {sum(r['unchanged'] for r in successes)}，"
+            f"隔离异常 {sum(len(r['rejected']) for r in successes)}；报告：{path}"
+        )
+        if report["failed"]:
+            raise click.ClickException("部分指数未完成，请查看报告后重试")
+        return
     initialize(target)
     if source == "tdx" and _coverage_symbol_count(target, period) == 0:
         raise click.ClickException(

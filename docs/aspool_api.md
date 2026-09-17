@@ -125,7 +125,7 @@ except DataPoolError as exc:
 | read_corporate_actions() | 分红、送转、配股等事件、生效日与所需账户处理事实 |
 | read_adjustments() | 复权因子、基准与版本；因子不替代分红现金流和持仓调整 |
 | 分批读取 | 大区间迭代读取、固定版本和预热衔接，控制多年全市场内存使用 |
-| 基准指数 | 独立证券类型与覆盖说明，不混入默认股票池 |
+| 基准指数 | 已支持独立指数日线与覆盖读取（见第6节）；不可变版本及历史成分仍待实现 |
 
 普通 read 方法保持只读；不可变版本由 aspool 维护流程发布，Fundwise 只保存版本引用。
 严格历史查询须对决策时刻过滤未来才可知的数据；缺少保证时明确拒绝，不能用最新值代替。
@@ -152,3 +152,54 @@ except DataPoolError as exc:
 不再提供公开 read_fundamentals，也不提供 EPS、TTM 收益、净资产和 fundamentals_* 日线列。
 Fundwise 可用 fields 固定当前技术策略输入；以后增加市值或估值策略时显式声明所需字段。
 不要根据新增字段静默更改原策略规则。
+
+## 6. 指数读取接口（已实现）
+
+指数池通过独立 API 对接 Fundwise，股票 `read_daily/read_research_daily/status` 仍只读取股票。
+新增能力开关 `describe().capabilities.index_daily`、`index_listing` 均为 true；
+`describe().index_fields` 提供指数专用字段类型和单位。保持原契约版本2，以新增能力发现兼容扩展。
+
+```python
+from aspool import DataPool
+pool = DataPool('~/.aspool')
+indices = pool.list_indices()
+benchmark = pool.read_index_daily(
+    symbols=['SH.000300', 'SZ.399001'],
+    start='2010-01-01', end='2026-09-16',
+    fields=['symbol', 'date', 'close', 'volume', 'amount', 'up_count', 'down_count'],
+)
+sector_history = pool.read_index_daily(symbols='SH.881001', end='2026-09-16', lookback=120)
+```
+
+`list_indices(*, symbols=None)` 返回实际已存指数的 symbol、market、code、name、start、end、row_count。
+这不是历史成分股列表，也不依赖消费端能够找到 settings 配置文件。
+
+`read_index_daily(*, symbols=None, start=None, end=None, lookback=None, fields=None)`：
+
+- symbols 用市场.代码（SH.000300），支持单个字符串或列表；None 为全部存储指数，空列表返回空表。
+- 日期包含边界，不传时返回最长已存历史；lookback 在日期过滤后按指数取最近 N 根。
+- 重复键先检查、再截取 lookback；字段投影不绕过返回记录 OHLCV/金额质量检查。
+- fields 为指数字段的有序子集；空、重复、未知字段报错。
+- 返回 pandas DataFrame，按 symbol/date 排序；读取只使用本地数据和共享锁，无联网写入。
+
+| 字段 | 含义与单位 |
+|---|---|
+| symbol / market / code / name | 指数标识、市场、代码、名称 |
+| date | 日期，datetime64 |
+| open / high / low / close | 指数点位，非人民币股价 |
+| volume | 通达信指数成交量原始口径，单位元数据为 tdx_index_volume；不作为股票股数 |
+| amount | 成交额，CNY |
+| up_count / down_count | 原始上涨/下跌家数，缺失按0保留 |
+
+attrs 包含 asset_type=index、price_unit=point、volume_unit=tdx_index_volume、amount_unit=CNY、
+breadth_missing_value=0、price_adjustment=raw、point_in_time=False、dataset_version=None。
+当前无历史涨跌家数时0不代表确定“零涨零跌”，消费端须自行处理；指数统计口径随指数而异。
+
+新增错误码：INDEX_NOT_FOUND（无指数文件）、INDEX_INVALID（重复键、非法数据或读取失败）；
+沿用 POOL_NOT_FOUND、INVALID_ARGUMENT、FIELD_UNSUPPORTED。错误由 DataPoolError.code 读取。
+
+Fundwise 可据此读取宽基回测基准、行业/概念/风格趋势和市场宽度。
+实时同步可能包含当日未收盘条目，Screen/Backtest 应显式指定已收盘的 end 日期。
+名称与名单是当前维护结果，不具备历史时点保证；不可变版本、历史成分、交易日历等正式回测前提仍未实现。
+
+源数据中 OHLC 关系非法的记录在同步时隔离并记入报告，读取结果可能因此缺少交易日；不补造或前向填充。

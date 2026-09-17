@@ -17,8 +17,12 @@ _REFERENCES: dict[str, HelpRows] = {
         ("--limit", "只处理前 N 个标的，用于小批量验证"),
     ),
     "aspool sync": (
-        ("--source", "tdx：修补已导入标的；free-stockdb：首次导入或完整历史校准后补齐尾部"),
-        ("--period", "daily 或 minutes；source=tdx 要求该周期已有导入标的"),
+        ("--type", "stock（默认）：股票；index：独立指数池，仅 tdx/daily，读取完整可用历史"),
+        (
+            "--source",
+            "tdx：股票修补已导入标的，指数读取配置清单；free-stockdb：首次导入或完整历史校准后补齐尾部",
+        ),
+        ("--period", "daily 或 minutes；stock + source=tdx 要求该周期已有导入标的"),
         ("--tdx-mode", "仅 source=tdx 时有效；online 使用在线 K 线，offline 读取 vipdoc 日线"),
         ("--async", "仅在线 tdx 同步时使用异步客户端"),
         ("--limit", "只处理前 N 个标的，用于小批量验证"),
@@ -37,7 +41,7 @@ _REFERENCES: dict[str, HelpRows] = {
     "aspool status": (("数据范围", "日线、分钟线覆盖范围和最近一次同步状态"),),
     "aspool query": (
         ("SYMBOL", "市场加代码，如 SZ000001、SH600519"),
-        ("--period", "daily 或 minutes；source=tdx 要求该周期已有导入标的"),
+        ("--period", "daily 或 minutes"),
         ("--start / --end", "daily 使用 YYYY-MM-DD；minutes 也可使用 YYYY-MM-DDTHH:MM:SS"),
         ("--format", "table、csv 或 json；缺省为 table"),
     ),
@@ -49,6 +53,7 @@ _EXAMPLES: dict[str, tuple[str, ...]] = {
     "aspool import": ("aspool import --period daily", "aspool import --factor"),
     "aspool sync": (
         "aspool sync --source tdx --tdx-mode online --period daily",
+        "aspool sync --type index --source tdx --period daily",
         "aspool sync --source free-stockdb --period daily",
     ),
     "aspool update": ("aspool update",),

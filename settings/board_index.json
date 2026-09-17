@@ -1,0 +1,6964 @@
+{
+  "schema_version": 1,
+  "blacklist_name_prefixes": [
+    "昨日"
+  ],
+  "indices": [
+    {
+      "market": "SH",
+      "code": "000001",
+      "name": "上证指数",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "000016",
+      "name": "上证50",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "000300",
+      "name": "沪深300",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "000688",
+      "name": "科创50",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "000698",
+      "name": "科创100",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "000852",
+      "name": "中证1000",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "000905",
+      "name": "中证500",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880081",
+      "name": "轮动趋势",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880082",
+      "name": "板块趋势",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880501",
+      "name": "含H股",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880502",
+      "name": "含B股",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880505",
+      "name": "稀缺资源",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880506",
+      "name": "5G概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880507",
+      "name": "国防军工",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880513",
+      "name": "海峡西岸",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880515",
+      "name": "通达信88",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880516",
+      "name": "ST板块",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880519",
+      "name": "碳中和",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880520",
+      "name": "智能电网",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880521",
+      "name": "黄金概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880522",
+      "name": "低空经济",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880523",
+      "name": "铜缆高速连接",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880524",
+      "name": "含可转债",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880525",
+      "name": "高铁",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880526",
+      "name": "高分红股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880527",
+      "name": "承诺不减",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880528",
+      "name": "军工信息化",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880529",
+      "name": "次新股",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880530",
+      "name": "合成生物",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880531",
+      "name": "低安全分",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880532",
+      "name": "整体上市",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880533",
+      "name": "物联网",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880534",
+      "name": "锂电池概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880535",
+      "name": "稀土永磁",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880536",
+      "name": "微盘精选",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880537",
+      "name": "核电核能",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880538",
+      "name": "参股金融",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880539",
+      "name": "股权激励",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880540",
+      "name": "创投概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880541",
+      "name": "AI手机PC",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880542",
+      "name": "水利建设",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880543",
+      "name": "外资背景",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880544",
+      "name": "光伏",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880545",
+      "name": "云计算",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880546",
+      "name": "卫星导航",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880547",
+      "name": "玻璃基板",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880548",
+      "name": "商业航天",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880549",
+      "name": "可燃冰",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880550",
+      "name": "PCB概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880551",
+      "name": "大基金持股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880552",
+      "name": "车联网",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880553",
+      "name": "页岩气",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880554",
+      "name": "科创板次新",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880555",
+      "name": "财税数字化",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880556",
+      "name": "昨ST连板",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880557",
+      "name": "生物疫苗",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880558",
+      "name": "节能环保",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880559",
+      "name": "要约收购",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880560",
+      "name": "高端装备",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880561",
+      "name": "折叠屏",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880562",
+      "name": "高校背景",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880563",
+      "name": "食品安全",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880564",
+      "name": "白酒概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880565",
+      "name": "送转潜力",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880566",
+      "name": "AI眼镜",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880567",
+      "name": "海南自贸",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880568",
+      "name": "生物质能",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880569",
+      "name": "3D打印",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880570",
+      "name": "高应收款",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880571",
+      "name": "碳纤维概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880572",
+      "name": "新零售",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880573",
+      "name": "摘帽",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880574",
+      "name": "苹果概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880575",
+      "name": "地热能",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880576",
+      "name": "并购重组股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880577",
+      "name": "安防服务",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880578",
+      "name": "专项贷款",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880579",
+      "name": "智谱AI",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880580",
+      "name": "智能交通",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880581",
+      "name": "控制权变更",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880582",
+      "name": "风电",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880583",
+      "name": "充电桩",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880584",
+      "name": "石墨烯",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880585",
+      "name": "风沙治理",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880586",
+      "name": "土地流转",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880587",
+      "name": "聚氨酯",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880588",
+      "name": "MLCC概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880589",
+      "name": "智能穿戴",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880590",
+      "name": "网络游戏",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880591",
+      "name": "上海自贸",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880592",
+      "name": "互联金融",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880593",
+      "name": "婴童概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880594",
+      "name": "一带一路",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880596",
+      "name": "体育概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880597",
+      "name": "养老概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880598",
+      "name": "博彩概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880599",
+      "name": "民营医院",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880601",
+      "name": "智慧政务",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880602",
+      "name": "免税概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880603",
+      "name": "新进指标股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880604",
+      "name": "PVDF概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880605",
+      "name": "装配式建筑",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880606",
+      "name": "辅助生殖",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880607",
+      "name": "东数西算",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880608",
+      "name": "第三代半导体",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880609",
+      "name": "跨境支付CIPS",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880610",
+      "name": "中俄贸易",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880611",
+      "name": "核污染防治",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880612",
+      "name": "镍金属",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880613",
+      "name": "电子身份证",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880614",
+      "name": "绿色建筑",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880615",
+      "name": "家庭医生",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880616",
+      "name": "大飞机",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880617",
+      "name": "IP经济",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880618",
+      "name": "化肥概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880619",
+      "name": "业绩预增",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880620",
+      "name": "券商金股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880621",
+      "name": "NFT概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880622",
+      "name": "破增发价",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880623",
+      "name": "肝炎概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880624",
+      "name": "新型城镇",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880625",
+      "name": "主营变更",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880626",
+      "name": "粮食概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880627",
+      "name": "超临界发电",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880628",
+      "name": "钒电池",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880629",
+      "name": "MicroLED",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880630",
+      "name": "虚拟电厂",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880631",
+      "name": "一体压铸",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880632",
+      "name": "动力电池回收",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880633",
+      "name": "汽车热管理",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880634",
+      "name": "含GDR",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880635",
+      "name": "先进封装",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880636",
+      "name": "热泵概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880637",
+      "name": "EDA概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880638",
+      "name": "TOPCon电池",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880639",
+      "name": "光热发电",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880640",
+      "name": "历史新高",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880641",
+      "name": "历史新低",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880642",
+      "name": "供销社",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880643",
+      "name": "Web3概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880644",
+      "name": "DRG-DIP",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880645",
+      "name": "AIGC概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880646",
+      "name": "复合铜箔",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880647",
+      "name": "数据确权",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880648",
+      "name": "私募新进",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880649",
+      "name": "POE胶膜",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880650",
+      "name": "血氧仪",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880651",
+      "name": "旅游概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880652",
+      "name": "创新药",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880653",
+      "name": "私募重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880654",
+      "name": "ChatGPT概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880655",
+      "name": "钙钛矿电池",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880656",
+      "name": "CPO概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880657",
+      "name": "数字水印",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880658",
+      "name": "高压快充",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880659",
+      "name": "毫米波雷达",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880660",
+      "name": "工业软件",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880661",
+      "name": "6G概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880662",
+      "name": "时空大数据",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880664",
+      "name": "机器视觉",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880665",
+      "name": "昨ST首板",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880666",
+      "name": "可控核聚变",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880667",
+      "name": "数据要素",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880668",
+      "name": "知识付费",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880669",
+      "name": "算力租赁",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880670",
+      "name": "光通信",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880671",
+      "name": "中特估",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880672",
+      "name": "存储芯片",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880673",
+      "name": "混合现实",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880674",
+      "name": "英伟达概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880675",
+      "name": "减速器",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880676",
+      "name": "活跃ETF",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880677",
+      "name": "活跃可转债",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880678",
+      "name": "陆股通重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880679",
+      "name": "周期股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880680",
+      "name": "非周期股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880681",
+      "name": "减肥药",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880682",
+      "name": "华为海思",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880683",
+      "name": "星闪概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880684",
+      "name": "BC电池",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880685",
+      "name": "液冷服务器",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880686",
+      "name": "华为汽车",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880687",
+      "name": "活跃小盘非融",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880688",
+      "name": "新型工业化",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880689",
+      "name": "华为算力",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880692",
+      "name": "短剧游戏",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880693",
+      "name": "多模态AI",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880694",
+      "name": "活跃小盘国企",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880695",
+      "name": "PEEK材料",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880696",
+      "name": "小米汽车概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880697",
+      "name": "飞行汽车",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880698",
+      "name": "宽基ETF",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880699",
+      "name": "最近情绪指数",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880702",
+      "name": "壳资源",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880703",
+      "name": "人形机器人",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880704",
+      "name": "工业大麻",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880705",
+      "name": "氢能源",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880706",
+      "name": "分散染料",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880707",
+      "name": "宠物经济",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880708",
+      "name": "台资背景",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880709",
+      "name": "人造肉",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880710",
+      "name": "种业",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880711",
+      "name": "操作系统",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880712",
+      "name": "微小盘股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880713",
+      "name": "ETC概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880714",
+      "name": "氟概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880715",
+      "name": "磷概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880716",
+      "name": "光刻机",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880717",
+      "name": "C2M概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880718",
+      "name": "小红书概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880720",
+      "name": "抖音概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880721",
+      "name": "北上重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880722",
+      "name": "华为鸿蒙",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880723",
+      "name": "发可转债",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880724",
+      "name": "地下管网",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880725",
+      "name": "MiniLED",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880726",
+      "name": "MCU芯片",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880727",
+      "name": "盐湖提锂",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880728",
+      "name": "航运概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880729",
+      "name": "CXO概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880730",
+      "name": "储能",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880731",
+      "name": "新材料",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880732",
+      "name": "AI智能体",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880733",
+      "name": "人脑工程",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880734",
+      "name": "工业气体",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880735",
+      "name": "专精特新",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880736",
+      "name": "工业母机",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880737",
+      "name": "HJT电池",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880738",
+      "name": "数字孪生",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880739",
+      "name": "边缘计算",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880740",
+      "name": "新型烟草",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880741",
+      "name": "代糖概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880742",
+      "name": "固态电池",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880743",
+      "name": "物业管理概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880744",
+      "name": "汽车拆解",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880745",
+      "name": "NMN概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880746",
+      "name": "国资云",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880747",
+      "name": "AI医疗概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880748",
+      "name": "元宇宙概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880749",
+      "name": "云游戏",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880750",
+      "name": "天然气",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880752",
+      "name": "昨曾跌停",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880753",
+      "name": "绿色电力",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880754",
+      "name": "培育钻石",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880755",
+      "name": "钠电池",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880756",
+      "name": "机构吸筹",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880757",
+      "name": "冷链物流",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880758",
+      "name": "汽车芯片",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880759",
+      "name": "换电概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880760",
+      "name": "预制菜",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880761",
+      "name": "锂矿",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880762",
+      "name": "信创",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880763",
+      "name": "自由现金流",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880764",
+      "name": "鸡肉",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880765",
+      "name": "海洋经济",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880766",
+      "name": "幽门螺杆菌",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880767",
+      "name": "电子纸",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880769",
+      "name": "股权集中",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880771",
+      "name": "MSCI中盘",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880778",
+      "name": "次新预增",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880779",
+      "name": "高融资盘",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880780",
+      "name": "融资增加",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880781",
+      "name": "QFII新进",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880782",
+      "name": "保险新进",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880783",
+      "name": "社保新进",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880785",
+      "name": "最近多板",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880786",
+      "name": "海外业务",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880787",
+      "name": "高商誉",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880789",
+      "name": "昨成交20",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880790",
+      "name": "高负债率",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880791",
+      "name": "网红经济",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880792",
+      "name": "基金增仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880793",
+      "name": "基金减仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880794",
+      "name": "远程办公",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880795",
+      "name": "口罩防护",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880796",
+      "name": "医废处理",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880797",
+      "name": "虫害防治",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880798",
+      "name": "超级电容",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880799",
+      "name": "数据中心",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880801",
+      "name": "基金重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880802",
+      "name": "QFII重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880803",
+      "name": "券商重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880804",
+      "name": "信托重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880805",
+      "name": "保险重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880806",
+      "name": "社保重仓",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880807",
+      "name": "股东增持",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880808",
+      "name": "股东减持",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880809",
+      "name": "基金独门",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880813",
+      "name": "并购重组预案",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880814",
+      "name": "拟增持",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880815",
+      "name": "拟减持",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880816",
+      "name": "密集调研",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880817",
+      "name": "商誉减值",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880818",
+      "name": "通达信热股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880821",
+      "name": "大盘股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880822",
+      "name": "昨收活跃",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880823",
+      "name": "微盘股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880824",
+      "name": "高市盈率",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880825",
+      "name": "预计转亏",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880826",
+      "name": "低市盈率",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880827",
+      "name": "高市净率",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880829",
+      "name": "低市净率",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880833",
+      "name": "亏损股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880834",
+      "name": "微利股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880835",
+      "name": "绩优股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880836",
+      "name": "配股股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880837",
+      "name": "活跃股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880842",
+      "name": "业绩预升",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880843",
+      "name": "业绩预降",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880844",
+      "name": "预计扭亏",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880845",
+      "name": "高股息股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880846",
+      "name": "破净资产",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880847",
+      "name": "行业龙头",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880848",
+      "name": "被举牌",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880849",
+      "name": "回购计划",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880850",
+      "name": "定增预案",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880851",
+      "name": "已高送转",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880852",
+      "name": "参股新股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880853",
+      "name": "中字头",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880854",
+      "name": "预高送转",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880856",
+      "name": "定增股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880857",
+      "name": "证金汇金持股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880858",
+      "name": "国开持股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880859",
+      "name": "员工持股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880860",
+      "name": "扣非亏损",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880861",
+      "name": "连续亏损",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880865",
+      "name": "近期新高",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880866",
+      "name": "近期新低",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880867",
+      "name": "昨高换手",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880868",
+      "name": "高贝塔值",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880869",
+      "name": "股权转让",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880870",
+      "name": "两年新股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880871",
+      "name": "股权分散",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880872",
+      "name": "近期复牌",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880873",
+      "name": "个人持股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880874",
+      "name": "昨曾涨停",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880875",
+      "name": "中小银行",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880876",
+      "name": "户数增加",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880877",
+      "name": "户数减少",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880878",
+      "name": "百元股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880879",
+      "name": "低价股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880880",
+      "name": "近期强势",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880881",
+      "name": "近期弱势",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880882",
+      "name": "久不分红",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880883",
+      "name": "MSCI成份",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880884",
+      "name": "最近异动",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880885",
+      "name": "近端次新",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880887",
+      "name": "次新超跌",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880889",
+      "name": "不活跃股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880890",
+      "name": "配股预案",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880891",
+      "name": "破发行价",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880892",
+      "name": "高质押股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880893",
+      "name": "送转超跌",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880894",
+      "name": "养老金持股",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880895",
+      "name": "持续增长",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880896",
+      "name": "风险提示",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880897",
+      "name": "即将解禁",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880898",
+      "name": "近已解禁",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880899",
+      "name": "钴金属",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880901",
+      "name": "信息安全",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880902",
+      "name": "特斯拉概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880903",
+      "name": "水产品",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880904",
+      "name": "机器人概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880905",
+      "name": "超导概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880906",
+      "name": "智能家居",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880908",
+      "name": "职业教育",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880909",
+      "name": "燃料电池",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880910",
+      "name": "草甘膦",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880911",
+      "name": "雄安新区",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880912",
+      "name": "外骨骼机器人",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880913",
+      "name": "基因概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880914",
+      "name": "军贸概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880916",
+      "name": "国产软件",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880919",
+      "name": "粤港澳",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880920",
+      "name": "免疫治疗",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880921",
+      "name": "阿里概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880922",
+      "name": "钛金属",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880923",
+      "name": "赛马概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880926",
+      "name": "垃圾分类",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880929",
+      "name": "维生素",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880930",
+      "name": "汽车电子",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880933",
+      "name": "智能医疗",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880936",
+      "name": "猪肉",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880939",
+      "name": "无人机",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880940",
+      "name": "PPP概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880941",
+      "name": "跨境电商",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880942",
+      "name": "虚拟现实",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880943",
+      "name": "量子科技",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880944",
+      "name": "无人驾驶",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880945",
+      "name": "OLED概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880946",
+      "name": "区块链",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880947",
+      "name": "化债AMC",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880948",
+      "name": "人工智能",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880949",
+      "name": "智慧城市",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880950",
+      "name": "军民融合",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880951",
+      "name": "新能源车",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880952",
+      "name": "芯片",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880953",
+      "name": "租购同权",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880954",
+      "name": "大数据",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880955",
+      "name": "乡村振兴",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880956",
+      "name": "腾讯概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880957",
+      "name": "工业互联",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880958",
+      "name": "AI营销",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880959",
+      "name": "知识产权",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880960",
+      "name": "仿制药",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880961",
+      "name": "小米概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880962",
+      "name": "百度概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880964",
+      "name": "特高压",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880965",
+      "name": "超清视频",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880966",
+      "name": "消费电子概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880967",
+      "name": "数字货币",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880968",
+      "name": "胎压监测",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880969",
+      "name": "无线耳机",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880970",
+      "name": "分拆上市预期",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880971",
+      "name": "降解塑料",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880972",
+      "name": "雅江水电概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880973",
+      "name": "医美概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880974",
+      "name": "烟草概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880975",
+      "name": "有机硅概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880977",
+      "name": "BIPV概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880978",
+      "name": "DeepSeek概念",
+      "source": [
+        "GN"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "880979",
+      "name": "科创成长层",
+      "source": [
+        "FG"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881002",
+      "name": "煤炭开采",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881003",
+      "name": "动力煤",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881004",
+      "name": "炼焦煤",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881005",
+      "name": "焦炭加工",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881007",
+      "name": "油气开采",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881008",
+      "name": "油服工程",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881009",
+      "name": "油田服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881010",
+      "name": "油气工程",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881011",
+      "name": "石油化工",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881012",
+      "name": "炼油化工",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881013",
+      "name": "石油贸易",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881014",
+      "name": "其他石化",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881016",
+      "name": "日用化工",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881017",
+      "name": "洗护用品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881018",
+      "name": "化妆品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881019",
+      "name": "化纤",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881020",
+      "name": "涤纶",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881021",
+      "name": "氨纶",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881022",
+      "name": "粘胶纤维",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881023",
+      "name": "锦纶",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881024",
+      "name": "碳纤维",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881025",
+      "name": "其他化学纤维",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881026",
+      "name": "化学原料",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881027",
+      "name": "煤化工",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881028",
+      "name": "钛白粉",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881029",
+      "name": "氯碱",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881030",
+      "name": "纯碱",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881031",
+      "name": "无机盐",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881032",
+      "name": "有机化工原料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881033",
+      "name": "其他化学原料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881034",
+      "name": "化学制品",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881035",
+      "name": "聚氨酯",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881036",
+      "name": "涂料油墨",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881037",
+      "name": "民爆制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881038",
+      "name": "纺织化学品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881039",
+      "name": "氟化工",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881040",
+      "name": "食品助剂",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881041",
+      "name": "有机硅",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881042",
+      "name": "胶黏剂及胶带",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881043",
+      "name": "其他化学制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881044",
+      "name": "塑料",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881045",
+      "name": "合成树脂",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881046",
+      "name": "塑料薄膜",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881047",
+      "name": "改性塑料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881048",
+      "name": "合成革",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881049",
+      "name": "塑料助剂",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881050",
+      "name": "其他塑料制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881051",
+      "name": "橡胶",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881052",
+      "name": "橡胶助剂",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881053",
+      "name": "炭黑",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881054",
+      "name": "橡胶制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881055",
+      "name": "农用化工",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881056",
+      "name": "农药",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881057",
+      "name": "氮肥",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881058",
+      "name": "磷肥及磷化工",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881059",
+      "name": "钾肥",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881060",
+      "name": "复合肥",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881062",
+      "name": "冶钢原料",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881063",
+      "name": "铁矿石",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881064",
+      "name": "冶钢辅料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881065",
+      "name": "普钢",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881066",
+      "name": "长材",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881067",
+      "name": "板材",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881068",
+      "name": "其他钢材",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881069",
+      "name": "特钢",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881071",
+      "name": "工业金属",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881072",
+      "name": "铜",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881073",
+      "name": "铝",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881074",
+      "name": "铅锌",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881075",
+      "name": "贵金属",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881076",
+      "name": "黄金",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881077",
+      "name": "白银",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881078",
+      "name": "能源金属",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881079",
+      "name": "锂",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881081",
+      "name": "钴",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881082",
+      "name": "稀有金属",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881083",
+      "name": "稀土",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881084",
+      "name": "钨钼",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881085",
+      "name": "钛",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881086",
+      "name": "其他金属",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881087",
+      "name": "金属新材料",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881088",
+      "name": "磁性材料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881089",
+      "name": "其他金属新材料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881091",
+      "name": "水泥",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881092",
+      "name": "水泥制造",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881093",
+      "name": "水泥制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881094",
+      "name": "玻璃玻纤",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881095",
+      "name": "玻璃制造",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881096",
+      "name": "玻纤制造",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881097",
+      "name": "装饰建材",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881098",
+      "name": "陶瓷",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881099",
+      "name": "管材",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881100",
+      "name": "耐火材料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881101",
+      "name": "防水材料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881102",
+      "name": "涂料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881103",
+      "name": "其他建材",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881104",
+      "name": "非金属材料",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881106",
+      "name": "种植业",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881107",
+      "name": "粮食种植",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881108",
+      "name": "食用菌",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881109",
+      "name": "种子",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881110",
+      "name": "其他种植业",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881111",
+      "name": "养殖业",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881112",
+      "name": "生猪养殖",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881113",
+      "name": "肉鸡养殖",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881114",
+      "name": "其他养殖",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881115",
+      "name": "林业",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881116",
+      "name": "渔业",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881117",
+      "name": "水产养殖",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881118",
+      "name": "水产捕捞",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881119",
+      "name": "饲料",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881120",
+      "name": "畜禽饲料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881121",
+      "name": "水产饲料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881122",
+      "name": "宠物食品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881123",
+      "name": "农产品加工",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881124",
+      "name": "粮油加工",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881125",
+      "name": "果蔬加工",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881126",
+      "name": "其他农产品加工",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881127",
+      "name": "动物保健",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881130",
+      "name": "酿酒",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881131",
+      "name": "啤酒",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881132",
+      "name": "葡萄酒",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881133",
+      "name": "黄酒",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881134",
+      "name": "其他酒类",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881135",
+      "name": "白酒",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881136",
+      "name": "饮料乳品",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881137",
+      "name": "软饮料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881138",
+      "name": "乳制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881139",
+      "name": "调味品",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881140",
+      "name": "休闲食品",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881141",
+      "name": "零食",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881142",
+      "name": "烘焙食品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881143",
+      "name": "熟食",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881144",
+      "name": "食品加工",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881145",
+      "name": "肉制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881146",
+      "name": "制糖业",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881147",
+      "name": "预加工食品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881148",
+      "name": "保健品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881149",
+      "name": "其他食品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881151",
+      "name": "纺织制造",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881152",
+      "name": "棉纺制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881153",
+      "name": "印染",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881154",
+      "name": "辅料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881155",
+      "name": "其他纺织",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881157",
+      "name": "服装家纺",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881158",
+      "name": "家纺",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881159",
+      "name": "鞋帽及其他",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881160",
+      "name": "运动服装",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881161",
+      "name": "非运动服装",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881162",
+      "name": "饰品",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881163",
+      "name": "钟表珠宝",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881165",
+      "name": "其他饰品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881167",
+      "name": "造纸",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881168",
+      "name": "大宗用纸",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881169",
+      "name": "生活用纸",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881170",
+      "name": "特种纸",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881171",
+      "name": "包装印刷",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881172",
+      "name": "印刷",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881173",
+      "name": "金属包装",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881174",
+      "name": "塑料包装",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881175",
+      "name": "纸包装",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881176",
+      "name": "其他包装",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881177",
+      "name": "家居用品",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881178",
+      "name": "家具",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881179",
+      "name": "其他家居",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881180",
+      "name": "文娱用品",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881181",
+      "name": "文化用品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881182",
+      "name": "娱乐用品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881184",
+      "name": "白色家电",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881185",
+      "name": "空调",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881186",
+      "name": "冰洗",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881187",
+      "name": "黑色家电",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881188",
+      "name": "电视",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881189",
+      "name": "其他黑色家电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881190",
+      "name": "小家电",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881191",
+      "name": "厨房小家电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881192",
+      "name": "清洁小家电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881193",
+      "name": "个护小家电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881194",
+      "name": "厨卫电器",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881195",
+      "name": "厨房电器",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881196",
+      "name": "卫浴电器",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881198",
+      "name": "家电零部件",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881200",
+      "name": "一般零售",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881201",
+      "name": "超市及便利店",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881202",
+      "name": "百货",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881203",
+      "name": "多业态零售",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881204",
+      "name": "商业物业经营",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881205",
+      "name": "专业连锁",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881206",
+      "name": "贸易",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881207",
+      "name": "电子商务",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881208",
+      "name": "综合电商",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881209",
+      "name": "跨境电商",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881210",
+      "name": "电商服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881212",
+      "name": "乘用车",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881213",
+      "name": "电动乘用车",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881214",
+      "name": "综合乘用车",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881215",
+      "name": "商用车",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881216",
+      "name": "商用载货车",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881217",
+      "name": "商用载客车",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881218",
+      "name": "汽车零部件",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881219",
+      "name": "车身附件及饰件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881220",
+      "name": "底盘与发动机系统",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881221",
+      "name": "轮胎轮毂",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881222",
+      "name": "其他汽车零部件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881223",
+      "name": "汽车电子电气系统",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881224",
+      "name": "汽车服务",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881225",
+      "name": "汽车经销商",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881226",
+      "name": "汽车综合服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881227",
+      "name": "摩托车及其他",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881228",
+      "name": "摩托车",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881229",
+      "name": "其他交通设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881231",
+      "name": "化学制药",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881232",
+      "name": "化学制剂",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881233",
+      "name": "原料药",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881234",
+      "name": "生物制品",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881235",
+      "name": "血液制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881236",
+      "name": "疫苗",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881237",
+      "name": "抗体",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881238",
+      "name": "诊断试剂",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881239",
+      "name": "基因药物",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881240",
+      "name": "其他生物制药",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881241",
+      "name": "医疗器械",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881242",
+      "name": "家用器械",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881243",
+      "name": "医疗设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881244",
+      "name": "医疗耗材",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881245",
+      "name": "体外诊断",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881246",
+      "name": "制药装备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881247",
+      "name": "医疗服务",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881248",
+      "name": "诊断服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881249",
+      "name": "医疗研发外包",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881250",
+      "name": "医院",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881251",
+      "name": "其他医疗服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881252",
+      "name": "医药商业",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881253",
+      "name": "医药流通",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881254",
+      "name": "线下药店",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881256",
+      "name": "中药",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881257",
+      "name": "医疗美容",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881258",
+      "name": "医美耗材",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881261",
+      "name": "电机制造",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881262",
+      "name": "电池",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881263",
+      "name": "锂电池",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881264",
+      "name": "电池化学品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881265",
+      "name": "锂电设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881266",
+      "name": "燃料电池",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881267",
+      "name": "其他电池",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881268",
+      "name": "电网设备",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881269",
+      "name": "电工仪器",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881270",
+      "name": "电网自动化",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881271",
+      "name": "输变电设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881272",
+      "name": "配电设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881273",
+      "name": "线缆部件及其他",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881275",
+      "name": "光伏设备",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881276",
+      "name": "光伏硅料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881277",
+      "name": "光伏硅片",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881278",
+      "name": "光伏电池组件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881279",
+      "name": "光伏逆变器",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881280",
+      "name": "光伏辅材",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881281",
+      "name": "光伏加工设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881282",
+      "name": "风电设备",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881283",
+      "name": "风电整机",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881284",
+      "name": "风电零部件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881285",
+      "name": "其他发电设备",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881287",
+      "name": "地面兵装",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881288",
+      "name": "航空装备",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881289",
+      "name": "航天装备",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881290",
+      "name": "航海装备",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881291",
+      "name": "军工电子",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881293",
+      "name": "轨交设备",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881294",
+      "name": "通用设备",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881295",
+      "name": "仪器仪表",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881296",
+      "name": "机床制造",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881297",
+      "name": "机械基础件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881298",
+      "name": "金属制品",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881299",
+      "name": "内燃机",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881300",
+      "name": "制冷空调设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881301",
+      "name": "磨具磨料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881302",
+      "name": "其他通用设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881303",
+      "name": "专用设备",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881304",
+      "name": "能源及重型设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881305",
+      "name": "印刷包装机械",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881306",
+      "name": "纺织服装设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881307",
+      "name": "农用机械",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881308",
+      "name": "楼宇设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881309",
+      "name": "其他专用设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881310",
+      "name": "工程机械",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881311",
+      "name": "工程机械整机",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881312",
+      "name": "工程机械零件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881313",
+      "name": "自动化设备",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881314",
+      "name": "机器人",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881315",
+      "name": "工业控制设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881316",
+      "name": "激光设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881317",
+      "name": "其他自动化设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881319",
+      "name": "半导体",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881320",
+      "name": "半导体材料",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881321",
+      "name": "半导体设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881322",
+      "name": "集成电路设计",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881323",
+      "name": "功率半导体",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881324",
+      "name": "半导体制造",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881325",
+      "name": "半导体封测",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881326",
+      "name": "消费电子",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881327",
+      "name": "消费电子组件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881328",
+      "name": "品牌消费电子",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881329",
+      "name": "光学光电",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881330",
+      "name": "面板",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881331",
+      "name": "光学元件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881332",
+      "name": "LED",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881333",
+      "name": "元器件",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881334",
+      "name": "PCB",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881335",
+      "name": "被动元件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881336",
+      "name": "其他电子",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881338",
+      "name": "通信设备",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881339",
+      "name": "光纤光缆",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881340",
+      "name": "网络接配及塔设",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881341",
+      "name": "系统设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881342",
+      "name": "通信终端及配件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881343",
+      "name": "其他通信设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881344",
+      "name": "电信服务",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881345",
+      "name": "电信运营服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881346",
+      "name": "电信增值服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881347",
+      "name": "通信工程",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881348",
+      "name": "网络规划设计",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881349",
+      "name": "网络工程施工",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881350",
+      "name": "网络优化运维",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881352",
+      "name": "IT设备",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881353",
+      "name": "安防设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881354",
+      "name": "其他IT设备",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881355",
+      "name": "软件服务",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881356",
+      "name": "基础软件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881357",
+      "name": "行业应用软件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881358",
+      "name": "新兴软件",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881359",
+      "name": "云服务",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881360",
+      "name": "云基础设施服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881361",
+      "name": "云平台服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881362",
+      "name": "云软件服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881363",
+      "name": "其他云服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881364",
+      "name": "产业互联网",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881365",
+      "name": "产联网信息服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881366",
+      "name": "产联网平台服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881367",
+      "name": "产联网综合服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881369",
+      "name": "游戏",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881370",
+      "name": "广告营销",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881371",
+      "name": "互联网广告",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881372",
+      "name": "其他广告营销",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881373",
+      "name": "影视院线",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881374",
+      "name": "影视制作",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881375",
+      "name": "发行院线",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881376",
+      "name": "数字媒体",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881377",
+      "name": "视频音频媒体",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881378",
+      "name": "文字图片媒体",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881380",
+      "name": "出版业",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881381",
+      "name": "教育出版",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881382",
+      "name": "大众出版",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881383",
+      "name": "其他出版",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881384",
+      "name": "广播电视",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881386",
+      "name": "全国性银行",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881387",
+      "name": "国有大型银行",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881388",
+      "name": "股份制银行",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881389",
+      "name": "地方性银行",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881390",
+      "name": "城商行",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881391",
+      "name": "农商行",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881394",
+      "name": "证券",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881395",
+      "name": "保险",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881396",
+      "name": "多元金融",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881397",
+      "name": "非货币银行",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881398",
+      "name": "信托",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881399",
+      "name": "投资管理",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881400",
+      "name": "期货",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881401",
+      "name": "租赁",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881402",
+      "name": "金融控股",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881404",
+      "name": "其他金融服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881406",
+      "name": "房屋建设",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881407",
+      "name": "基础建设",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881408",
+      "name": "基建工程",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881409",
+      "name": "园林工程",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881410",
+      "name": "专业工程",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881411",
+      "name": "化学工程",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881412",
+      "name": "钢结构",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881413",
+      "name": "国际工程",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881414",
+      "name": "其他专业工程",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881415",
+      "name": "工程咨询服务",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881416",
+      "name": "装修装饰",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881418",
+      "name": "房地产开发",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881419",
+      "name": "住宅开发",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881420",
+      "name": "商业地产",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881421",
+      "name": "产业地产",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881422",
+      "name": "房产服务",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881423",
+      "name": "物业管理",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881424",
+      "name": "租赁经纪",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881427",
+      "name": "体育",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881428",
+      "name": "教育培训",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881429",
+      "name": "酒店餐饮",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881430",
+      "name": "酒店",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881431",
+      "name": "餐饮",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881432",
+      "name": "旅游",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881433",
+      "name": "旅游景区",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881434",
+      "name": "旅游服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881435",
+      "name": "休闲综合",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881436",
+      "name": "专业服务",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881437",
+      "name": "人力资源服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881438",
+      "name": "检测服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881439",
+      "name": "会展服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881440",
+      "name": "其他专业服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881442",
+      "name": "公路铁路",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881443",
+      "name": "铁路运输",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881444",
+      "name": "高速公路",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881445",
+      "name": "公共交通",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881446",
+      "name": "航空机场",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881447",
+      "name": "航空运输",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881448",
+      "name": "机场",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881449",
+      "name": "航运港口",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881450",
+      "name": "港口",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881451",
+      "name": "航运",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881452",
+      "name": "物流",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881453",
+      "name": "供应链服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881454",
+      "name": "快递",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881455",
+      "name": "跨境物流",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881456",
+      "name": "仓储物流",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881457",
+      "name": "公路货运",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881459",
+      "name": "电力",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881460",
+      "name": "水力发电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881461",
+      "name": "火力发电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881462",
+      "name": "热力服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881463",
+      "name": "风力发电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881464",
+      "name": "光伏发电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881465",
+      "name": "核力发电",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881466",
+      "name": "电能综合服务",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881467",
+      "name": "燃气",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881468",
+      "name": "水务",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881470",
+      "name": "环保设备",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881471",
+      "name": "环境治理",
+      "source": [
+        "HY"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881472",
+      "name": "大气治理",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881473",
+      "name": "水治理",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881474",
+      "name": "固废治理",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881475",
+      "name": "生态修复",
+      "source": [
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881476",
+      "name": "环境监测",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881478",
+      "name": "综合类",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SH",
+      "code": "881479",
+      "name": "电子化学品",
+      "source": [
+        "HY",
+        "HY2"
+      ]
+    },
+    {
+      "market": "SZ",
+      "code": "399001",
+      "name": "深证成指",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SZ",
+      "code": "399005",
+      "name": "中小100",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SZ",
+      "code": "399006",
+      "name": "创业板指",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SZ",
+      "code": "399106",
+      "name": "深证综指",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SZ",
+      "code": "399330",
+      "name": "深证100",
+      "source": [
+        "ZS"
+      ]
+    },
+    {
+      "market": "SZ",
+      "code": "399673",
+      "name": "创业板50",
+      "source": [
+        "ZS"
+      ]
+    }
+  ]
+}

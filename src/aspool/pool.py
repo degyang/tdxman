@@ -215,8 +215,26 @@ class DataPool:
         frame.loc[frame.net_assets <= 0, "pb"] = None
         return frame.drop(columns="symbol_id")
 
+    @public_read
+    def read_index_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
+        """Read index daily bars independently of the stock universe."""
+        from .index_api import read_index_daily
+
+        return read_index_daily(
+            self.root, symbols=symbols, start=start, end=end, lookback=lookback, fields=fields
+        )
+
+    @public_read
+    def list_indices(self, *, symbols=None):
+        """List stored index identities and actual date coverage."""
+        from .index_api import list_indices
+
+        return list_indices(self.root, symbols=symbols)
+
     def describe(self):
         """Return the implemented public contract and explicit capability limits."""
+        from .index_api import INDEX_FIELDS
+
         return {
             "contract_version": 2,
             "primary_key": ["symbol", "date"],
@@ -229,7 +247,13 @@ class DataPool:
                 }
                 for key, (dtype, unit) in DAILY_FIELDS.items()
             },
+            "index_fields": {
+                key: {"type": dtype, "unit": unit, "nullable": False}
+                for key, (dtype, unit) in INDEX_FIELDS.items()
+            },
             "capabilities": {
+                "index_daily": True,
+                "index_listing": True,
                 "daily": True,
                 "field_projection": True,
                 "immutable_versions": False,

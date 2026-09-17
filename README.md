@@ -563,34 +563,116 @@ src/tdxman/
 
 commands 层不依赖 transport，可独立单测。
 
-## aspool：A 股长期数据池
+## aspool：股票与指数数据池
 
-Fundwise 通过公开 `DataPool` API 直接读取数据池，见 [aspool API](docs/aspool_api.md)。
+`aspool` 与 `tdxman` 一起安装，代码位于 `src/aspool`。默认数据池是 `~/.aspool`，
+可在各命令中使用 `--root PATH` 指向其他池；同一工作流的所有命令应使用同一个 root。
+`settings/config.yaml` 的 `aspool.free_stockdb.root` 是 **free-stockdb 导入源目录**，
+`offline.vipdoc` 是通达信本地行情目录，都不是数据池输出路径。
 
-`aspool` 与 `tdxman` 一起安装，代码位于 `src/aspool`。默认路径由 `settings/config.yaml` 的 `aspool.free_stockdb.root` 设置。
+Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](docs/aspool_api.md)。
+
+### 首次准备（已有数据池可跳过）
 
 ```bash
-# 一次性导入未复权历史数据；分钟线仅在需要时导入
-aspool import --period daily
-aspool import --period minutes
+source .venv/bin/activate
 
-# 单独导入日线和分钟线共用的复权因子
-aspool import --factor
+# 一次性导入未复权股票日线并检查完整性
+aspool import --source free-stockdb --period daily
 
-# 日常更新已导入的全表；tdx 同步只修补已导入标的
-aspool update
-aspool sync --source tdx --tdx-mode online --period daily
-aspool sync --source tdx --tdx-mode offline --period daily
+# 按需单独导入共享复权因子，不导入分钟线
+aspool import --source free-stockdb --factor
 
-# 手动全量维护财报类基本面快照；建议在财报披露后按周或按月执行
-aspool fundamentals
+# 检查指数名单差异；--write 用于手动更新正式清单
+python scripts/maintain_board_lists.py
+python scripts/maintain_board_lists.py --write
 
-# 首次建立数据池或以 free-stockdb 重新校准历史后补齐在线行情
-aspool sync --source free-stockdb --period daily
+# 指数可从空池直接建立，获取全部可用日线历史
+aspool sync --type index --source tdx --tdx-mode online --period daily
+```
+
+`init` 只创建存储结构，不能代替股票历史导入。股票 update/sync 维护已有标的，
+不会自动建立新上市股票的完整历史。日常流程无需重复从 free-stockdb 导入，也不处理分钟历史。
+
+### Daily 工作流：每日收盘后同步股票和指数
+
+建议在交易日 **北京时间 15:30 之后** 执行，例如16:00。`update` 拒绝周一至周五
+09:00～15:30（含端点）运行；当前实现按进程本地时区判断，以下显式设置上海时区。
+该限制按星期判断，并非节假日交易日历。`sync` 没有相同时间限制，盘中调用可能保存未收盘日线。
+
+在已有股票日线池的项目根目录执行下面一组命令。它是工作流示例，**没有 `aspool daily` 子命令**：
+
+```bash
+source .venv/bin/activate
+export TZ=Asia/Shanghai
+
+aspool sync --type stock --source tdx --tdx-mode online --period daily &&
+aspool update &&
+aspool sync --type index --source tdx --tdx-mode online --period daily &&
 aspool status
 ```
 
-原始 K 线不复权；前复权和后复权由独立复权因子计算。
+顺序含义：
+
+1. 股票 `sync`：每个已有标的获取最多最近30根日线，修补 OHLCV/成交额，结合已有低频快照补充字段、计算量比和换手率等。
+2. 股票 `update`：用 quote 刷新当前或最近交易日记录，同时更新低频快照。放在股票 sync 后面，让最新报价刷新作为最后一步股票写入。
+3. 指数 `sync`：按 `settings/board_index.json` 同步全部可用日线历史并合并修订，保存 OHLCV、成交额及上涨/下跌家数。每次均读取全历史，耗时通常高于只更新尾部；缺失家数按0处理。
+4. `status`：查看股票覆盖范围。指数覆盖另用下方 API 检查；`status` 目前不汇总指数。
+
+`&&` 会在命令失败时停止后续步骤。已成功写入的标的保留，排查失败原因后可重新执行；
+检查命令输出中的成功数、失败数、日期和异常记录，不把“进程结束”当作所有数据已更新。
+指数同步报告位于 `ROOT/reports/index-sync/`，包含逐指数覆盖与隔离记录。
+
+若股票历史没有缺口，只需刷新最新交易日，可省略第一个股票 sync，运行 `aspool update`
+后再同步指数。若停更超过30根日线，普通股票 sync 无法保证补齐全部缺口，需另行校准历史。
+
+### 同步后检查与 Fundwise 读取
+
+```python
+from aspool import DataPool
+
+pool = DataPool('~/.aspool')  # 与同步命令的 --root 保持一致
+print(pool.status())         # 股票覆盖
+indices = pool.list_indices()
+print(indices[['symbol', 'name', 'start', 'end', 'row_count']].to_string(index=False))
+
+# 换成已确认收盘且已同步的交易日期；不能简单把自然日当作交易日
+closed_day = '2026-09-16'
+benchmark = pool.read_index_daily(
+    symbols=['SH.000300', 'SZ.399001'], end=closed_day, lookback=120,
+    fields=['symbol', 'date', 'close', 'volume', 'amount', 'up_count', 'down_count'],
+)
+print(benchmark.tail())
+```
+
+应检查指数清单覆盖数量及各标的 `end` 是否达到目标交易日，股票也可能因停牌或源缺失而落后。
+消费端以明确的已收盘 `end` 读取，避免使用当日未完整数据。指数0/0家数可能表示缺失；
+指数成交量保留源口径，不能当作股票股数。公开接口提供的是可变数据池，不保证不可变回测版本或历史时点成分。
+
+### 按需维护
+
+```bash
+# 离线修补：先在通达信中下载最新日线；只读 vipdoc，不保证在线最新
+aspool sync --type stock --source tdx --tdx-mode offline --period daily
+aspool sync --type index --source tdx --tdx-mode offline --period daily
+
+# 在线 sync 可选择异步调用；update 当前没有 --async 或 --period 参数
+aspool sync --type index --source tdx --period daily --async
+
+# 手动维护低频快照；日常 update 已同步刷新，无需额外每天重复执行
+aspool fundamentals
+
+# 只有需要重新校准股票完整历史时才使用 free-stockdb
+aspool sync --type stock --source free-stockdb --period daily
+```
+
+指数仅支持 `--source tdx --period daily`。名单包含 HY、HY2、GN、FG 和 ZS 常用指数，
+排除名称以“昨日”开头的记录；名单脚本默认预览新增、删除、变化，`--write` 才更新配置。
+名单删除不删除已存历史，目录 API 返回实际保存的指数。
+
+股票原始 K 线不复权；复权因子独立保存。指数日线存放于 `lake/indices/daily`，与股票池隔离。
+详见 [指数设计](docs/aspool_index_design.md)、[验收报告](docs/aspool_index_validation.md)
+及 [Fundwise 指数接口](docs/aspool_api.md#6-指数读取接口已实现)。
 
 ## 开发
 
