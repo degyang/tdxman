@@ -102,7 +102,12 @@ def parse_board_type(s: str) -> BoardType:
     s_upper = s.upper()
     if s_upper in _BOARD_TYPE_MAP:
         return _BOARD_TYPE_MAP[s_upper]
-    return BoardType(int(s))
+    try:
+        return BoardType(int(s))
+    except ValueError as exc:
+        raise click.BadParameter(
+            "板块类型应为 ALL/HY/HY2/GN/FG/DQ/OTHER；标准指数请使用 ZS"
+        ) from exc
 
 
 def parse_ex_market(s: str) -> int:

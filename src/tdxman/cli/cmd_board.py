@@ -10,7 +10,12 @@ from .output import output_options
 
 
 @click.command("board-list")
-@click.option("--type", "board_type", default="ALL", help="板块类型: ALL/HY/HY2/GN/FG/DQ/OTHER")
+@click.option(
+    "--type",
+    "board_type",
+    default="ALL",
+    help="板块类型: ALL/HY/HY2/GN/FG/DQ/OTHER；ZS=沪深标准指数目录",
+)
 @click.option("--count", default=10000, type=int, help="请求数量")
 @output_options
 def board_list(
@@ -19,7 +24,7 @@ def board_list(
     output_fmt: str,
     output_path: Path | None,
 ) -> None:
-    """获取板块列表。
+    """获取板块或沪深标准指数目录。
 
     示例：
 
@@ -28,15 +33,27 @@ def board_list(
       tdxman board-list --type GN --count 200
 
       tdxman board-list --type HY
+
+      tdxman board-list --type ZS --count 600
     """
     from .conn import get_mac_client
     from .output import print_output
     from .parsers import parse_board_type
 
     fmt = output_fmt
-    bt = parse_board_type(board_type)
     with get_mac_client() as client:
-        df = client.get_board_list(board_type=bt, count=count)
+        if board_type.upper() == "ZS":
+            from ..mac.enums import Category, SortOrder, SortType
+
+            df = client.get_stock_quotes_list(
+                category=Category.ZS,
+                count=count,
+                sort_type=SortType.CODE,
+                sort_order=SortOrder.ASC,
+            )
+        else:
+            bt = parse_board_type(board_type)
+            df = client.get_board_list(board_type=bt, count=count)
     print_output(df, fmt, output_path, filename=f"board-{board_type.lower()}")
 
 
@@ -87,9 +104,7 @@ def board_members(
 @click.argument("market")
 @click.argument("code")
 @output_options
-def belong_board(
-    market: str, code: str, output_fmt: str, output_path: Path | None
-) -> None:
+def belong_board(market: str, code: str, output_fmt: str, output_path: Path | None) -> None:
     """获取个股所属板块列表。
 
     示例：
