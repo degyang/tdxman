@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import click
@@ -10,6 +11,7 @@ import pyarrow.csv as pacsv
 from .config import free_stockdb_root
 from .free_stockdb import import_adjustments, import_daily, import_minutes, validate_period
 from .fundamentals import refresh_fundamentals, update_from_quotes
+from .help import AspoolCommand, AspoolGroup
 from .store import default_root, initialize
 from .tdx_online import update_daily_offline, update_online
 
@@ -31,12 +33,21 @@ def _validate_source(source: Path) -> None:
         raise click.UsageError("free-stockdb 数据源不完整: " + ", ".join(missing))
 
 
-@click.group()
+def _coverage_symbol_count(root: Path, period: str) -> int:
+    table = "coverage" if period == "daily" else "coverage_minutes"
+    conn = duckdb.connect(root / "catalog.duckdb", read_only=True)
+    try:
+        return int(conn.execute(f"select count(*) from {table}").fetchone()[0])
+    finally:
+        conn.close()
+
+
+@click.group(cls=AspoolGroup)
 def cli() -> None:
     """维护本地 A 股长期历史数据池。"""
 
 
-@cli.command()
+@cli.command(cls=AspoolCommand)
 @click.option("--root", type=click.Path(path_type=Path))
 def init(root: Path | None) -> None:
     """初始化本地数据池。"""
@@ -45,7 +56,7 @@ def init(root: Path | None) -> None:
     click.echo(target)
 
 
-@cli.command("import")
+@cli.command("import", cls=AspoolCommand)
 @click.option(
     "--source", type=click.Choice(["free-stockdb"]), default="free-stockdb", show_default=True
 )
@@ -77,7 +88,7 @@ def import_free_stockdb(
     click.echo(f"导入完成：{stats.symbols} 个标的，{stats.rows} 行原始 {period} K；校验：{check}")
 
 
-@cli.command()
+@cli.command(cls=AspoolCommand)
 @click.option(
     "--source", type=click.Choice(["tdx", "free-stockdb"]), default="tdx", show_default=True
 )
@@ -100,6 +111,12 @@ def sync(
     """从指定源校准历史数据，并补齐至最新在线行情。"""
     target = _root(root)
     initialize(target)
+    if source == "tdx" and _coverage_symbol_count(target, period) == 0:
+        raise click.ClickException(
+            "tdx 同步只修补已导入标的；空数据池请先运行 "
+            f"aspool import --period {period}，或 aspool sync --source free-stockdb "
+            f"--period {period}"
+        )
     if source == "free-stockdb":
         history = _free_stockdb_root()
         _validate_source(history)
@@ -118,10 +135,13 @@ def sync(
         symbols, rows = update_daily_offline(target, limit)
     else:
         symbols, rows = update_online(target, period, async_mode, limit)
-    click.echo(f"在线补齐：{symbols} 个标的，新增或更新 {rows} 行 {period} K")
+    stage = "通达信 K 线校准" if source == "tdx" else "在线尾部校准"
+    click.echo(
+        f"{stage}：{symbols} 个标的，获取并合并 {rows} 条 {period} K（每标的最多最近 30 条）"
+    )
 
 
-@cli.command()
+@cli.command(cls=AspoolCommand)
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
 def update(root: Path | None, limit: int | None) -> None:
@@ -133,7 +153,7 @@ def update(root: Path | None, limit: int | None) -> None:
     click.echo(f"报价更新完成：{symbols} 个标的，更新 {rows} 行最新日线并刷新基本面快照")
 
 
-@cli.command("fundamentals")
+@cli.command("fundamentals", cls=AspoolCommand)
 @click.option("--async", "async_mode", is_flag=True, help="使用 tdxman 异步 MAC 客户端。")
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1), help="仅维护前 N 个标的，用于验证。")
@@ -143,7 +163,7 @@ def fundamentals(async_mode: bool, root: Path | None, limit: int | None) -> None
     click.echo(f"基本面快照完成：{symbols} 个标的，写入 {rows} 条")
 
 
-@cli.command()
+@cli.command(cls=AspoolCommand)
 @click.option("--root", type=click.Path(path_type=Path))
 def status(root: Path | None) -> None:
     """显示日线、分钟线覆盖范围和最近同步状态。"""
@@ -173,7 +193,7 @@ def status(root: Path | None) -> None:
         click.echo(f"last import: {latest}")
 
 
-@cli.command()
+@cli.command(cls=AspoolCommand)
 @click.argument("symbol")
 @click.option("--period", type=click.Choice(PERIODS), default="daily", show_default=True)
 @click.option("--start", type=click.DateTime(formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S"]))
@@ -184,12 +204,20 @@ def query(
     symbol: str, period: str, start: object, end: object, fmt: str, root: Path | None
 ) -> None:
     """读取本地指定标的的日线或一分钟线。"""
+    symbol = symbol.upper()
+    if not re.fullmatch(r"(?:SH|SZ|BJ)\d{6}", symbol):
+        raise click.BadParameter("SYMBOL 应为市场加六位代码，如 SZ000001 或 SH600519")
+
     target = _root(root)
     key = "trade_date" if period == "daily" else "timestamp"
-    files = target / "lake" / "bars" / period / "market=*" / f"symbol={symbol}" / "bars.parquet"
+    bars_root = target / "lake" / "bars" / period
+    matches = list(bars_root.glob(f"market=*/symbol={symbol}/bars.parquet"))
+    if not matches:
+        raise click.ClickException(f"本地数据池未找到 {symbol} 的 {period} 数据")
+
     conn = duckdb.connect()
     try:
-        sql = f"select * exclude (symbol) from read_parquet('{files}')"
+        sql = f"select * exclude (symbol) from read_parquet('{matches[0]}')"
         params: list[object] = []
         clauses: list[str] = []
         if start:
@@ -200,7 +228,10 @@ def query(
             params.append(end.date() if period == "daily" else end)
         if clauses:
             sql += " where " + " and ".join(clauses)
-        table = conn.execute(sql + f" order by {key}", params).fetch_arrow_table()
+        try:
+            table = conn.execute(sql + f" order by {key}", params).fetch_arrow_table()
+        except duckdb.Error as exc:
+            raise click.ClickException(f"读取本地数据失败：{exc}") from exc
         if fmt == "json":
             rows = [
                 {

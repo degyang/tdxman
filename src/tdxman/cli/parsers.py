@@ -30,7 +30,13 @@ def parse_market(s: str) -> int:
     s_upper = s.upper()
     if s_upper in _MARKET_MAP:
         return _MARKET_MAP[s_upper]
-    return int(s)
+    try:
+        value = int(s)
+    except ValueError as exc:
+        raise click.BadParameter("市场代码应为 SH/SZ/BJ 或 0/1/2") from exc
+    if value not in {market.value for market in Market}:
+        raise click.BadParameter("市场代码应为 SH/SZ/BJ 或 0/1/2")
+    return value
 
 
 _PERIOD_MAP: dict[str, Period] = {
@@ -60,7 +66,12 @@ def parse_period(s: str) -> Period:
     s_upper = s.upper()
     if s_upper in _PERIOD_MAP:
         return _PERIOD_MAP[s_upper]
-    return Period(int(s))
+    try:
+        return Period(int(s))
+    except ValueError as exc:
+        raise click.BadParameter(
+            "K 线周期无效；请使用 DAILY、WEEKLY、MONTHLY、1MIN、5MIN、15MIN、30MIN 或 60MIN"
+        ) from exc
 
 
 _ADJUST_MAP: dict[str, Adjust] = {
@@ -79,7 +90,10 @@ def parse_adjust(s: str) -> Adjust:
     s_upper = s.upper()
     if s_upper in _ADJUST_MAP:
         return _ADJUST_MAP[s_upper]
-    return Adjust(int(s))
+    try:
+        return Adjust(int(s))
+    except ValueError as exc:
+        raise click.BadParameter("复权类型应为 NONE、QFQ 或 HFQ") from exc
 
 
 _BOARD_TYPE_MAP: dict[str, BoardType] = {
@@ -93,6 +107,13 @@ _BOARD_TYPE_MAP: dict[str, BoardType] = {
     "STYLE": BoardType.FG,
     "DQ": BoardType.DQ,
     "REGION": BoardType.DQ,
+    "OTHER": BoardType.OTHER,
+    "YJ_LEVEL1": BoardType.YJ_LEVEL1,
+    "YJ1": BoardType.YJ_LEVEL1,
+    "YJ_LEVEL2": BoardType.YJ_LEVEL2,
+    "YJ2": BoardType.YJ_LEVEL2,
+    "YJ_LEVEL3": BoardType.YJ_LEVEL3,
+    "YJ3": BoardType.YJ_LEVEL3,
     "ALL": BoardType.ALL,
 }
 
@@ -106,7 +127,8 @@ def parse_board_type(s: str) -> BoardType:
         return BoardType(int(s))
     except ValueError as exc:
         raise click.BadParameter(
-            "板块类型应为 ALL/HY/HY2/GN/FG/DQ/OTHER；标准指数请使用 ZS"
+            "板块类型应为 ALL/HY/HY2/GN/FG/DQ/OTHER/YJ_LEVEL1/YJ_LEVEL2/YJ_LEVEL3；"
+            "标准指数请使用 ZS"
         ) from exc
 
 
@@ -130,7 +152,10 @@ def parse_ex_market(s: str) -> int:
     }
     if s_upper in _EX_MAP:
         return _EX_MAP[s_upper].value
-    return int(s)
+    try:
+        return int(s)
+    except ValueError as exc:
+        raise click.BadParameter("扩展市场代码无效；请使用 tdxman ex markets 查看可用代码") from exc
 
 
 _CATEGORY_MAP: dict[str, Category] = {
@@ -153,7 +178,12 @@ def parse_category(s: str) -> Category:
             return member
     if s_upper in _CATEGORY_MAP:
         return _CATEGORY_MAP[s_upper]
-    return Category(int(s))
+    try:
+        return Category(int(s))
+    except ValueError as exc:
+        raise click.BadParameter(
+            "市场分类无效；请使用 tdxman quote-list --help 查看类型对照"
+        ) from exc
 
 
 def parse_sort_type(s: str) -> SortType:
@@ -162,7 +192,10 @@ def parse_sort_type(s: str) -> SortType:
     for member in SortType:
         if member.name == s_upper:
             return member
-    return SortType(int(s))
+    try:
+        return SortType(int(s))
+    except ValueError as exc:
+        raise click.BadParameter("排序字段无效；请使用命令帮助列出的字段") from exc
 
 
 _SORT_ORDER_MAP: dict[str, SortOrder] = {
@@ -177,19 +210,22 @@ def parse_sort_order(s: str) -> SortOrder:
     s_upper = s.upper()
     if s_upper in _SORT_ORDER_MAP:
         return _SORT_ORDER_MAP[s_upper]
-    return SortOrder(int(s))
+    try:
+        return SortOrder(int(s))
+    except ValueError as exc:
+        raise click.BadParameter("排序方向应为 ASC、DESC 或 NONE") from exc
 
 
 def parse_stocks(s: str) -> list[tuple[int, str]]:
     """Parse stock list like 'SZ 000001,SH 600000' into [(0, '000001'), (1, '600000')]."""
     result: list[tuple[int, str]] = []
     for pair in s.split(","):
-        pair = pair.strip()
-        parts = pair.split()
-        if len(parts) == 2:
-            market = parse_market(parts[0])
-            code = parts[1]
-            result.append((market, code))
-        elif len(parts) == 1:
-            click.echo(f"Warning: skipping ambiguous stock spec '{pair}'", err=True)
+        parts = pair.strip().split()
+        if len(parts) != 2:
+            raise click.BadParameter('STOCKS 格式应为 "SZ 000001,SH 600519"')
+        market = parse_market(parts[0])
+        code = parts[1]
+        if not code.isdigit() or len(code) != 6:
+            raise click.BadParameter('证券代码应为六位数字；STOCKS 格式如 "SZ 000001,SH 600519"')
+        result.append((market, code))
     return result

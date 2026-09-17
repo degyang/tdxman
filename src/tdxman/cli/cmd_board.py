@@ -23,8 +23,8 @@ class BoardListCommand(click.Command):
                     ("ALL", "全部板块"),
                     ("HY / HY2", "一级行业 / 二级行业"),
                     ("GN / FG / DQ", "概念 / 风格 / 地域板块"),
-                    ("OTHER（--type 6）", "其他板块"),
-                    ("YJ_LEVEL1/2/3（--type 7/8/9）", "业绩一级 / 二级 / 三级板块"),
+                    ("OTHER", "其他板块"),
+                    ("YJ_LEVEL1/2/3", "业绩一级 / 二级 / 三级板块"),
                     ("ZS", "沪深标准指数目录"),
                 ]
             )

@@ -34,7 +34,7 @@ quote 的成交量为手，写入主库前转换为股；其原始 `turnover`、
 中国工作日 09:00 至 15:30（含）拒绝执行，避免盘中不完整数据落库。
 
 `aspool sync --source free-stockdb`：保留完整历史校准和在线 K 线尾部补齐逻辑。
-`aspool sync --source tdx`：使用 K 线修补 OHLCV 和成交额，再合并已有基本面快照。
+`aspool sync --source tdx`：使用 K 线修补**已导入标的**的 OHLCV 和成交额，再合并已有基本面快照。它不发现或首次导入全市场标的；空数据池须先执行 `aspool import --period daily` 或 `aspool sync --source free-stockdb --period daily`。每次日线校准会拉取每个标的最近最多 30 根 K 线，命令输出的行数是获取并合并的记录数，包含覆盖重拉的历史行，不是净新增行数。
 若 K 线不提供换手率，按 `volume / float_share * 100` 计算；若不提供量比，收盘口径为
 当日成交量除以前五个交易日平均成交量。量比的盘中同刻口径需要分钟线，不能由纯日线伪造。
 

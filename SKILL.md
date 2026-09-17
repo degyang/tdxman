@@ -67,11 +67,11 @@ tdxman board-list --type HY2 --format table
 tdxman board-list --type GN --format table
 tdxman board-list --type FG --format table
 tdxman board-list --type DQ --format table
-# OTHER and YJ_LEVEL1/2/3 use their raw protocol types 6, 7, 8, and 9.
-tdxman board-list --type 6 --format table
-tdxman board-list --type 7 --format table
-tdxman board-list --type 8 --format table
-tdxman board-list --type 9 --format table
+# OTHER and YJ_LEVEL1/2/3 are named board categories.
+tdxman board-list --type OTHER --format table
+tdxman board-list --type YJ_LEVEL1 --format table
+tdxman board-list --type YJ_LEVEL2 --format table
+tdxman board-list --type YJ_LEVEL3 --format table
 tdxman board-members 881001 --format table  # live component quotes
 tdxman board-members 000699 --count 20 --format table  # supported standard-index constituents
 tdxman belong-board SZ 000001 --format table # security's boards

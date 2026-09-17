@@ -25,6 +25,8 @@ pip install -e ".[dev]"
 
 ## CLI 参考
 
+CLI 帮助页面遵循 [CLI 帮助风格规范](docs/cli_help_style.md)。
+
 `tdxman` 默认将 JSON 输出到标准输出。使用 `--format json|table|csv` 选择格式；`table`
 在终端保持网格表格显示。使用 `--output` 将结果写入文件或目录：未指定 `--format` 时
 按 JSON 写入；目录中的默认文件名为标的代码。`--format table` 写入 Markdown 表格（`.md`）。
@@ -120,8 +122,8 @@ tdxman transaction SH 600519 --date 20250115
 | `ALL` | 全部板块 |
 | `HY` / `HY2` | 一级行业 / 二级行业 |
 | `GN` / `FG` / `DQ` | 概念 / 风格 / 地域 |
-| `OTHER`（`--type 6`） | 其他板块 |
-| `YJ_LEVEL1/2/3`（`--type 7/8/9`） | 业绩一级 / 二级 / 三级 |
+| `OTHER` | 其他板块 |
+| `YJ_LEVEL1/2/3` | 业绩一级 / 二级 / 三级 |
 | `ZS` | 沪深标准指数目录，不走通达信板块协议 |
 
 ```bash
@@ -132,10 +134,10 @@ tdxman board-list --type HY2 --format table
 tdxman board-list --type GN --format table
 tdxman board-list --type FG --format table
 tdxman board-list --type DQ --format table
-tdxman board-list --type 6 --format table  # OTHER
-tdxman board-list --type 7 --format table  # YJ_LEVEL1
-tdxman board-list --type 8 --format table  # YJ_LEVEL2
-tdxman board-list --type 9 --format table  # YJ_LEVEL3
+tdxman board-list --type OTHER --format table
+tdxman board-list --type YJ_LEVEL1 --format table
+tdxman board-list --type YJ_LEVEL2 --format table
+tdxman board-list --type YJ_LEVEL3 --format table
 
 # 查询通达信板块或支持的标准指数的实时成分股，或查询个股归属
 tdxman board-members 881001 --format table
@@ -575,7 +577,7 @@ aspool import --period minutes
 # 单独导入日线和分钟线共用的复权因子
 aspool import --factor
 
-# 日常更新已导入的全表；默认同步，可选异步 MAC 客户端
+# 日常更新已导入的全表；tdx 同步只修补已导入标的
 aspool update
 aspool sync --source tdx --tdx-mode online --period daily
 aspool sync --source tdx --tdx-mode offline --period daily
@@ -583,7 +585,7 @@ aspool sync --source tdx --tdx-mode offline --period daily
 # 手动全量维护财报类基本面快照；建议在财报披露后按周或按月执行
 aspool fundamentals
 
-# 以 free-stockdb 重新校准历史后补齐在线行情
+# 首次建立数据池或以 free-stockdb 重新校准历史后补齐在线行情
 aspool sync --source free-stockdb --period daily
 aspool status
 ```
