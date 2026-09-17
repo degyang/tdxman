@@ -6,10 +6,11 @@ from pathlib import Path
 
 import click
 
+from .help import StandardHelpCommand, StandardHelpGroup
 from .output import output_options
 
 
-@click.group()
+@click.group(cls=StandardHelpGroup)
 def ex() -> None:
     """扩展市场命令（期货/港股/美股）。
 
@@ -24,7 +25,7 @@ def ex() -> None:
     pass
 
 
-@ex.command()
+@ex.command(cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @click.option("--period", default="DAILY", help="K线周期: DAILY/5MIN/15MIN/30MIN/60MIN/1MIN")
@@ -70,13 +71,11 @@ def kline(
     print_output(df, fmt, output_path, filename=code)
 
 
-@ex.command()
+@ex.command(cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @output_options
-def quote(
-    market: str, code: str, output_fmt: str, output_path: Path | None
-) -> None:
+def quote(market: str, code: str, output_fmt: str, output_path: Path | None) -> None:
     """获取扩展市场报价。
 
     MARKET: 扩展市场代码
@@ -98,7 +97,7 @@ def quote(
     print_output(df, fmt, output_path, filename=code)
 
 
-@ex.command("quote-list")
+@ex.command("quote-list", cls=StandardHelpCommand)
 @click.argument("market")
 @click.option("--count", default=600, type=int, help="请求数量")
 @click.option("--start", default=0, type=int, help="起始偏移")
@@ -131,7 +130,7 @@ def quote_list(
     print_output(df, fmt, output_path, filename=market.lower())
 
 
-@ex.command()
+@ex.command(cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @click.option("--date", default=None, type=int, help="日期 YYYYMMDD（默认今天）")
@@ -162,7 +161,7 @@ def tick(
     print_output(df, fmt, output_path, filename=code)
 
 
-@ex.command("markets")
+@ex.command("markets", cls=StandardHelpCommand)
 @output_options
 def markets(output_fmt: str, output_path: Path | None) -> None:
     """列出可用的扩展市场代码。"""

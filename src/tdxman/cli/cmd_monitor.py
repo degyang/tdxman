@@ -11,6 +11,7 @@ from .._df import _to_df
 from ..exceptions import TdxError
 from ..models.enums import Market
 from ..models.stats import MarketStat
+from .help import StandardHelpCommand
 from .output import output_options
 
 
@@ -58,7 +59,7 @@ def _market_stat_from_quotes(quotes: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-@click.command()
+@click.command(cls=StandardHelpCommand)
 @click.argument("market")
 @click.option("--count", default=600, type=int, help="请求数量")
 @click.option("--start", default=0, type=int, help="起始偏移")
@@ -89,7 +90,7 @@ def unusual(
     print_output(df, fmt, output_path)
 
 
-@click.command("market-stat")
+@click.command("market-stat", cls=StandardHelpCommand)
 @output_options
 def market_stat(output_fmt: str, output_path: Path | None) -> None:
     """获取 A 股全市场涨跌统计概况。

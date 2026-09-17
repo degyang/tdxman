@@ -6,10 +6,11 @@ from pathlib import Path
 
 import click
 
+from .help import StandardHelpCommand
 from .output import output_options
 
 
-@click.command()
+@click.command(cls=StandardHelpCommand)
 @click.option("--timeout", default=5.0, help="测速超时（秒）")
 @output_options
 def ping(timeout: float, output_fmt: str, output_path: Path | None) -> None:
@@ -43,7 +44,7 @@ def ping(timeout: float, output_fmt: str, output_path: Path | None) -> None:
     print_output(df, fmt, output_path)
 
 
-@click.command()
+@click.command(cls=StandardHelpCommand)
 def version() -> None:
     """显示版本号。"""
     click.echo("tdxman 1.1.0")

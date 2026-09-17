@@ -6,10 +6,11 @@ from pathlib import Path
 
 import click
 
+from .help import StandardHelpCommand
 from .output import output_options
 
 
-@click.command()
+@click.command(cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @click.option("--count", default=2000, type=int, help="请求数量")

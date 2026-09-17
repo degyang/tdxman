@@ -57,6 +57,20 @@ tdxman markets                 # A 股市场代码与示例
 
 ### 行情
 
+`quote-list CATEGORY` 的 `CATEGORY` 是市场分类，不是指数类别：
+
+| 代码 | 含义 |
+|------|------|
+| `SH` / `SZ` / `A` | 上证 A 股 / 深证 A 股 / 全部 A 股 |
+| `B` | B 股 |
+| `KCB` / `CYB` / `BJ` | 科创板 / 创业板 / 北交所 |
+| `ETF` / `LOF` | 交易型开放式基金 / 上市型开放式基金 |
+| `HGT` / `SGT` | 沪股通标的 / 深股通标的 |
+| `FXJS` | 风险警示证券 |
+| `ZS` | 沪深系列指数目录与实时报价 |
+
+`quote-list` 还可按 `CODE`、`PRICE`、`VOLUME`、`TOTAL_AMOUNT`、`TURNOVER_RATE`、`CHANGE_PCT` 等字段排序。板块目录请使用下方的 `board-list`，不要将 `BOARD_*` 内部分类代码作为日常命令参数。
+
 ```bash
 # K 线
 tdxman kline SZ 000001 --count 30 --format table
@@ -82,14 +96,71 @@ tdxman transaction SZ 000001 --count 100 --format table
 tdxman transaction SH 600519 --date 20250115
 ```
 
-### 板块
+### 指数类别与发现方式
+
+项目支持以下指数类别。先从相应目录取得代码，再用对应的 K 线命令读取历史行情。
+
+| 类别 | 目录命令 | 历史 K 线 |
+|------|----------|-----------|
+| 通达信行业、概念、风格、地域等板块/研究指数（主要为 `881xxx`） | `tdxman board-list [--type HY/HY2/GN/FG/DQ/OTHER]` | `tdxman kline SH CODE ...` |
+| 沪深交易所、国证等标准 A 股指数（如 `000300`、`000688`、`399001`、`399006`） | `tdxman board-list --type ZS` 或 `tdxman quote-list ZS` | `tdxman kline SH|SZ CODE ...` |
+| 中证指数 | `tdxman ex quote-list CSI_INDEX` | `tdxman ex kline CSI_INDEX CODE ...` |
+| 国证指数 | `tdxman ex quote-list SZSE_INDEX` | `tdxman ex kline SZSE_INDEX CODE ...` |
+| 香港指数 | `tdxman ex quote-list HK_INDEX` | `tdxman ex kline HK_INDEX CODE ...` |
+| 国际指数 | `tdxman ex quote-list INTL_INDEX` | `tdxman ex kline INTL_INDEX CODE ...` |
+| 商品指数 | `tdxman ex quote-list FUTURES_INDEX` | `tdxman ex kline FUTURES_INDEX CODE ...` |
+| 风控、华证及扩展板块指数 | `tdxman ex quote-list RISK_CONTROL_INDEX`、`HUAZHENG_INDEX`、`EXTENDED_SECTOR_INDEX` | 对应 `tdxman ex kline MARKET CODE ...` |
+
+通达信板块体系不等于标准指数全集：`board-list` 主要返回 `881xxx` 行业、概念、风格等板块及研究指数；标准沪深指数使用 `ZS` 目录发现。`880xxx` 是通达信保留的旧行业或市场统计指数，是否可用及名称以目录和实时行情返回为准。
+
+`board-list --type` 可收集的板块类别如下：
+
+| 类型 | 含义 |
+|------|------|
+| `ALL` | 全部板块 |
+| `HY` / `HY2` | 一级行业 / 二级行业 |
+| `GN` / `FG` / `DQ` | 概念 / 风格 / 地域 |
+| `OTHER`（`--type 6`） | 其他板块 |
+| `YJ_LEVEL1/2/3`（`--type 7/8/9`） | 业绩一级 / 二级 / 三级 |
+| `ZS` | 沪深标准指数目录，不走通达信板块协议 |
 
 ```bash
+# 通达信板块/研究指数：全部、一级行业、二级行业、概念、风格、地域、其他、业绩分级
+tdxman board-list --format table
+tdxman board-list --type HY --format table
+tdxman board-list --type HY2 --format table
 tdxman board-list --type GN --format table
-tdxman board-list --type HY --count 200
+tdxman board-list --type FG --format table
+tdxman board-list --type DQ --format table
+tdxman board-list --type 6 --format table  # OTHER
+tdxman board-list --type 7 --format table  # YJ_LEVEL1
+tdxman board-list --type 8 --format table  # YJ_LEVEL2
+tdxman board-list --type 9 --format table  # YJ_LEVEL3
+
+# 查询通达信板块或支持的标准指数的实时成分股，或查询个股归属
 tdxman board-members 881001 --format table
+tdxman board-members 000699 --count 20 --format table
 tdxman belong-board SZ 000001 --format table
+
+# 标准 A 股指数目录与实时行情
+tdxman board-list --type ZS --count 600 --format table
+tdxman quote-list ZS --count 600 --format table
+
+# 标准指数的历史 K 线
+tdxman kline SH 000300 --period DAILY --count 120 --format table
+tdxman kline SZ 399001 --period DAILY --count 120 --format table
+tdxman kline SH 000688 --period DAILY --count 120 --format table
+
+# 扩展市场指数目录；选定代码后把 MARKET 和 CODE 传给 ex kline
+tdxman ex quote-list CSI_INDEX --count 600 --format table
+tdxman ex quote-list SZSE_INDEX --count 600 --format table
+tdxman ex quote-list HK_INDEX --count 600 --format table
+tdxman ex quote-list INTL_INDEX --count 600 --format table
+tdxman ex quote-list FUTURES_INDEX --count 600 --format table
+tdxman ex kline CSI_INDEX 000300 --period DAILY --count 120 --format table
 ```
+
+标准 A 股指数通过 `kline` 返回的 K 线带有 `up_count`、`down_count`，即通达信随该指数记录给出的上涨、下跌家数；统计口径随指数而定。指数目录与实时行情不含这两个字段。
 
 ### 资金 / 监控
 

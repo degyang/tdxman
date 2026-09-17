@@ -6,10 +6,11 @@ from pathlib import Path
 
 import click
 
+from .help import StandardHelpCommand
 from .output import output_options
 
 
-@click.command("markets")
+@click.command("markets", cls=StandardHelpCommand)
 @output_options
 def markets(output_fmt: str, output_path: Path | None) -> None:
     """列出 A 股市场代码及其含义。"""
@@ -28,7 +29,7 @@ def markets(output_fmt: str, output_path: Path | None) -> None:
     print_output(df, fmt, output_path, filename="markets")
 
 
-@click.command("server-info")
+@click.command("server-info", cls=StandardHelpCommand)
 @output_options
 def server_info(output_fmt: str, output_path: Path | None) -> None:
     """获取服务器交易时段信息。
@@ -48,13 +49,11 @@ def server_info(output_fmt: str, output_path: Path | None) -> None:
     print_output(df, fmt, output_path, filename="server-info")
 
 
-@click.command("symbol-info")
+@click.command("symbol-info", cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @output_options
-def symbol_info(
-    market: str, code: str, output_fmt: str, output_path: Path | None
-) -> None:
+def symbol_info(market: str, code: str, output_fmt: str, output_path: Path | None) -> None:
     """获取个股简要特征快照。
 
     示例：

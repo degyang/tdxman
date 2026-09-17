@@ -16,11 +16,12 @@ from ..offline import (
     read_daily_bars,
     read_lc_min_bars,
 )
+from .help import StandardHelpCommand
 from .output import output_options, print_output
 from .parsers import parse_market
 
 
-@click.command("offline")
+@click.command("offline", cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @click.option(

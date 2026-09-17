@@ -6,10 +6,11 @@ from pathlib import Path
 
 import click
 
+from .help import StandardHelpCommand
 from .output import output_options
 
 
-@click.command("finance")
+@click.command("finance", cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @output_options
@@ -34,7 +35,7 @@ def finance(market: str, code: str, output_fmt: str, output_path: Path | None) -
     print_output(df, fmt, output_path, filename=code)
 
 
-@click.command("fund-flow")
+@click.command("fund-flow", cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @click.option("--start", default=0, type=int, help="距最新记录的起始偏移")

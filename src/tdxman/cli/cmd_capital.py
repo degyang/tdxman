@@ -6,16 +6,15 @@ from pathlib import Path
 
 import click
 
+from .help import StandardHelpCommand
 from .output import output_options
 
 
-@click.command("capital-flow")
+@click.command("capital-flow", cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @output_options
-def capital_flow(
-    market: str, code: str, output_fmt: str, output_path: Path | None
-) -> None:
+def capital_flow(market: str, code: str, output_fmt: str, output_path: Path | None) -> None:
     """获取当日资金流向快照。
 
     示例：

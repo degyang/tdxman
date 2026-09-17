@@ -28,3 +28,25 @@ def test_board_list_rejects_unknown_type_without_traceback():
     assert result.exit_code == 2
     assert "Traceback" not in result.output
     assert "ZS" in result.output
+
+
+def test_board_list_help_orders_options_type_reference_and_examples():
+    result = CliRunner().invoke(cli, ["board-list", "--help"])
+    assert result.exit_code == 0, result.output
+    options = result.output.index("Options:")
+    reference = result.output.index("--type 类型对照:")
+    examples = result.output.index("示例:")
+    assert options < reference < examples
+    assert "YJ_LEVEL1/2/3（--type 7/8/9）" in result.output
+    assert "tdxman board-list --type ZS --count 600 --format table" in result.output
+
+
+def test_quote_list_help_orders_options_category_reference_and_examples():
+    result = CliRunner().invoke(cli, ["quote-list", "--help"])
+    assert result.exit_code == 0, result.output
+    options = result.output.index("Options:")
+    reference = result.output.index("CATEGORY 类型对照:")
+    examples = result.output.index("示例:")
+    assert options < reference < examples
+    assert "FXJS" in result.output
+    assert "tdxman quote-list ZS --count 600 --format table" in result.output

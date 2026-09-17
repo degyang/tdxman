@@ -8,6 +8,7 @@ import click
 
 from ..mac.enums import Adjust, Period
 from ..models.enums import KlineCategory, Market
+from .help import StandardHelpCommand
 from .output import output_options
 
 
@@ -35,7 +36,7 @@ def _index_category(period: Period) -> KlineCategory:
         raise click.UsageError(f"指数不支持的 K 线周期: {period.name}") from exc
 
 
-@click.command()
+@click.command(cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @click.option(

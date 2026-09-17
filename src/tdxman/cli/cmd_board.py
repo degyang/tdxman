@@ -6,15 +6,41 @@ from pathlib import Path
 
 import click
 
+from .help import StandardHelpCommand
 from .output import output_options
 
 
-@click.command("board-list")
+class BoardListCommand(click.Command):
+    """Render board-list help with the type reference before examples."""
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        self.format_usage(ctx, formatter)
+        self.format_options(ctx, formatter)
+        formatter.write_paragraph()
+        with formatter.section("--type 类型对照"):
+            formatter.write_dl(
+                [
+                    ("ALL", "全部板块"),
+                    ("HY / HY2", "一级行业 / 二级行业"),
+                    ("GN / FG / DQ", "概念 / 风格 / 地域板块"),
+                    ("OTHER（--type 6）", "其他板块"),
+                    ("YJ_LEVEL1/2/3（--type 7/8/9）", "业绩一级 / 二级 / 三级板块"),
+                    ("ZS", "沪深标准指数目录"),
+                ]
+            )
+        formatter.write_paragraph()
+        with formatter.section("示例"):
+            formatter.write("  tdxman board-list --format table\n")
+            formatter.write("  tdxman board-list --type GN --count 200 --format table\n")
+            formatter.write("  tdxman board-list --type ZS --count 600 --format table\n")
+
+
+@click.command("board-list", cls=BoardListCommand)
 @click.option(
     "--type",
     "board_type",
     default="ALL",
-    help="板块类型: ALL/HY/HY2/GN/FG/DQ/OTHER；ZS=沪深标准指数目录",
+    help="板块类型（见下方对照表）",
 )
 @click.option("--count", default=10000, type=int, help="请求数量")
 @output_options
@@ -24,18 +50,7 @@ def board_list(
     output_fmt: str,
     output_path: Path | None,
 ) -> None:
-    """获取板块或沪深标准指数目录。
-
-    示例：
-
-      tdxman board-list --format table
-
-      tdxman board-list --type GN --count 200
-
-      tdxman board-list --type HY
-
-      tdxman board-list --type ZS --count 600
-    """
+    """获取板块或沪深标准指数目录。"""
     from .conn import get_mac_client
     from .output import print_output
     from .parsers import parse_board_type
@@ -57,7 +72,7 @@ def board_list(
     print_output(df, fmt, output_path, filename=f"board-{board_type.lower()}")
 
 
-@click.command("board-members")
+@click.command("board-members", cls=StandardHelpCommand)
 @click.argument("board_symbol")
 @click.option("--count", default=100000, type=int, help="请求数量")
 @click.option(
@@ -75,11 +90,13 @@ def board_members(
 ) -> None:
     """获取板块成分股报价。
 
-    BOARD_SYMBOL: 板块代码（如 881001）
+    BOARD_SYMBOL: 通达信板块代码或支持的标准指数代码（如 881001、000699）
 
     示例：
 
       tdxman board-members 881001 --format table
+
+      tdxman board-members 000699 --count 20 --format table
 
       tdxman board-members 881001 --sort VOLUME --count 20
     """
@@ -100,7 +117,7 @@ def board_members(
     print_output(df, fmt, output_path, filename=board_symbol)
 
 
-@click.command("belong-board")
+@click.command("belong-board", cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @output_options

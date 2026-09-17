@@ -50,15 +50,51 @@ CLI output normalizes numeric presentation: prices, amounts, market caps, financ
 tdxman ping --timeout 3 --format table
 tdxman version
 tdxman quote "SZ 000001,SH 600519"
+# quote-list categories: SH/SZ=Shanghai/Shenzhen A shares, A=all A shares, B=B shares,
+# KCB=STAR Market, CYB=ChiNext, BJ=Beijing Stock Exchange, ETF/LOF=funds,
+# HGT/SGT=Shanghai/Shenzhen Stock Connect constituents, FXJS=risk warning, ZS=standard indices.
 tdxman quote-list A --count 20 --sort CHANGE_PCT --order DESC --format table
 tdxman kline SZ 000001 --period 5MIN --count 30 --adjust QFQ
 tdxman tick SZ 000001 --date 20250115
 tdxman transaction SH 600519 --count 100 --format table
 
-# A-share boards and monitoring
-tdxman board-list --type HY --count 200 --format table
-tdxman board-members 881001 --format table
-tdxman belong-board SZ 000001 --format table
+# Index categories and discovery
+# TongDaXin sector/research indices (mostly 881xxx): all / level-1 and level-2
+# industry / concept / style. This is not the full standard-index directory.
+tdxman board-list --format table
+tdxman board-list --type HY --format table
+tdxman board-list --type HY2 --format table
+tdxman board-list --type GN --format table
+tdxman board-list --type FG --format table
+tdxman board-list --type DQ --format table
+# OTHER and YJ_LEVEL1/2/3 use their raw protocol types 6, 7, 8, and 9.
+tdxman board-list --type 6 --format table
+tdxman board-list --type 7 --format table
+tdxman board-list --type 8 --format table
+tdxman board-list --type 9 --format table
+tdxman board-members 881001 --format table  # live component quotes
+tdxman board-members 000699 --count 20 --format table  # supported standard-index constituents
+tdxman belong-board SZ 000001 --format table # security's boards
+
+# Standard A-share indices: Shanghai, Shenzhen, and CNI indices
+# (for example 000300, 000688, 399001, 399006)
+tdxman board-list --type ZS --count 600 --format table
+tdxman quote-list ZS --count 600 --format table
+tdxman kline SH 000300 --period DAILY --count 120 --format table
+tdxman kline SZ 399001 --period DAILY --count 120 --format table
+# Standard-index K lines include up_count/down_count under the index's own breadth scope.
+
+# Extended index categories: discover code first, then run `ex kline MARKET CODE ...`
+tdxman ex quote-list CSI_INDEX --count 600 --format table       # CSI
+tdxman ex quote-list SZSE_INDEX --count 600 --format table      # CNI
+tdxman ex quote-list HK_INDEX --count 600 --format table        # Hong Kong
+tdxman ex quote-list INTL_INDEX --count 600 --format table      # international
+tdxman ex quote-list FUTURES_INDEX --count 600 --format table   # commodity
+tdxman ex quote-list RISK_CONTROL_INDEX --count 600 --format table
+tdxman ex quote-list HUAZHENG_INDEX --count 600 --format table
+tdxman ex quote-list EXTENDED_SECTOR_INDEX --count 600 --format table
+tdxman ex kline CSI_INDEX 000300 --period DAILY --count 120 --format table
+
 tdxman capital-flow SH 600519 --format table
 tdxman auction SZ 000001 --format table
 tdxman unusual SH --count 100 --format table

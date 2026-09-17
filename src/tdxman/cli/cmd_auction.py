@@ -6,16 +6,15 @@ from pathlib import Path
 
 import click
 
+from .help import StandardHelpCommand
 from .output import output_options
 
 
-@click.command()
+@click.command(cls=StandardHelpCommand)
 @click.argument("market")
 @click.argument("code")
 @output_options
-def auction(
-    market: str, code: str, output_fmt: str, output_path: Path | None
-) -> None:
+def auction(market: str, code: str, output_fmt: str, output_path: Path | None) -> None:
     """获取集合竞价数据。
 
     示例：
