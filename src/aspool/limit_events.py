@@ -235,12 +235,17 @@ def _listed_days(
 
 
 def _read_symbol_bars(root: Path, market: str, code: str) -> list[dict]:
-    from .store import read_daily_table
+    import pyarrow.parquet as pq
 
-    table = read_daily_table(root, market, code)
-    if table is None:
-        return []
-    rows = table.to_pylist()
+    from .store import daily_paths
+
+    required = {"trade_date", "open", "high", "low", "close", "pre_close", "is_st"}
+    rows = []
+    for path in daily_paths(root, market, code):
+        parquet = pq.ParquetFile(path)
+        columns = sorted(required.intersection(parquet.schema_arrow.names))
+        for batch in parquet.iter_batches(columns=columns):
+            rows.extend(batch.to_pylist())
     rows.sort(key=lambda r: r["trade_date"])
     return rows
 
@@ -903,14 +908,19 @@ def compute_limit_events(
     if not scope:
         raise DataPoolError("DAILY_NOT_FOUND", "aspool 中没有可处理的日线")
 
-    bars_by_symbol: dict[str, list[dict]] = {}
-    all_dates: dict[str, set[date]] = {}
-    for entry in scope:
-        rows = _read_symbol_bars(root, entry.market, entry.code)
-        bars_by_symbol[entry.symbol] = rows
-        all_dates[entry.symbol] = {r["trade_date"] for r in rows}
+    # Keep only the market calendar globally. Full Python histories for all
+    # securities can exceed RAM even when requesting a single session.
+    import pyarrow.parquet as pq
 
-    axis = _session_axis(all_dates)
+    from .store import daily_paths
+
+    market_dates: set[date] = set()
+    for entry in scope:
+        for path in daily_paths(root, entry.market, entry.code):
+            for batch in pq.ParquetFile(path).iter_batches(columns=["trade_date"]):
+                market_dates.update(batch.column(0).to_pylist())
+
+    axis = sorted(market_dates)
     if not axis:
         raise DataPoolError("DAILY_NOT_FOUND", "aspool 会话轴为空")
 
@@ -929,6 +939,14 @@ def compute_limit_events(
 
     symbols = [e.symbol for e in scope]
     prior = _previous_session_states(root, plan[0], symbols)
+
+    class SymbolRows:
+        # _compute_date consumes one security at a time; do not cache histories.
+        def get(self, symbol):
+            code, market = _split_symbol(symbol)
+            return _read_symbol_bars(root, market, code)
+
+    bars_by_symbol = SymbolRows()
 
     batch_ids: list[str] = []
     for trade_date in plan:

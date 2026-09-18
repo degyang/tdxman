@@ -11,6 +11,7 @@ def fetch_sync(items, factory, fetch, workers=1, retry_factory=None):
         raise ValueError("workers must be positive")
     local = threading.local()
     clients = []
+    clients_lock = threading.Lock()
 
     def run(item):
         start = perf_counter()
@@ -18,7 +19,9 @@ def fetch_sync(items, factory, fetch, workers=1, retry_factory=None):
             if not hasattr(local, "client"):
                 manager = factory()
                 client = manager.__enter__()
-                clients.append(manager)
+                with clients_lock:
+                    clients.append(manager)
+                local.manager = manager
                 local.client = client
             return item, fetch(local.client, item), None, perf_counter() - start
         except Exception as exc:
@@ -27,9 +30,18 @@ def fetch_sync(items, factory, fetch, workers=1, retry_factory=None):
             # A failed cached endpoint may be stale. Re-select once and retry
             # this item on a fresh, private connection.
             try:
+                old = getattr(local, "manager", None)
+                if old is not None:
+                    with clients_lock:
+                        clients.remove(old)
+                    del local.manager
+                    del local.client
+                    old.__exit__(None, None, None)
                 manager = retry_factory()
                 client = manager.__enter__()
-                clients.append(manager)
+                with clients_lock:
+                    clients.append(manager)
+                local.manager = manager
                 local.client = client
                 return item, fetch(client, item), None, perf_counter() - start
             except Exception as retry_error:

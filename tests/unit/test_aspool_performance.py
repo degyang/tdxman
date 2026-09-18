@@ -1,4 +1,6 @@
-from datetime import date
+import json
+from datetime import date, datetime
+from unittest.mock import patch
 
 import pandas as pd
 import pyarrow.parquet as pq
@@ -6,7 +8,7 @@ import pytest
 
 from aspool.daily_storage import build_field_quality_report, merge_daily
 from aspool.free_stockdb import _write_daily
-from aspool.fundamentals import _quote_bar
+from aspool.fundamentals import _quote_bar, update_from_quotes
 from aspool.store import bars_path, initialize, record_coverage
 
 
@@ -158,3 +160,47 @@ def test_daily_merge_quality_distinguishes_missing_invalid_and_correction(tmp_pa
     )
     assert corrected["pre_close"] == 11.0 and corrected["is_st"] is True
     assert merge_daily(tmp_path, "SZ", "000001", [correction], "test") == 0
+
+
+@pytest.mark.parametrize(
+    "server_date,now,reason",
+    [
+        (20260916, datetime(2026, 9, 17, 17), "stale_quote"),
+        (20260917, datetime(2026, 9, 18, 17), "quote_name_date_unconfirmed"),
+        (None, datetime(2026, 9, 18, 8), "missing_or_invalid_date"),
+        (20260919, datetime(2026, 9, 17, 17), "invalid_trading_date"),
+    ],
+)
+def test_invalid_quote_date_reported_without_writing(tmp_path, server_date, now, reason):
+    path = setup_pool(tmp_path)
+    before = path.read_bytes()
+    quote = {
+        "code": "000001",
+        "market": 0,
+        "name": "test",
+        "open": 8.0,
+        "high": 9.0,
+        "low": 7.0,
+        "close": 8.0,
+        "pre_close": 7.0,
+        "vol": 1,
+        "amount": 800.0,
+        "server_update_date": server_date,
+    }
+
+    class Client:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def get_stock_quotes(self, *args):
+            return pd.DataFrame([quote])
+
+    with patch("tdxman.mac.client.MacClient.from_best_host", return_value=Client()):
+        with pytest.raises(ValueError, match="部分报价"):
+            update_from_quotes(tmp_path, now=now)
+    assert path.read_bytes() == before
+    report = json.loads((tmp_path / "reports/maintenance/latest.json").read_text())
+    assert report["rejected"][0]["reason"] == reason

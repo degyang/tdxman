@@ -869,6 +869,31 @@ class TestIncrementalEqualsFullRecompute:
         assert list(got["consecutive_up"]) == list(want["consecutive_up"])
 
 
+def test_derivation_does_not_retain_all_symbol_histories(pool, monkeypatch):
+    import weakref
+    from aspool import limit_events as module
+
+    for code in ("300001", "300002", "300003", "300004"):
+        _put(pool, "SZ", code, [_bar(THU, 10.0), _bar(FRI, 12.0)])
+    original = module._read_symbol_bars
+    references = []
+
+    class History(list):
+        pass
+
+    def tracked(*args):
+        # The previous security can still be referenced during assignment,
+        # but completed securities must not accumulate in a global dictionary.
+        assert sum(ref() is not None for ref in references) <= 1
+        rows = History(original(*args))
+        references.append(weakref.ref(rows))
+        return rows
+
+    monkeypatch.setattr(module, "_read_symbol_bars", tracked)
+    compute_limit_events(pool, [THU, FRI])
+    assert all(ref() is None for ref in references)
+
+
 class TestStaleCoverage:
     """陈旧标记必须覆盖早期失败，且 stale 前日不得作为可靠前史。"""
 

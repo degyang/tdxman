@@ -289,6 +289,8 @@ def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
                 reason = "invalid_trading_date"
             elif day < last_dates[code]:
                 reason = "stale_quote"
+            elif day != now.date():
+                reason = "quote_name_date_unconfirmed"
             row = _quote_bar(quote, day)
             for key in ("open", "high", "low", "close", "volume", "amount"):
                 value = row.get(key)
@@ -326,6 +328,13 @@ def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
     report["field_quality"] = build_field_quality_report(
         quality_rows, "stock", "tdxman:quote"
     )
+    report_path = Path(root) / "reports/maintenance" / f"{report['run_id']}.json"
+    report["missing"] = sorted(set(symbols) - seen - failed_symbols)
+    report["status"] = "deriving"
+    atomic_json(report_path, report)
+    atomic_json(
+        Path(root) / "reports/maintenance/latest.json", {**report, "report": str(report_path)}
+    )
     # Derive from every successful dated quote, not only changed parquet rows:
     # an existing raw row may still have no published or stale derived batch.
     if quote_dates:
@@ -349,13 +358,15 @@ def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
     report["missing"] = sorted(set(symbols) - seen - failed_symbols)
     report["total_seconds"] = perf_counter() - started
     report["finished_at"] = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat()
-    report["status"] = "partial" if report["failed"] or report["rejected"] else "ok"
+    incomplete = bool(report["failed"] or report["rejected"] or report["missing"]
+                      or report.get("limit_events", {}).get("status") == "failed")
+    report["status"] = "partial" if incomplete else "ok"
     report_path = Path(root) / "reports/maintenance" / f"{report['run_id']}.json"
     atomic_json(report_path, report)
     atomic_json(
         Path(root) / "reports/maintenance/latest.json", {**report, "report": str(report_path)}
     )
-    if report["failed"] or report["rejected"]:
+    if incomplete:
         raise ValueError(f"部分报价未写入，请查看报告：{report_path}")
     return report["success"], report["changed_rows"]
 
@@ -372,6 +383,7 @@ def _publish_quote_rows(root, pending):
         }
     coverage, quality_rows, snapshots, failures, changed_dates = [], [], [], [], []
     success = changed_rows = unchanged = 0
+    successful_dates = set()
     for code, row, snapshot in pending:
         try:
             if row["trade_date"] < last_dates.get(code, row["trade_date"]):
@@ -389,6 +401,7 @@ def _publish_quote_rows(root, pending):
                 quality_rows=quality_rows,
             )
             snapshots.append(snapshot)
+            successful_dates.add(row["trade_date"])
             success += 1
             changed_rows += changed
             unchanged += changed == 0
@@ -396,7 +409,7 @@ def _publish_quote_rows(root, pending):
             failures.append({"symbol": code, "error": str(exc)})
     record_coverages(root, coverage)
     _write(root, snapshots)
-    quote_dates = sorted({row["trade_date"] for _, row, _ in pending})
+    quote_dates = sorted(successful_dates)
     return success, changed_rows, unchanged, failures, quality_rows, quote_dates
 
 
