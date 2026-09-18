@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "domain": "ex",
+  "categories": [
+    {"code": "ETF", "name": "A股交易型开放式基金", "status": "implemented", "source": "tdx.mac.Category.ETF", "asset_kind": "security", "market": ["SH", "SZ"], "history_start": "2010-01-01", "price_unit": "CNY", "volume_unit": "share", "amount_unit": "CNY"},
+    {"code": "HK_MAIN_BOARD", "name": "港股主板", "status": "planned", "source": "tdx.mac.ex.ExMarket.HK_MAIN_BOARD", "asset_kind": "security", "market": ["HK"], "history_start": "2010-01-01", "price_unit": "HKD", "volume_unit": "share", "amount_unit": "HKD"},
+    {"code": "HK_GEM", "name": "港股创业板", "status": "planned", "source": "tdx.mac.ex.ExMarket.HK_GEM", "asset_kind": "security", "market": ["HK"], "history_start": "2010-01-01", "price_unit": "HKD", "volume_unit": "share", "amount_unit": "HKD"},
+    {"code": "HK_STOCK_GGT", "name": "港股通", "status": "planned", "source": "tdx.mac.ex.ExMarket.HK_STOCK_GGT", "asset_kind": "security", "market": ["HK"], "history_start": "2014-11-17", "price_unit": "HKD", "volume_unit": "share", "amount_unit": "HKD"},
+    {"code": "US_STOCK", "name": "美国股票", "status": "planned", "source": "tdx.mac.ex.ExMarket.US_STOCK", "asset_kind": "security", "market": ["US"], "history_start": "2010-01-01", "price_unit": "USD", "volume_unit": "share", "amount_unit": "USD"},
+    {"code": "CFFEX_FUTURES", "name": "中金所期货", "status": "planned", "source": "tdx.mac.ex.ExMarket.CFFEX_FUTURES", "asset_kind": "futures", "market": ["CFFEX"], "history_start": "2010-01-01", "price_unit": "point", "volume_unit": "contract", "amount_unit": "CNY"},
+    {"code": "SH_FUTURES", "name": "上海期货", "status": "planned", "source": "tdx.mac.ex.ExMarket.SH_FUTURES", "asset_kind": "futures", "market": ["SHFE"], "history_start": "2010-01-01", "price_unit": "contract", "volume_unit": "contract", "amount_unit": "CNY"},
+    {"code": "DL_FUTURES", "name": "大连商品期货", "status": "planned", "source": "tdx.mac.ex.ExMarket.DL_FUTURES", "asset_kind": "futures", "market": ["DCE"], "history_start": "2010-01-01", "price_unit": "CNY", "volume_unit": "contract", "amount_unit": "CNY"},
+    {"code": "ZZ_FUTURES", "name": "郑州商品期货", "status": "planned", "source": "tdx.mac.ex.ExMarket.ZZ_FUTURES", "asset_kind": "futures", "market": ["CZCE"], "history_start": "2010-01-01", "price_unit": "CNY", "volume_unit": "contract", "amount_unit": "CNY"},
+    {"code": "GZ_FUTURES", "name": "广州商品期货", "status": "planned", "source": "tdx.mac.ex.ExMarket.GZ_FUTURES", "asset_kind": "futures", "market": ["GFEX"], "history_start": "2021-11-15", "price_unit": "CNY", "volume_unit": "contract", "amount_unit": "CNY"}
+  ]
+}

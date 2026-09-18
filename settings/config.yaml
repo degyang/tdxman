@@ -7,5 +7,4 @@ aspool:
   free_stockdb:
     root: "/mnt/d/Workstation/Developments/finances/free-stockdb/data/release-manylinux/unpacked/stockdb"
   update:
-    mode: sync
-    batch_size: 100
+    quote_batch_size: 80
