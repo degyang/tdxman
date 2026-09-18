@@ -118,24 +118,35 @@ def board_members(
 
 
 @click.command("belong-board", cls=StandardHelpCommand)
-@click.argument("market")
-@click.argument("code")
+@click.argument("symbol_or_market")
+@click.argument("code", required=False)
 @output_options
-def belong_board(market: str, code: str, output_fmt: str, output_path: Path | None) -> None:
+def belong_board(
+    symbol_or_market: str,
+    code: str | None,
+    output_fmt: str,
+    output_path: Path | None,
+) -> None:
     """获取个股所属板块列表。
 
-    示例：
+    示例（新格式）：
+
+      tdxman belong-board 000001.SZ
+
+      tdxman belong-board 600519.SH --format table
+
+    示例（旧格式兼容）：
 
       tdxman belong-board SZ 000001
 
-      tdxman belong-board SH 600519 --format table
+      tdxman belong-board SH 600519
     """
     from .conn import get_mac_client
     from .output import print_output
-    from .parsers import parse_market
+    from .parsers import parse_symbol_or_market_code
 
     fmt = output_fmt
-    mkt = parse_market(market)
+    mkt, parsed_code = parse_symbol_or_market_code(symbol_or_market, code)
     with get_mac_client() as client:
-        df = client.get_belong_board(mkt, code)
-    print_output(df, fmt, output_path, filename=code)
+        df = client.get_belong_board(mkt, parsed_code)
+    print_output(df, fmt, output_path, filename=parsed_code)

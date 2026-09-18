@@ -16,13 +16,15 @@ from .output import output_options
 def quote(stocks: str, output_fmt: str, output_path: Path | None) -> None:
     """获取实时报价（支持多只）。
 
-    STOCKS 格式: "SZ 000001,SH 600519"
+    STOCKS 格式: "000001.SZ,600519.SH"
 
     示例：
 
-      tdxman quote "SZ 000001"
+      tdxman quote "000001.SZ"
 
-      tdxman quote "SZ 000001,SH 600519" --format table
+      tdxman quote "000001.SZ,600519.SH" --format table
+
+    旧格式 "SZ 000001,SH 600519" 仍受支持。
     """
     from .conn import get_mac_client
     from .output import print_output

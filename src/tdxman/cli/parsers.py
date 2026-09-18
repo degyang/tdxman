@@ -14,6 +14,7 @@ from ..mac.enums import (
     SortType,
 )
 from ..models.enums import Market
+from ..symbol import SymbolError, parse_symbol
 
 _MARKET_MAP: dict[str, Market] = {
     "SZ": Market.SZ,
@@ -216,16 +217,77 @@ def parse_sort_order(s: str) -> SortOrder:
         raise click.BadParameter("排序方向应为 ASC、DESC 或 NONE") from exc
 
 
+def parse_symbol_or_market_code(symbol_or_market: str, code: str | None) -> tuple[int, str]:
+    """Parse a single security identity into (market, code).
+
+    Single-security CLI commands share this entry so every command accepts the
+    same inputs and reports the same errors.
+
+    Supports:
+    - 规范: 600519.SH        (symbol_or_market="600519.SH", code=None)
+    - 兼容: SH 600519        (symbol_or_market="SH",        code="600519")
+    - 兼容: SH.600519        (symbol_or_market="SH.600519", code=None)
+
+    显式市场不被纠正也不被猜测：显式写了 SZ 就用 SZ，不查目录、不按代码
+    前缀改写。
+    """
+    if code is not None:
+        return parse_market(symbol_or_market), code
+
+    try:
+        parsed_code, market_str = parse_symbol(symbol_or_market)
+    except SymbolError as exc:
+        raise click.BadParameter(
+            f'无效的证券标识: {symbol_or_market}；请使用 "600519.SH" 或 "SH 600519"'
+        ) from exc
+    return parse_market(market_str), parsed_code
+
+
 def parse_stocks(s: str) -> list[tuple[int, str]]:
-    """Parse stock list like 'SZ 000001,SH 600000' into [(0, '000001'), (1, '600000')]."""
+    """Parse stock list into [(market, code), ...].
+
+    支持格式:
+    - 规范: 000001.SH,600519.SZ
+    - 兼容: SZ 000001,SH 600000
+    - 混合: SZ 000001,600519.SH
+
+    注意: 不允许市场猜测，SZ 600519 会被接受但不会按代码前缀改写。
+    """
+    from ..symbol import SymbolError, parse_symbol
+
+    if not s or not s.strip():
+        raise click.BadParameter("stocks 不能为空")
+
     result: list[tuple[int, str]] = []
     for pair in s.split(","):
-        parts = pair.strip().split()
-        if len(parts) != 2:
-            raise click.BadParameter('STOCKS 格式应为 "SZ 000001,SH 600519"')
-        market = parse_market(parts[0])
-        code = parts[1]
-        if not code.isdigit() or len(code) != 6:
-            raise click.BadParameter('证券代码应为六位数字；STOCKS 格式如 "SZ 000001,SH 600519"')
-        result.append((market, code))
+        pair = pair.strip()
+        if not pair:
+            continue
+
+        # 尝试新格式: 000001.SH 或 SH.000001
+        try:
+            code, market_str = parse_symbol(pair)
+            market = parse_market(market_str)
+            result.append((market, code))
+            continue
+        except SymbolError:
+            pass  # 尝试旧格式
+
+        # 旧格式: SZ 000001
+        parts = pair.split()
+        if len(parts) == 2:
+            market = parse_market(parts[0])
+            code = parts[1]
+            if not code.isdigit() or len(code) != 6:
+                raise click.BadParameter(f'证券代码应为六位数字: {code}')
+            result.append((market, code))
+        else:
+            raise click.BadParameter(
+                f'无效的证券标识格式: {pair}；'
+                '请使用 "000001.SH" 或 "SZ 000001"'
+            )
+
+    if not result:
+        raise click.BadParameter("stocks 不能为空")
+
     return result

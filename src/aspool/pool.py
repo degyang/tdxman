@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import fcntl
+import re
 from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
@@ -11,6 +12,42 @@ import duckdb
 import pandas as pd
 
 from .api_contract import DAILY_FIELDS, OPTIONAL_FIELDS, DataPoolError, public_read
+
+# 支持的符号格式: 000001.SH (规范) 或 SH.000001 (兼容)
+_SYMBOL_PATTERN = re.compile(r"^(\d{6})\.(SH|SZ|BJ)$|^(SH|SZ|BJ)\.(\d{6})$")
+
+
+def _normalize_symbol(s: str) -> str:
+    """将符号规范化为存储格式 SH.XXXXXX。
+
+    支持输入:
+    - 000001.SH -> SH.000001
+    - SH.000001 -> SH.000001
+    """
+    s = s.strip().upper()
+    m = re.match(r"^(\d{6})\.(SH|SZ|BJ)$", s)
+    if m:
+        return f"{m.group(2)}.{m.group(1)}"
+    m = re.match(r"^(SH|SZ|BJ)\.(\d{6})$", s)
+    if m:
+        return s
+    raise DataPoolError(
+        "INVALID_ARGUMENT",
+        f"Invalid symbol format: {s}; use 000001.SH or SH.000001"
+    )
+
+
+def _normalize_symbols(values):
+    """规范化符号列表为存储格式。"""
+    if values is None:
+        return None
+    result = [values] if isinstance(values, str) else list(values)
+    normalized = []
+    for v in result:
+        if not isinstance(v, str):
+            raise DataPoolError("INVALID_ARGUMENT", f"Symbol must be a string: {v}")
+        normalized.append(_normalize_symbol(v))
+    return normalized
 
 
 @contextmanager
@@ -34,7 +71,9 @@ def pool_lock(root: Path, *, write: bool = False):
 def writer(function):
     @wraps(function)
     def wrapped(root, *args, **kwargs):
-        with pool_lock(root, write=True):
+        from .store import catalog_session
+
+        with pool_lock(root, write=True), catalog_session(root):
             return function(root, *args, **kwargs)
 
     return wrapped
@@ -87,6 +126,8 @@ class DataPool:
                     [str(p) for p in files], union_by_name=True, hive_partitioning=True
                 ).create_view("bars")
                 names = {row[0] for row in conn.execute("describe bars").fetchall()}
+                market, code = "market", "symbol"
+                asset_filter = '"asset_type" IS NULL OR "asset_type" <> \'etf\''
                 rate = (
                     "turnover_rate"
                     if "turnover_rate" in names
@@ -100,6 +141,8 @@ class DataPool:
                 if "vol" in names:
                     volume = f"coalesce({volume}, vol)"
                 clauses, params = [], []
+                if "asset_type" in names:
+                    clauses.append(f"({asset_filter})")
                 if start:
                     clauses.append("trade_date >= ?")
                     params.append(start)
@@ -107,14 +150,15 @@ class DataPool:
                     clauses.append("trade_date <= ?")
                     params.append(end)
                 if symbols is not None:
-                    symbols = [symbols] if isinstance(symbols, str) else list(symbols)
-                    clauses.append("market || '.' || symbol IN (SELECT unnest(?))")
-                    params.append(symbols)
+                    # 规范化为存储格式
+                    normalized = _normalize_symbols(symbols)
+                    clauses.append(f"{market} || '.' || {code} IN (SELECT unnest(?))")
+                    params.append(normalized)
                 where = " WHERE " + " AND ".join(clauses) if clauses else ""
                 # Validate the filtered population before a window can hide duplicates.
                 duplicate = conn.execute(
-                    f"SELECT market, symbol, trade_date FROM bars{where} "
-                    "GROUP BY market, symbol, trade_date HAVING count(*) > 1 LIMIT 1",
+                    f"SELECT {market}, {code}, trade_date FROM bars{where} "
+                    f"GROUP BY {market}, {code}, trade_date HAVING count(*) > 1 LIMIT 1",
                     params,
                 ).fetchone()
                 if duplicate is not None:
@@ -198,14 +242,19 @@ class DataPool:
                     "select * from read_parquet(?) order by market, code", [str(path)]
                 ).fetchdf()
         frame = frame.rename(columns={"total_shares": "total_share", "float_shares": "float_share"})
+        # 规范格式 code.market：与 read_daily 输出一致，避免 join 丢失。
+        frame["symbol_id"] = frame.code + "." + frame.market
         if symbols is not None:
-            requested = {symbols} if isinstance(symbols, str) else set(symbols)
-            frame = frame[frame.apply(lambda row: f"{row.market}.{row.code}" in requested, axis=1)]
-        prices = self.read_daily(
-            symbols=[f"{row.market}.{row.code}" for row in frame.itertuples()], end=as_of
-        )
+            requested = [symbols] if isinstance(symbols, str) else list(symbols)
+            # _normalize_symbol 返回存储格式 market.code，需还原为规范格式 code.market，
+            # 才能与 symbol_id 对齐。
+            want = set()
+            for value in requested:
+                market_part, code_part = _normalize_symbol(value).split(".", 1)
+                want.add(f"{code_part}.{market_part}")
+            frame = frame[frame.symbol_id.isin(want)]
+        prices = self.read_daily(symbols=sorted(frame.symbol_id.unique()), end=as_of)
         closes = prices.groupby("symbol", as_index=False).tail(1).set_index("symbol").close
-        frame["symbol_id"] = frame.market + "." + frame.code
         frame["close"] = frame.symbol_id.map(closes)
         frame["total_mv"] = frame.close * frame.total_share
         frame["float_mv"] = frame.close * frame.float_share
@@ -230,6 +279,99 @@ class DataPool:
         from .index_api import list_indices
 
         return list_indices(self.root, symbols=symbols)
+
+    @public_read
+    def read_etf_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
+        """Read ETF daily bars with security (share/amount/turnover) semantics."""
+        from .etf_api import read_etf_daily
+
+        return read_etf_daily(
+            self.root, symbols=symbols, start=start, end=end, lookback=lookback, fields=fields
+        )
+
+    @public_read
+    def list_etfs(self, *, symbols=None):
+        """List synchronized ETFs and their actual date coverage."""
+        from .etf_api import list_etfs
+
+        return list_etfs(self.root, symbols=symbols)
+
+    # ------------------------------------------------------------------ #
+    # 日终涨跌停派生（已发布批次）
+    # ------------------------------------------------------------------ #
+
+    @public_read
+    def read_limit_summary(self, *, start=None, end=None):
+        """已发布的日级涨跌停汇总。"""
+        from .limit_api import read_limit_summary
+
+        return read_limit_summary(self.root, start=start, end=end)
+
+    @public_read
+    def read_limit_events(self, *, trade_date=None, start=None, end=None, symbols=None):
+        """已发布的逐股涨跌停事件；输出规范 symbol。"""
+        from .limit_api import read_limit_events
+
+        return read_limit_events(
+            self.root, trade_date=trade_date, start=start, end=end, symbols=symbols
+        )
+
+    @public_read
+    def read_limit_exceptions(self, *, trade_date=None, start=None, end=None, symbols=None):
+        """已发布的异常/未知/无约束记录。"""
+        from .limit_api import read_limit_exceptions
+
+        return read_limit_exceptions(
+            self.root, trade_date=trade_date, start=start, end=end, symbols=symbols
+        )
+
+    @public_read
+    def read_limit_coverage(self, *, start=None, end=None):
+        """已发布批次的范围与完成状态；含 stale 标记。"""
+        from .limit_api import read_limit_coverage
+
+        return read_limit_coverage(self.root, start=start, end=end)
+
+    @public_read
+    def read_limit_scope(self, *, trade_date=None, start=None, end=None):
+        """已发布批次实际处理的证券名单。
+
+        在名单内、无事件且无异常 => 确定无涨跌停事件。
+        """
+        from .limit_api import read_limit_scope
+
+        return read_limit_scope(self.root, trade_date=trade_date, start=start, end=end)
+
+    @public_read
+    def read_limit_staleness(self, *, start=None, end=None):
+        """被标记为陈旧/失败的日期，供消费者拒绝或降级使用。"""
+        from .limit_api import read_limit_staleness
+
+        return read_limit_staleness(self.root, start=start, end=end)
+
+    @public_read
+    def describe_limits(self):
+        """声明已实现的涨跌停派生能力与字段单位；只读。"""
+        from .limit_api import describe_limits
+
+        return describe_limits(self.root)
+
+    def compute_limit_events(
+        self, trade_dates, *, scope_id="stock", asset_type="stock", propagate=True
+    ):
+        """独立入口：重算并发布指定交易日的派生事件（可重试）。
+
+        会自修改日向前传播至连板/事件不再变化；失败则标记 stale。
+        """
+        from .limit_events import compute_limit_events
+
+        return compute_limit_events(
+            self.root,
+            list(trade_dates),
+            scope_id=scope_id,
+            asset_type=asset_type,
+            propagate=propagate,
+        )
 
     def describe(self):
         """Return the implemented public contract and explicit capability limits."""

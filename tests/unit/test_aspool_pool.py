@@ -32,12 +32,17 @@ def test_read_contract_and_date_before_window(tmp_path):
     before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
     frame = DataPool(tmp_path).read_daily(end="2026-09-14", lookback=2)
     assert frame.date.dt.day.tolist() == [11, 14]
-    assert frame.symbol.tolist() == ["SZ.000001"] * 2
+    # 输出已统一为规范格式 code.market。
+    assert frame.symbol.tolist() == ["000001.SZ"] * 2
     assert frame.turnover_rate.tolist() == [0.43] * 2
     assert frame.amount.tolist() == [10000.0] * 2
     assert DataPool(tmp_path).status()["row_count"] == 5
     assert before == {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+    # 旧点号输入仍受支持，只是未命中该市场。
     assert DataPool(tmp_path).read_daily(symbols=["SH.000001"]).empty
+    # 规范输入与旧输入命中同一标的。
+    assert len(DataPool(tmp_path).read_daily(symbols=["000001.SZ"])) == 5
+    assert len(DataPool(tmp_path).read_daily(symbols=["SZ.000001"])) == 5
 
 
 def test_online_volume_is_shares_and_new_columns_survive(tmp_path):
@@ -161,7 +166,8 @@ def test_same_date_code_in_different_markets_is_not_duplicate(tmp_path):
     put(tmp_path, "000001", [bar(16)])
     _write_daily(tmp_path, "SH", "000001", [bar(16)])
     frame = DataPool(tmp_path).read_research_daily(lookback=1)
-    assert frame.symbol.tolist() == ["SH.000001", "SZ.000001"]
+    # 输出为规范格式，排序后 SH 在前。
+    assert frame.symbol.tolist() == ["000001.SH", "000001.SZ"]
 
 
 def test_online_daily_rows_use_manual_snapshot_with_free_stockdb_field_names():

@@ -2,10 +2,23 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import date, datetime, timezone
 from pathlib import Path
 
 import duckdb
+
+_active_catalog = ContextVar("aspool_catalog", default=None)
+
+
+@contextmanager
+def catalog_session(root):
+    with catalog(root) as conn:
+        token = _active_catalog.set((Path(root).resolve(), conn))
+        try:
+            yield conn
+        finally:
+            _active_catalog.reset(token)
 
 
 def default_root() -> Path:
@@ -56,6 +69,11 @@ def initialize(root: Path) -> None:
 
 @contextmanager
 def catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
+    """读写目录库；不存在时创建。仅用于写入路径。"""
+    active = _active_catalog.get()
+    if active is not None and active[0] == Path(root).resolve():
+        yield active[1]
+        return
     root.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(root / "catalog.duckdb")
     try:
@@ -64,7 +82,45 @@ def catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
         conn.close()
 
 
+@contextmanager
+def read_only_catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
+    """只读打开目录库；不创建目录、不创建文件。
+
+    Raises:
+        FileNotFoundError: 目录或 catalog.duckdb 不存在。
+    """
+    active = _active_catalog.get()
+    if active is not None and active[0] == Path(root).resolve():
+        yield active[1]
+        return
+    root = Path(root).expanduser().resolve()
+    path = root / "catalog.duckdb"
+    if not path.is_file():
+        raise FileNotFoundError(f"aspool catalog not found: {path}")
+    conn = duckdb.connect(str(path), read_only=True)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def existing_tables(root: Path) -> set[str]:
+    """只读列出已有的表；目录/库不存在时返回空集。"""
+    try:
+        with read_only_catalog(root) as conn:
+            rows = conn.execute(
+                "select table_name from information_schema.tables"
+            ).fetchall()
+    except (FileNotFoundError, duckdb.Error):
+        return set()
+    return {row[0] for row in rows}
+
+
 def bars_path(root: Path, period: str, market: str, symbol: str) -> Path:
+    if period == "daily":
+        paths = daily_paths(root, market, symbol)
+        if paths:
+            return paths[-1]
     return (
         root / "lake" / "bars" / period / f"market={market}" / f"symbol={symbol}" / "bars.parquet"
     )
@@ -72,6 +128,36 @@ def bars_path(root: Path, period: str, market: str, symbol: str) -> Path:
 
 def daily_path(root: Path, market: str, symbol: str) -> Path:
     return bars_path(root, "daily", market, symbol)
+
+
+def daily_directory(root: Path, market: str, symbol: str) -> Path:
+    return Path(root) / "lake" / "bars" / "daily" / f"market={market}" / f"symbol={symbol}"
+
+
+def daily_year_path(root: Path, market: str, symbol: str, year: int) -> Path:
+    return daily_directory(root, market, symbol) / f"year={year}" / "bars.parquet"
+
+
+def daily_paths(root: Path, market: str, symbol: str) -> list[Path]:
+    directory = daily_directory(root, market, symbol)
+    legacy = directory / "bars.parquet"
+    yearly = sorted(directory.glob("year=*/bars.parquet"))
+    # A migration must not leave both layouts behind: they would produce
+    # duplicate daily keys for public readers.
+    if legacy.exists() and yearly:
+        raise ValueError(f"{symbol}: mixed legacy and yearly daily storage")
+    return yearly if yearly else ([legacy] if legacy.exists() else [])
+
+
+def read_daily_table(root: Path, market: str, symbol: str):
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    paths = daily_paths(root, market, symbol)
+    if not paths:
+        return None
+    tables = [pq.ParquetFile(path).read() for path in paths]
+    return pa.concat_tables(tables, promote_options="permissive") if len(tables) > 1 else tables[0]
 
 
 def last_marker(root: Path, symbol: str, period: str = "daily") -> date | datetime | None:
@@ -109,3 +195,29 @@ def record_coverage(
             """,
             [symbol, market, start, end, rows, source, now],
         )
+
+
+def record_coverages(root: Path, entries: list[tuple]) -> None:
+    """Commit one maintenance run's coverage changes in a single transaction."""
+    if not entries:
+        return
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    with catalog(root) as conn:
+        conn.execute("BEGIN")
+        try:
+            for symbol, market, start, end, rows, source, period in entries:
+                table = _coverage_table(period)
+                conn.execute(
+                    f"""
+                    insert into {table} values (?, ?, ?, ?, ?, ?, ?)
+                    on conflict(symbol) do update set
+                        market = excluded.market, start_date = excluded.start_date,
+                        end_date = excluded.end_date, row_count = excluded.row_count,
+                        source = excluded.source, updated_at = excluded.updated_at
+                    """,
+                    [symbol, market, start, end, rows, source, now],
+                )
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise

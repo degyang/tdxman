@@ -9,6 +9,9 @@ import pandas as pd
 from .api_contract import DataPoolError
 from .pool import pool_lock
 
+# 支持的符号格式: 000300.SH (规范) 或 SH.000300 (兼容)
+_SYMBOL_PATTERN = re.compile(r"^(\d{6})\.(SH|SZ|BJ)$|^(SH|SZ|BJ)\.(\d{6})$")
+
 INDEX_FIELDS = {
     "symbol": ("VARCHAR", None),
     "market": ("VARCHAR", None),
@@ -23,6 +26,26 @@ INDEX_FIELDS = {
 }
 
 
+def _normalize_symbol(s: str) -> str:
+    """将符号规范化为存储格式 SH.XXXXXX。
+
+    支持输入:
+    - 000300.SH -> SH.000300
+    - SH.000300 -> SH.000300
+    """
+    s = s.strip().upper()
+    m = re.match(r"^(\d{6})\.(SH|SZ|BJ)$", s)
+    if m:
+        return f"{m.group(2)}.{m.group(1)}"
+    m = re.match(r"^(SH|SZ|BJ)\.(\d{6})$", s)
+    if m:
+        return s
+    raise DataPoolError(
+        "INVALID_ARGUMENT",
+        f"Invalid symbol format: {s}; use 000300.SH or SH.000300"
+    )
+
+
 def _symbols(values):
     if values is None:
         return None
@@ -30,9 +53,13 @@ def _symbols(values):
         result = [values] if isinstance(values, str) else list(values)
     except TypeError as exc:
         raise DataPoolError("INVALID_ARGUMENT", "symbols must be a string or list") from exc
-    if any(not isinstance(v, str) or not re.fullmatch(r"(SH|SZ)\.[0-9]{6}", v) for v in result):
-        raise DataPoolError("INVALID_ARGUMENT", "index symbols must be SH.000300 or SZ.399001")
-    return result
+    # 规范化为存储格式
+    normalized = []
+    for v in result:
+        if not isinstance(v, str):
+            raise DataPoolError("INVALID_ARGUMENT", f"Symbol must be a string: {v}")
+        normalized.append(_normalize_symbol(v))
+    return normalized
 
 
 def _read(root, symbols, start=None, end=None, lookback=None, fields=None, listing=False):
@@ -86,15 +113,17 @@ def _read(root, symbols, start=None, end=None, lookback=None, fields=None, listi
                 ).fetchone():
                     raise DataPoolError("INDEX_INVALID", "Duplicate index dates")
                 if listing:
+                    # 输出规范格式: code.market (如 000300.SH)
                     return conn.execute(
-                        "SELECT market || '.' || code AS symbol, market, code, "
+                        "SELECT code || '.' || market AS symbol, market, code, "
                         "arg_max(name, trade_date) AS name, min(trade_date) AS start, "
                         "max(trade_date) AS end, count(*) AS row_count "
                         f"FROM b{where} GROUP BY market,code ORDER BY symbol",
                         params,
                     ).fetchdf()
+                # 输出规范格式: code.market (如 000300.SH)
                 sql = (
-                    "SELECT market || '.' || code AS symbol, market,code,name,trade_date AS date,"
+                    "SELECT code || '.' || market AS symbol, market,code,name,trade_date AS date,"
                     f"open,high,low,close,volume,amount,up_count,down_count FROM b{where}"
                 )
                 if lookback:

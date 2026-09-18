@@ -10,52 +10,66 @@ HelpRows = Sequence[tuple[str, str]]
 
 
 _COMMAND_REFERENCES: dict[str, HelpRows] = {
-    "tdxman auction": (("MARKET", "SH、SZ 或 BJ"), ("CODE", "六位证券代码")),
-    "tdxman capital-flow": (("MARKET", "SH、SZ 或 BJ"), ("CODE", "六位证券代码")),
+    "tdxman auction": (
+        ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券代码"),
+    ),
+    "tdxman capital-flow": (
+        ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券代码"),
+    ),
     "tdxman finance": (("MARKET", "SH、SZ 或 BJ"), ("CODE", "六位证券代码")),
     "tdxman fund-flow": (
-        ("MARKET", "SH、SZ 或 BJ"),
-        ("CODE", "六位证券代码；指数不支持历史资金流向"),
+        ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券代码；指数不支持历史资金流向"),
         ("--start", "距最新交易日的起始偏移，0 为最新记录"),
         ("--closed-only", "排除当天可能尚未完整的记录"),
     ),
     "tdxman kline": (
-        ("MARKET", "SH、SZ 或 BJ"),
-        ("CODE", "证券或标准指数代码"),
+        ("SYMBOL_OR_MARKET", '规范标识 "600519.SH"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传证券或标准指数代码"),
         ("--period", "DAILY、WEEKLY、MONTHLY、YEARLY、1MIN、5MIN、15MIN、30MIN、60MIN"),
         ("--adjust", "NONE、QFQ（前复权）或 HFQ（后复权）；指数仅支持 NONE"),
         ("--start", "距最新 K 线的起始偏移，0 为最新"),
     ),
     "tdxman markets": (("市场代码", "SH=上海、SZ=深圳、BJ=北京证券交易所"),),
     "tdxman offline": (
-        ("MARKET", "SH、SZ 或 BJ"),
-        ("CODE", "六位证券或指数代码"),
+        ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券或指数代码"),
         ("--period", "DAILY、1MIN 或 5MIN"),
         ("--start", "距本地最新记录的起始偏移，0 为最新"),
         ("--vipdoc", "本地 vipdoc 目录；缺省读取 settings/config.yaml"),
     ),
     "tdxman ping": (("--timeout", "单个服务器测速超时秒数"),),
-    "tdxman quote": (("STOCKS", '一个或多个标的，格式："SZ 000001,SH 600519"'),),
+    "tdxman quote": (
+        ("STOCKS", '一个或多个标的，格式："000001.SZ,600519.SH"；兼容旧格式 "SZ 000001"'),
+    ),
     "tdxman tick": (
-        ("MARKET", "SH、SZ 或 BJ"),
-        ("CODE", "六位证券或指数代码"),
+        ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券或指数代码"),
         ("--date", "YYYYMMDD；缺省为今天"),
         ("--days", "1 或 5 个交易日"),
     ),
     "tdxman transaction": (
-        ("MARKET", "SH、SZ 或 BJ"),
-        ("CODE", "六位证券或指数代码"),
+        ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券或指数代码"),
         ("--start", "距最新逐笔记录的起始偏移，0 为最新"),
         ("--date", "YYYYMMDD；缺省为今天"),
     ),
     "tdxman unusual": (("MARKET", "SH、SZ 或 BJ"), ("--start", "请求记录的起始偏移")),
     "tdxman market-stat": (("数据范围", "当前 A 股全市场涨跌统计快照，不提供历史 --count"),),
     "tdxman server-info": (("数据范围", "当前服务器配置的交易时段"),),
-    "tdxman symbol-info": (("MARKET", "SH、SZ 或 BJ"), ("CODE", "六位证券代码")),
+    "tdxman symbol-info": (
+        ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券代码"),
+    ),
     "tdxman board-members": (
         ("BOARD_SYMBOL", "通达信板块代码或支持的标准指数代码，如 881001、000699"),
     ),
-    "tdxman belong-board": (("MARKET", "SH、SZ 或 BJ"), ("CODE", "六位证券代码")),
+    "tdxman belong-board": (
+        ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券代码"),
+    ),
     "tdxman ex kline": (
         ("MARKET", "扩展市场代码；用 tdxman ex markets 查看"),
         ("CODE", "该扩展市场中的证券或指数代码"),
@@ -79,8 +93,8 @@ _COMMAND_REFERENCES: dict[str, HelpRows] = {
 }
 
 _COMMAND_EXAMPLES: dict[str, tuple[str, ...]] = {
-    "tdxman auction": ("tdxman auction SZ 000001 --format table",),
-    "tdxman capital-flow": ("tdxman capital-flow SH 600519 --format table",),
+    "tdxman auction": ("tdxman auction 000001.SZ --format table",),
+    "tdxman capital-flow": ("tdxman capital-flow 600519.SH --format table",),
     "tdxman finance": ("tdxman finance SH 600519 --format table",),
     "tdxman fund-flow": ("tdxman fund-flow SH 600519 --count 20 --closed-only --format table",),
     "tdxman kline": (

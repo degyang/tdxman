@@ -3,13 +3,26 @@ from __future__ import annotations
 import asyncio
 from datetime import date, datetime
 from pathlib import Path
+from time import perf_counter
 from typing import Any
+from uuid import uuid4
 
 import pyarrow.parquet as pq
 
+from .daily_storage import build_field_quality_report, is_missing_value, merge_daily
+from .fetch import client_factory, fetch_async, fetch_sync
 from .free_stockdb import _market, _normalize, _write_daily
+from .index_lists import atomic_json
 from .pool import writer
-from .store import bars_path, catalog, last_marker, record_coverage
+from .store import (
+    bars_path,
+    catalog,
+    last_marker,
+    record_coverage,
+    record_coverages,
+)
+
+ETF_HISTORY_START = date(2010, 1, 1)
 
 
 def _fundamentals(root: Path) -> dict[str, dict[str, object]]:
@@ -63,9 +76,7 @@ def _load_tdxman() -> tuple[Any, Any, Any, Any]:
 
 
 def _tdx_market(symbol: str, market_type: Any) -> Any:
-    if symbol.startswith(("4", "8")):
-        return market_type.BJ
-    return market_type.SH if symbol.startswith(("5", "6", "9")) else market_type.SZ
+    return getattr(market_type, _market(symbol))
 
 
 def _daily_rows(frame: Any, symbol: str, start: date | None = None) -> list[dict[str, object]]:
@@ -100,7 +111,7 @@ def _merge_rows(
         previous = merged.get(row[key], {})
         merged[row[key]] = {
             **previous,
-            **{field: value for field, value in row.items() if value is not None},
+            **{field: value for field, value in row.items() if not is_missing_value(value)},
         }
     return [merged[value] for value in sorted(merged)]
 
@@ -108,7 +119,9 @@ def _merge_rows(
 def _fill_close_vol_ratio(rows: list[dict[str, object]]) -> list[dict[str, object]]:
     """Fill only missing daily volume ratios with the close-of-day five-day definition."""
     for index, row in enumerate(rows):
-        if row.get("vol_ratio") is not None or index < 5 or row.get("volume") is None:
+        if not is_missing_value(row.get("vol_ratio")) or index < 5 or is_missing_value(
+            row.get("volume")
+        ):
             continue
         previous = [item.get("volume") for item in rows[index - 5 : index]]
         if all(value is not None for value in previous):
@@ -118,110 +131,302 @@ def _fill_close_vol_ratio(rows: list[dict[str, object]]) -> list[dict[str, objec
     return rows
 
 
-def _symbols(root: Path, period: str, limit: int | None) -> list[str]:
+def _symbols(root: Path, period: str, limit: int | None, asset_type: str = "stock") -> list[str]:
     table = "coverage" if period == "daily" else "coverage_minutes"
     with catalog(root) as conn:
-        values = [
-            row[0] for row in conn.execute(f"select symbol from {table} order by symbol").fetchall()
-        ]
+        if asset_type == "etf":
+            query = f"""select c.symbol from {table} c
+                join universe u on u.symbol = c.symbol
+                where u.asset_type = 'etf' and u.active order by c.symbol"""
+        else:
+            query = f"""select c.symbol from {table} c
+                left join universe u on u.symbol = c.symbol
+                where coalesce(u.asset_type, 'stock') = 'stock' order by c.symbol"""
+        values = [row[0] for row in conn.execute(query).fetchall()]
     return values[:limit] if limit else values
 
 
-def update_daily(root: Path, limit: int | None = None) -> tuple[int, int]:
-    """Update all imported daily symbols with one reusable synchronous MAC connection."""
+def _bar_page(frame, symbol, since, floor: date | None = None):
+    rows = _daily_rows(frame, symbol)
+    if not rows:
+        return [], None, 0
+    oldest = min(row["trade_date"] for row in rows)
+    return (
+        [
+            row
+            for row in rows
+            if (since is None or row["trade_date"] >= since)
+            and (floor is None or row["trade_date"] >= floor)
+        ],
+        oldest,
+        len(rows),
+    )
+
+
+def _job_spec(job):
+    symbol, since = job[:2]
+    asset_type = job[2] if len(job) > 2 else "stock"
+    return symbol, since, asset_type
+
+
+def _stock_records(client, job):
+    _, _, enums, Market = _load_tdxman()
+    Adjust, Period = enums
+    symbol, since, asset_type = _job_spec(job)
+    floor = ETF_HISTORY_START if asset_type == "etf" and since is None else None
+    offset, oldest, rows = 0, None, []
+    while offset < 64000:
+        frame = client.get_stock_kline(
+            _tdx_market(symbol, Market),
+            symbol,
+            Period.DAILY,
+            start=offset,
+            count=30 if since is not None else 800,
+            adjust=Adjust.NONE,
+        )
+        page, minimum, size = _bar_page(frame, symbol, since, floor)
+        if minimum is None:
+            return rows
+        if oldest is not None and minimum >= oldest:
+            raise ValueError("股票分页未向更早日期推进")
+        rows.extend(page)
+        if since is not None and minimum <= since:
+            return rows
+        if since is None and (size < 800 or (floor is not None and minimum <= floor)):
+            return rows
+        offset += size
+        oldest = minimum
+    raise ValueError("股票分页超过上限")
+
+
+async def _stock_records_async(client, job):
+    _, _, enums, Market = _load_tdxman()
+    Adjust, Period = enums
+    symbol, since, asset_type = _job_spec(job)
+    floor = ETF_HISTORY_START if asset_type == "etf" and since is None else None
+    offset, oldest, rows = 0, None, []
+    while offset < 64000:
+        frame = await client.get_stock_kline(
+            _tdx_market(symbol, Market),
+            symbol,
+            Period.DAILY,
+            start=offset,
+            count=30 if since is not None else 800,
+            adjust=Adjust.NONE,
+        )
+        page, minimum, size = _bar_page(frame, symbol, since, floor)
+        if minimum is None:
+            return rows
+        if oldest is not None and minimum >= oldest:
+            raise ValueError("股票分页未向更早日期推进")
+        rows.extend(page)
+        if since is not None and minimum <= since:
+            return rows
+        if since is None and (size < 800 or (floor is not None and minimum <= floor)):
+            return rows
+        offset += size
+        oldest = minimum
+    raise ValueError("股票分页超过上限")
+
+
+async def _sync_daily_run(root, limit, asynchronous, workers, asset_type="stock"):
+    started = perf_counter()
+    universe = {"listed": 0, "added": [], "inactive": [], "reactivated": []}
+    # A limited run is intentionally isolated for diagnostics and tests.
+    if limit is None or asset_type == "etf":
+        from .universe import (
+            pending_universe_symbols,
+            refresh_etf_universe,
+            refresh_stock_universe,
+            universe_is_stale,
+        )
+
+        if universe_is_stale(root, asset_type=asset_type):
+            universe = (
+                refresh_etf_universe(root) if asset_type == "etf" else refresh_stock_universe(root)
+            )
+        else:
+            universe["added"] = pending_universe_symbols(root, asset_type)
+        if limit:
+            universe["added"] = universe["added"][:limit]
+    symbols = _symbols(root, "daily", limit, asset_type)
+    report = {
+        "command": f"{asset_type}-sync",
+        "asset_type": asset_type,
+        "run_id": uuid4().hex,
+        "requested": len(symbols),
+        "started_at": datetime.now().isoformat(),
+        "async": asynchronous,
+        "workers": workers,
+        "success": [],
+        "missing": [],
+        "failed": [],
+        "write_seconds": 0.0,
+        "universe": {
+            key: value if key != "added" else len(value) for key, value in universe.items()
+        },
+    }
+    jobs = []
+    for symbol in symbols:
+        try:
+            path = bars_path(root, "daily", _market(symbol), symbol)
+            days = pq.ParquetFile(path).read(columns=["trade_date"])["trade_date"].to_pylist()
+            if not days:
+                raise ValueError("已有标的缺少历史日线")
+            jobs.append((symbol, days[max(0, len(days) - 5)], asset_type))
+        except Exception as exc:
+            report["failed"].append({"symbol": symbol, "error": str(exc)})
+    remaining = max(0, limit - len(jobs)) if limit else None
+    additions = universe["added"] if remaining is None else universe["added"][:remaining]
+    for entry in additions:
+        jobs.append((entry["symbol"], None, asset_type))
+    report["requested"] = len(jobs) + len(report["failed"])
+
+    pending = []
+
+    def consume(entry):
+        job, rows, error, _ = entry
+        symbol = job[0]
+        try:
+            if error:
+                raise error
+            if not rows:
+                report["missing"].append(symbol)
+                return
+            pending.append((symbol, rows))
+        except Exception as exc:
+            report["failed"].append({"symbol": symbol, "error": str(exc)})
+
+    if jobs:
+        MacClient, AsyncMacClient, _, _ = _load_tdxman()
+        if asynchronous:
+            factory, retry = client_factory(AsyncMacClient, workers)
+            async for entry in fetch_async(jobs, factory, _stock_records_async, workers, retry):
+                consume(entry)
+        else:
+            factory, retry = client_factory(MacClient, workers)
+            for entry in fetch_sync(jobs, factory, _stock_records, workers, retry):
+                consume(entry)
+    tick = perf_counter()
+    results, failures, quality_rows = _publish_stock_rows(root, pending, asset_type)
+    report["write_seconds"] = perf_counter() - tick
+    report["success"].extend(results)
+    report["failed"].extend(failures)
+    report["field_quality"] = build_field_quality_report(
+        quality_rows, asset_type, f"tdxman:{asset_type}"
+    )
+    report["total_seconds"] = perf_counter() - started
+    report["finished_at"] = datetime.now().isoformat()
+    report["status"] = (
+        "partial" if report["failed"] or (asset_type == "etf" and report["missing"]) else "ok"
+    )
+    # 派生事件：原始日线已提交，派生失败不回滚原始数据，只记录状态供重试。
+    touched_dates = sorted(
+        {
+            date.fromisoformat(change)
+            for entry in report["success"]
+            for change in entry.get("changed_dates", [])
+        }
+    )
+    if asset_type == "stock" and touched_dates:
+        touched = [d.isoformat() for d in touched_dates]
+        try:
+            from .limit_events import compute_limit_events
+
+            report["limit_events"] = {
+                "dates": touched,
+                "batches": compute_limit_events(root, touched_dates, asset_type="stock"),
+                "status": "ok",
+            }
+            from .limit_events import summarize_published_limit_quality
+
+            report["limit_events"]["rule_quality"] = summarize_published_limit_quality(
+                root, touched_dates
+            )
+        except Exception as exc:  # noqa: BLE001 - 派生失败不得影响原始批次
+            report["limit_events"] = {
+                "dates": touched,
+                "status": "failed",
+                "error": str(exc),
+            }
+    report_path = Path(root) / "reports/maintenance" / f"{report['run_id']}.json"
+    atomic_json(report_path, report)
+    atomic_json(
+        Path(root) / "reports/maintenance/latest.json", {**report, "report": str(report_path)}
+    )
+    if report["failed"]:
+        raise ValueError(f"部分股票未完成：{report_path}")
+    return len(report["success"]), sum(r["changed_rows"] for r in report["success"])
+
+
+@writer
+def _publish_stock_rows(root, pending, asset_type="stock"):
+    coverage = []
+    quality_rows = []
+    results, failures = [], []
+    fundamentals = _fundamentals(root)
+    with catalog(root) as conn:
+        try:
+            names = {
+                row[0]: row[1]
+                for row in conn.execute(
+                    "SELECT symbol, name FROM universe WHERE asset_type = ?", [asset_type]
+                ).fetchall()
+            }
+        except Exception:
+            names = {}
+    for symbol, rows in pending:
+        try:
+            incoming = _normalize(
+                _enrich_daily(rows, fundamentals.get(symbol) if asset_type == "stock" else None),
+                symbol,
+            )
+            if asset_type == "etf":
+                incoming = [
+                    {**row, "name": names.get(symbol), "asset_type": "etf"} for row in incoming
+                ]
+            changed_dates: list = []
+            changed = merge_daily(
+                root,
+                _market(symbol),
+                symbol,
+                incoming,
+                f"tdxman:{asset_type}",
+                coverage=coverage,
+                changed_dates=changed_dates,
+                quality_rows=quality_rows,
+            )
+            results.append(
+                {
+                    "symbol": symbol,
+                    "fetched": len(rows),
+                    "changed_rows": changed,
+                    # ISO 字符串：直接进入 JSON 报告。
+                    "changed_dates": [d.isoformat() for d in changed_dates],
+                }
+            )
+        except Exception as exc:
+            failures.append({"symbol": symbol, "error": str(exc)})
+    record_coverages(root, coverage)
+    return results, failures, quality_rows
+
+
+def update_daily(root, limit=None, workers=1, asset_type="stock"):
+    return asyncio.run(_sync_daily_run(root, limit, False, workers, asset_type))
+
+
+async def update_daily_async(root, limit=None, workers=1, asset_type="stock"):
+    return await _sync_daily_run(root, limit, True, workers, asset_type)
+
+
+def update_minutes(
+    root: Path, limit: int | None = None, asset_type: str = "stock"
+) -> tuple[int, int]:
     MacClient, _, enums, Market = _load_tdxman()
     Adjust, Period = enums
     count = rows_written = 0
-    fundamentals = _fundamentals(root)
     with MacClient.from_best_host() as client:
-        for symbol in _symbols(root, "daily", limit):
-            start = None  # Refresh the overlap, including previously missing online volume.
-            frame = client.get_stock_kline(
-                _tdx_market(symbol, Market),
-                symbol,
-                Period.DAILY,
-                start=0,
-                count=30,
-                adjust=Adjust.NONE,
-            )
-            incoming = _normalize(
-                _enrich_daily(_daily_rows(frame, symbol, start), fundamentals.get(symbol)), symbol
-            )
-            if not incoming:
-                continue
-            path = bars_path(root, "daily", _market(symbol), symbol)
-            prior = _normalize(pq.read_table(path).to_pylist(), symbol) if path.exists() else []
-            identity = {}
-            for prior_row in reversed(prior):
-                for field in ("code", "name", "market"):
-                    if field not in identity and prior_row.get(field) is not None:
-                        identity[field] = prior_row[field]
-            incoming = [{**identity, **row} for row in incoming]
-            rows = _fill_close_vol_ratio(_merge_rows(prior, incoming, "trade_date"))
-            _write_daily(root, _market(symbol), symbol, rows)
-            record_coverage(
-                root,
-                symbol,
-                _market(symbol),
-                rows[0]["trade_date"],
-                rows[-1]["trade_date"],
-                len(rows),
-                "tdxman",
-                "daily",
-            )
-            count += 1
-            rows_written += len(incoming)
-    return count, rows_written
-
-
-async def update_daily_async(root: Path, limit: int | None = None) -> tuple[int, int]:
-    """Update daily data through tdxman's asynchronous MAC client."""
-    _, AsyncMacClient, enums, Market = _load_tdxman()
-    Adjust, Period = enums
-    count = rows_written = 0
-    fundamentals = _fundamentals(root)
-    async with AsyncMacClient.from_best_host() as client:
-        for symbol in _symbols(root, "daily", limit):
-            start = None  # Refresh the overlap, including previously missing online volume.
-            frame = await client.get_stock_kline(
-                _tdx_market(symbol, Market), symbol, Period.DAILY, 0, 30, 1, Adjust.NONE
-            )
-            incoming = _normalize(
-                _enrich_daily(_daily_rows(frame, symbol, start), fundamentals.get(symbol)), symbol
-            )
-            if not incoming:
-                continue
-            path = bars_path(root, "daily", _market(symbol), symbol)
-            prior = _normalize(pq.read_table(path).to_pylist(), symbol) if path.exists() else []
-            identity = {}
-            for prior_row in reversed(prior):
-                for field in ("code", "name", "market"):
-                    if field not in identity and prior_row.get(field) is not None:
-                        identity[field] = prior_row[field]
-            incoming = [{**identity, **row} for row in incoming]
-            rows = _fill_close_vol_ratio(_merge_rows(prior, incoming, "trade_date"))
-            _write_daily(root, _market(symbol), symbol, rows)
-            record_coverage(
-                root,
-                symbol,
-                _market(symbol),
-                rows[0]["trade_date"],
-                rows[-1]["trade_date"],
-                len(rows),
-                "tdxman",
-                "daily",
-            )
-            count += 1
-            rows_written += len(incoming)
-    return count, rows_written
-
-
-def update_minutes(root: Path, limit: int | None = None) -> tuple[int, int]:
-    MacClient, _, enums, Market = _load_tdxman()
-    Adjust, Period = enums
-    count = rows_written = 0
-    with MacClient.from_best_host() as client:
-        for symbol in _symbols(root, "minutes", limit):
+        for symbol in _symbols(root, "minutes", limit, asset_type):
             start = last_marker(root, symbol, "minutes")
             frame = client.get_stock_kline(
                 _tdx_market(symbol, Market),
@@ -253,22 +458,39 @@ def update_minutes(root: Path, limit: int | None = None) -> tuple[int, int]:
     return count, rows_written
 
 
-def update_daily_offline(root: Path, limit: int | None = None) -> tuple[int, int]:
+@writer
+def update_daily_offline(
+    root: Path, limit: int | None = None, asset_type: str = "stock"
+) -> tuple[int, int]:
     """Merge local vipdoc daily bars into the pool, preserving static snapshots."""
     from tdxman.models.enums import Market
     from tdxman.offline import find_daily_bar_file, read_daily_bars
 
     count = written = 0
     fundamentals = _fundamentals(root)
-    for symbol in _symbols(root, "daily", limit):
+    symbols = _symbols(root, "daily", limit, asset_type)
+    pending = []
+    if asset_type == "etf":
+        from .universe import pending_universe_symbols
+
+        pending = pending_universe_symbols(root, "etf")
+    jobs = [(symbol, True) for symbol in symbols]
+    jobs.extend((entry["symbol"], False) for entry in pending)
+    if limit:
+        jobs = jobs[:limit]
+    for symbol, existing in jobs:
         market = _tdx_market(symbol, Market)
         if market == Market.BJ:
             continue
         path = bars_path(root, "daily", _market(symbol), symbol)
         prior = _normalize(pq.read_table(path).to_pylist(), symbol) if path.exists() else []
+        if asset_type == "etf":
+            prior = [row for row in prior if row["trade_date"] >= ETF_HISTORY_START]
         try:
-            source = read_daily_bars(find_daily_bar_file(market, symbol))[-30:]
-        except Exception:
+            source = read_daily_bars(find_daily_bar_file(market, symbol))
+            if existing:
+                source = source[-30:]
+        except FileNotFoundError:
             continue
         raw = [
             {
@@ -283,7 +505,15 @@ def update_daily_offline(root: Path, limit: int | None = None) -> tuple[int, int
             }
             for bar in source
         ]
-        incoming = _normalize(_enrich_daily(raw, fundamentals.get(symbol)), symbol)
+        incoming = _normalize(
+            _enrich_daily(raw, fundamentals.get(symbol) if asset_type == "stock" else None), symbol
+        )
+        if asset_type == "etf":
+            incoming = [
+                {**row, "asset_type": "etf"}
+                for row in incoming
+                if row["trade_date"] >= ETF_HISTORY_START
+            ]
         if not incoming:
             continue
         rows = _fill_close_vol_ratio(_merge_rows(prior, incoming, "trade_date"))
@@ -295,7 +525,7 @@ def update_daily_offline(root: Path, limit: int | None = None) -> tuple[int, int
             rows[0]["trade_date"],
             rows[-1]["trade_date"],
             len(rows),
-            "tdxman:offline",
+            f"tdxman:{asset_type}:offline",
             "daily",
         )
         count += 1
@@ -303,12 +533,14 @@ def update_daily_offline(root: Path, limit: int | None = None) -> tuple[int, int
     return count, written
 
 
-async def update_minutes_async(root: Path, limit: int | None = None) -> tuple[int, int]:
+async def update_minutes_async(
+    root: Path, limit: int | None = None, asset_type: str = "stock"
+) -> tuple[int, int]:
     _, AsyncMacClient, enums, Market = _load_tdxman()
     Adjust, Period = enums
     count = rows_written = 0
     async with AsyncMacClient.from_best_host() as client:
-        for symbol in _symbols(root, "minutes", limit):
+        for symbol in _symbols(root, "minutes", limit, asset_type):
             start = last_marker(root, symbol, "minutes")
             frame = await client.get_stock_kline(
                 _tdx_market(symbol, Market), symbol, Period.MIN_1, 0, 800, 1, Adjust.NONE
@@ -346,18 +578,22 @@ def _write_period(path: Path, rows: list[dict[str, object]]) -> None:
     temporary.replace(path)
 
 
-@writer
 def update_online(
-    root: Path, period: str, async_mode: bool, limit: int | None = None
+    root: Path,
+    period: str,
+    async_mode: bool,
+    limit: int | None = None,
+    workers: int = 1,
+    asset_type: str = "stock",
 ) -> tuple[int, int]:
     if period == "daily":
         return (
-            asyncio.run(update_daily_async(root, limit))
+            asyncio.run(update_daily_async(root, limit, workers, asset_type))
             if async_mode
-            else update_daily(root, limit)
+            else update_daily(root, limit, workers, asset_type)
         )
     return (
-        asyncio.run(update_minutes_async(root, limit))
+        asyncio.run(update_minutes_async(root, limit, asset_type))
         if async_mode
-        else update_minutes(root, limit)
+        else update_minutes(root, limit, asset_type)
     )

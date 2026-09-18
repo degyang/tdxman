@@ -155,8 +155,18 @@ def test_fundwise_index_api_isolated_read_only_filters_and_projection(tmp_path):
         lookback=1,
         fields=["symbol", "date", "close", "up_count"],
     )
-    assert frame.symbol.tolist() == ["SH.881001"]
+    # 旧点号输入仍被接受，但输出统一为规范格式。
+    assert frame.symbol.tolist() == ["881001.SH"]
     assert frame.date.dt.year.tolist() == [2005]
+    # 规范输入与旧输入返回相同记录。
+    canonical = pool.read_index_daily(
+        symbols=["881001.SH"],
+        end="2009-12-31",
+        lookback=1,
+        fields=["symbol", "date", "close", "up_count"],
+    )
+    assert canonical.symbol.tolist() == ["881001.SH"]
+    assert canonical.close.tolist() == frame.close.tolist()
     assert frame.attrs["volume_unit"] == "tdx_index_volume"
     assert len(pool.list_indices()) == 2
     assert pool.read_index_daily(symbols=[]).empty

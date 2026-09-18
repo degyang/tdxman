@@ -37,8 +37,8 @@ def _index_category(period: Period) -> KlineCategory:
 
 
 @click.command(cls=StandardHelpCommand)
-@click.argument("market")
-@click.argument("code")
+@click.argument("symbol_or_market")
+@click.argument("code", required=False)
 @click.option(
     "--period", default="DAILY", help="K线周期: DAILY/5MIN/15MIN/30MIN/60MIN/1MIN/WEEKLY/MONTHLY"
 )
@@ -47,8 +47,8 @@ def _index_category(period: Period) -> KlineCategory:
 @click.option("--adjust", default="NONE", help="复权: NONE/QFQ/HFQ")
 @output_options
 def kline(
-    market: str,
-    code: str,
+    symbol_or_market: str,
+    code: str | None,
     period: str,
     count: int,
     start: int,
@@ -58,37 +58,45 @@ def kline(
 ) -> None:
     """获取 K 线数据。
 
-    示例：
+    示例（新格式）：
 
-      tdxman kline SZ 000001
+      tdxman kline 600519.SH
 
-      tdxman kline SH 600519 --adjust QFQ --count 30
+      tdxman kline 600519.SH --adjust QFQ --count 30
 
-      tdxman kline SZ 000001 --period 5MIN --format table
+      tdxman kline 000001.SZ --period 5MIN --format table
+
+      tdxman kline 000001.SH --period DAILY   # 上证指数
+
+    示例（旧格式兼容）：
+
+      tdxman kline SH 600519
+
+      tdxman kline SZ 000001 --period 5MIN
     """
     from .conn import get_mac_client, get_tdx_client
     from .output import print_output
-    from .parsers import parse_adjust, parse_market, parse_period
+    from .parsers import parse_adjust, parse_period, parse_symbol_or_market_code
 
     fmt = output_fmt
-    mkt = parse_market(market)
+    mkt, parsed_code = parse_symbol_or_market_code(symbol_or_market, code)
     parsed_period = parse_period(period)
     parsed_adjust = parse_adjust(adjust)
-    if _is_standard_index(mkt, code):
+    if _is_standard_index(mkt, parsed_code):
         if parsed_adjust != Adjust.NONE:
             raise click.UsageError("指数 K 线不支持复权")
         with get_tdx_client() as client:
             df = client.get_index_bars(
-                Market(mkt), code, _index_category(parsed_period), start=start, count=count
+                Market(mkt), parsed_code, _index_category(parsed_period), start=start, count=count
             )
     else:
         with get_mac_client() as client:
             df = client.get_stock_kline(
                 mkt,
-                code,
+                parsed_code,
                 period=parsed_period,
                 start=start,
                 count=count,
                 adjust=parsed_adjust,
             )
-    print_output(df, fmt, output_path, filename=code)
+    print_output(df, fmt, output_path, filename=parsed_code)

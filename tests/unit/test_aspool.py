@@ -1,6 +1,8 @@
 import unittest
 from datetime import date, datetime
 
+import pandas as pd
+
 from aspool.free_stockdb import _normalize
 from aspool.tdx_online import _fill_close_vol_ratio, _merge_rows
 
@@ -21,6 +23,22 @@ class DataSemanticsTest(unittest.TestCase):
         self.assertEqual(
             rows, [{"trade_date": date(2026, 9, 16), "name": "平安银行", "close": 11.8}]
         )
+
+    def test_merge_ignores_none_nan_and_pandas_na_but_keeps_false(self):
+        day = date(2026, 9, 16)
+        rows = _merge_rows(
+            [{"trade_date": day, "pre_close": 10.0, "is_st": False}],
+            [{"trade_date": day, "pre_close": float("nan"), "is_st": pd.NA}],
+            "trade_date",
+        )
+        self.assertEqual(rows, [{"trade_date": day, "pre_close": 10.0, "is_st": False}])
+
+    def test_merge_keeps_missing_fields_unknown_on_a_new_date(self):
+        day = date(2026, 9, 17)
+        rows = _merge_rows(
+            [], [{"trade_date": day, "pre_close": pd.NA, "is_st": float("nan")}], "trade_date"
+        )
+        self.assertEqual(rows, [{"trade_date": day}])
 
     def test_merge_supports_minute_timestamps(self):
         stamp = datetime(2026, 9, 16, 15)

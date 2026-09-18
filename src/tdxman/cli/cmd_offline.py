@@ -18,12 +18,12 @@ from ..offline import (
 )
 from .help import StandardHelpCommand
 from .output import output_options, print_output
-from .parsers import parse_market
+from .parsers import parse_symbol_or_market_code
 
 
 @click.command("offline", cls=StandardHelpCommand)
-@click.argument("market")
-@click.argument("code")
+@click.argument("symbol_or_market")
+@click.argument("code", required=False)
 @click.option(
     "--period",
     type=click.Choice(["DAILY", "1MIN", "5MIN"], case_sensitive=False),
@@ -45,8 +45,8 @@ from .parsers import parse_market
 )
 @output_options
 def offline(
-    market: str,
-    code: str,
+    symbol_or_market: str,
+    code: str | None,
     period: str,
     count: int,
     start: int,
@@ -56,23 +56,29 @@ def offline(
 ) -> None:
     """读取本地通达信 vipdoc K 线数据。
 
-    示例：
+    示例（新格式）：
+
+      tdxman offline 000001.SZ --period DAILY --count 30
+
+      tdxman offline 600519.SH --period 5MIN --format table
+
+    示例（旧格式兼容）：
 
       tdxman offline SZ 000001 --period DAILY --count 30
 
-      tdxman offline SH 600519 --period 5MIN --format table
+      tdxman offline SH 600519 --period 5MIN
     """
-    market_value = parse_market(market)
+    market_value, parsed_code = parse_symbol_or_market_code(symbol_or_market, code)
     period = period.upper()
     try:
         if period == "DAILY":
-            bars = read_daily_bars(find_daily_bar_file(market_value, code, vipdoc))
+            bars = read_daily_bars(find_daily_bar_file(market_value, parsed_code, vipdoc))
             daily_plus = True
         elif period == "1MIN":
-            bars = read_lc_min_bars(find_lc1_bar_file(market_value, code, vipdoc))
+            bars = read_lc_min_bars(find_lc1_bar_file(market_value, parsed_code, vipdoc))
             daily_plus = False
         else:
-            bars = read_5min_bars(find_5min_bar_file(market_value, code, vipdoc))
+            bars = read_5min_bars(find_5min_bar_file(market_value, parsed_code, vipdoc))
             daily_plus = False
     except TdxError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -80,7 +86,7 @@ def offline(
     df = _merge_bar_datetime(_to_df(bars), daily_plus=daily_plus)
     if not df.empty:
         df.insert(1, "market", "SH" if market_value == 1 else "SZ")
-        df.insert(2, "code", code)
+        df.insert(2, "code", parsed_code)
     end = max(0, len(df) - start)
     begin = max(0, end - count)
-    print_output(df.iloc[begin:end], output_fmt, output_path, filename=code)
+    print_output(df.iloc[begin:end], output_fmt, output_path, filename=parsed_code)

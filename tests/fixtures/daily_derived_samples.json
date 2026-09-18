@@ -1,0 +1,369 @@
+{
+  "version": "2.1",
+  "description": "日线衍生字段可核对样例（v2.1 复审补正版）",
+  "notes": {
+    "session_axis": "输入必须是连续交易日序列（不含周末/节假日）",
+    "truncated_history": "首条记录无前史时，consecutive=null（不能确认首板）",
+    "high_above_limit": "A股实际交易中high不应超过涨停价；high>limit_up表示数据异常，应标记invalid",
+    "st_rule": "注册制板块(创业板/科创板)ST也是20%，主板ST是5%"
+  },
+  "samples": [
+    {
+      "name": "主板普通涨停",
+      "symbol": "600519",
+      "market": "SH",
+      "board_type": "MAIN",
+      "is_st": false,
+      "trade_date": "2026-09-15",
+      "input": {
+        "pre_close": 1800.00,
+        "open": 1810.00,
+        "high": 1980.00,
+        "low": 1790.00,
+        "close": 1980.00
+      },
+      "expected": {
+        "limit_pct": 0.10,
+        "limit_up": 1980.00,
+        "limit_down": 1620.00,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": true,
+        "is_limit_down": false,
+        "touched_limit_up": true,
+        "touched_limit_down": false,
+        "is_sealed_limit_up": true,
+        "is_sealed_limit_down": false,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": false
+      }
+    },
+    {
+      "name": "ST股票涨停（主板）",
+      "symbol": "000001",
+      "market": "SZ",
+      "board_type": "MAIN",
+      "is_st": true,
+      "trade_date": "2026-09-15",
+      "input": {
+        "pre_close": 5.00,
+        "open": 5.10,
+        "high": 5.25,
+        "low": 4.90,
+        "close": 5.25
+      },
+      "expected": {
+        "limit_pct": 0.05,
+        "limit_up": 5.25,
+        "limit_down": 4.75,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": true,
+        "is_limit_down": false,
+        "touched_limit_up": true,
+        "touched_limit_down": false,
+        "is_sealed_limit_up": true,
+        "is_sealed_limit_down": false,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": false
+      }
+    },
+    {
+      "name": "创业板ST股票（注册制后20%）",
+      "symbol": "300001",
+      "market": "SZ",
+      "board_type": "GEM",
+      "is_st": true,
+      "trade_date": "2026-09-15",
+      "input": {
+        "pre_close": 10.00,
+        "open": 10.50,
+        "high": 12.00,
+        "low": 10.00,
+        "close": 11.50
+      },
+      "expected": {
+        "limit_pct": 0.20,
+        "limit_up": 12.00,
+        "limit_down": 8.00,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": false,
+        "is_limit_down": false,
+        "touched_limit_up": true,
+        "touched_limit_down": false,
+        "is_sealed_limit_up": false,
+        "is_sealed_limit_down": false,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": false
+      }
+    },
+    {
+      "name": "科创板20%涨跌幅",
+      "symbol": "688001",
+      "market": "SH",
+      "board_type": "STAR",
+      "is_st": false,
+      "trade_date": "2026-09-15",
+      "input": {
+        "pre_close": 50.00,
+        "open": 52.00,
+        "high": 60.00,
+        "low": 51.00,
+        "close": 58.00
+      },
+      "expected": {
+        "limit_pct": 0.20,
+        "limit_up": 60.00,
+        "limit_down": 40.00,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": false,
+        "is_limit_down": false,
+        "touched_limit_up": true,
+        "touched_limit_down": false,
+        "is_sealed_limit_up": false,
+        "is_sealed_limit_down": false,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": false
+      }
+    },
+    {
+      "name": "北交所30%涨跌幅",
+      "symbol": "830001",
+      "market": "BJ",
+      "board_type": "BJ",
+      "is_st": false,
+      "trade_date": "2026-09-15",
+      "input": {
+        "pre_close": 10.00,
+        "open": 11.00,
+        "high": 13.00,
+        "low": 10.50,
+        "close": 12.50
+      },
+      "expected": {
+        "limit_pct": 0.30,
+        "limit_up": 13.00,
+        "limit_down": 7.00,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": false,
+        "is_limit_down": false,
+        "touched_limit_up": true,
+        "touched_limit_down": false,
+        "is_sealed_limit_up": false,
+        "is_sealed_limit_down": false,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": false
+      }
+    },
+    {
+      "name": "一字涨停板",
+      "symbol": "600000",
+      "market": "SH",
+      "board_type": "MAIN",
+      "is_st": false,
+      "trade_date": "2026-09-15",
+      "input": {
+        "pre_close": 10.00,
+        "open": 11.00,
+        "high": 11.00,
+        "low": 11.00,
+        "close": 11.00
+      },
+      "expected": {
+        "limit_pct": 0.10,
+        "limit_up": 11.00,
+        "limit_down": 9.00,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": true,
+        "is_limit_down": false,
+        "touched_limit_up": true,
+        "touched_limit_down": false,
+        "is_sealed_limit_up": true,
+        "is_sealed_limit_down": false,
+        "is_one_word_limit_up": true,
+        "is_one_word_limit_down": false
+      }
+    },
+    {
+      "name": "一字跌停板",
+      "symbol": "600000",
+      "market": "SH",
+      "board_type": "MAIN",
+      "is_st": false,
+      "trade_date": "2026-09-15",
+      "input": {
+        "pre_close": 10.00,
+        "open": 9.00,
+        "high": 9.00,
+        "low": 9.00,
+        "close": 9.00
+      },
+      "expected": {
+        "limit_pct": 0.10,
+        "limit_up": 11.00,
+        "limit_down": 9.00,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": false,
+        "is_limit_down": true,
+        "touched_limit_up": false,
+        "touched_limit_down": true,
+        "is_sealed_limit_up": false,
+        "is_sealed_limit_down": true,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": true
+      }
+    },
+    {
+      "name": "跌停板（非一字）",
+      "symbol": "600000",
+      "market": "SH",
+      "board_type": "MAIN",
+      "is_st": false,
+      "trade_date": "2026-09-15",
+      "input": {
+        "pre_close": 10.00,
+        "open": 9.50,
+        "high": 9.80,
+        "low": 9.00,
+        "close": 9.00
+      },
+      "expected": {
+        "limit_pct": 0.10,
+        "limit_up": 11.00,
+        "limit_down": 9.00,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": false,
+        "is_limit_down": true,
+        "touched_limit_up": false,
+        "touched_limit_down": true,
+        "is_sealed_limit_up": false,
+        "is_sealed_limit_down": true,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": false
+      }
+    },
+    {
+      "name": "沪深新股上市前5日",
+      "symbol": "301001",
+      "market": "SZ",
+      "board_type": "GEM",
+      "is_st": false,
+      "listing_date": "2026-09-15",
+      "trade_date": "2026-09-15",
+      "listed_days": 1,
+      "input": {
+        "pre_close": null,
+        "open": 28.00,
+        "high": 35.00,
+        "low": 25.00,
+        "close": 30.00
+      },
+      "expected": {
+        "limit_pct": null,
+        "limit_up": null,
+        "limit_down": null,
+        "price_limit_status": "NO_LIMIT",
+        "is_limit_up": null,
+        "is_limit_down": null,
+        "touched_limit_up": null,
+        "touched_limit_down": null,
+        "is_sealed_limit_up": null,
+        "is_sealed_limit_down": null,
+        "is_one_word_limit_up": null,
+        "is_one_word_limit_down": null
+      }
+    },
+    {
+      "name": "北交所新股首日",
+      "symbol": "920001",
+      "market": "BJ",
+      "board_type": "BJ",
+      "is_st": false,
+      "listing_date": "2026-09-15",
+      "trade_date": "2026-09-15",
+      "listed_days": 1,
+      "input": {
+        "pre_close": null,
+        "open": 10.00,
+        "high": 13.00,
+        "low": 9.00,
+        "close": 12.00
+      },
+      "expected": {
+        "limit_pct": null,
+        "limit_up": null,
+        "limit_down": null,
+        "price_limit_status": "NO_LIMIT",
+        "is_limit_up": null,
+        "is_limit_down": null,
+        "touched_limit_up": null,
+        "touched_limit_down": null,
+        "is_sealed_limit_up": null,
+        "is_sealed_limit_down": null,
+        "is_one_word_limit_up": null,
+        "is_one_word_limit_down": null
+      }
+    },
+    {
+      "name": "北交所新股次日",
+      "symbol": "920001",
+      "market": "BJ",
+      "board_type": "BJ",
+      "is_st": false,
+      "listing_date": "2026-09-15",
+      "trade_date": "2026-09-16",
+      "listed_days": 2,
+      "input": {
+        "pre_close": 12.00,
+        "open": 13.00,
+        "high": 15.60,
+        "low": 12.50,
+        "close": 15.00
+      },
+      "expected": {
+        "limit_pct": 0.30,
+        "limit_up": 15.60,
+        "limit_down": 8.40,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": false,
+        "is_limit_down": false,
+        "touched_limit_up": true,
+        "touched_limit_down": false,
+        "is_sealed_limit_up": false,
+        "is_sealed_limit_down": false,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": false
+      }
+    },
+    {
+      "name": "数据异常：high超涨停价",
+      "symbol": "600000",
+      "market": "SH",
+      "board_type": "MAIN",
+      "is_st": false,
+      "trade_date": "2026-09-15",
+      "data_quality": "INVALID",
+      "invalid_reason": "high(1150) > limit_up(1100)，A股交易所限制下不应出现",
+      "input": {
+        "pre_close": 1000.00,
+        "open": 1010.00,
+        "high": 1150.00,
+        "low": 990.00,
+        "close": 1100.00
+      },
+      "expected": {
+        "limit_pct": 0.10,
+        "limit_up": 1100.00,
+        "limit_down": 900.00,
+        "price_limit_status": "KNOWN",
+        "is_limit_up": true,
+        "is_limit_down": false,
+        "touched_limit_up": true,
+        "touched_limit_down": false,
+        "is_sealed_limit_up": true,
+        "is_sealed_limit_down": false,
+        "is_one_word_limit_up": false,
+        "is_one_word_limit_down": false,
+        "_note": "此样例用于测试边界条件，实际数据中high>limit_up表示数据异常"
+      }
+    }
+  ]
+}

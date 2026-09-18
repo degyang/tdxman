@@ -54,3 +54,27 @@ BASE_FIELDS = {
     "turnover_rate": ("DOUBLE", "percent"),
 }
 DAILY_FIELDS = {**BASE_FIELDS, **OPTIONAL_FIELDS}
+
+# 涨跌停衍生字段（Phase 2+）
+LIMIT_FIELDS = {
+    "limit_up": ("DOUBLE", "CNY/share"),
+    "limit_down": ("DOUBLE", "CNY/share"),
+    "limit_pct": ("DOUBLE", "ratio"),  # 0.10 = 10%
+    "price_limit_status": ("VARCHAR", None),  # KNOWN/UNKNOWN/NO_LIMIT
+}
+LIMIT_STATUS_FIELDS = {
+    "is_limit_up": ("BOOLEAN", None),
+    "is_limit_down": ("BOOLEAN", None),
+    "touched_limit_up": ("BOOLEAN", None),
+    "touched_limit_down": ("BOOLEAN", None),
+    "is_sealed_limit_up": ("BOOLEAN", None),  # 含一字板
+    "is_sealed_limit_down": ("BOOLEAN", None),  # 含一字板
+    "is_one_word_limit_up": ("BOOLEAN", None),  # 一字涨停板
+    "is_one_word_limit_down": ("BOOLEAN", None),  # 一字跌停板
+}
+CONSECUTIVE_FIELDS = {
+    "consecutive_limit_up": ("INTEGER", None),  # null=不确定
+    "consecutive_limit_down": ("INTEGER", None),  # null=不确定
+    "board_break": ("BOOLEAN", None),  # null=不确定
+}
+DAILY_DERIVED_FIELDS = {**LIMIT_FIELDS, **LIMIT_STATUS_FIELDS, **CONSECUTIVE_FIELDS}

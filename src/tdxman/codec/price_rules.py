@@ -1,7 +1,258 @@
 """A 股价格限制规则引擎。"""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date
+
 from ..models.enums import Market
 from ..models.finance import FinanceInfo
+
+# 各板块规则的生效起点。早于该日期的历史区间无可靠依据，按 UNKNOWN 处理。
+STAR_EFFECTIVE = date(2019, 7, 22)  # 科创板开板
+GEM_REGISTRATION_EFFECTIVE = date(2020, 8, 24)  # 创业板注册制改革
+GEM_INCEPTION = date(2009, 10, 30)  # 创业板开板
+BJ_EFFECTIVE = date(2021, 11, 15)  # 北交所开市
+MAIN_BOARD_INCEPTION = date(1996, 12, 16)  # 主板涨跌幅限制制度生效
+# The 2023 revised SSE Trading Rules apply to the first main-board stock
+# issued under the registration system, which listed on 2023-04-10.
+MAIN_BOARD_IPO_WINDOW_EFFECTIVE = date(2023, 4, 10)
+
+
+@dataclass(frozen=True)
+class LimitRule:
+    """一条已确认依据的涨跌幅规则。"""
+
+    limit_pct: float
+    label: str
+    effective_from: date
+    source: str
+
+
+@dataclass(frozen=True)
+class LimitRuleResult:
+    """规则解析结果。
+
+    三态：
+    - rule 非空            => KNOWN
+    - no_limit 为 True     => NO_LIMIT（已确认处于无涨跌幅限制状态）
+    - 两者皆空             => UNKNOWN，reason 说明原因
+    """
+
+    rule: LimitRule | None
+    reason: str | None = None
+    no_limit: bool = False
+    no_limit_basis: str | None = None
+
+    @property
+    def is_known(self) -> bool:
+        return self.rule is not None
+
+    @property
+    def is_no_limit(self) -> bool:
+        return self.no_limit
+
+
+def is_star_board(code: str) -> bool:
+    return code.startswith("688")
+
+
+def is_gem_board(code: str) -> bool:
+    return code.startswith(("300", "301"))
+
+
+def is_bj_board(code: str) -> bool:
+    return code.startswith(("43", "83", "87", "92"))
+
+
+# 规则依据出处（可定位的交易所公开规则）。
+_MAIN_BOARD_SOURCE = (
+    "《上海证券交易所交易规则》第3.4节 / 《深圳证券交易所交易规则》第3.4节："
+    "主板日涨跌幅限制为10%；风险警示股票为5%（1998-04-22起实施风险警示制度）"
+)
+_STAR_SOURCE = (
+    "《上海证券交易所科创板股票交易特别规定》（2019-07-22施行）第4章："
+    "竞价交易涨跌幅限制为20%，风险警示股票同为20%"
+)
+_GEM_REG_SOURCE = (
+    "《深圳证券交易所创业板交易特别规定》（2020-08-24施行）第4章："
+    "竞价交易涨跌幅限制为20%，风险警示股票同为20%"
+)
+_GEM_LEGACY_SOURCE = (
+    "《深圳证券交易所创业板股票上市规则》（2009-10-30施行，注册制前）："
+    "日涨跌幅限制为10%；风险警示股票为5%"
+)
+_BJ_SOURCE = (
+    "《北京证券交易所交易规则》（2021-11-15施行）第3.4节："
+    "竞价交易涨跌幅限制为30%，风险警示股票同为30%"
+)
+
+# 上市初期无涨跌幅窗口的适用区间与出处。
+# 区间内按窗口交易日数处理；区间外（含更早历史）无可靠依据，返回 None 交由上层记 UNKNOWN。
+_NO_LIMIT_WINDOWS = (
+    # (判定, 窗口交易日数, 适用起, 适用止, 出处)
+    (
+        lambda market, code: is_star_board(code),
+        5,
+        STAR_EFFECTIVE,
+        None,
+        "《科创板股票交易特别规定》：首次公开发行上市后前5个交易日不设涨跌幅限制",
+    ),
+    (
+        lambda market, code: is_gem_board(code),
+        5,
+        GEM_REGISTRATION_EFFECTIVE,
+        None,
+        "《创业板交易特别规定》（2020-08-24起）："
+        "首次公开发行上市后前5个交易日不设涨跌幅限制",
+    ),
+    (
+        lambda market, code: is_bj_board(code),
+        1,
+        BJ_EFFECTIVE,
+        None,
+        "《北京证券交易所交易规则》：公开发行上市首日不设涨跌幅限制",
+    ),
+    (
+        lambda market, code: market == Market.SH and code.startswith("60"),
+        5,
+        MAIN_BOARD_IPO_WINDOW_EFFECTIVE,
+        None,
+        "《上海证券交易所交易规则（2023年修订）》第3.4.13条（上证发〔2023〕32号）："
+        "自首只按《首次公开发行股票注册管理办法》发行的主板股票上市首日起，"
+        "首次公开发行上市股票上市后前5个交易日不设价格涨跌幅限制；"
+        "上交所首批主板注册制企业于2023-04-10上市",
+    ),
+    (
+        lambda market, code: market == Market.SZ and code.startswith("00"),
+        5,
+        MAIN_BOARD_IPO_WINDOW_EFFECTIVE,
+        None,
+        "《深圳证券交易所交易规则（2023年修订）》第3.3.15条及全面注册制主板适用安排："
+        "自首只按《首次公开发行股票注册管理办法》发行的主板股票上市首日起，"
+        "首次公开发行上市股票上市后前5个交易日不设价格涨跌幅限制；"
+        "沪深首批主板注册制企业于2023-04-10上市",
+    ),
+)
+
+
+def resolve_limit_rule(
+    market: Market,
+    code: str,
+    name: str,
+    trade_date: date,
+    st_status: bool | None = None,
+    listed_days: int | None = None,
+    observed_sessions: int | None = None,
+) -> LimitRuleResult:
+    """按交易日解析适用的涨跌幅规则。
+
+    Args:
+        st_status:
+            该交易日是否风险警示（ST）。三态：True/False 为已确认，None 为无依据。
+            无历史 ST 来源时必须传 None，不得用当前名称回填历史。
+        listed_days:
+            该交易日为止的**实际**已上市交易日数（首日=1）。可靠来源才可传。
+        observed_sessions:
+            池内可观察到的、截至该日的会话数。这是上市交易日数的**下界**：
+            首根可得日线必然不早于上市日，故 observed_sessions > 窗口
+            即可**排除**无涨跌幅窗口；反之只能判为 UNKNOWN。
+
+    Returns:
+        LimitRuleResult：KNOWN（rule 非空）/ NO_LIMIT（no_limit=True）/ UNKNOWN。
+    """
+    if _is_index_like(market, code, name):
+        return LimitRuleResult(None, "指数/板块类代码不属于个股涨跌停范围")
+
+    # 板块身份与规则生效区间。
+    if is_star_board(code):
+        if trade_date < STAR_EFFECTIVE:
+            return LimitRuleResult(None, f"早于科创板开板日 {STAR_EFFECTIVE}，无可靠规则依据")
+        rule = LimitRule(0.20, "科创板", STAR_EFFECTIVE, _STAR_SOURCE)
+    elif is_bj_board(code):
+        if trade_date < BJ_EFFECTIVE:
+            return LimitRuleResult(None, f"早于北交所开市日 {BJ_EFFECTIVE}，无可靠规则依据")
+        rule = LimitRule(0.30, "北交所", BJ_EFFECTIVE, _BJ_SOURCE)
+    elif is_gem_board(code):
+        if trade_date >= GEM_REGISTRATION_EFFECTIVE:
+            rule = LimitRule(
+                0.20, "创业板(注册制)", GEM_REGISTRATION_EFFECTIVE, _GEM_REG_SOURCE
+            )
+        else:
+            if trade_date < GEM_INCEPTION:
+                return LimitRuleResult(None, f"早于创业板开板日 {GEM_INCEPTION}，无可靠规则依据")
+            if st_status is None:
+                return LimitRuleResult(
+                    None, "创业板注册制前涨跌幅取决于风险警示状态，无历史 ST 依据"
+                )
+            pct = 0.05 if st_status else 0.10
+            label = "创业板(注册制前,ST)" if st_status else "创业板(注册制前)"
+            rule = LimitRule(pct, label, GEM_INCEPTION, _GEM_LEGACY_SOURCE)
+    else:
+        if trade_date < MAIN_BOARD_INCEPTION:
+            return LimitRuleResult(
+                None, f"早于主板涨跌幅制度生效日 {MAIN_BOARD_INCEPTION}，无可靠规则依据"
+            )
+        if st_status is None:
+            return LimitRuleResult(None, "主板涨跌幅取决于风险警示状态，无历史 ST 依据")
+        pct = 0.05 if st_status else 0.10
+        label = "主板(ST)" if st_status else "主板"
+        rule = LimitRule(pct, label, MAIN_BOARD_INCEPTION, _MAIN_BOARD_SOURCE)
+
+    # 上市无涨跌幅窗口：必须能可靠排除，否则不得按常规限价声称 KNOWN。
+    window_spec = resolve_no_limit_window(market, code, trade_date)
+    if window_spec is None:
+        return LimitRuleResult(
+            None,
+            f"{trade_date} 所属时期的上市无涨跌幅窗口规则未确认，"
+            "不得按常规限价处理（不套用当前窗口）",
+        )
+    window, window_source = window_spec
+    if window > 0:
+        if listed_days is not None:
+            if 0 < listed_days <= window:
+                return LimitRuleResult(
+                    None,
+                    None,
+                    no_limit=True,
+                    no_limit_basis=(
+                        f"上市第 {listed_days} 个交易日，处于 {window} 日无涨跌幅窗口；"
+                        f"依据：{window_source}"
+                    ),
+                )
+        elif observed_sessions is None:
+            return LimitRuleResult(None, "缺上市日期依据，无法排除上市无涨跌幅窗口")
+        elif observed_sessions <= window:
+            return LimitRuleResult(
+                None,
+                f"可观察会话仅 {observed_sessions} 个（窗口 {window} 日），"
+                "无法排除上市无涨跌幅窗口，缺可靠上市依据",
+            )
+
+    return LimitRuleResult(rule)
+
+
+def resolve_no_limit_window(
+    market: Market, code: str, trade_date: date
+) -> tuple[int, str] | None:
+    """该交易日适用的上市初期无涨跌幅窗口。
+
+    Returns:
+        (窗口交易日数, 出处)。窗口为 0 表示该板块无此窗口。
+        返回 None 表示**该时期窗口规则无可靠依据**，调用方应记 UNKNOWN。
+    """
+    if _is_index_like(market, code, ""):
+        return (0, "指数/板块类不适用个股上市窗口")
+    for predicate, window, effective_from, effective_to, source in _NO_LIMIT_WINDOWS:
+        if not predicate(market, code):
+            continue
+        if trade_date < effective_from:
+            # 该板块该时期尚无已确认的窗口规则。
+            return None
+        if effective_to is not None and trade_date > effective_to:
+            return None
+        return (window, source)
+    return (0, "该证券不属于已知上市窗口板块")
 
 
 def get_no_limit_window_days(market: Market, code: str, name: str) -> int:
@@ -70,17 +321,24 @@ def compute_price_limits(
     if listed_days is not None and 0 < listed_days <= no_limit_window_days:
         return None, None
 
-    limit_pct = 0.10  # 默认 10%
+    # 规则依据：
+    # - 主板(60/00): 普通±10%, ST±5%
+    # - 创业板(30): 2020-08-24后注册制, 普通±20%, ST±20%
+    # - 科创板(688): 注册制, 普通±20%, ST±20%
+    # - 北交所(43/83/87/92): 普通±30%, ST±30%
 
-    # 2. ST / *ST 判断
-    if "ST" in upper_name:
-        limit_pct = 0.05
-    # 3. 科创板 (688) / 创业板 (300, 301)
-    elif code.startswith("688") or code.startswith("300") or code.startswith("301"):
+    # 1. 科创板/创业板: 注册制板块, ST也是20%
+    if code.startswith("688") or code.startswith("300") or code.startswith("301"):
         limit_pct = 0.20
-    # 4. 北交所 (43, 83, 87, 92)
+    # 2. 北交所: 30%
     elif code.startswith(("43", "83", "87", "92")):
         limit_pct = 0.30
+    # 3. 主板 ST: 5%
+    elif "ST" in upper_name:
+        limit_pct = 0.05
+    # 4. 主板普通: 10%
+    else:
+        limit_pct = 0.10
 
     # `listed_days` 是更可靠的交易日维度输入；finance_info 仍保留给上层调用方扩展。
     _ = finance_info
