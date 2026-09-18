@@ -1,8 +1,8 @@
 # 日终稀疏涨跌停事件 v4 — v3 复审补正交付
 
 **日期**：2026-09-18
-**依赖树**：HEAD `cb32022`；本轮改动仍在工作区，未提交 Git
-**状态**：v3 复审三项补正已完成，待 PM 复审
+**依赖树**：基线 `cb32022`；已纳入本地 checkpoint `a78fb49`
+**状态**：v3 复审三项补正已完成，受限范围工程验收通过；已完成本地 Git 提交
 **前版**：[`daily_limit_events_delivery_v3.md`](daily_limit_events_delivery_v3.md)
 
 本轮严格按 Fundwise 审核文档的“v3复审”执行，仅处理早期失败陈旧覆盖、主板上市窗口日期依据、观测会话不完整三项阻塞。未改生产池、未联网补数据、未做全历史重建、未接实时、未改 Fundwise 业务代码。
@@ -88,3 +88,5 @@ ruff check src/aspool/limit_events.py src/aspool/limit_api.py \
 
 **实际工作区**：`/mnt/d/Workstation/Projects/tdxman`
 **Fundwise 登记**：`/mnt/d/Workstation/Projects/Fundwise/docs/northstar/reviews/UP-daily-limit-events-done.md`
+
+本交付文档及对应事件实现、测试随 `a78fb49` 提交；未执行 push。

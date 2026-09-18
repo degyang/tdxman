@@ -2,7 +2,7 @@
 
 **日期**：2026-09-18
 **审核依据**：`Fundwise/docs/northstar/reviews/UP-daily-limit-events-pm-review.md` 的“v4复审”及其“增量字段来源核查与最小补齐方案”指令。
-**本轮状态**：来源核查完成；未修改生产代码、未联网、未维护生产数据、未提交 Git；待 PM 决定下一最小实施包。
+**本轮状态**：来源核查轮记录完成；本文件保留其“未修改生产代码”的历史口径。后续最小实施包已另行完成并记录于 `daily_limit_source_quality_delivery.md`，相关成果随 checkpoint `a78fb49` 提交。
 
 ## 1. 核查边界与证据
 
