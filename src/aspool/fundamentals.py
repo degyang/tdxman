@@ -199,6 +199,13 @@ def _quote_bar(quote: dict[str, object], trade_date: date) -> dict[str, object]:
         "vol_ratio": quote.get("vol_ratio"),
         "turnover": quote.get("turnover"),
     }
+    from .st_source import classify_st_name
+
+    st_status = classify_st_name(quote.get("name"))
+    if st_status is not None:
+        row["is_st"] = st_status
+        row["is_st_source"] = "tdxman:quote_name"
+        row["is_st_name_date"] = trade_date
     if not is_missing_value(close) and not is_missing_value(pre_close):
         try:
             close_value = float(close)
@@ -308,7 +315,9 @@ def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
             for entry in fetch_sync(batches, factory, request, workers, retry):
                 consume(entry)
     tick = perf_counter()
-    successes, changed_rows, unchanged, failures, quality_rows = _publish_quote_rows(root, pending)
+    successes, changed_rows, unchanged, failures, quality_rows, quote_dates = _publish_quote_rows(
+        root, pending
+    )
     report["write_seconds"] = perf_counter() - tick
     report["success"] = successes
     report["changed_rows"] = changed_rows
@@ -317,6 +326,26 @@ def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
     report["field_quality"] = build_field_quality_report(
         quality_rows, "stock", "tdxman:quote"
     )
+    # Derive from every successful dated quote, not only changed parquet rows:
+    # an existing raw row may still have no published or stale derived batch.
+    if quote_dates:
+        try:
+            from .limit_events import compute_limit_events, summarize_published_limit_quality
+
+            report["limit_events"] = {
+                "dates": [day.isoformat() for day in quote_dates],
+                "batches": compute_limit_events(root, quote_dates, asset_type="stock"),
+                "status": "ok",
+            }
+            report["limit_events"]["rule_quality"] = summarize_published_limit_quality(
+                root, quote_dates
+            )
+        except Exception as exc:  # noqa: BLE001 - preserve raw quote success for retry
+            report["limit_events"] = {
+                "dates": [day.isoformat() for day in quote_dates],
+                "status": "failed",
+                "error": str(exc),
+            }
     report["missing"] = sorted(set(symbols) - seen - failed_symbols)
     report["total_seconds"] = perf_counter() - started
     report["finished_at"] = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat()
@@ -341,7 +370,7 @@ def _publish_quote_rows(root, pending):
             row[0]: row[1].date() if isinstance(row[1], datetime) else row[1]
             for row in conn.execute("SELECT symbol,end_date FROM coverage").fetchall()
         }
-    coverage, quality_rows, snapshots, failures = [], [], [], []
+    coverage, quality_rows, snapshots, failures, changed_dates = [], [], [], [], []
     success = changed_rows = unchanged = 0
     for code, row, snapshot in pending:
         try:
@@ -356,6 +385,7 @@ def _publish_quote_rows(root, pending):
                 _enrich_daily([row], snapshot),
                 "tdxman:quote",
                 coverage=coverage,
+                changed_dates=changed_dates,
                 quality_rows=quality_rows,
             )
             snapshots.append(snapshot)
@@ -366,7 +396,8 @@ def _publish_quote_rows(root, pending):
             failures.append({"symbol": code, "error": str(exc)})
     record_coverages(root, coverage)
     _write(root, snapshots)
-    return success, changed_rows, unchanged, failures, quality_rows
+    quote_dates = sorted({row["trade_date"] for _, row, _ in pending})
+    return success, changed_rows, unchanged, failures, quality_rows, quote_dates
 
 
 def _refresh_sync(root: Path, symbols: list[str]) -> tuple[int, int]:
