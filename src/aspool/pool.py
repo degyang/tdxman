@@ -169,8 +169,9 @@ class DataPool:
                     else f'CAST(NULL AS {dtype}) AS "{key}"'
                     for key, (dtype, _) in OPTIONAL_FIELDS.items()
                 )
-                sql = f"""SELECT market || '.' || symbol AS symbol, market,
-                    symbol AS code, trade_date AS date, open, high, low, close,
+                # 输出规范格式: code.market (如 000001.SH)
+                sql = f"""SELECT {code} || '.' || {market} AS symbol, {market} AS market,
+                    {code} AS code, trade_date AS date, open, high, low, close,
                     {volume} AS volume, amount, {rate} AS turnover_rate,
                     {extensions} FROM bars{where}"""
                 if lookback:
