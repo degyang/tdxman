@@ -72,32 +72,69 @@ def fetch_sync(items, factory, fetch, workers=1, retry_factory=None):
             client.__exit__(None, None, None)
 
 
-async def fetch_async(items, factory, fetch, workers=1, retry_factory=None):
+async def fetch_async(
+    items,
+    factory,
+    fetch,
+    workers=1,
+    retry_factory=None,
+    request_timeout: float | None = 30.0,
+    max_retries: int = 2,
+    retry_backoff: float = 0.5,
+):
     if workers < 1:
         raise ValueError("workers must be positive")
+    if request_timeout is not None and request_timeout <= 0:
+        raise ValueError("request_timeout must be positive")
+    if max_retries < 0:
+        raise ValueError("max_retries must be non-negative")
+    if retry_backoff < 0:
+        raise ValueError("retry_backoff must be non-negative")
     items = list(items)
     workers = min(workers, max(1, len(items)))
     queue = asyncio.Queue(maxsize=workers * 2)
 
     async def run(chunk):
         remaining = list(chunk)
+
+        async def invoke(client, item):
+            try:
+                operation = fetch(client, item)
+                if request_timeout is None:
+                    return await operation
+                return await asyncio.wait_for(operation, timeout=request_timeout)
+            except asyncio.TimeoutError as exc:
+                raise TimeoutError(f"异步请求超时（{request_timeout:g}s）") from exc
+
+        async def request_with_retry(client, item):
+            last_error = None
+            for attempt in range(max_retries + 1):
+                if attempt == 0 or retry_factory is None:
+                    try:
+                        return await invoke(client, item)
+                    except Exception as exc:  # noqa: BLE001 - retry the transport boundary
+                        last_error = exc
+                else:
+                    if retry_backoff:
+                        await asyncio.sleep(retry_backoff * (2 ** (attempt - 1)))
+                    try:
+                        async with retry_factory() as retry_client:
+                            return await invoke(retry_client, item)
+                    except Exception as exc:  # noqa: BLE001 - retry the transport boundary
+                        last_error = exc
+                if attempt == max_retries:
+                    raise last_error  # type: ignore[misc]
+            raise AssertionError("unreachable")
+
         try:
             async with factory() as client:
                 for item in chunk:
                     start = perf_counter()
                     try:
-                        result = await fetch(client, item)
+                        result = await request_with_retry(client, item)
                         entry = (item, result, None, perf_counter() - start)
                     except Exception as exc:
-                        if retry_factory is None:
-                            entry = (item, None, exc, perf_counter() - start)
-                        else:
-                            try:
-                                async with retry_factory() as retry_client:
-                                    result = await fetch(retry_client, item)
-                                entry = (item, result, None, perf_counter() - start)
-                            except Exception as retry_error:
-                                entry = (item, None, retry_error, perf_counter() - start)
+                        entry = (item, None, exc, perf_counter() - start)
                     await queue.put(entry)
                     remaining.pop(0)
         except Exception as exc:
