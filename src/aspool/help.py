@@ -17,7 +17,11 @@ _REFERENCES: dict[str, HelpRows] = {
         ("--limit", "只处理前 N 个标的，用于小批量验证"),
     ),
     "aspool sync": (
-        ("--type", "stock（默认）：股票；index：独立指数池，仅 tdx/daily，读取完整可用历史"),
+        (
+            "--type",
+            "stock（默认）：股票；index：独立指数池；ex：跨市场扩展资产；etf：ETF 兼容入口",
+        ),
+        ("--category", "type=ex 时的扩展资产类别；当前已交付 ETF，其余类别按配置规划"),
         (
             "--source",
             "tdx：股票修补已导入标的，指数读取配置清单；free-stockdb：首次导入或完整历史校准后补齐尾部",
@@ -25,9 +29,11 @@ _REFERENCES: dict[str, HelpRows] = {
         ("--period", "daily 或 minutes；stock + source=tdx 要求该周期已有导入标的"),
         ("--tdx-mode", "仅 source=tdx 时有效；online 使用在线 K 线，offline 读取 vipdoc 日线"),
         ("--async", "仅在线 tdx 同步时使用异步客户端"),
+        ("--workers", "日线独立连接数，默认4，范围1～8；同步/异步均支持"),
         ("--limit", "只处理前 N 个标的，用于小批量验证"),
     ),
     "aspool update": (
+        ("--async / --workers", "异步报价及独立连接数；默认同步、4连接，--workers 1为串行"),
         ("--root", "目录不存在时自动初始化；但只更新已存在的日线标的，不导入历史"),
         ("数据范围", "只更新当前或最近交易日的日线和低频字段"),
         ("执行限制", "中国工作日 09:00 至 15:30（含）拒绝执行"),
@@ -38,13 +44,18 @@ _REFERENCES: dict[str, HelpRows] = {
         ("--async", "使用 tdxman 异步 quote 客户端"),
         ("--limit", "只处理前 N 个标的，用于小批量验证"),
     ),
-    "aspool status": (("数据范围", "日线、分钟线覆盖范围和最近一次同步状态"),),
+    "aspool status": (("数据范围", "日线、分钟线、指数覆盖范围和最近一次同步状态"),),
+    "aspool universe": (
+        ("--type", "stock（默认）或 etf；刷新对应的证券目录"),
+        ("数据范围", "当前证券目录、待初始化和非活跃代码"),
+    ),
     "aspool query": (
         ("SYMBOL", "市场加代码，如 SZ000001、SH600519"),
         ("--period", "daily 或 minutes"),
         ("--start / --end", "daily 使用 YYYY-MM-DD；minutes 也可使用 YYYY-MM-DDTHH:MM:SS"),
         ("--format", "table、csv 或 json；缺省为 table"),
     ),
+    "aspool ex categories": (("数据范围", "ETF、港股、美股和大宗期货等扩展资产类别及交付状态"),),
 }
 
 _EXAMPLES: dict[str, tuple[str, ...]] = {
@@ -54,12 +65,14 @@ _EXAMPLES: dict[str, tuple[str, ...]] = {
     "aspool sync": (
         "aspool sync --source tdx --tdx-mode online --period daily",
         "aspool sync --type index --source tdx --period daily",
+        "aspool sync --type ex --category ETF --source tdx --period daily",
         "aspool sync --source free-stockdb --period daily",
     ),
     "aspool update": ("aspool update",),
     "aspool fundamentals": ("aspool fundamentals --limit 20",),
     "aspool status": ("aspool status",),
     "aspool query": ("aspool query SZ000001 --period daily --format table",),
+    "aspool ex categories": ("aspool ex categories",),
 }
 
 
@@ -96,7 +109,7 @@ class AspoolGroup(click.Group):
     _COMMAND_GROUPS = (
         ("初始化与导入", ("init", "import")),
         ("同步与维护", ("sync", "update", "fundamentals")),
-        ("读取与检查", ("query", "status")),
+        ("读取与检查", ("query", "status", "universe", "ex")),
     )
 
     def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
@@ -120,3 +133,9 @@ class AspoolGroup(click.Group):
         self.format_commands(ctx, formatter)
         click.Command.format_options(self, ctx, formatter)
         _write_examples(ctx, formatter)
+
+
+class AspoolExGroup(AspoolGroup):
+    """Help layout for the cross-market asset namespace."""
+
+    _COMMAND_GROUPS = (("扩展资产", ("categories",)),)

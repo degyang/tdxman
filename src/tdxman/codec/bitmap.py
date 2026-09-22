@@ -443,8 +443,13 @@ def build_bitmap(
     bitmap_int = 0
     for bit in selection:
         bitmap_int |= 1 << bit.value
-    ba = bytearray(bitmap_int.to_bytes(16, "little"))
-    ba.extend(exclude_flags.to_bytes(4, "little"))
+    # Bits 0..127 occupy the field bitmap, while bits 128..159 share the
+    # trailing control word with exclude flags.  Five-level quote fields live
+    # in that latter range, so truncating to 16 bytes makes HANDICAP overflow.
+    field_bitmap = bitmap_int & ((1 << 128) - 1)
+    control_bitmap = (bitmap_int >> 128) | exclude_flags
+    ba = bytearray(field_bitmap.to_bytes(16, "little"))
+    ba.extend(control_bitmap.to_bytes(4, "little"))
     return ba
 
 

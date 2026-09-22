@@ -8,6 +8,26 @@ from aspool.tdx_online import _fill_close_vol_ratio, _merge_rows
 
 
 class DataSemanticsTest(unittest.TestCase):
+    def test_beijing_920_routes_consistently_for_storage_bars_and_quotes(self):
+        from aspool.free_stockdb import _market
+        from aspool.fundamentals import _markets
+        from aspool.tdx_online import _tdx_market
+        from tdxman.models.enums import Market
+
+        cases = {
+            "920000": "BJ",
+            "830799": "BJ",
+            "430047": "BJ",
+            "900901": "SH",
+            "600519": "SH",
+            "000001": "SZ",
+        }
+        for code, expected in cases.items():
+            with self.subTest(code=code):
+                self.assertEqual(_market(code), expected)
+                self.assertEqual(_tdx_market(code, Market), Market[expected])
+                self.assertEqual(_markets([code], Market), [(Market[expected], code)])
+
     def test_normalize_accepts_online_and_history_dates(self):
         rows = _normalize([{"date": 20260916}, {"trade_date": "2026-09-15"}], "000001")
         self.assertEqual(

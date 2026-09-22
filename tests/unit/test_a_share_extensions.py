@@ -105,49 +105,46 @@ def test_get_market_stat_mapping(_mock_conn_cls):
     """测试市场统计字段映射。"""
     client = TdxClient("127.0.0.1")
 
-    mock_quote = SecurityQuote(
-        Market.SH,
-        "880005",
-        price=3000.0,  # up = int(price)
-        pre_close=0,
-        open=2000.0,  # down = int(open)
-        high=5500.0,  # total = int(high)
-        low=500.0,  # neutral = int(low)
-        vol=1000000.0,
-        cur_vol=0,
-        amount=50000000.0,
-        s_vol=0,
-        b_vol=0,
-        active1=0,
-        active2=0,
-        bid1=0,
-        bid_vol1=0,
-        bid2=0,
-        bid_vol2=0,
-        bid3=0,
-        bid_vol3=0,
-        bid4=0,
-        bid_vol4=0,
-        bid5=0,
-        bid_vol5=0,
-        ask1=0,
-        ask_vol1=0,
-        ask2=0,
-        ask_vol2=0,
-        ask3=0,
-        ask_vol3=0,
-        ask4=0,
-        ask_vol4=0,
-        ask5=0,
-        ask_vol5=0,
-        rise_speed=0,
-        limit_up=0,
-        limit_down=0,
-    )
+    def make_quote(code, price=0, open_=0, high=0, low=0, vol=0, amount=0):
+        return SecurityQuote(
+            Market.SH,
+            code,
+            price=price,
+            pre_close=0,
+            open=open_,
+            high=high,
+            low=low,
+            vol=vol,
+            cur_vol=0,
+            amount=amount,
+            s_vol=0,
+            b_vol=0,
+            active1=0,
+            active2=0,
+            bid1=0, bid_vol1=0, bid2=0, bid_vol2=0, bid3=0, bid_vol3=0,
+            bid4=0, bid_vol4=0, bid5=0, bid_vol5=0,
+            ask1=0, ask_vol1=0, ask2=0, ask_vol2=0, ask3=0, ask_vol3=0,
+            ask4=0, ask_vol4=0, ask5=0, ask_vol5=0,
+            rise_speed=0, limit_up=0, limit_down=0,
+        )
+
+    mock_quotes = [
+        make_quote(
+            "880005",
+            price=3000.0,
+            open_=2000.0,
+            high=5500.0,
+            low=500.0,
+            vol=1000000.0,
+            amount=50000000.0,
+        ),
+        make_quote("880001", price=11329.33),
+        make_quote("880006", price=65, open_=4),
+    ]
 
     def mock_execute(cmd):
         if isinstance(cmd, GetSecurityQuotesCmd):
-            return [mock_quote]
+            return mock_quotes
         return []
 
     with patch.object(TdxClient, "_execute", side_effect=mock_execute):

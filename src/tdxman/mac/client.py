@@ -163,8 +163,11 @@ class MacClient:
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
+        refresh: bool = True,
     ) -> MacClient:
         """测量所有 MAC 服务器延迟，选最低延迟的建立客户端。自动保存最佳主机。"""
+        if not refresh:
+            return cls(get_best_host(), port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
             hosts = get_mac_hosts()
         if port is None:
@@ -786,8 +789,11 @@ class AsyncMacClient:
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
+        refresh: bool = True,
     ) -> AsyncMacClient:
         """测量所有 MAC 服务器延迟，选最低延迟的建立客户端。自动保存最佳主机。"""
+        if not refresh:
+            return cls(get_best_host(), port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
             hosts = get_mac_hosts()
         if port is None:

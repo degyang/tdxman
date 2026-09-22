@@ -47,20 +47,23 @@ def invoke(quotes, *args):
 def test_market_stat_mac_mapping(quotes):
     result = invoke(quotes)
     assert result.exit_code == 0, result.output
-    assert json.loads(result.output) == [
-        {
-            "up_count": 4228,
-            "down_count": 1150,
-            "neutral_count": 172,
-            "suspended_count": 15,
-            "total_count": 5565,
-            "total_amount": 1.2e12,
-            "total_volume": 635407152,
-            "total_market_cap": 11329.33 * 1e10,
-            "limit_up_count": 65,
-            "limit_down_count": 4,
-        }
-    ]
+    data = json.loads(result.output)
+    assert len(data) == 1
+    entry = data[0]
+    # Check all fields except query_time (dynamic)
+    assert entry["up_count"] == 4228
+    assert entry["down_count"] == 1150
+    assert entry["neutral_count"] == 172
+    assert entry["suspended_count"] == 15
+    assert entry["total_count"] == 5565
+    assert entry["total_amount"] == 1.2e12
+    assert entry["total_volume"] == 635407152
+    assert entry["total_market_cap"] == 11329.33 * 1e10
+    assert entry["limit_up_count"] == 65
+    assert entry["limit_down_count"] == 4
+    # query_time should be a valid ISO format timestamp
+    assert "query_time" in entry
+    assert entry["query_time"] is not None
 
 
 @pytest.mark.parametrize("args", [("--format", "table",), ("--format", "csv")])

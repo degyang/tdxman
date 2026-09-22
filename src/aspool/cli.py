@@ -11,11 +11,18 @@ import pyarrow.csv as pacsv
 from .config import free_stockdb_root
 from .free_stockdb import import_adjustments, import_daily, import_minutes, validate_period
 from .fundamentals import refresh_fundamentals, update_from_quotes
-from .help import AspoolCommand, AspoolGroup
+from .help import AspoolCommand, AspoolExGroup, AspoolGroup
 from .store import default_root, initialize
 from .tdx_online import update_daily_offline, update_online
 
 PERIODS = ["daily", "minutes"]
+
+
+class _AssetType(click.Choice):
+    """Keep the established help width while documenting ETF in the reference text."""
+
+    def get_metavar(self, param, ctx):
+        return "[stock|index]"
 
 
 def _root(value: Path | None) -> Path:
@@ -45,6 +52,19 @@ def _coverage_symbol_count(root: Path, period: str) -> int:
 @click.group(cls=AspoolGroup)
 def cli() -> None:
     """维护本地 A 股长期历史数据池。"""
+
+
+@cli.group("ex", cls=AspoolExGroup)
+def ex() -> None:
+    """维护跨市场扩展资产；当前已交付 ETF，其他类别逐步接入。"""
+
+
+@ex.command("categories", cls=AspoolCommand)
+def ex_categories() -> None:
+    """列出 ETF、港股、美股和大宗期货等扩展资产类别。"""
+    from .ex_domain import load_ex_categories
+
+    click.echo(json.dumps(load_ex_categories(), ensure_ascii=False, indent=2))
 
 
 @cli.command(cls=AspoolCommand)
@@ -92,10 +112,16 @@ def import_free_stockdb(
 @click.option(
     "--type",
     "asset_type",
-    type=click.Choice(["stock", "index"]),
+    type=_AssetType(["stock", "index", "ex", "etf"]),
     default="stock",
     show_default=True,
-    help="维护股票或指数日线数据池",
+    help="维护股票、指数或 ETF 日线数据池",
+)
+@click.option(
+    "--category",
+    type=str,
+    default=None,
+    help="ex 资产类别；当前已交付 ETF，其他类别按 ex 配置规划",
 )
 @click.option(
     "--source", type=click.Choice(["tdx", "free-stockdb"]), default="tdx", show_default=True
@@ -109,6 +135,13 @@ def import_free_stockdb(
     help="source=tdx 时使用在线 K 线或本地 vipdoc K 线。",
 )
 @click.option("--async", "async_mode", is_flag=True, help="使用异步客户端获取在线 K 线。")
+@click.option(
+    "--workers",
+    type=click.IntRange(1, 8),
+    default=4,
+    show_default=True,
+    help="日线在线同步的独立连接数。",
+)
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
 def sync(
@@ -119,6 +152,8 @@ def sync(
     root: Path | None,
     limit: int | None,
     asset_type: str = "stock",
+    workers: int = 4,
+    category: str | None = None,
 ) -> None:
     """从指定源校准历史数据，并补齐至最新在线行情。"""
     target = _root(root)
@@ -130,7 +165,7 @@ def sync(
         from .index_pool import sync_indices
 
         try:
-            report, path = sync_indices(target, tdx_mode, async_mode, limit)
+            report, path = sync_indices(target, tdx_mode, async_mode, limit, workers=workers)
         except (OSError, ValueError, TdxError) as exc:
             raise click.ClickException(str(exc)) from exc
         successes = report["success"]
@@ -143,6 +178,37 @@ def sync(
         )
         if report["failed"]:
             raise click.ClickException("部分指数未完成，请查看报告后重试")
+        return
+    if asset_type in {"etf", "ex"}:
+        if asset_type == "ex":
+            from .ex_domain import ex_category
+
+            category = (category or "ETF").upper()
+            try:
+                definition = ex_category(category)
+            except ValueError as exc:
+                raise click.UsageError(str(exc)) from exc
+            if definition["status"] != "implemented":
+                raise click.UsageError(f"ex 类别 {category} 尚未实现；当前已交付类别：ETF")
+        elif category and category.upper() != "ETF":
+            raise click.UsageError("--type etf 只能使用 --category ETF")
+        if source != "tdx" or period != "daily":
+            raise click.UsageError("ex/ETF 仅支持 --source tdx --period daily")
+        initialize(target)
+        try:
+            if tdx_mode == "offline":
+                from .universe import refresh_etf_universe, universe_is_stale
+
+                if limit is None and universe_is_stale(target, asset_type="etf"):
+                    refresh_etf_universe(target)
+                symbols, rows = update_daily_offline(target, limit, "etf")
+            else:
+                symbols, rows = update_online(
+                    target, "daily", async_mode, limit, workers=workers, asset_type="etf"
+                )
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        click.echo(f"ETF 日线校准：{symbols} 个标的，写入变化记录 {rows} 条")
         return
     initialize(target)
     if source == "tdx" and _coverage_symbol_count(target, period) == 0:
@@ -168,23 +234,44 @@ def sync(
             raise click.UsageError("tdx 离线同步当前仅支持 daily；分钟线请使用 free-stockdb 导入")
         symbols, rows = update_daily_offline(target, limit)
     else:
-        symbols, rows = update_online(target, period, async_mode, limit)
+        try:
+            symbols, rows = update_online(target, period, async_mode, limit, workers=workers)
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
     stage = "通达信 K 线校准" if source == "tdx" else "在线尾部校准"
-    click.echo(
-        f"{stage}：{symbols} 个标的，获取并合并 {rows} 条 {period} K（每标的最多最近 30 条）"
-    )
+    click.echo(f"{stage}：{symbols} 个标的，写入变化记录 {rows} 条 {period} K")
+    if period == "daily" and not (source == "tdx" and tdx_mode == "offline"):
+        _show_maintenance_report(target)
+
+
+def _show_maintenance_report(root):
+    path = Path(root) / "reports/maintenance/latest.json"
+    if path.exists():
+        report = json.loads(path.read_text())
+        click.echo(
+            f"未返回行情 {len(report.get('missing', []))}，"
+            f"拒绝 {len(report.get('rejected', []))}，"
+            f"失败 {len(report.get('failed', []))}；报告：{report.get('report', path)}"
+        )
 
 
 @cli.command(cls=AspoolCommand)
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
-def update(root: Path | None, limit: int | None) -> None:
+@click.option("--async", "async_mode", is_flag=True, help="使用异步报价客户端。")
+@click.option(
+    "--workers", type=click.IntRange(1, 8), default=4, show_default=True, help="独立报价连接数。"
+)
+def update(root: Path | None, limit: int | None, async_mode: bool, workers: int) -> None:
     """收盘后用 quote 更新当前或最近交易日的完整日线记录。"""
     try:
-        symbols, rows = update_from_quotes(_root(root), limit)
+        symbols, rows = update_from_quotes(
+            _root(root), limit, async_mode=async_mode, workers=workers
+        )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    click.echo(f"报价更新完成：{symbols} 个标的，更新 {rows} 行最新日线并刷新基本面快照")
+    click.echo(f"报价检查完成：{symbols} 个标的，写入变化日线 {rows} 行并刷新基本面快照")
+    _show_maintenance_report(_root(root))
 
 
 @cli.command("fundamentals", cls=AspoolCommand)
@@ -208,12 +295,24 @@ def status(root: Path | None) -> None:
         summaries = {
             period: conn.execute(
                 f"select count(*), min(start_date), max(end_date), sum(row_count) from {table}"
+                + (" where source not like 'tdxman:etf%'" if period == "daily" else "")
             ).fetchone()
             for period, table in [("daily", "coverage"), ("minutes", "coverage_minutes")]
         }
         latest = conn.execute(
             "select command, status, started_at, finished_at, symbols, rows_written "
             "from sync_runs order by started_at desc limit 1"
+        ).fetchone()
+        try:
+            index_summary = conn.execute(
+                "select count(*), min(start_date), max(end_date), "
+                "sum(row_count) from index_coverage"
+            ).fetchone()
+        except duckdb.CatalogException:
+            index_summary = (0, None, None, 0)
+        etf_summary = conn.execute(
+            "select count(*), min(start_date), max(end_date), sum(row_count) "
+            "from coverage where source like 'tdxman:etf%'"
         ).fetchone()
     finally:
         conn.close()
@@ -223,8 +322,42 @@ def status(root: Path | None) -> None:
             f"{period}: symbols={summary[0]}, range={summary[1]} ~ {summary[2]}, "
             f"rows={summary[3] or 0}"
         )
+    click.echo(
+        f"indices: symbols={index_summary[0]}, range={index_summary[1]} ~ {index_summary[2]}, "
+        f"rows={index_summary[3] or 0}"
+    )
+    click.echo(
+        f"etf: symbols={etf_summary[0]}, range={etf_summary[1]} ~ {etf_summary[2]}, "
+        f"rows={etf_summary[3] or 0}"
+    )
     if latest:
         click.echo(f"last import: {latest}")
+    maintenance = target / "reports/maintenance/latest.json"
+    if maintenance.exists():
+        report = json.loads(maintenance.read_text())
+        click.echo(
+            f"last maintenance: {report['command']} {report['status']} {report['finished_at']}"
+        )
+        _show_maintenance_report(target)
+
+
+@cli.command("universe", cls=AspoolCommand)
+@click.option("--root", type=click.Path(path_type=Path))
+@click.option("--type", "asset_type", type=click.Choice(["stock", "etf"]), default="stock")
+def universe(root: Path | None, asset_type: str) -> None:
+    """刷新股票或 ETF 证券目录，展示待初始化与非活跃代码。"""
+    from .universe import refresh_etf_universe, refresh_stock_universe
+
+    try:
+        report = (refresh_etf_universe if asset_type == "etf" else refresh_stock_universe)(
+            _root(root)
+        )
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(
+        f"证券目录：{report['listed']} 个；待初始化 {len(report['added'])} 个；"
+        f"标记非活跃 {len(report['inactive'])} 个；重新活跃 {len(report['reactivated'])} 个"
+    )
 
 
 @cli.command(cls=AspoolCommand)

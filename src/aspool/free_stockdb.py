@@ -25,10 +25,10 @@ class ImportStats:
 
 
 def _market(code: str) -> str:
+    if code.startswith(("4", "8", "920")):
+        return "BJ"
     if code.startswith(("5", "6", "9")):
         return "SH"
-    if code.startswith(("4", "8")):
-        return "BJ"
     return "SZ"
 
 

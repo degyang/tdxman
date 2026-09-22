@@ -64,8 +64,9 @@ TdxClient(host, port=7709, timeout=15.0, auto_reconnect=True)
 #### 工厂方法
 
 ```python
-TdxClient.from_best_host(hosts=KNOWN_HOSTS, port=7709, timeout=15.0,
-                          ping_timeout=5.0, auto_reconnect=True)
+TdxClient.from_best_host(
+    hosts=KNOWN_HOSTS, port=7709, timeout=15.0, ping_timeout=5.0, auto_reconnect=True
+)
 ```
 
 测量 `hosts` 中所有服务器延迟，选择最低延迟的建立连接。若全部不可达，回退到 `hosts[0]`。
@@ -107,7 +108,7 @@ for host, latency in results:
 
 ```python
 c.connect()  # 建立连接
-c.close()    # 关闭连接
+c.close()  # 关闭连接
 ```
 
 建议使用上下文管理器自动管理。

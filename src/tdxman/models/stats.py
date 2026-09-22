@@ -1,6 +1,7 @@
 """验证市场概况模型。"""
 
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
@@ -17,6 +18,7 @@ class MarketStat:
     total_market_cap: float  # 总市值（亿元），来自 880001 收盘价，÷100 得万亿
     limit_up_count: int  # 涨停家数，来自 880006 close
     limit_down_count: int  # 跌停家数，来自 880006 open
+    query_time: datetime | None = None  # 查询时间
 
 
 @dataclass

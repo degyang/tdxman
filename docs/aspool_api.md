@@ -27,7 +27,8 @@ bars = pool.read_research_daily(end="2026-09-16", lookback=121)
 # 读取主库实际保存的历史股本与估值。
 history = pool.read_research_daily(
     symbols=["SZ.000001", "SH.600519"],
-    start="2020-01-01", end="2026-09-16",
+    start="2020-01-01",
+    end="2026-09-16",
     fields=["symbol", "date", "close", "total_mv", "pe_ttm", "pb"],
 )
 ```
@@ -161,14 +162,16 @@ Fundwise 可用 fields 固定当前技术策略输入；以后增加市值或估
 
 ```python
 from aspool import DataPool
-pool = DataPool('~/.aspool')
+
+pool = DataPool("~/.aspool")
 indices = pool.list_indices()
 benchmark = pool.read_index_daily(
-    symbols=['SH.000300', 'SZ.399001'],
-    start='2010-01-01', end='2026-09-16',
-    fields=['symbol', 'date', 'close', 'volume', 'amount', 'up_count', 'down_count'],
+    symbols=["SH.000300", "SZ.399001"],
+    start="2010-01-01",
+    end="2026-09-16",
+    fields=["symbol", "date", "close", "volume", "amount", "up_count", "down_count"],
 )
-sector_history = pool.read_index_daily(symbols='SH.881001', end='2026-09-16', lookback=120)
+sector_history = pool.read_index_daily(symbols="SH.881001", end="2026-09-16", lookback=120)
 ```
 
 `list_indices(*, symbols=None)` 返回实际已存指数的 symbol、market、code、name、start、end、row_count。
@@ -203,3 +206,20 @@ Fundwise 可据此读取宽基回测基准、行业/概念/风格趋势和市场
 名称与名单是当前维护结果，不具备历史时点保证；不可变版本、历史成分、交易日历等正式回测前提仍未实现。
 
 源数据中 OHLC 关系非法的记录在同步时隔离并记入报告，读取结果可能因此缺少交易日；不补造或前向填充。
+
+## 7. ETF 读取接口（已实现）
+
+ETF 是上市基金证券，使用股票式日线契约，不属于指数 API。同步命令为：
+
+```bash
+aspool sync --type ex --category ETF --source tdx --period daily
+```
+
+首次或新 ETF 初始化只保留 `2010-01-01` 及以后的可用日线，后续按最近重叠窗口增量更新。
+`DataPool.list_etfs()` 返回已同步 ETF 的覆盖范围；`read_etf_daily()` 的参数和普通
+`read_daily()` 一致，字段为股票式 OHLCV、成交额和换手率，`attrs.asset_type` 为 `etf`。
+ETF 不含 `up_count/down_count`，不能传给 `read_index_daily()`。
+
+扩展资产类别由 `DataPool.describe()["ex_categories"]` 发现，完整规划见
+[aspool ex 扩展资产域设计](aspool_ex_design.md)。只有 `status=implemented` 的类别允许进入
+数据同步；当前为 `ETF`，港股、美股和大宗期货仍是规划项。

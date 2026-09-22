@@ -591,13 +591,14 @@ python scripts/maintain_board_lists.py --write
 aspool sync --type index --source tdx --tdx-mode online --period daily
 ```
 
-`init` 只创建存储结构，不能代替股票历史导入。股票 update/sync 维护已有标的，
-不会自动建立新上市股票的完整历史。日常流程无需重复从 free-stockdb 导入，也不处理分钟历史。
+`init` 只创建存储结构，不能代替股票历史导入。股票在线 `sync` 每七天刷新一次
+沪深北 A 股目录；新增代码自动获取最长可用日线，服务器尚未提供 K 线的代码保留为待初始化并在后续同步重试。
+日常流程无需重复从 free-stockdb 导入，也不处理分钟历史。
 
-### Daily 工作流：每日收盘后同步股票和指数
+### Daily 工作流：每日收盘后同步股票、ETF 和指数
 
 建议在交易日 **北京时间 15:30 之后** 执行，例如16:00。`update` 拒绝周一至周五
-09:00～15:30（含端点）运行；当前实现按进程本地时区判断，以下显式设置上海时区。
+09:00～15:30（含端点）运行；更新限制在内部按上海时区判断，以下同时设置命令日志时区。
 该限制按星期判断，并非节假日交易日历。`sync` 没有相同时间限制，盘中调用可能保存未收盘日线。
 
 在已有股票日线池的项目根目录执行下面一组命令。它是工作流示例，**没有 `aspool daily` 子命令**：
@@ -606,25 +607,41 @@ aspool sync --type index --source tdx --tdx-mode online --period daily
 source .venv/bin/activate
 export TZ=Asia/Shanghai
 
-aspool sync --type stock --source tdx --tdx-mode online --period daily &&
 aspool update &&
 aspool sync --type index --source tdx --tdx-mode online --period daily &&
+aspool sync --type ex --category ETF --source tdx --period daily &&
 aspool status
 ```
 
 顺序含义：
 
-1. 股票 `sync`：每个已有标的获取最多最近30根日线，修补 OHLCV/成交额，结合已有低频快照补充字段、计算量比和换手率等。
-2. 股票 `update`：用 quote 刷新当前或最近交易日记录，同时更新低频快照。放在股票 sync 后面，让最新报价刷新作为最后一步股票写入。
-3. 指数 `sync`：按 `settings/board_index.json` 同步全部可用日线历史并合并修订，保存 OHLCV、成交额及上涨/下跌家数。每次均读取全历史，耗时通常高于只更新尾部；缺失家数按0处理。
-4. `status`：查看股票覆盖范围。指数覆盖另用下方 API 检查；`status` 目前不汇总指数。
+1. 股票 `update`：用 quote 刷新当前或最近交易日记录，同时更新低频快照。正常每日更新不再先跑一轮股票 sync。
+2. 指数 `sync`：首次建库或新增指数获取最长历史；已有指数增量补齐并重取最近5条已存记录，停更较久时继续分页。保存 OHLCV、成交额和涨跌家数，缺失家数按0处理。
+3. `ex` ETF `sync`：ETF 不进入指数池，首次仅保存 2010-01-01 以来的股票式 OHLCV 数据，后续增量更新；其他扩展类别先查看 `aspool ex categories`，规划项不会被误同步。
+4. `status`：查看股票、ETF、分钟线、指数覆盖汇总及最近维护报告；逐指数/ETF覆盖仍可用下方 API 检查。
 
-`&&` 会在命令失败时停止后续步骤。已成功写入的标的保留，排查失败原因后可重新执行；
-检查命令输出中的成功数、失败数、日期和异常记录，不把“进程结束”当作所有数据已更新。
-指数同步报告位于 `ROOT/reports/index-sync/`，包含逐指数覆盖与隔离记录。
+股票漏更或需要修补时，再先执行：
 
-若股票历史没有缺口，只需刷新最新交易日，可省略第一个股票 sync，运行 `aspool update`
-后再同步指数。若停更超过30根日线，普通股票 sync 无法保证补齐全部缺口，需另行校准历史。
+```bash
+aspool sync --type stock --source tdx --tdx-mode online --period daily
+aspool update
+```
+
+股票在线 sync 也按本地历史末端增量分页，不再固定只取一页30条。先修补、后报价刷新，保留最新交易日的真实报价字段。
+可手动运行 `aspool universe` 查看目录、待初始化和非活跃代码。
+
+日线 update/sync 默认使用4个独立连接；`--workers 1` 为串行，最多8个连接。
+`--async` 使用异步客户端；同步和异步都支持有限并发，同一连接不并发发送请求。
+
+```bash
+aspool update --async --workers 4
+aspool sync --type index --source tdx --period daily --async --workers 4
+```
+
+`&&` 在失败时停止后续步骤。查看命令输出的未返回、拒绝和失败数量；无数据不代表已经更新。
+股票运行报告位于 `ROOT/reports/maintenance/`，指数报告位于 `ROOT/reports/index-sync/`。
+过期报价、无日期报价和非法日线被拒绝，保留原有记录；没有变化的文件跳过重写。
+当前仍沿用每证券一个Parquet文件，变化时重写文件，但只把近期记录转换为Python对象，较早历史在Arrow中保留。
 
 ### 同步后检查与 Fundwise 读取
 
@@ -632,7 +649,7 @@ aspool status
 from aspool import DataPool
 
 pool = DataPool('~/.aspool')  # 与同步命令的 --root 保持一致
-print(pool.status())         # 股票覆盖
+print(pool.status())         # 股票覆盖；指数用 list_indices()
 indices = pool.list_indices()
 print(indices[['symbol', 'name', 'start', 'end', 'row_count']].to_string(index=False))
 
@@ -656,7 +673,7 @@ print(benchmark.tail())
 aspool sync --type stock --source tdx --tdx-mode offline --period daily
 aspool sync --type index --source tdx --tdx-mode offline --period daily
 
-# 在线 sync 可选择异步调用；update 当前没有 --async 或 --period 参数
+# 在线日线 sync 和 update 均支持 --async / --workers；update 仍只维护日线
 aspool sync --type index --source tdx --period daily --async
 
 # 手动维护低频快照；日常 update 已同步刷新，无需额外每天重复执行
@@ -672,7 +689,7 @@ aspool sync --type stock --source free-stockdb --period daily
 
 股票原始 K 线不复权；复权因子独立保存。指数日线存放于 `lake/indices/daily`，与股票池隔离。
 详见 [指数设计](docs/aspool_index_design.md)、[验收报告](docs/aspool_index_validation.md)
-及 [Fundwise 指数接口](docs/aspool_api.md#6-指数读取接口已实现)。
+及 [Fundwise 指数接口](docs/aspool_api.md#6-指数读取接口已实现)。同步与异步的实测对比见 [性能验证报告](docs/aspool_performance.md)。
 
 ## 开发
 

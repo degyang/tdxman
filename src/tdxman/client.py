@@ -230,12 +230,15 @@ class TdxClient:
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
+        refresh: bool = True,
     ) -> "TdxClient":
         """测量 hosts 中所有服务器延迟，选最低延迟的建立连接。
 
         自动将最佳主机保存到 config.json，后续连接默认使用该主机。
         若所有服务器均不可达，回退到 hosts[0]。
         """
+        if not refresh:
+            return cls(get_best_host(), port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
             hosts = get_known_hosts()
         if port is None:
@@ -667,6 +670,7 @@ class TdxClient:
         注意：
             `suspended_count` 是 `total - up - down - neutral` 的残差估算值，
             用于保证计数守恒，不应视为协议已明确验证的停牌字段。
+            `query_time` 是本机查询时间（Asia/Shanghai），不代表数据源时间。
         """
         # 通达信中 880005 是全市场行情统计，880001 是总市值指数，880006 是涨跌停统计
         quotes = self._execute(
@@ -676,14 +680,24 @@ class TdxClient:
         )
         if not quotes:
             raise RuntimeError("无法获取市场统计数据")
-        q = quotes[0]
-        up = int(q.price)
-        down = int(q.open)
-        neutral = int(q.low)
-        total = int(q.high)
-        market_cap = quotes[1].price * 1e10 if len(quotes) > 1 else 0.0
-        limit_down = int(quotes[2].open) if len(quotes) > 2 else 0
-        limit_up = int(quotes[2].price) if len(quotes) > 2 else 0
+
+        # 按代码查找，而非按位置（与CLI行为统一）
+        quote_map = {q.code: q for q in quotes}
+
+        # 校验必需代码
+        for code in ("880005", "880001", "880006"):
+            if code not in quote_map:
+                raise RuntimeError(f"市场统计数据不完整：缺少 {code}")
+
+        q5 = quote_map["880005"]
+        q1 = quote_map["880001"]
+        q6 = quote_map["880006"]
+
+        up = int(q5.price)
+        down = int(q5.open)
+        neutral = int(q5.low)
+        total = int(q5.high)
+
         return _to_df(
             MarketStat(
                 up_count=up,
@@ -691,11 +705,12 @@ class TdxClient:
                 neutral_count=neutral,
                 suspended_count=max(0, total - up - down - neutral),
                 total_count=total,
-                total_amount=q.amount,
-                total_volume=q.vol,
-                total_market_cap=market_cap,
-                limit_up_count=limit_up,
-                limit_down_count=limit_down,
+                total_amount=q5.amount,
+                total_volume=q5.vol,
+                total_market_cap=q1.price * 1e10,
+                limit_up_count=int(q6.price),  # 880006.close = 涨停家数
+                limit_down_count=int(q6.open),  # 880006.open = 跌停家数
+                query_time=datetime.now(_SHANGHAI_TZ),
             )
         )
 
@@ -838,11 +853,14 @@ class AsyncTdxClient:
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 60.0,
+        refresh: bool = True,
     ) -> "AsyncTdxClient":
         """测量 hosts 中所有服务器延迟，选最低延迟的建立连接。
 
         自动将最佳主机保存到 config.json。
         """
+        if not refresh:
+            return cls(get_best_host(), port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
             hosts = get_known_hosts()
         if port is None:
@@ -1197,6 +1215,7 @@ class AsyncTdxClient:
         注意：
             `suspended_count` 是 `total - up - down - neutral` 的残差估算值，
             用于保证计数守恒，不应视为协议已明确验证的停牌字段。
+            `query_time` 是本机查询时间（Asia/Shanghai），不代表数据源时间。
         """
         # 通达信中 880005 是全市场行情统计，880001 是总市值指数，880006 是涨跌停统计
         quotes = await self._execute(
@@ -1206,14 +1225,24 @@ class AsyncTdxClient:
         )
         if not quotes:
             raise RuntimeError("无法获取市场统计数据")
-        q = quotes[0]
-        up = int(q.price)
-        down = int(q.open)
-        neutral = int(q.low)
-        total = int(q.high)
-        market_cap = quotes[1].price * 1e10 if len(quotes) > 1 else 0.0
-        limit_down = int(quotes[2].open) if len(quotes) > 2 else 0
-        limit_up = int(quotes[2].price) if len(quotes) > 2 else 0
+
+        # 按代码查找，而非按位置（与CLI行为统一）
+        quote_map = {q.code: q for q in quotes}
+
+        # 校验必需代码
+        for code in ("880005", "880001", "880006"):
+            if code not in quote_map:
+                raise RuntimeError(f"市场统计数据不完整：缺少 {code}")
+
+        q5 = quote_map["880005"]
+        q1 = quote_map["880001"]
+        q6 = quote_map["880006"]
+
+        up = int(q5.price)
+        down = int(q5.open)
+        neutral = int(q5.low)
+        total = int(q5.high)
+
         return _to_df(
             MarketStat(
                 up_count=up,
@@ -1221,11 +1250,12 @@ class AsyncTdxClient:
                 neutral_count=neutral,
                 suspended_count=max(0, total - up - down - neutral),
                 total_count=total,
-                total_amount=q.amount,
-                total_volume=q.vol,
-                total_market_cap=market_cap,
-                limit_up_count=limit_up,
-                limit_down_count=limit_down,
+                total_amount=q5.amount,
+                total_volume=q5.vol,
+                total_market_cap=q1.price * 1e10,
+                limit_up_count=int(q6.price),  # 880006.close = 涨停家数
+                limit_down_count=int(q6.open),  # 880006.open = 跌停家数
+                query_time=datetime.now(_SHANGHAI_TZ),
             )
         )
 

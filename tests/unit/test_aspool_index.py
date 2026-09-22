@@ -203,7 +203,7 @@ def test_stock_default_still_uses_existing_pipeline(tmp_path):
     ):
         result = CliRunner().invoke(cli, ["sync", "--root", str(tmp_path)])
     assert result.exit_code == 0, result.output
-    stock.assert_called_once_with(tmp_path, "daily", False, None)
+    stock.assert_called_once_with(tmp_path, "daily", False, None, workers=4)
     index.assert_not_called()
 
 
@@ -289,3 +289,62 @@ def test_sync_invalid_server_date_retries_another_host():
     ):
         rows = asyncio.run(online_records(Broken(), ITEM))
     assert len(rows) == 1
+
+
+def test_incremental_stops_at_overlap_and_pages_across_long_gap():
+    calls = []
+    dates = pd.date_range("2026-07-01", periods=80, freq="D")[::-1]
+
+    class Client:
+        def get_index_bars(self, market, code, category, start, count):
+            calls.append((start, count))
+            return pd.DataFrame([bar(str(d.date())) for d in dates[start : start + count]])
+
+    since = dates[44].date()
+    rows = asyncio.run(online_records(Client(), ITEM, since=since))
+    assert calls == [(0, 30), (30, 30)]
+    assert len(rows) == 45
+    assert min(r["date"] for r in rows) == str(since)
+
+
+def test_existing_index_only_refreshes_tail_and_preserves_old_history(tmp_path):
+    old = [bar("2005-01-04")] + [bar(f"2026-09-{day:02}") for day in range(1, 11)]
+    with patch("aspool.index_pool.offline_records", return_value=old):
+        first, _ = sync_indices(tmp_path, mode="offline", items=[ITEM])
+    calls = []
+
+    class Client:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def get_index_bars(self, market, code, category, start, count):
+            calls.append((start, count))
+            return pd.DataFrame([bar(f"2026-09-{day:02}", close=11) for day in range(1, 12)])
+
+    with patch("aspool.index_pool.TdxClient.from_best_host", return_value=Client()):
+        report, _ = sync_indices(tmp_path, items=[ITEM])
+    result = report["success"][0]
+    assert first["success"][0]["sync_scope"] == "bootstrap"
+    assert calls == [(0, 30)]
+    assert result["sync_scope"] == "incremental"
+    assert result["overlap_start"] == "2026-09-06"
+    assert result["added"] == 1 and result["changed"] == 5
+    assert result["fetched"] == 6 and result["rows"] == 12
+    stored = pq.ParquetFile(next((tmp_path / "lake/indices").rglob("*.parquet"))).read().to_pylist()
+    assert stored[0]["trade_date"] == date(2005, 1, 4)
+    assert stored[1]["close"] == 10
+
+
+def test_async_incremental_stops_after_recent_page():
+    calls = []
+
+    class Client:
+        async def get_index_bars(self, market, code, category, start, count):
+            calls.append((start, count))
+            return pd.DataFrame([bar("2026-09-16"), bar("2026-09-17")])
+
+    rows = asyncio.run(online_records(Client(), ITEM, True, since=date(2026, 9, 16)))
+    assert len(rows) == 2 and calls == [(0, 30)]

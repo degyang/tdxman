@@ -1,0 +1,1366 @@
+diff --git a/src/tdxman/adapters/tick_stock_panel/contracts.py b/src/tdxman/adapters/tick_stock_panel/contracts.py
+index 5f7a1ff..fabdd87 100644
+--- a/src/tdxman/adapters/tick_stock_panel/contracts.py
++++ b/src/tdxman/adapters/tick_stock_panel/contracts.py
+@@ -37,6 +37,8 @@ class ProviderConfig:
+     online_page_size: int = 800
+     online_max_bars_per_symbol: int = 8000
+     universe_limit: int = 10000
++    request_timeout: float = 300.0
++    max_result_rows: int = 2000000
+ 
+ 
+ DAILY_COLUMNS = ("symbol", "date", "open", "high", "low", "close", "volume", "amount")
+diff --git a/src/tdxman/adapters/tick_stock_panel/normalize.py b/src/tdxman/adapters/tick_stock_panel/normalize.py
+index 085152f..8c0711a 100644
+--- a/src/tdxman/adapters/tick_stock_panel/normalize.py
++++ b/src/tdxman/adapters/tick_stock_panel/normalize.py
+@@ -60,7 +60,7 @@ def empty_minute() -> Any:
+ 
+ def normalize_symbol(value: object) -> str:
+     """Return canonical ``code.EXCHANGE`` identity without guessing a market."""
+-    text = str(value).strip().upper()
++    text = str(value).strip().upper().replace(" ", ".")
+     parts = text.split(".")
+     if len(parts) != 2:
+         raise ProviderError("INVALID_SYMBOL", f"Symbol must include an exchange: {value!r}")
+@@ -69,7 +69,7 @@ def normalize_symbol(value: object) -> str:
+         code, exchange = second, first
+     else:
+         code, exchange = first, second
+-    if not code.isdigit() or exchange not in {"SH", "SZ", "BJ"}:
++    if len(code) != 6 or not code.isdigit() or exchange not in {"SH", "SZ", "BJ"}:
+         raise ProviderError("INVALID_SYMBOL", f"Invalid symbol: {value!r}")
+     return f"{code}.{exchange}"
+ 
+@@ -155,6 +155,8 @@ def normalize_daily(
+         *[pl.col(column).is_null() for column in numeric_columns],
+         ~pl.all_horizontal([pl.col(column).is_finite() for column in numeric_columns]),
+         pl.col("open") > pl.col("high"),
++        pl.col("open") < pl.col("low"),
++        pl.col("low") < 0,
+         pl.col("high") < pl.col("low"),
+         pl.col("low") > pl.col("close"),
+         pl.col("close") > pl.col("high"),
+@@ -235,12 +237,12 @@ def normalize_realtime_row(row: dict[str, Any]) -> dict[str, Any]:
+ def _mac_quote_timestamp(raw_date: object, raw_time: object) -> int | None:
+     if raw_date is None or raw_time is None:
+         return None
+-    date_text = str(int(cast(Any, raw_date))).zfill(8)
+-    time_text = str(int(cast(Any, raw_time))).zfill(6)
+     try:
++        date_text = str(int(cast(Any, raw_date))).zfill(8)
++        time_text = str(int(cast(Any, raw_time))).zfill(6)
+         wall = datetime.strptime(date_text + time_text, "%Y%m%d%H%M%S")
+         localized = pd.Timestamp(wall, tz="Asia/Shanghai")
+-    except (TypeError, ValueError):
++    except (TypeError, ValueError, OverflowError):
+         return None
+     return int(localized.timestamp() * 1000)
+ 
+@@ -258,10 +260,12 @@ def normalize_minute(
+         raise ProviderError("UNIT_UNVERIFIED", "Index minute volume has not been verified")
+     if frame.empty:
+         return empty_minute()
+-    required = {"datetime", "open", "high", "low", "close", "vol", "amount"}
++    required = {"datetime", "open", "high", "low", "close", "vol"}
+     if missing := required - set(frame.columns):
+         raise ProviderError("SCHEMA_MISMATCH", f"Minute data is missing fields: {sorted(missing)}")
+-    result = frame.loc[:, ["datetime", "open", "high", "low", "close", "vol", "amount"]].copy()
++    result = frame.reindex(
++        columns=["datetime", "open", "high", "low", "close", "vol", "amount"]
++    ).copy()
+     result.rename(columns={"vol": "volume"}, inplace=True)
+     result.insert(0, "symbol", symbol)
+     try:
+@@ -296,6 +300,8 @@ def normalize_minute(
+         ),
+         pl.col("amount").is_not_null() & ~pl.col("amount").is_finite(),
+         pl.col("open") > pl.col("high"),
++        pl.col("open") < pl.col("low"),
++        pl.col("low") < 0,
+         pl.col("high") < pl.col("low"),
+         pl.col("low") > pl.col("close"),
+         pl.col("close") > pl.col("high"),
+diff --git a/src/tdxman/adapters/tick_stock_panel/provider.py b/src/tdxman/adapters/tick_stock_panel/provider.py
+index bc5d812..25ea6d0 100644
+--- a/src/tdxman/adapters/tick_stock_panel/provider.py
++++ b/src/tdxman/adapters/tick_stock_panel/provider.py
+@@ -1,20 +1,23 @@
+-"""Initial Tick Stock Panel provider: local stock and ETF daily bars."""
++"""Tick Stock Panel data contracts backed by the existing tdxman clients."""
+ 
+ from __future__ import annotations
+ 
++import json
+ import logging
++import math
+ from collections.abc import Iterator, Mapping
++from contextvars import ContextVar
+ from typing import Any, cast
+ 
+ import pandas as pd
+ 
+ from .contracts import ChunkDone, ProviderCapabilities, ProviderConfig, ProviderError
++from .diagnostics import bounded_request, check_budget
+ from .normalize import (
+     empty_daily,
+     empty_minute,
+     normalize_daily,
+     normalize_date_bound,
+-    normalize_minute,
+     normalize_realtime_row,
+     normalize_symbols,
+     polars,
+@@ -24,14 +27,14 @@ from .routing import read_standard_daily
+ from .universe import get_mac_instruments
+ 
+ logger = logging.getLogger(__name__)
++_minute_limit = ContextVar("tdxman_minute_limit", default=None)
+ 
+ 
+ class TdxmanProvider:
+     """Expose verified tdxman data through the Tick Stock Panel duck protocol.
+ 
+-    The first implementation deliberately declares only ``daily``.  Other
+-    protocol methods are added only after their source units and coverage have
+-    passed the acceptance checks defined in the integration design.
++    Data normalization stays here; the host plugin only supplies configuration
++    and owned connections. Unsupported units fail explicitly at the boundary.
+     """
+ 
+     name = "tdxman"
+@@ -43,6 +46,8 @@ class TdxmanProvider:
+         elif isinstance(config, Mapping):
+             config = ProviderConfig(**config)
+         self._config = config
++        if config.request_timeout <= 0 or config.max_result_rows < 1:
++            raise ProviderError("CONFIG_INVALID", "Request timeout and row limit must be positive")
+         datasets = {"daily": {"enabled": True}}
+         if self._config.mac_client is not None:
+             datasets["realtime"] = {"enabled": True}
+@@ -76,6 +81,7 @@ class TdxmanProvider:
+             return False, "Online daily mode requires a standard TdxClient"
+         return True, "ready"
+ 
++    @bounded_request
+     def get_daily(
+         self,
+         symbols: object,
+@@ -84,9 +90,13 @@ class TdxmanProvider:
+         asset_type: str = "stock",
+         on_chunk_done: ChunkDone | None = None,
+     ) -> Any:
+-        frames = list(
+-            self.iter_daily(symbols, start_time, end_time, asset_type, on_chunk_done)
+-        )
++        frames = []
++        rows = 0
++        for frame in self.iter_daily(symbols, start_time, end_time, asset_type, on_chunk_done):
++            rows += frame.height
++            if rows > self._config.max_result_rows:
++                raise ProviderError("RESULT_LIMIT", "Use iter_daily for larger results")
++            frames.append(frame)
+         if not frames:
+             return empty_daily()
+         pl = polars()
+@@ -94,6 +104,7 @@ class TdxmanProvider:
+             subset=["symbol", "date"], keep="last", maintain_order=True
+         ).sort(["symbol", "date"])
+ 
++    @bounded_request
+     def iter_daily(
+         self,
+         symbols: object,
+@@ -143,11 +154,13 @@ class TdxmanProvider:
+             "index": "read_index_daily",
+         }[asset_type]
+         reader = getattr(self._config.pool, reader_name)
+-        raw = reader(symbols=requested, start=start, end=end)
+-        result = normalize_daily(raw, asset_type, symbols=requested, start=start, end=end)
+-        if on_chunk_done is not None:
+-            on_chunk_done(1, 1)
+-        yield result
++        total = (len(requested) + 79) // 80
++        for index, offset in enumerate(range(0, len(requested), 80), 1):
++            batch = requested[offset:offset + 80]
++            raw = reader(symbols=batch, start=start, end=end)
++            yield normalize_daily(raw, asset_type, symbols=batch, start=start, end=end)
++            if on_chunk_done is not None:
++                on_chunk_done(index, total)
+ 
+     def test_dataset(self, dataset: str, symbols: object | None = None) -> dict[str, Any]:
+         if dataset not in self.config.datasets:
+@@ -169,19 +182,20 @@ class TdxmanProvider:
+                 return self._test_result(dataset, rows, list(rows[0]) if rows else [])
+             elif dataset == "depth5":
+                 depth_books = self.get_depth_batch(requested)
+-                preview = list(depth_books.values())
+-                columns = list(next(iter(depth_books.values()), {}))
++                preview = [{"symbol": symbol, **book} for symbol, book in depth_books.items()]
++                columns = list(preview[0]) if preview else []
+                 return self._test_result(dataset, preview, columns)
+             else:  # pragma: no cover - guarded by the datasets map
+                 raise ProviderError("INVALID_ARGUMENT", f"Unknown dataset: {dataset}")
+-        except ProviderError as exc:
++        except Exception as exc:
+             return {
+                 "provider": self.name,
+                 "dataset": dataset,
+                 "rows": 0,
+                 "columns": [],
+                 "preview": [],
+-                "error": {"code": exc.code, "message": str(exc)},
++                "error": {"code": getattr(exc, "code", "UPSTREAM_UNAVAILABLE"),
++                          "message": str(exc)},
+             }
+         return self._test_result(dataset, frame.to_dicts(), frame.columns, rows=frame.height)
+ 
+@@ -193,14 +207,28 @@ class TdxmanProvider:
+         *,
+         rows: int | None = None,
+     ) -> dict[str, Any]:
+-        return {
++        def safe(value):
++            if isinstance(value, dict):
++                return {key: safe(item) for key, item in value.items()}
++            if isinstance(value, (list, tuple)):
++                return [safe(item) for item in value]
++            if isinstance(value, float) and not math.isfinite(value):
++                return None
++            if hasattr(value, "isoformat"):
++                return value.isoformat()
++            return value
++
++        result = {
+             "provider": self.name,
+             "dataset": dataset,
+             "rows": len(preview) if rows is None else rows,
+             "columns": columns,
+-            "preview": preview[:5],
++            "preview": safe(preview[:5]),
+         }
++        json.dumps(result, allow_nan=False)
++        return result
+ 
++    @bounded_request
+     def get_instruments(self, asset_type: str = "stock") -> list[dict[str, Any]]:
+         self._ensure_open()
+         if self._config.mac_client is None:
+@@ -209,6 +237,7 @@ class TdxmanProvider:
+             self._config.mac_client, asset_type, limit=self._config.universe_limit
+         )
+ 
++    @bounded_request
+     def get_realtime(self) -> list[dict[str, Any]]:
+         """Return a complete frozen stock/ETF snapshot or soft-fail with an empty list."""
+         try:
+@@ -221,6 +250,7 @@ class TdxmanProvider:
+             logger.warning("tdxman realtime snapshot failed: %s", exc)
+             return []
+ 
++    @bounded_request
+     def get_realtime_indices(self, symbols: object) -> list[dict[str, Any]] | None:
+         """Return requested index quotes; preserve the consumer cache on failure."""
+         try:
+@@ -232,6 +262,7 @@ class TdxmanProvider:
+             logger.warning("tdxman realtime index snapshot failed: %s", exc)
+             return None
+ 
++    @bounded_request
+     def get_minute(
+         self,
+         symbols: object,
+@@ -249,6 +280,7 @@ class TdxmanProvider:
+             raise ProviderError("INVALID_ARGUMENT", "start_time must not be after end_time")
+         if asset_type not in {"stock", "etf", "index"}:
+             raise ProviderError("INVALID_ASSET_TYPE", f"Unsupported asset_type: {asset_type!r}")
++        freq = str(freq).strip().lower().replace("min", "m")
+         periods = {"1m": 7, "5m": 0, "15m": 1, "30m": 2, "60m": 3}
+         if freq not in periods:
+             raise ProviderError("UNSUPPORTED_FREQUENCY", f"Unsupported frequency: {freq!r}")
+@@ -258,37 +290,46 @@ class TdxmanProvider:
+             return empty_minute()
+         if self._config.mac_client is None:
+             raise ProviderError("CONFIG_INVALID", "Minute data requires a MacClient")
+-        from tdxman.mac.enums import Adjust, Period
++        from .routing import read_mac_minute
+ 
+         frames = []
++        rows = 0
+         for current, symbol in enumerate(requested, 1):
+-            code, exchange = symbol.split(".")
+-            raw = self._config.mac_client.get_stock_kline(
+-                {"SZ": 0, "SH": 1, "BJ": 2}[exchange],
+-                code,
+-                Period(periods[freq]),
+-                start=0,
+-                count=self._config.online_max_bars_per_symbol,
+-                adjust=Adjust.NONE,
+-            )
++            self._ensure_open()
+             frames.append(
+-                normalize_minute(raw, asset_type, symbol=symbol, start=start, end=end)
++                read_mac_minute(
++                    self._config.mac_client, symbol, asset_type=asset_type,
++                    period=periods[freq], start=start, end=end,
++                    max_bars=self._config.online_max_bars_per_symbol,
++                    latest_count=_minute_limit.get(),
++                )
+             )
++            rows += frames[-1].height
++            if rows > self._config.max_result_rows:
++                raise ProviderError("RESULT_LIMIT", "Minute result exceeds configured row limit")
+             if on_chunk_done is not None:
+                 on_chunk_done(current, len(requested))
+         return polars().concat(frames) if frames else empty_minute()
+ 
++    @bounded_request
+     def get_intraday_batch(
+         self, symbols: object, count: int = 300, asset_type: str = "stock"
+     ) -> Any:
+-        if count < 1:
++        if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+             raise ProviderError("INVALID_ARGUMENT", "count must be positive")
+         today = pd.Timestamp.now(tz="Asia/Shanghai").tz_localize(None).normalize()
+         end = today + pd.Timedelta(days=1) - pd.Timedelta(microseconds=1)
+-        frame = self.get_minute(symbols, today, end, asset_type, "1m")
++        token = _minute_limit.set(count)
++        try:
++            frame = self.get_minute(symbols, today, end, asset_type, "1m")
++        finally:
++            _minute_limit.reset(token)
+         return frame.group_by("symbol", maintain_order=True).tail(count)
+ 
++    @bounded_request
+     def get_intraday_latest(self, symbols: object | None = None, count: int = 3) -> Any:
++        if isinstance(count, bool) or not isinstance(count, int) or count < 1:
++            raise ProviderError("INVALID_ARGUMENT", "count must be a positive integer")
+         if symbols is None:
+             symbols = [
+                 *[row["symbol"] for row in self.get_instruments("stock")],
+@@ -296,6 +337,7 @@ class TdxmanProvider:
+             ]
+         return self.get_intraday_batch(symbols, count=count)
+ 
++    @bounded_request
+     def get_depth_batch(self, symbols: object) -> dict[str, dict[str, Any]]:
+         """Fetch complete MAC five-level books in batches of at most 80 symbols."""
+         self._ensure_open()
+@@ -309,16 +351,21 @@ class TdxmanProvider:
+         fields = PresetField.HANDICAP + FieldBit.SERVER_UPDATE_DATE + FieldBit.SERVER_UPDATE_TIME
+         books: dict[str, dict[str, Any]] = {}
+         for offset in range(0, len(requested), 80):
++            self._ensure_open()
+             batch = requested[offset : offset + 80]
+             stocks = [({"SZ": 0, "SH": 1, "BJ": 2}[s[-2:]], s.split(".")[0]) for s in batch]
+             frame = self._config.mac_client.get_stock_quotes(stocks, fields=fields)
+             if len(frame) != len(batch):
+                 raise ProviderError("INCOMPLETE_COVERAGE", "Depth batch is incomplete")
++            received = set()
+             for row in frame.to_dict("records"):
+                 exchange = {0: "SZ", 1: "SH", 2: "BJ"}.get(int(row["market"]))
+                 if exchange is None:
+                     raise ProviderError("SCHEMA_MISMATCH", "Depth quote identity is invalid")
+                 symbol = normalize_symbols([f"{row['code']}.{exchange}"])[0]
++                if symbol not in batch or symbol in received:
++                    raise ProviderError("INCOMPLETE_COVERAGE", "Depth batch identity mismatch")
++                received.add(symbol)
+                 books[symbol] = self._normalize_depth_row(row)
+         if set(books) != set(requested):
+             raise ProviderError("INCOMPLETE_COVERAGE", "Depth snapshot identity mismatch")
+@@ -337,14 +384,19 @@ class TdxmanProvider:
+         )
+         rows: list[dict[str, Any]] = []
+         for offset in range(0, len(symbols), 80):
++            self._ensure_open()
+             batch = symbols[offset : offset + 80]
+             stocks = [({"SZ": 0, "SH": 1, "BJ": 2}[s[-2:]], s.split(".")[0]) for s in batch]
+             frame = self._config.mac_client.get_stock_quotes(stocks, fields=fields)
+             if len(frame) != len(batch):
+                 raise ProviderError("INCOMPLETE_COVERAGE", "Realtime batch is incomplete")
+-            rows.extend(normalize_realtime_row(row) for row in frame.to_dict("records"))
++            normalized = [normalize_realtime_row(row) for row in frame.to_dict("records")]
++            if {row["symbol"] for row in normalized} != set(batch):
++                raise ProviderError("INCOMPLETE_COVERAGE", "Realtime batch identity mismatch")
++            rows.extend(normalized)
+         if {row["symbol"] for row in rows} != set(symbols):
+             raise ProviderError("INCOMPLETE_COVERAGE", "Realtime snapshot identity mismatch")
++        logger.info("realtime_coverage expected=%d received=%d missing=0", len(symbols), len(rows))
+         return rows
+ 
+     @staticmethod
+@@ -394,7 +446,7 @@ class TdxmanProvider:
+         except (TypeError, ValueError) as exc:
+             raise ProviderError("BAD_DATA", "Depth quote has non-numeric levels") from exc
+         values = [*bid_prices, *ask_prices, *bid_volumes, *ask_volumes]
+-        if any(not pd.notna(value) or value < 0 for value in values):
++        if any(not math.isfinite(value) or value < 0 for value in values):
+             raise ProviderError("BAD_DATA", "Depth quote has invalid levels")
+         from .normalize import _mac_quote_timestamp
+ 
+@@ -412,5 +464,6 @@ class TdxmanProvider:
+         }
+ 
+     def _ensure_open(self) -> None:
++        check_budget()
+         if self._closed:
+             raise ProviderError("PROVIDER_CLOSED", "Provider is closed")
+diff --git a/src/tdxman/adapters/tick_stock_panel/routing.py b/src/tdxman/adapters/tick_stock_panel/routing.py
+index c4b962e..b5ca016 100644
+--- a/src/tdxman/adapters/tick_stock_panel/routing.py
++++ b/src/tdxman/adapters/tick_stock_panel/routing.py
+@@ -2,6 +2,7 @@
+ 
+ from __future__ import annotations
+ 
++import logging
+ from datetime import date
+ from typing import Any
+ 
+@@ -10,7 +11,67 @@ import pandas as pd
+ from tdxman.models.enums import KlineCategory, Market
+ 
+ from .contracts import DAILY_COLUMNS, ProviderError
+-from .normalize import normalize_daily
++from .diagnostics import check_budget
++from .normalize import empty_minute, normalize_daily, normalize_minute, polars
++
++logger = logging.getLogger(__name__)
++
++
++def read_mac_minute(client, symbol, *, asset_type, period, start, end,
++                    max_bars, latest_count=None):
++    """Use the same raw K-line endpoint as `tdxman kline`, with bounded coverage."""
++    from tdxman.mac.enums import Adjust, Period
++
++    if asset_type == "index":
++        raise ProviderError("UNIT_UNVERIFIED", "Index minute volume has not been verified")
++    code, exchange = symbol.split(".")
++    if max_bars < 1:
++        raise ProviderError("CONFIG_INVALID", "Minute limit must be positive")
++    limit = min(max_bars, latest_count) if latest_count is not None else max_bars
++    if latest_count is not None and latest_count > max_bars:
++        raise ProviderError("INCOMPLETE_COVERAGE", "Requested count exceeds minute limit")
++    offset, oldest = 0, None
++    frames = []
++    while offset < limit:
++        check_budget()
++        size = min(700, limit - offset)
++        try:
++            raw = client.get_stock_kline(
++                {"SZ": 0, "SH": 1, "BJ": 2}[exchange], code, Period(period),
++                start=offset, count=size, adjust=Adjust.NONE,
++            )
++        except Exception as exc:
++            raise ProviderError("UPSTREAM_UNAVAILABLE", f"Minute fetch failed: {symbol}") from exc
++        page = normalize_minute(raw, asset_type, symbol=symbol, start=None, end=None)
++        if page.is_empty():
++            break
++        current = page["datetime"].min()
++        if oldest is not None and current >= oldest:
++            raise ProviderError("INCOMPLETE_COVERAGE", "Minute pagination made no progress")
++        oldest = current
++        frames.append(page)
++        offset += len(raw)
++        if start is not None and current <= start:
++            break
++        if len(raw) < size:
++            break
++        if offset >= limit and start is not None and latest_count is None:
++            raise ProviderError("INCOMPLETE_COVERAGE", "Minute history reached configured limit")
++    if not frames:
++        return empty_minute()
++    pl = polars()
++    result = pl.concat(frames).unique(["symbol", "datetime"], keep="last").sort("datetime")
++    if start is not None:
++        result = result.filter(pl.col("datetime") >= start)
++    if end is not None:
++        result = result.filter(pl.col("datetime") <= end)
++    logger.info(
++        "minute_coverage symbol=%s requested_start=%s requested_end=%s fetched=%d rows=%d "
++        "actual_start=%s actual_end=%s window_limit=%d",
++        symbol, start, end, offset, result.height,
++        result["datetime"].min(), result["datetime"].max(), limit,
++    )
++    return result
+ 
+ _MARKETS = {"SH": Market.SH, "SZ": Market.SZ, "BJ": Market.BJ}
+ 
+@@ -36,6 +97,10 @@ def read_standard_daily(
+         )
+ 
+     code, exchange = symbol.split(".")
++    if asset_type == "index" and code.startswith("88"):
++        raise ProviderError(
++            "UNIT_UNVERIFIED", "Industry boards require a verified MAC daily volume route"
++        )
+     market = _MARKETS[exchange]
+     pages: list[pd.DataFrame] = []
+     offset = 0
+@@ -44,6 +109,7 @@ def read_standard_daily(
+     exhausted = False
+ 
+     while offset < max_bars:
++        check_budget()
+         count = min(page_size, max_bars - offset)
+         try:
+             getter = client.get_index_bars if asset_type == "index" else client.get_security_bars
+diff --git a/src/tdxman/adapters/tick_stock_panel/universe.py b/src/tdxman/adapters/tick_stock_panel/universe.py
+index 72e267f..4c6f735 100644
+--- a/src/tdxman/adapters/tick_stock_panel/universe.py
++++ b/src/tdxman/adapters/tick_stock_panel/universe.py
+@@ -8,6 +8,7 @@ from tdxman.codec.bitmap import PresetField
+ from tdxman.mac.enums import Category, SortOrder, SortType
+ 
+ from .contracts import ProviderError
++from .diagnostics import check_budget
+ 
+ _EXCHANGES = {0: "SZ", 1: "SH", 2: "BJ"}
+ _CATEGORIES = {
+@@ -27,22 +28,41 @@ def get_mac_instruments(client: Any, asset_type: str, *, limit: int) -> list[dic
+ 
+     records: dict[str, dict[str, Any]] = {}
+     for category in categories:
++        check_budget()
++        pages = []
++        seen = set()
++        offset = 0
+         try:
+-            frame = client.get_stock_quotes_list(
+-                category,
+-                count=limit,
+-                sort_type=SortType.CODE,
+-                sort_order=SortOrder.ASC,
+-                fields=PresetField.NONE,
+-            )
++            while offset < limit:
++                check_budget()
++                size = min(80, limit - offset)
++                page = client.get_stock_quotes_list(
++                    category, start=offset, count=size,
++                    sort_type=SortType.CODE, sort_order=SortOrder.ASC,
++                    fields=PresetField.NONE,
++                )
++                if page.empty:
++                    break
++                if not {"market", "code", "name"}.issubset(page.columns):
++                    raise ProviderError("SCHEMA_MISMATCH", "Instrument directory fields changed")
++                identities = list(zip(page["market"], page["code"], strict=True))
++                if len(set(identities)) != len(identities) or seen.intersection(identities):
++                    raise ProviderError("INCOMPLETE_COVERAGE", "Directory pagination drifted")
++                seen.update(identities)
++                pages.append(page)
++                offset += len(page)
++                if len(page) < size:
++                    break
++            if offset >= limit:
++                raise ProviderError("INCOMPLETE_COVERAGE", "Directory reached configured limit")
++        except ProviderError:
++            raise
+         except Exception as exc:
+             raise ProviderError(
+                 "UPSTREAM_UNAVAILABLE", "Instrument directory request failed"
+             ) from exc
+-        if len(frame) >= limit:
+-            raise ProviderError(
+-                "INCOMPLETE_COVERAGE", "Instrument directory reached configured limit"
+-            )
++        import pandas as pd
++        frame = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
+         required = {"market", "code", "name"}
+         if not frame.empty and not required.issubset(frame.columns):
+             raise ProviderError("SCHEMA_MISMATCH", "Instrument directory fields changed")
+diff --git a/src/tdxman/integrations/tick_stock_panel/plugin/provider.py b/src/tdxman/integrations/tick_stock_panel/plugin/provider.py
+index 8315f0f..53adc2b 100644
+--- a/src/tdxman/integrations/tick_stock_panel/plugin/provider.py
++++ b/src/tdxman/integrations/tick_stock_panel/plugin/provider.py
+@@ -1,228 +1,58 @@
+-"""tdxman CLI-backed minute data provider."""
++"""Thin, host-independent entry point for the complete tdxman adapter."""
++
+ from __future__ import annotations
+ 
+-import json
+-import logging
+ import os
+-import shutil
+-import subprocess
+-from collections.abc import Callable
+-from contextlib import contextmanager
+-from dataclasses import dataclass, field
+-from datetime import datetime
+ from pathlib import Path
+-from zoneinfo import ZoneInfo
+-
+-import polars as pl
+-
+-from app.data_providers.base import AssetType, ProviderCapabilities
+-
+-logger = logging.getLogger(__name__)
+-_CN_TZ = ZoneInfo("Asia/Shanghai")
+-
+-_PERIODS = {
+-    "1m": "1MIN", "1min": "1MIN", "5m": "5MIN", "5min": "5MIN",
+-    "15m": "15MIN", "15min": "15MIN", "30m": "30MIN", "30min": "30MIN",
+-    "60m": "60MIN", "60min": "60MIN",
+-}
+-_BARS_PER_SESSION = {"1MIN": 242, "5MIN": 49, "15MIN": 17, "30MIN": 9, "60MIN": 5}
+-_CANONICAL = ["symbol", "datetime", "open", "high", "low", "close", "volume", "amount"]
+ 
++from tdxman.adapters.tick_stock_panel.contracts import ProviderConfig, ProviderError
++from tdxman.adapters.tick_stock_panel.provider import TdxmanProvider as Adapter
++from tdxman.adapters.tick_stock_panel.transport import ManagedClient
+ 
+-@dataclass
+-class _TdxmanConfig:
+-    name: str = "tdxman"
+-    display_name: str = "tdxman"
+-    datasets: dict = field(default_factory=lambda: {
+-        "minute": {}, "realtime": {}, "depth5": {}, "full_minute": {},
+-    })
+-    path: None = None
+-    builtin: bool = True
+ 
+-
+-class TdxmanProviderError(RuntimeError):
+-    """A tdxman request failed or returned invalid data."""
+-
+-
+-def _binary() -> str | None:
+-    configured = os.getenv("TDXMAN_BIN")
+-    if configured:
+-        return configured if Path(configured).exists() else shutil.which(configured)
+-    return shutil.which("tdxman")
++def _settings():
++    mode = os.getenv("TDXMAN_TICK_STOCK_PANEL_MODE", "online").lower()
++    if mode not in {"online", "local"}:
++        raise ProviderError("CONFIG_INVALID", "Mode must be online or local")
++    root = Path(os.getenv("TDXMAN_ASPOOL_ROOT", "~/.aspool")).expanduser()
++    if mode == "local" and not (root / "catalog.duckdb").is_file():
++        raise ProviderError("CONFIG_INVALID", "未找到 aspool catalog.duckdb")
++    return mode, root
+ 
+ 
+ def availability() -> tuple[bool, str]:
++    """Check configuration without connecting or creating a data pool."""
+     try:
+-        from tdxman.adapters.tick_stock_panel.provider import TdxmanProvider as Adapter
++        from tdxman.adapters.tick_stock_panel.normalize import polars
++        from tdxman.client import TdxClient
+         from tdxman.mac.client import MacClient
+-        assert Adapter and MacClient
+-    except ImportError as exc:
+-        return False, f"tdxman 适配器依赖不可用: {exc}"
+-    binary = _binary()
+-    if not binary:
+-        return False, "未找到 tdxman 可执行文件"
+-    return True, f"ok ({binary})"
+-
+-
+-def _market_code(symbol: str) -> tuple[str, str]:
+-    parts = symbol.upper().replace(" ", ".").split(".")
+-    if len(parts) == 2:
+-        left, right = parts
+-        if left in {"SH", "SZ", "BJ"}:
+-            return left, right
+-        if right in {"SH", "SZ", "BJ"}:
+-            return right, left
+-    code = parts[0]
+-    if code.startswith(("5", "6", "9")):
+-        return "SH", code
+-    if code.startswith(("4", "8", "920")):
+-        return "BJ", code
+-    return "SZ", code
+-
+-
+-def _period(freq: str) -> str:
+-    try:
+-        return _PERIODS[str(freq or "1m").strip().lower()]
+-    except KeyError as exc:
+-        raise ValueError(f"tdxman 不支持分钟周期: {freq}") from exc
+-
+-
+-def _count(period: str, start_time: datetime | None, end_time: datetime | None) -> int:
+-    if start_time is None or end_time is None:
+-        return min(10000, _BARS_PER_SESSION[period] + 10)
+-    days = max(1, (end_time.date() - start_time.date()).days + 1)
+-    return min(10000, days * _BARS_PER_SESSION[period] + 10)
+-
+-
+-def _parse_rows(
+-    payload: str, symbol: str, start_time: datetime | None, end_time: datetime | None
+-) -> pl.DataFrame:
+-    try:
+-        rows = json.loads(payload)
+-    except json.JSONDecodeError as exc:
+-        raise TdxmanProviderError(f"tdxman 返回非法 JSON: {payload[:200]}") from exc
+-    if not isinstance(rows, list) or not rows:
+-        return pl.DataFrame()
+-    normalized: list[dict] = []
+-    for raw in rows:
+-        if not isinstance(raw, dict) or not raw.get("datetime"):
+-            continue
+-        stamp = datetime.fromisoformat(str(raw["datetime"]).replace("Z", "+00:00"))
+-        if stamp.tzinfo is not None:
+-            stamp = stamp.astimezone(_CN_TZ).replace(tzinfo=None)
+-        if start_time is not None and stamp < start_time.replace(tzinfo=None):
+-            continue
+-        if end_time is not None and stamp > end_time.replace(tzinfo=None):
+-            continue
+-        normalized.append({
+-            "symbol": symbol,
+-            "datetime": stamp,
+-            "open": raw.get("open"),
+-            "high": raw.get("high"),
+-            "low": raw.get("low"),
+-            "close": raw.get("close"),
+-            "volume": raw.get("vol", raw.get("volume")),
+-            "amount": raw.get("amount"),
+-        })
+-    if not normalized:
+-        return pl.DataFrame()
+-    return pl.DataFrame(normalized).with_columns(
+-        pl.col("datetime").cast(pl.Datetime("us")),
+-        *[pl.col(column).cast(pl.Float64, strict=False) for column in _CANONICAL[2:]],
+-    ).select(_CANONICAL).sort("datetime")
+-
+-
+-class TdxmanProvider:
+-    name = "tdxman"
+-    builtin = True
+-    capabilities = ProviderCapabilities(minute=True, realtime=True, depth5=True)
+-
+-    def __init__(self) -> None:
+-        self.config = _TdxmanConfig()
+-
+-    def close(self) -> None:
+-        pass
+-
+-    @contextmanager
+-    def _adapter(self):
+-        # Each request owns its connection; concurrent services never share a socket.
+-        from tdxman.adapters.tick_stock_panel.provider import TdxmanProvider as Adapter
+-        from tdxman.mac.client import MacClient
+-
+-        client = MacClient(timeout=30, heartbeat_interval=0)
+-        try:
+-            client.connect()
+-            yield Adapter({"mac_client": client})
+-        finally:
+-            client.close()
+-
+-    def get_instruments(self, asset_type="stock"):
+-        with self._adapter() as adapter:
+-            return adapter.get_instruments(asset_type)
+-
+-    def get_realtime(self):
+-        with self._adapter() as adapter:
+-            return adapter.get_realtime()
+-
+-    def get_realtime_indices(self, symbols):
+-        with self._adapter() as adapter:
+-            return adapter.get_realtime_indices(symbols)
+-
+-    def get_depth_batch(self, symbols):
+-        if not symbols:
+-            return {}
+-        with self._adapter() as adapter:
+-            return adapter.get_depth_batch(symbols)
+-
+-    def get_intraday_batch(self, symbols, count=300, asset_type="stock"):
+-        from tdxman.adapters.tick_stock_panel.provider import TdxmanProvider as Adapter
+-
+-        return Adapter.get_intraday_batch(self, symbols, count, asset_type)
+-
+-    def get_intraday_latest(self, symbols=None, count=3):
+-        from tdxman.adapters.tick_stock_panel.provider import TdxmanProvider as Adapter
+-
+-        return Adapter.get_intraday_latest(self, symbols, count)
+ 
+-    def get_minute(
+-        self,
+-        symbols: list[str],
+-        start_time: datetime | None,
+-        end_time: datetime | None,
+-        asset_type: AssetType = "stock",
+-        freq: str = "1m",
+-        on_chunk_done: Callable[[int, int], None] | None = None,
+-    ) -> pl.DataFrame:
+-        if not symbols:
+-            return pl.DataFrame()
+-        binary = _binary()
+-        if not binary:
+-            raise TdxmanProviderError("未找到 tdxman 可执行文件")
+-        period = _period(freq)
+-        count = _count(period, start_time, end_time)
+-        frames: list[pl.DataFrame] = []
+-        last_error: Exception | None = None
+-        for index, symbol in enumerate(symbols, start=1):
+-            market, code = _market_code(symbol)
+-            command = [
+-                binary, "kline", market, code, "--period", period,
+-                "--count", str(count), "--adjust", "NONE", "--format", "json",
+-            ]
+-            try:
+-                result = subprocess.run(
+-                    command, capture_output=True, text=True, encoding="utf-8",
+-                    errors="replace", timeout=30,
+-                )
+-                if result.returncode != 0:
+-                    raise TdxmanProviderError((result.stderr or result.stdout).strip()[-500:])
+-                frame = _parse_rows(result.stdout, symbol, start_time, end_time)
+-                if not frame.is_empty():
+-                    frames.append(frame)
+-            except (OSError, subprocess.TimeoutExpired, TdxmanProviderError, ValueError) as exc:
+-                last_error = exc
+-                logger.warning("tdxman minute fetch failed for %s: %s", symbol, exc)
+-            if on_chunk_done:
+-                on_chunk_done(index, len(symbols))
+-        if not frames and last_error is not None:
+-            raise TdxmanProviderError(str(last_error)) from last_error
+-        return pl.concat(frames, how="diagonal_relaxed") if frames else pl.DataFrame()
++        polars()
++        mode, _ = _settings()
++        if not callable(TdxClient) or not callable(MacClient):
++            raise ProviderError("DEPENDENCY_MISSING", "tdxman clients unavailable")
++        return True, f"ready ({mode}; network checked on request)"
++    except (ImportError, ProviderError) as exc:
++        return False, str(exc)
++
++
++class TdxmanProvider(Adapter):
++    # The consumer uses repair rounds until market-wide incremental cost is verified.
++    get_intraday_latest = None
++
++    def __init__(self, config=None):
++        if config is None:
++            from aspool import DataPool
++            from tdxman.client import TdxClient
++            from tdxman.mac.client import MacClient
++
++            mode, root = _settings()
++            config = ProviderConfig(
++                daily_mode=mode,
++                pool=DataPool(root) if mode == "local" else None,
++                standard_client=ManagedClient(TdxClient) if mode == "online" else None,
++                mac_client=ManagedClient(MacClient),
++                close_standard_client=True,
++                close_mac_client=True,
++            )
++        super().__init__(config)
+diff --git a/src/tdxman/integrations/tick_stock_panel/plugin/plugin.yaml b/src/tdxman/integrations/tick_stock_panel/plugin/plugin.yaml
+index 2317515..6853619 100644
+--- a/src/tdxman/integrations/tick_stock_panel/plugin/plugin.yaml
++++ b/src/tdxman/integrations/tick_stock_panel/plugin/plugin.yaml
+@@ -4,5 +4,5 @@ display_name: "tdxman"
+ runtime: none
+ entry: app.plugins.tdxman.provider:TdxmanProvider
+ check: app.plugins.tdxman.provider:availability
+-datasets: [minute, realtime, depth5, full_minute]
+-description: "通过 tdxman 获取实时行情、五档盘口和全量分钟；分钟K周期由 freq 参数决定。"
++datasets: [daily, minute, realtime, depth5, full_minute]
++description: "tdxman 原始日K、多周期分钟K、实时行情、五档与当日分钟。指数分钟单位未验证时明确拒绝。"
+diff --git a/src/tdxman/adapters/tick_stock_panel/diagnostics.py b/src/tdxman/adapters/tick_stock_panel/diagnostics.py
+new file mode 100644
+index 0000000..1812aa2
+--- /dev/null
++++ b/src/tdxman/adapters/tick_stock_panel/diagnostics.py
+@@ -0,0 +1,67 @@
++"""Per-request budgets and structured diagnostics, isolated by context."""
++
++from __future__ import annotations
++
++import logging
++import time
++import uuid
++from contextlib import contextmanager
++from contextvars import ContextVar
++from dataclasses import dataclass
++from functools import wraps
++from inspect import isgeneratorfunction
++
++from .contracts import ProviderError
++
++logger = logging.getLogger(__name__)
++
++
++@dataclass(frozen=True)
++class Request:
++    request_id: str
++    deadline: float
++
++
++_request = ContextVar("tdxman_provider_request", default=None)
++
++
++def check_budget():
++    request = _request.get()
++    if request is not None and time.monotonic() >= request.deadline:
++        raise ProviderError("DEADLINE_EXCEEDED", "Provider request deadline exceeded")
++
++
++@contextmanager
++def _scope(provider, method):
++    if _request.get() is not None:
++        check_budget()
++        yield
++        return
++    started = time.monotonic()
++    request = Request(uuid.uuid4().hex, started + provider._config.request_timeout)
++    token = _request.set(request)
++    status = "ok"
++    try:
++        yield
++    except BaseException as exc:
++        status = getattr(exc, "code", type(exc).__name__)
++        raise
++    finally:
++        logger.info("provider_request id=%s method=%s status=%s elapsed=%.3f",
++                    request.request_id, method, status, time.monotonic() - started)
++        _request.reset(token)
++
++
++def bounded_request(method):
++    if isgeneratorfunction(method):
++        @wraps(method)
++        def iterate(self, *args, **kwargs):
++            with _scope(self, method.__name__):
++                yield from method(self, *args, **kwargs)
++        return iterate
++
++    @wraps(method)
++    def call(self, *args, **kwargs):
++        with _scope(self, method.__name__):
++            return method(self, *args, **kwargs)
++    return call
+diff --git a/src/tdxman/adapters/tick_stock_panel/transport.py b/src/tdxman/adapters/tick_stock_panel/transport.py
+new file mode 100644
+index 0000000..1373b13
+--- /dev/null
++++ b/src/tdxman/adapters/tick_stock_panel/transport.py
+@@ -0,0 +1,61 @@
++"""Lazy serialized connections with bounded reconnects; no background workers."""
++
++from __future__ import annotations
++
++import threading
++
++from tdxman.exceptions import TdxConnectionError
++
++from .contracts import ProviderError
++from .diagnostics import check_budget
++
++
++class ManagedClient:
++    """Reuse one connection under a lock and release it on every failed attempt."""
++
++    def __init__(self, factory, timeout=10, retries=2, backoff=0.1):
++        self._factory = factory
++        self._timeout = timeout
++        self._retries = retries
++        self._backoff = backoff
++        self._lock = threading.RLock()
++        self._stopped = threading.Event()
++        self._client = None
++
++    def _disconnect(self):
++        client, self._client = self._client, None
++        if client is not None:
++            client.close()
++
++    def close(self):
++        self._stopped.set()
++        with self._lock:
++            self._disconnect()
++
++    def __getattr__(self, name):
++        if name.startswith("_"):
++            raise AttributeError(name)
++
++        def call(*args, **kwargs):
++            with self._lock:
++                for attempt in range(self._retries + 1):
++                    check_budget()
++                    if self._stopped.is_set():
++                        raise ProviderError("PROVIDER_CLOSED", "Provider is closed")
++                    try:
++                        if self._client is None:
++                            self._client = self._factory(
++                                timeout=self._timeout, auto_reconnect=False,
++                                heartbeat_interval=0,
++                            )
++                            self._client.connect()
++                        return getattr(self._client, name)(*args, **kwargs)
++                    except (TdxConnectionError, OSError) as exc:
++                        self._disconnect()
++                        if attempt == self._retries:
++                            raise ProviderError(
++                                "UPSTREAM_UNAVAILABLE", "tdxman request retries exhausted"
++                            ) from exc
++                        self._stopped.wait(self._backoff * 2**attempt)
++
++        return call
+diff --git a/tests/unit/test_tick_stock_panel_recovery.py b/tests/unit/test_tick_stock_panel_recovery.py
+new file mode 100644
+index 0000000..84d7895
+--- /dev/null
++++ b/tests/unit/test_tick_stock_panel_recovery.py
+@@ -0,0 +1,247 @@
++from __future__ import annotations
++
++import json
++from concurrent.futures import ThreadPoolExecutor
++from datetime import datetime
++
++import pandas as pd
++import pytest
++
++from tdxman.adapters.tick_stock_panel import ProviderError
++from tdxman.adapters.tick_stock_panel.normalize import empty_minute, normalize_minute
++from tdxman.adapters.tick_stock_panel.transport import ManagedClient
++from tdxman.exceptions import TdxConnectionError
++from tdxman.integrations.tick_stock_panel.plugin.provider import TdxmanProvider, availability
++
++
++def bars(count=5):
++    return pd.DataFrame({
++        "datetime": pd.date_range("2026-09-21 09:31", periods=count, freq="min"),
++        "open": [10.] * count, "high": [11.] * count,
++        "low": [9.] * count, "close": [10.5] * count,
++        "vol": [1000.] * count, "amount": [10000.] * count,
++    })
++
++
++class PagedClient:
++    def __init__(self, frame):
++        self.frame, self.calls = frame, []
++
++    def get_stock_kline(self, market, code, period, start=0, count=700, adjust=None):
++        self.calls.append((market, code, period, start, count, adjust))
++        end = len(self.frame) - start
++        return self.frame.iloc[max(0, end-count):max(0, end)].copy()
++
++
++@pytest.mark.parametrize("freq,period", [("1m", 7), ("5MIN", 0), ("15m", 1),
++                                       ("30m", 2), ("60m", 3)])
++def test_all_periods_units_symbols_and_preview(freq, period):
++    client = PagedClient(bars())
++    plugin = TdxmanProvider({"mac_client": client})
++    result = plugin.get_minute(["SH.600519"], freq=freq)
++    assert result["symbol"].to_list() == ["600519.SH"] * 5
++    assert result["volume"].to_list() == [10.] * 5
++    assert client.calls[0][2] == period
++    assert int(client.calls[0][-1]) == 0
++    json.dumps(plugin.test_dataset("minute", ["600519.SH"]), allow_nan=False)
++
++
++def test_minute_pagination_boundary_and_truncation():
++    client = PagedClient(bars(705))
++    plugin = TdxmanProvider({"mac_client": client})
++    result = plugin.get_minute(["600519.SH"], "2026-09-21 01:31:00Z")
++    assert result.height == 705
++    assert [call[3] for call in client.calls] == [0, 700]
++    assert max(call[4] for call in client.calls) == 700
++    truncated = TdxmanProvider({"mac_client": client, "online_max_bars_per_symbol": 700})
++    with pytest.raises(ProviderError, match="configured limit"):
++        truncated.get_minute(["600519.SH"], "2026-09-21 09:31")
++
++
++def test_no_progress_and_partial_failure_are_not_success():
++    class Stuck(PagedClient):
++        def get_stock_kline(self, *args, **kwargs):
++            return bars(700)
++
++    with pytest.raises(ProviderError, match="no progress"):
++        TdxmanProvider({"mac_client": Stuck(bars())}).get_minute(
++            ["600519.SH"], "2026-09-01"
++        )
++
++    class Broken(PagedClient):
++        def get_stock_kline(self, market, code, *args, **kwargs):
++            if code == "000001":
++                raise OSError("offline")
++            return bars()
++
++    plugin = TdxmanProvider({"mac_client": Broken(bars())})
++    with pytest.raises(ProviderError, match="000001"):
++        plugin.get_minute(["600519.SH", "000001.SZ"])
++    assert "error" in plugin.test_dataset("minute", ["000001.SZ"])
++
++
++def test_empty_and_optional_amount_and_index_unit_gate():
++    plugin = TdxmanProvider({"mac_client": PagedClient(bars(0))})
++    assert plugin.get_minute([]).schema == empty_minute().schema
++    assert plugin.get_minute(["600519.SH"]).schema == empty_minute().schema
++    frame = normalize_minute(bars().drop(columns="amount"), "stock",
++                             symbol="600519.SH", start=None, end=None)
++    assert frame["amount"].null_count() == 5
++    with pytest.raises(ProviderError, match="not been verified"):
++        plugin.get_minute(["000001.SH"], asset_type="index")
++
++
++def test_current_day_count_uses_small_request_and_filters_old_day():
++    today = pd.Timestamp.now(tz="Asia/Shanghai").tz_localize(None).normalize()
++    frame = bars()
++    frame["datetime"] = pd.date_range(today + pd.Timedelta(hours=9, minutes=31),
++                                      periods=5, freq="min")
++    client = PagedClient(frame)
++    plugin = TdxmanProvider({"mac_client": client})
++    assert plugin.get_intraday_batch(["600519.SH"], count=3).height == 3
++    assert client.calls[0][4] == 3
++    frame["datetime"] -= pd.Timedelta(days=1)
++    assert plugin.get_intraday_batch(["600519.SH"]).is_empty()
++    assert not callable(plugin.get_intraday_latest)
++
++
++def test_registration_does_not_connect_and_exposes_five_datasets(monkeypatch):
++    monkeypatch.setenv("TDXMAN_TICK_STOCK_PANEL_MODE", "online")
++    import tdxman.client
++    monkeypatch.setattr(tdxman.client.TdxClient, "connect",
++                        lambda self: pytest.fail("Registration must not connect"))
++    plugin = TdxmanProvider()
++    assert availability()[0]
++    assert set(plugin.config.datasets) == {"daily", "minute", "full_minute", "realtime", "depth5"}
++    for method in ("get_daily", "iter_daily", "get_minute", "get_intraday_batch",
++                   "get_realtime", "get_realtime_indices", "get_depth_batch",
++                   "get_instruments", "test_dataset", "close"):
++        assert callable(getattr(plugin, method))
++    plugin.close()
++    plugin.close()
++    assert plugin.get_realtime() == []
++    assert plugin.get_realtime_indices(["000001.SH"]) is None
++
++
++def test_transport_retries_reuses_and_closes():
++    created = []
++
++    class Client:
++        def __init__(self, **kwargs):
++            self.closed = False
++            created.append(self)
++
++        def connect(self):
++            if len(created) < 3:
++                raise TdxConnectionError("retry")
++
++        def quote(self):
++            return 42
++
++        def close(self):
++            self.closed = True
++
++    client = ManagedClient(Client, backoff=0)
++    with ThreadPoolExecutor(max_workers=3) as executor:
++        assert list(executor.map(lambda _: client.quote(), range(5))) == [42] * 5
++    assert len(created) == 3
++    assert all(c.closed for c in created[:2])
++    client.close()
++    client.close()
++    assert created[-1].closed
++    with pytest.raises(ProviderError, match="closed"):
++        client.quote()
++
++
++def test_json_preview_and_bad_depth_are_explicit():
++    plugin = TdxmanProvider({"mac_client": PagedClient(bars())})
++    preview = plugin._test_result("minute", [{"date": datetime(2026, 9, 21),
++                                             "amount": float("nan")}], ["date", "amount"])
++    assert preview["preview"][0]["date"] == "2026-09-21T00:00:00"
++    assert preview["preview"][0]["amount"] is None
++    json.dumps(preview, allow_nan=False)
++
++
++def test_result_limit_and_request_deadline(monkeypatch):
++    from tdxman.adapters.tick_stock_panel import diagnostics
++
++    client = PagedClient(bars())
++    plugin = TdxmanProvider({"mac_client": client, "max_result_rows": 2})
++    with pytest.raises(ProviderError, match="row limit"):
++        plugin.get_minute(["600519.SH"])
++    plugin = TdxmanProvider({"mac_client": client, "request_timeout": 1})
++    times = iter([0, 2, 3])
++    monkeypatch.setattr(diagnostics.time, "monotonic", lambda: next(times))
++    with pytest.raises(ProviderError, match="deadline"):
++        plugin.get_minute(["600519.SH"])
++
++
++def test_transport_exhaustion_closes_every_failed_connection():
++    created = []
++
++    class Broken:
++        def __init__(self, **kwargs):
++            self.closed = False
++            created.append(self)
++
++        def connect(self):
++            raise TdxConnectionError("offline")
++
++        def close(self):
++            self.closed = True
++
++    client = ManagedClient(Broken, retries=2, backoff=0)
++    with pytest.raises(ProviderError, match="retries exhausted"):
++        client.quote()
++    assert len(created) == 3
++    assert all(connection.closed for connection in created)
++
++
++def test_directory_pagination_rejects_repeated_page():
++    from tdxman.adapters.tick_stock_panel.universe import get_mac_instruments
++
++    class Directory:
++        def get_stock_quotes_list(self, *args, **kwargs):
++            return pd.DataFrame({"code": [f"{i:06}" for i in range(80)],
++                                 "market": [1] * 80, "name": ["test"] * 80})
++
++    with pytest.raises(ProviderError, match="drifted"):
++        get_mac_instruments(Directory(), "etf", limit=1000)
++
++
++@pytest.mark.parametrize("bad", [float("inf"), -1, None])
++def test_depth_rejects_invalid_levels(bad):
++    from tests.unit.test_tick_stock_panel_provider import FakeMacClient
++    client = FakeMacClient()
++    raw = client.get_stock_quotes([(1, "600519")]).to_dict("records")[0]
++    raw["bid_price"] = bad
++    with pytest.raises(ProviderError):
++        TdxmanProvider._normalize_depth_row(raw)
++
++
++def test_timestamp_missing_never_becomes_current_time():
++    from tdxman.adapters.tick_stock_panel.normalize import _mac_quote_timestamp
++    assert _mac_quote_timestamp(None, 150000) is None
++    assert _mac_quote_timestamp(20260921, float("nan")) is None
++    assert _mac_quote_timestamp(20260921, 150000) == 1789974000000
++
++
++def test_quote_batches_have_eighty_symbol_limit():
++    class Quotes:
++        def __init__(self):
++            self.calls = []
++
++        def get_stock_quotes(self, stocks, fields):
++            self.calls.append(stocks)
++            return pd.DataFrame([{
++                "market": market, "code": code, "pre_close": 10,
++                "open": 10, "high": 11, "low": 9, "close": 10.5, "vol": 100,
++            } for market, code in stocks])
++
++    quotes = Quotes()
++    plugin = TdxmanProvider({"mac_client": quotes})
++    symbols = [f"{i:06}.SH" for i in range(81)]
++    rows = plugin.get_realtime_indices(symbols)
++    assert len(rows) == 81
++    assert [len(batch) for batch in quotes.calls] == [80, 1]
++    assert all(row["timestamp"] is None for row in rows)
+diff --git a/tests/unit/test_tick_stock_panel_host_contract.py b/tests/unit/test_tick_stock_panel_host_contract.py
+new file mode 100644
+index 0000000..f1d240c
+--- /dev/null
++++ b/tests/unit/test_tick_stock_panel_host_contract.py
+@@ -0,0 +1,104 @@
++"""Read-only host contracts; never import its application or start its lifespan."""
++
++from __future__ import annotations
++
++import ast
++import logging
++import os
++from datetime import date
++from pathlib import Path
++from types import SimpleNamespace
++
++import polars as pl
++import pytest
++
++from tdxman.integrations.tick_stock_panel.plugin import provider
++
++
++@pytest.fixture
++def host():
++    root = os.getenv("TICK_STOCK_PANEL_ROOT")
++    if not root:
++        pytest.skip("Set TICK_STOCK_PANEL_ROOT for read-only host contract tests")
++    return Path(root) / "backend" / "app"
++
++
++def test_real_registration_and_matrix(host, monkeypatch):
++    monkeypatch.setenv("TDXMAN_TICK_STOCK_PANEL_MODE", "online")
++    manifest_text = Path(provider.__file__).with_name("plugin.yaml").read_text()
++    import re
++    datasets = [v.strip() for v in re.search(r"datasets: \[(.*?)\]", manifest_text)[1].split(",")]
++    manifest = {"name": "tdxman", "datasets": datasets, "entry": "tdxman",
++                "check": "tdxman", "runtime": "none"}
++    ns = {"_NAME_RE": re.compile(r"^[a-z0-9_]+$"), "_call_check": lambda _: provider.availability(),
++          "_PLUGIN_STATUS": {}, "_PROVIDERS": {}, "_plugin_key_masked": lambda *args: "",
++          "_load_entry": lambda _: provider.TdxmanProvider, "logger": logging.getLogger(__name__)}
++    tree = ast.parse((host / "data_providers/custom/loader.py").read_text())
++    functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
++                 and node.name in {"_register_one_plugin", "provider_has_dataset"}]
++    exec(compile(ast.Module(functions, type_ignores=[]), "host-loader", "exec"), ns)
++    ns["_register_one_plugin"](manifest)
++    plugin = ns["_PROVIDERS"]["tdxman"]
++    assert set(plugin.config.datasets) == set(datasets)
++    for dataset in datasets:
++        assert ns["provider_has_dataset"]("tdxman", dataset)
++    matrix_ns = {"custom_sources": SimpleNamespace(
++        list_plugins=lambda: list(ns["_PLUGIN_STATUS"].values()), list_sources=lambda: [])}
++    matrix = ast.parse((host / "data_providers/capabilities.py").read_text())
++    matrix.body = [node for node in matrix.body
++                   if not isinstance(node, (ast.Import, ast.ImportFrom))]
++    exec(compile(matrix, "host-matrix", "exec"), matrix_ns)
++    current = {f"{dataset}_data_provider": "tdxman" for dataset in datasets}
++    result = matrix_ns["build_capability_matrix"](current)
++    for row in result["capabilities"]:
++        if row["id"] in datasets:
++            assert row["usable"]
++            assert "tdxman" in {candidate["name"] for candidate in row["candidates"]}
++    plugin.close()
++
++
++def test_reproduce_repository_500_and_verify_revert(host, tmp_path):
++    source = (host / "tickflow/repository.py").read_text()
++    tree = ast.parse(source)
++    repository = next(node for node in tree.body
++                      if isinstance(node, ast.ClassDef) and node.name == "KlineRepository")
++    names = {"_has_minute_parquet", "_minute_glob_for", "get_minute",
++             "get_minute_batch", "get_minute_range"}
++    repository.body = [node for node in repository.body
++                       if isinstance(node, ast.FunctionDef) and node.name in names]
++    repository.bases = []
++    if not any(node.name == "_has_minute_parquet" for node in repository.body):
++        # Keep the regression reproducible after the host's bad change is reverted.
++        helper = ast.parse(
++            "def _has_minute_parquet(self, asset_type):\n"
++            "    return self._has_parquet('kline_minute')\n"
++        ).body[0]
++        repository.body.append(helper)
++        guard = ast.parse(
++            "if not self._has_minute_parquet(asset_type):\n"
++            "    return pl.DataFrame()\n"
++        ).body[0]
++        for method in repository.body:
++            if method.name.startswith("get_minute"):
++                method.body.insert(0, guard)
++    ns = {"pl": pl, "date": date, "logger": logging.getLogger(__name__),
++          "guarded_collect": lambda lf, **kwargs: lf.collect()}
++    exec(compile(ast.Module([repository], type_ignores=[]), "broken-repository", "exec"), ns)
++    broken = ns["KlineRepository"]()
++    with pytest.raises(AttributeError, match="_has_parquet"):
++        broken.get_minute("605006.SH", date(2026, 9, 21))
++
++    # Exactly mirror the reviewable revert patch, without touching the host file.
++    repository.body = [node for node in repository.body if node.name != "_has_minute_parquet"]
++    for method in repository.body:
++        method.body = [node for node in method.body if not (
++            isinstance(node, ast.If) and "_has_minute_parquet" in ast.unparse(node.test))]
++    exec(compile(ast.Module([repository], type_ignores=[]), "reverted-repository", "exec"), ns)
++    restored = ns["KlineRepository"]()
++    restored._minute_glob = str(tmp_path / "stock" / "**" / "*.parquet")
++    restored._etf_minute_glob = str(tmp_path / "etf" / "**" / "*.parquet")
++    for asset in ("stock", "etf"):
++        assert restored.get_minute("605006.SH", date(2026, 9, 21), asset).is_empty()
++        assert restored.get_minute_batch(["605006.SH"], date(2026, 9, 21), asset).is_empty()
++        assert restored.get_minute_range(["605006.SH"], date(2026, 9, 21),
++                                         date(2026, 9, 21), asset).is_empty()

@@ -213,9 +213,22 @@ class DataPool:
                 conn.read_parquet(
                     [str(p) for p in files], union_by_name=True, hive_partitioning=True
                 ).create_view("bars")
-                rows, symbols, start, end = conn.execute("""SELECT count(*),
-                    count(distinct (market, symbol)), min(trade_date), max(trade_date)
-                    FROM bars""").fetchone()
+                names = {row[0] for row in conn.execute("describe bars").fetchall()}
+                asset_clause = (
+                    "WHERE asset_type IS NULL OR asset_type <> 'etf'"
+                    if "asset_type" in names
+                    else ""
+                )
+                rows, symbols, start, end = conn.execute(
+                    f"""SELECT count(*), count(distinct (market, symbol)),
+                    min(trade_date), max(trade_date) FROM bars {asset_clause}"""
+                ).fetchone()
+                etf_rows = etf_symbols = etf_start = etf_end = 0
+                if "asset_type" in names:
+                    etf_rows, etf_symbols, etf_start, etf_end = conn.execute(
+                        """SELECT count(*), count(distinct (market, symbol)),
+                        min(trade_date), max(trade_date) FROM bars WHERE asset_type = 'etf'"""
+                    ).fetchone()
         return dict(
             backend="aspool",
             status="available",
@@ -225,6 +238,10 @@ class DataPool:
             start=str(start),
             end=str(end),
             price_adjustment="raw",
+            etf_row_count=etf_rows,
+            etf_symbol_count=etf_symbols,
+            etf_start=str(etf_start) if etf_start is not None else None,
+            etf_end=str(etf_end) if etf_end is not None else None,
         )
 
     def _read_fundamentals(self, *, symbols=None, as_of=None):
@@ -376,6 +393,7 @@ class DataPool:
 
     def describe(self):
         """Return the implemented public contract and explicit capability limits."""
+        from .ex_domain import load_ex_categories
         from .index_api import INDEX_FIELDS
 
         return {
@@ -394,9 +412,20 @@ class DataPool:
                 key: {"type": dtype, "unit": unit, "nullable": False}
                 for key, (dtype, unit) in INDEX_FIELDS.items()
             },
+            "ex_categories": load_ex_categories(),
+            "etf_fields": {
+                key: {
+                    "type": dtype,
+                    "unit": unit,
+                    "nullable": key in OPTIONAL_FIELDS or key == "turnover_rate",
+                }
+                for key, (dtype, unit) in DAILY_FIELDS.items()
+            },
             "capabilities": {
                 "index_daily": True,
                 "index_listing": True,
+                "etf_daily": True,
+                "etf_listing": True,
                 "daily": True,
                 "field_projection": True,
                 "immutable_versions": False,

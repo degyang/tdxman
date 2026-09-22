@@ -53,36 +53,40 @@ For an existing stock daily pool, run after 15:30 Asia/Shanghai on a trading day
 source .venv/bin/activate
 export TZ=Asia/Shanghai
 
-aspool sync --type stock --source tdx --tdx-mode online --period daily &&
 aspool update &&
 aspool sync --type index --source tdx --tdx-mode online --period daily &&
+aspool sync --type ex --category ETF --source tdx --period daily &&
 aspool status
 ```
 
-This is a daily workflow, not an `aspool daily` command. Preserve the order: repair stock bars first, then refresh the latest stock record with quotes, then synchronize indices. If stock history needs no repair, omit the first stock sync. Do not use `--limit` for a complete pool update.
+This is a daily workflow, not an `aspool daily` command. For routine daily updates, refresh stock quotes then synchronize indices. Only when stock history has gaps or needs repair, first run `aspool sync --type stock --source tdx --period daily`, then update quotes. Do not use `--limit` for a complete pool update.
 
-- Stock sync repairs at most the latest 30 bars per imported symbol, combining K lines with stored low-frequency fields and calculated ratios. It does not repair arbitrary older gaps or bootstrap new securities.
-- Update refreshes only the current/latest trading day's stock record and low-frequency snapshots from quotes. It has no `--type`, `--period`, or `--async` option. It rejects weekdays 09:00–15:30 inclusive using process-local time; set `TZ=Asia/Shanghai`. This is a weekday guard, not a holiday calendar.
-- Index sync reads **all available history** on every run and merges revisions; it is not a 30-bar tail update. Only `--source tdx --period daily` is supported. Online sync supports `--async`; offline reads only vipdoc and cannot guarantee online freshness.
+- Stock online sync fetches from the latest page back to a five-stored-bar overlap, paging across longer gaps. It combines K lines with stored low-frequency fields and calculated ratios. Every seven days it refreshes the A-share directory; new active symbols bootstrap their longest available history, and symbols with no server K lines remain pending for the next sync. Run `aspool universe` to refresh and inspect this directory manually.
+- Update refreshes only the current/latest trading day's stock record and low-frequency snapshots from quotes. It has no `--type` or `--period` option. Both update and online daily sync support `--async` and `--workers 1..8` (default 4 independent connections; 1 is serial). It rejects weekdays 09:00–15:30 inclusive using Asia/Shanghai time. This is a weekday guard, not a holiday calendar.
+- Index sync reads all available history **only for initial creation or a newly added index**. Existing indices fetch incremental data with a five-stored-bar overlap to replace incomplete bars and recent revisions. Requests use 30-row pages and continue across longer gaps until reaching the overlap; do not reload the entire history for daily maintenance. Only `--source tdx --period daily` is supported. Online sync supports `--async`; offline reads only vipdoc and cannot guarantee online freshness.
 - Sync can run intraday and save an incomplete current-day bar. For daily closed-data consumption, run after close and select an explicitly confirmed closed trading date.
+- Stale, undated, future-dated and invalid quote records are rejected without overwriting existing bars. Unchanged files are not rewritten. Stock reports are in `ROOT/reports/maintenance/`; distinguish missing quotes from failures.
 - `&&` stops subsequent commands on failure. Inspect failures, correct their cause, and rerun as appropriate; successful index writes remain saved. Index reports under `ROOT/reports/index-sync/` include per-index coverage and rejected source rows. Do not report full success solely from process completion.
 
 ### Bootstrap and occasional maintenance
 
 For an empty stock pool, run `aspool import --source free-stockdb --period daily` once; the command validates imported data. `aspool init` creates structure only. An existing pool does not need daily reimport. Import shared adjustment factors separately with `aspool import --source free-stockdb --factor`; do not import minute history as part of this daily workflow.
 
-Index sync can bootstrap an empty index pool using `settings/board_index.json`. It covers HY/HY2/GN/FG plus selected ZS common indices, excludes names starting with `昨日`, and preserves source categories. Maintain the list manually:
+Index sync can bootstrap an empty index pool using `settings/board_index.json`. It covers HY/HY2/GN/FG plus selected ZS common indices, excludes names starting with `昨日`, and preserves source categories. ETF securities are excluded from this index pool because they have stock-style OHLCV and no index breadth counts; use the independent ETF pool instead:
 
 ```bash
 python scripts/maintain_board_lists.py          # Preview added/removed/changed entries
 python scripts/maintain_board_lists.py --write  # Apply the refreshed list
+python scripts/maintain_board_lists.py --target etf --write  # Refresh settings/etf_list.json
+aspool ex categories                                      # Show ex asset categories and status
+aspool sync --type ex --category ETF --source tdx --period daily  # ETF daily bars from 2010 onward
 ```
 
 Removing a list entry does not delete stored history. Use `aspool fundamentals` for a separate low-frequency refresh when needed; daily update already refreshes these snapshots. Use `aspool sync --type stock --source free-stockdb --period daily` only for requested full stock-history recalibration. Index synchronization does not use free-stockdb.
 
 ### Verify and hand off to Fundwise
 
-`aspool status` reports stock coverage, not index coverage. Use `DataPool.list_indices()` to inspect stored index names, dates and row counts; compare with the configured list and target trading date. Do not treat a global maximum date as proof that all securities are current. Account for suspensions and unavailable source data.
+`aspool status` reports stock、ETF、分钟线和指数的汇总覆盖；用 `DataPool.list_indices()` / `DataPool.list_etfs()` 查看逐资产名称、日期和行数。不要将全局最大日期视为全部标的已更新；仍需区分停牌与数据源不可用。
 
 ```python
 from aspool import DataPool
@@ -92,11 +96,13 @@ print(pool.status())
 print(pool.list_indices().to_string(index=False))
 # Replace with the required confirmed closed trading date.
 frame = pool.read_index_daily(symbols='SH.000300', end='2026-09-16', lookback=120)
+etfs = pool.list_etfs()
+etf_frame = pool.read_etf_daily(symbols='SZ.159366', end='2026-09-16', lookback=120)
 ```
 
-For Fundwise integration, read [aspool API](docs/aspool_api.md). Use the public stock and index APIs instead of internal fundamental snapshots. Index data contains OHLCV, amount and up_count/down_count; absent breadth is stored as zero, not proof of no advancing/declining securities. Index volume uses source units, unlike stock shares. Current APIs do not guarantee immutable versions or point-in-time historical constituents.
+For Fundwise integration, read [aspool API](docs/aspool_api.md). Use the public stock, ETF and index APIs instead of internal fundamental snapshots. Index data contains OHLCV, amount and up_count/down_count; absent breadth is stored as zero, not proof of no advancing/declining securities. ETF data uses stock-style shares, amount and turnover and does not expose breadth counts. Index volume uses source units, unlike stock shares. Current APIs do not guarantee immutable versions or point-in-time historical constituents.
 
-See [README daily workflow](README.md#daily-工作流每日收盘后同步股票和指数) for the user-facing procedure and [index design](docs/aspool_index_design.md) for storage and synchronization details.
+See [README daily workflow](README.md#daily-工作流每日收盘后同步股票etf和指数) for the user-facing procedure, [index design](docs/aspool_index_design.md), and [ETF design](docs/aspool_etf_design.md) for storage and synchronization details.
 
 ## Commands
 

@@ -2,9 +2,9 @@
 
 ## 已确认需求
 
-仅增加 `aspool sync --type stock|index`，默认 stock 保持原行为。index 仅支持 tdx 来源和 daily 周期，继承 online/offline、async、root 和 limit。历史取数据源实际可取得的最长范围，不以2010年截断；涨跌统计缺失按0保存，由应用端判断。
+仅增加 `aspool sync --type stock|index`，默认 stock 保持原行为。index 仅支持 tdx 来源和 daily 周期，继承 online/offline、async、root 和 limit。首次建库或新增指数的历史取数据源实际可取得的最长范围，不以2010年截断；日常同步只增量补齐；涨跌统计缺失按0保存，由应用端判断。
 
-名单包含 HY、HY2、GN、FG 和 ZS 常用指数，排除名称以“昨日”开头的指数。清单保留 market、code、name、source。指数数据不混入股票主表，不改股票、分钟线和基本面数据。
+名单包含 HY、HY2、GN、FG 和 ZS 常用指数，排除名称以“昨日”开头的指数。ETF 是上市基金证券，不属于该指数池；其独立设计见 [ETF 日线设计](aspool_etf_design.md)。清单保留 market、code、name、source。指数数据不混入股票主表，不改股票、分钟线和基本面数据。
 
 ## 命令
 
@@ -23,7 +23,7 @@ aspool sync --type index --root data/index-test --limit 10
 aspool sync --type stock --source tdx --period daily
 ```
 
-`--limit` 只限制标的数。指数初次和再次同步均读取源的全部可用历史并按日期合并，确保早期缺口也能修复；未采用股票的最近30条窗口。线上每页最多800条，按实际返回数量推进，读至空页；重复页面或分页超界报错，不把它标为完整。异步模式使用异步连接串行请求，避免并发请求破坏同一连接响应顺序。离线只读取 vipdoc，不自动联网。
+`--limit` 只限制标的数。首次建库或新增指数每页最多800条，按实际返回数量推进，读至空页，取得最长可用历史。已有指数以已存最近5条记录的最早日期作为重叠起点；线上每页30条，向前读取至该日期，过滤掉更早记录后按日期合并。同日重跑会覆盖盘中数据与近期修订；停更超过30条时继续分页补齐，并非只取一页。早于重叠起点的历史保留，不在日常同步中重新抓取。离线初次导入全部本地历史，后续只合并重叠起点以后的记录。重复页面或分页超界报错，不把它标为完整。CLI默认使用4个独立连接（--workers 1～8），同步模式使用受限线程池，异步模式使用受限异步工作池；各连接内部串行，避免响应错配。离线只读取 vipdoc，不自动联网。
 
 ## 清单维护
 
@@ -60,9 +60,9 @@ ROOT/reports/index-sync/<run-id>.json
 
 在线使用 get_index_bars，支持881研究指数、880板块指数及常用市场指数。离线按32字节指数.day记录解析，尾部4字节按两个无符号16位整数读取上涨/下跌家数。原股票读取器保持原样。
 
-覆盖表以 market+code 为主键记录起止日期、总行数、最近成功来源和更新时间。每次同步持有数据池写锁，单指数校验通过后原子替换 Parquet，再更新 catalog。异常源记录逐行隔离，报告日期与原因，不覆盖已存记录；整个指数无有效记录或重复日期时失败。逐指数失败不中断其余指数；报告成功和失败明细，有失败时CLI返回非零退出码。重试可再次合并。
+覆盖表以 market+code 为主键记录起止日期、总行数、最近成功来源和更新时间。网络抓取与源数据校验在写锁外完成；发布阶段在锁内重新读取目标文件、合并尾部并批量更新覆盖信息。单指数校验通过且有变化时原子替换Parquet，没有变化则跳过文件重写。异常源记录逐行隔离，报告日期与原因，不覆盖已存记录；整个指数无有效记录或重复日期时失败。逐指数失败不中断其余指数；报告成功和失败明细，有失败时CLI返回非零退出码。重试可再次合并。
 
-报告明确区分 fetched、added、changed、unchanged、rows、rejected 和 zero_breadth_rows；changed 比较整条数据，包含名称变化。报告附实际最早和最新日期。不删除源未返回的旧历史。同日线上/线下精度可能不同，切换来源允许覆盖，不以容差改变原始数值。
+报告明确区分 fetched、added、changed、unchanged、rows、rejected 和 zero_breadth_rows；changed 比较整条数据，包含名称变化。报告附实际最早和最新日期、sync_scope（bootstrap/incremental）和 overlap_start。不删除源未返回的旧历史。同日线上/线下精度可能不同，切换来源允许覆盖，不以容差改变原始数值。
 
 在线盘中最后一条是未收盘数据，后续同步会覆盖。离线最近日期受本地下载进度限制。最长历史表示当前数据源所提供的范围，不等于指数全部存续历史。
 
@@ -74,11 +74,14 @@ ROOT/reports/index-sync/<run-id>.json
 from pathlib import Path
 import duckdb
 
-files = str(Path.home() / '.aspool/lake/indices/daily/market=*/symbol=*/bars.parquet')
+files = str(Path.home() / ".aspool/lake/indices/daily/market=*/symbol=*/bars.parquet")
 with duckdb.connect() as conn:
-    conn.read_parquet(files, hive_partitioning=False).create_view('indices')
-    df = conn.execute('''SELECT * FROM indices
-        WHERE market = ? AND code = ? ORDER BY trade_date''', ['SH', '000300']).df()
+    conn.read_parquet(files, hive_partitioning=False).create_view("indices")
+    df = conn.execute(
+        """SELECT * FROM indices
+        WHERE market = ? AND code = ? ORDER BY trade_date""",
+        ["SH", "000300"],
+    ).df()
 ```
 
 ## 实施与验证

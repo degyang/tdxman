@@ -1,0 +1,43 @@
+diff --git b/backend/app/tickflow/repository.py a/backend/app/tickflow/repository.py
+index c6fce90..5f7ca8d 100644
+--- b/backend/app/tickflow/repository.py
++++ a/backend/app/tickflow/repository.py
+@@ -1609,11 +1609,6 @@ class KlineRepository:
+         """按资产类型选择分钟K parquet glob。ETF 分钟数据独立存储于 kline_etf_minute。"""
+         return self._etf_minute_glob if asset_type == "etf" else self._minute_glob
+ 
+-    def _has_minute_parquet(self, asset_type: str) -> bool:
+-        """Return whether local minute storage has files before scanning a glob."""
+-        subdir = "kline_etf_minute" if asset_type == "etf" else "kline_minute"
+-        return self._has_parquet(subdir)
+-
+     def _maybe_adjust_minute(self, df: pl.DataFrame, asset_type: str) -> pl.DataFrame:
+         """原始基准标记开启时应用读取时复权投影 (services/minute_adjust 三层架构)。
+ 
+@@ -1635,8 +1630,6 @@ class KlineRepository:
+         asset_type: str = "stock",
+     ) -> pl.DataFrame:
+         """分钟K查询 — Polars scan_parquet + predicate pushdown。"""
+-        if not self._has_minute_parquet(asset_type):
+-            return pl.DataFrame()
+         try:
+             df = guarded_collect(
+                 pl.scan_parquet(self._minute_glob_for(asset_type)).filter(
+@@ -1662,8 +1655,6 @@ class KlineRepository:
+         """
+         if not symbols:
+             return pl.DataFrame()
+-        if not self._has_minute_parquet(asset_type):
+-            return pl.DataFrame()
+         try:
+             df = guarded_collect(
+                 pl.scan_parquet(self._minute_glob_for(asset_type)).filter(
+@@ -1690,8 +1681,6 @@ class KlineRepository:
+         """
+         if not symbols:
+             return pl.DataFrame()
+-        if not self._has_minute_parquet(asset_type):
+-            return pl.DataFrame()
+         try:
+             lf = pl.scan_parquet(self._minute_glob_for(asset_type))
+             available = set(lf.collect_schema().names())

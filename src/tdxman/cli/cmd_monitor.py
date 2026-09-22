@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import click
 import pandas as pd
@@ -13,6 +15,8 @@ from ..models.enums import Market
 from ..models.stats import MarketStat
 from .help import StandardHelpCommand
 from .output import output_options
+
+_SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
 
 
 def _market_stat_from_quotes(quotes: pd.DataFrame) -> pd.DataFrame:
@@ -55,6 +59,7 @@ def _market_stat_from_quotes(quotes: pd.DataFrame) -> pd.DataFrame:
             total_market_cap=values["880001"]["close"] * 1e10,
             limit_up_count=int(values["880006"]["close"]),
             limit_down_count=int(values["880006"]["open"]),
+            query_time=datetime.now(_SHANGHAI_TZ),  # 带时区
         )
     )
 

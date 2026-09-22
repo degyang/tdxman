@@ -58,7 +58,7 @@ class SymbolQuotesCmd(BaseCommand[list[MacQuoteField]]):
         (total_stocks, row_count) = unpack_from("<IH", body, pos, "symbol_quotes header")
         pos += 6
 
-        active = get_active_fields(field_bitmap[:16])
+        active = get_active_fields(field_bitmap)
         field_count = len(active)
         row_len = 68 + 4 * field_count
 
