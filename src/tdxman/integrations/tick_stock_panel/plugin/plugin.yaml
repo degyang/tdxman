@@ -1,0 +1,8 @@
+# tdxman 通达信行情数据源
+name: tdxman
+display_name: "tdxman"
+runtime: none
+entry: app.plugins.tdxman.provider:TdxmanProvider
+check: app.plugins.tdxman.provider:availability
+datasets: [daily, minute, realtime, depth5, full_minute]
+description: "tdxman 原始日K、多周期分钟K、实时行情、五档与当日分钟。指数分钟单位未验证时明确拒绝。"
