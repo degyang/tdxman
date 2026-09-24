@@ -52,12 +52,14 @@ def server_info(output_fmt: str, output_path: Path | None) -> None:
 @click.command("symbol-info", cls=StandardHelpCommand)
 @click.argument("symbol_or_market")
 @click.argument("code", required=False)
+@click.option("--source", type=click.Choice(["tdx", "baostock"]), default="tdx", show_default=True)
 @output_options
 def symbol_info(
     symbol_or_market: str,
     code: str | None,
     output_fmt: str,
     output_path: Path | None,
+    source: str = "tdx",
 ) -> None:
     """获取个股简要特征快照。
 
@@ -79,6 +81,18 @@ def symbol_info(
 
     fmt = output_fmt
     mkt, parsed_code = parse_symbol_or_market_code(symbol_or_market, code)
+    if source == "baostock":
+        from ..baostock import BaostockClient
+        from ..exceptions import TdxError
+
+        try:
+            BaostockClient.security_code(mkt, parsed_code)
+            with BaostockClient() as client:
+                df = client.get_stock_basic(mkt, parsed_code)
+        except (TdxError, ValueError, OSError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        print_output(df, fmt, output_path, filename=parsed_code)
+        return
     with get_mac_client() as client:
         df = client.get_symbol_info(mkt, parsed_code)
     print_output(df, fmt, output_path, filename=parsed_code)

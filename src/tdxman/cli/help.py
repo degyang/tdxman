@@ -31,6 +31,7 @@ _COMMAND_REFERENCES: dict[str, HelpRows] = {
         ("--period", "DAILY、WEEKLY、MONTHLY、YEARLY、1MIN、5MIN、15MIN、30MIN、60MIN"),
         ("--adjust", "NONE、QFQ（前复权）或 HFQ（后复权）；指数仅支持 NONE"),
         ("--start", "距最新 K 线的起始偏移，0 为最新"),
+        ("--source", "tdx（默认）或 baostock；baostock 只支持沪深股票 DAILY、NONE"),
     ),
     "tdxman markets": (("市场代码", "SH=上海、SZ=深圳、BJ=北京证券交易所"),),
     "tdxman offline": (
@@ -43,6 +44,9 @@ _COMMAND_REFERENCES: dict[str, HelpRows] = {
     "tdxman ping": (("--timeout", "单个服务器测速超时秒数"),),
     "tdxman quote": (
         ("STOCKS", '一个或多个标的，格式："000001.SZ,600519.SH"；兼容旧格式 "SZ 000001"'),
+        ("--source", "tdx 为实时报价；baostock 为沪深股票历史未复权日线，含 ST 和交易状态"),
+        ("--count", "仅 baostock 使用；每只股票默认最近 30 条，含明确标记的停牌日"),
+        ("--start-date / --end-date", "仅 baostock 使用；YYYY-MM-DD，返回区间内最近 count 条"),
     ),
     "tdxman tick": (
         ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
@@ -62,6 +66,7 @@ _COMMAND_REFERENCES: dict[str, HelpRows] = {
     "tdxman symbol-info": (
         ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
         ("CODE", "可选；使用旧格式时传六位证券代码"),
+        ("--source", "baostock 返回沪深股票上市日、代码退出日及当前名称；默认 tdx"),
     ),
     "tdxman board-members": (
         ("BOARD_SYMBOL", "通达信板块代码或支持的标准指数代码，如 881001、000699"),
@@ -104,13 +109,19 @@ _COMMAND_EXAMPLES: dict[str, tuple[str, ...]] = {
     "tdxman markets": ("tdxman markets --format table",),
     "tdxman offline": ("tdxman offline SZ 000001 --period DAILY --count 30 --format table",),
     "tdxman ping": ("tdxman ping --timeout 3 --format table",),
-    "tdxman quote": ('tdxman quote "SZ 000001,SH 600519" --format table',),
+    "tdxman quote": (
+        'tdxman quote "SZ 000001,SH 600519" --format table',
+        "tdxman quote 600519.SH --count 30 --source baostock --format table",
+    ),
     "tdxman tick": ("tdxman tick SH 600519 --days 5 --format table",),
     "tdxman transaction": ("tdxman transaction SH 600519 --count 100 --format table",),
     "tdxman unusual": ("tdxman unusual SH --count 100 --format table",),
     "tdxman market-stat": ("tdxman market-stat --format table",),
     "tdxman server-info": ("tdxman server-info --format table",),
-    "tdxman symbol-info": ("tdxman symbol-info SH 600519 --format table",),
+    "tdxman symbol-info": (
+        "tdxman symbol-info SH 600519 --format table",
+        "tdxman symbol-info 601091.SH --source baostock --format json",
+    ),
     "tdxman board-members": (
         "tdxman board-members 881001 --format table",
         "tdxman board-members 000699 --count 20 --format table",

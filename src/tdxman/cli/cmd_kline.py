@@ -45,6 +45,7 @@ def _index_category(period: Period) -> KlineCategory:
 @click.option("--count", default=800, type=int, help="K线数量")
 @click.option("--start", default=0, type=int, help="起始偏移（0=最新）")
 @click.option("--adjust", default="NONE", help="复权: NONE/QFQ/HFQ")
+@click.option("--source", type=click.Choice(["tdx", "baostock"]), default="tdx", show_default=True)
 @output_options
 def kline(
     symbol_or_market: str,
@@ -55,6 +56,7 @@ def kline(
     adjust: str,
     output_fmt: str,
     output_path: Path | None,
+    source: str = "tdx",
 ) -> None:
     """获取 K 线数据。
 
@@ -82,6 +84,24 @@ def kline(
     mkt, parsed_code = parse_symbol_or_market_code(symbol_or_market, code)
     parsed_period = parse_period(period)
     parsed_adjust = parse_adjust(adjust)
+    if source == "baostock":
+        from ..baostock import BaostockClient
+        from ..exceptions import TdxError
+
+        if parsed_period != Period.DAILY or parsed_adjust != Adjust.NONE:
+            raise click.UsageError("BaoStock 补充接口仅支持 --period DAILY --adjust NONE")
+        if count < 1 or start < 0:
+            raise click.UsageError("count 必须大于 0，start 不能小于 0")
+        try:
+            BaostockClient.security_code(mkt, parsed_code)
+            with BaostockClient() as client:
+                df = client.get_daily(mkt, parsed_code, count=count + start)
+            if start:
+                df = df.iloc[:-start].tail(count)
+        except (TdxError, ValueError, OSError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        print_output(df, fmt, output_path, filename=parsed_code)
+        return
     if _is_standard_index(mkt, parsed_code):
         if parsed_adjust != Adjust.NONE:
             raise click.UsageError("指数 K 线不支持复权")

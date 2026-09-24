@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -12,9 +13,20 @@ from .output import output_options
 
 @click.command(cls=StandardHelpCommand)
 @click.argument("stocks")
+@click.option("--source", type=click.Choice(["tdx", "baostock"]), default="tdx", show_default=True)
+@click.option("--count", type=click.IntRange(min=1), default=None,
+              help="baostock 每只股票的历史日线数量，默认 30；tdx 为实时快照。")
+@click.option("--start-date", type=click.DateTime(formats=["%Y-%m-%d"]),
+              help="baostock 历史区间起点，YYYY-MM-DD。")
+@click.option("--end-date", type=click.DateTime(formats=["%Y-%m-%d"]),
+              help="baostock 历史区间终点，YYYY-MM-DD。")
 @output_options
-def quote(stocks: str, output_fmt: str, output_path: Path | None) -> None:
-    """获取实时报价（支持多只）。
+def quote(
+    stocks: str, output_fmt: str, output_path: Path | None, source: str = "tdx",
+    count: int | None = None, start_date: datetime | None = None,
+    end_date: datetime | None = None,
+) -> None:
+    """获取实时报价或 BaoStock 历史日线（支持多只）。
 
     STOCKS 格式: "000001.SZ,600519.SH"
 
@@ -32,6 +44,28 @@ def quote(stocks: str, output_fmt: str, output_path: Path | None) -> None:
 
     fmt = output_fmt
     stock_list = parse_stocks(stocks)
+    if source == "baostock":
+        import pandas as pd
+
+        from ..baostock import BaostockClient
+        from ..exceptions import TdxError
+
+        try:
+            for market, code in stock_list:
+                BaostockClient.security_code(market, code)
+            with BaostockClient() as client:
+                frames = [client.get_daily(
+                    market, code, count=count or 30,
+                    start=start_date.date() if start_date else None,
+                    end=end_date.date() if end_date else None,
+                ) for market, code in stock_list]
+        except (TdxError, ValueError, OSError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        print_output(pd.concat(frames, ignore_index=True), fmt, output_path,
+                     split_rows=len(stock_list) > 1)
+        return
+    if count is not None or start_date is not None or end_date is not None:
+        raise click.UsageError("历史 --count / --start-date / --end-date 需要 --source baostock")
     with get_mac_client() as client:
         df = client.get_stock_quotes(stock_list)
     print_output(df, fmt, output_path, split_rows=len(stock_list) > 1)
