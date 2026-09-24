@@ -571,6 +571,8 @@ commands 层不依赖 transport，可独立单测。
 `offline.vipdoc` 是通达信本地行情目录，都不是数据池输出路径。
 
 Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](docs/aspool_api.md)。
+五年涨停事件及当日成交额使用 `DataPool.iter_limit_events_with_amount()` 分批读取；
+接口、缓存示例和资源边界见 [aspool API](docs/aspool_api.md#9-已发布事件与当日成交额的有界读取)。
 
 ### 首次准备（已有数据池可跳过）
 
@@ -615,7 +617,7 @@ aspool status
 
 顺序含义：
 
-1. 股票 `update`：用 quote 刷新当前或最近交易日记录，同时更新低频快照。正常每日更新不再先跑一轮股票 sync。
+1. 股票 `update`：用 quote 刷新当日记录和低频快照，再用 BaoStock 补齐沪深股票最近30个交易日的缺失字段、行情及状态，并重算派生结果。正常每日更新不再先跑一轮股票 sync。
 2. 指数 `sync`：首次建库或新增指数获取最长历史；已有指数增量补齐并重取最近5条已存记录，停更较久时继续分页。保存 OHLCV、成交额和涨跌家数，缺失家数按0处理。
 3. `ex` ETF `sync`：ETF 不进入指数池，首次仅保存 2010-01-01 以来的股票式 OHLCV 数据，后续增量更新；其他扩展类别先查看 `aspool ex categories`，规划项不会被误同步。
 4. `status`：查看股票、ETF、分钟线、指数覆盖汇总及最近维护报告；逐指数/ETF覆盖仍可用下方 API 检查。
@@ -628,10 +630,28 @@ aspool update
 ```
 
 股票在线 sync 也按本地历史末端增量分页，不再固定只取一页30条。先修补、后报价刷新，保留最新交易日的真实报价字段。
+
+股票日线 `sync` 同时补齐日期股本、参考价、收盘量比、换手率和市值，再重算涨跌停和连板。
+BaoStock 用于冲突样本的只读算法校对；详见 [日线字段补齐](docs/daily_enrichment.md)。
+已有历史仅补字段可用 `aspool sync --enrich-only --start 2021-09-24 --end 2026-09-24`。
 可手动运行 `aspool universe` 查看目录、待初始化和非活跃代码。
 
-日线 update/sync 默认使用4个独立连接；`--workers 1` 为串行，最多8个连接。
+BaoStock 可单独查询或修复指定历史区间：
+
+```bash
+tdxman quote 600519.SH --count 30 --source baostock --format table
+tdxman symbol-info 601091.SH --source baostock
+aspool sync --source baostock --start 2026-09-01 --end 2026-09-18
+```
+
+`settings/config.yaml` 的 `aspool.baostock.enabled/lookback` 控制默认开关和回溯交易日数；
+`aspool update --no-baostock` 可临时关闭。建议16:00后运行，补齐阶段在16:00前不读取当日日线。
+BaoStock 只支持沪深 A 股，首次串行补齐可能较慢；缺失会话、源间冲突和连板未知都会保留在报告中。
+详见 [BaoStock 数据源、合并规则和覆盖边界](docs/baostock.md)。
+
+通达信日线 update/sync 默认使用4个独立连接；`--workers 1` 为串行，最多8个连接。
 `--async` 使用异步客户端；同步和异步都支持有限并发，同一连接不并发发送请求。
+BaoStock 阶段固定串行，不受上述并发参数控制。
 
 ```bash
 aspool update --async --workers 4

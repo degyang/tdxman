@@ -1,0 +1,15 @@
+{
+  "code_commit": "016e84183bed195bc2e178df6ffad271eba89811",
+  "targeted": {
+    "passed": 163,
+    "failed": 0,
+    "command": "PYTHONPATH=src .venv/bin/python -m pytest -q tests/unit/test_symbol_e2e_pool.py tests/unit/test_limit_amount.py tests/unit/test_aspool_pool.py tests/unit/test_limit_events.py tests/unit/test_limit_references.py"
+  },
+  "full_unit": {
+    "passed": 529,
+    "failed": 6,
+    "skipped": 2,
+    "subtests_passed": 17,
+    "command": "PYTHONPATH=src .venv/bin/python -m pytest -q tests/unit"
+  }
+}

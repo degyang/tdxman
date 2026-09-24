@@ -1,0 +1,206 @@
+{
+  "coverage": [
+    {
+      "trade_date": "2026-09-01T00:00:00.000",
+      "batch_id": "daily-limit-20260901-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:18:58.987",
+      "processed_count": 5555,
+      "known_count": 5544,
+      "unknown_count": 9,
+      "no_limit_count": 2,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-02T00:00:00.000",
+      "batch_id": "daily-limit-20260902-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:18:59.325",
+      "processed_count": 5556,
+      "known_count": 5544,
+      "unknown_count": 9,
+      "no_limit_count": 3,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-03T00:00:00.000",
+      "batch_id": "daily-limit-20260903-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:18:59.636",
+      "processed_count": 5557,
+      "known_count": 5545,
+      "unknown_count": 8,
+      "no_limit_count": 4,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-04T00:00:00.000",
+      "batch_id": "daily-limit-20260904-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:18:59.962",
+      "processed_count": 5558,
+      "known_count": 5544,
+      "unknown_count": 10,
+      "no_limit_count": 4,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-07T00:00:00.000",
+      "batch_id": "daily-limit-20260907-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:19:00.292",
+      "processed_count": 5559,
+      "known_count": 5544,
+      "unknown_count": 10,
+      "no_limit_count": 5,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-08T00:00:00.000",
+      "batch_id": "daily-limit-20260908-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:19:00.627",
+      "processed_count": 5559,
+      "known_count": 5547,
+      "unknown_count": 10,
+      "no_limit_count": 2,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-09T00:00:00.000",
+      "batch_id": "daily-limit-20260909-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:19:00.942",
+      "processed_count": 5561,
+      "known_count": 5547,
+      "unknown_count": 11,
+      "no_limit_count": 3,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-10T00:00:00.000",
+      "batch_id": "daily-limit-20260910-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:19:01.275",
+      "processed_count": 5561,
+      "known_count": 5546,
+      "unknown_count": 12,
+      "no_limit_count": 3,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-11T00:00:00.000",
+      "batch_id": "daily-limit-20260911-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:19:01.601",
+      "processed_count": 5552,
+      "known_count": 5546,
+      "unknown_count": 2,
+      "no_limit_count": 4,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    },
+    {
+      "trade_date": "2026-09-14T00:00:00.000",
+      "batch_id": "daily-limit-20260914-stock",
+      "scope_id": "stock",
+      "rule_version": "cn-a-share-limit-v8",
+      "computed_at": "2026-09-24T17:19:01.934",
+      "processed_count": 5552,
+      "known_count": 5547,
+      "unknown_count": 2,
+      "no_limit_count": 3,
+      "invalid_count": 0,
+      "status": "published",
+      "stale": true,
+      "stale_reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97"
+    }
+  ],
+  "staleness": [
+    {
+      "trade_date": "2026-09-01T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-02T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-03T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-04T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-07T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-08T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-09T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-10T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-11T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    },
+    {
+      "trade_date": "2026-09-14T00:00:00.000",
+      "reason": "\u65e5\u7ebf\u5b57\u6bb5\u53d8\u5316\uff0c\u7b49\u5f85\u8865\u9f50\u548c\u91cd\u7b97",
+      "marked_at": "2026-09-24T17:53:02.298"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "start": "2025-09-24",
+    "end": "2026-09-24",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 19041,
+    "batches": 52,
+    "seconds": 9.782,
+    "baseline": {
+      "rss": 138162176,
+      "swap": 0,
+      "temp_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 241717248,
+      "swap": 0,
+      "temp_bytes": 1056589,
+      "fds": 13,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 182194176,
+      "swap": 0,
+      "temp_bytes": 1056589,
+      "fds": 4,
+      "threads": 21
+    }
+  }
+]

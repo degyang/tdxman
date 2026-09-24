@@ -1,0 +1,342 @@
+[
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.328,
+    "process_highwater_rss": 204877824,
+    "baseline": {
+      "rss": 167542784,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 204877824,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 12,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 176062464,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.316,
+    "process_highwater_rss": 209186816,
+    "baseline": {
+      "rss": 176062464,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 209186816,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 12,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 177250304,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.326,
+    "process_highwater_rss": 210378752,
+    "baseline": {
+      "rss": 177250304,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 209559552,
+      "swap": 0,
+      "cache_bytes": 18932,
+      "spill_bytes": 0,
+      "fds": 12,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 178515968,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.319,
+    "process_highwater_rss": 210878464,
+    "baseline": {
+      "rss": 178515968,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 210714624,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 13,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 178999296,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.318,
+    "process_highwater_rss": 211148800,
+    "baseline": {
+      "rss": 178999296,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 210821120,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 12,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 178327552,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.324,
+    "process_highwater_rss": 211976192,
+    "baseline": {
+      "rss": 178327552,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 210501632,
+      "swap": 0,
+      "cache_bytes": 18932,
+      "spill_bytes": 0,
+      "fds": 12,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 177917952,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.318,
+    "process_highwater_rss": 211976192,
+    "baseline": {
+      "rss": 177917952,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 209141760,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 12,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 178737152,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.314,
+    "process_highwater_rss": 211976192,
+    "baseline": {
+      "rss": 178737152,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 208932864,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 12,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 179081216,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.319,
+    "process_highwater_rss": 211976192,
+    "baseline": {
+      "rss": 179081216,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 209035264,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 11,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 178688000,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  },
+  {
+    "start": "2026-09-01",
+    "end": "2026-09-14",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 574,
+    "batches": 2,
+    "seconds": 0.318,
+    "process_highwater_rss": 211976192,
+    "baseline": {
+      "rss": 178688000,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 211132416,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 12,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 179036160,
+      "swap": 0,
+      "cache_bytes": 36503,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  }
+]

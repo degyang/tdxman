@@ -48,7 +48,9 @@ history = pool.read_research_daily(
 
 返回 pandas DataFrame，按完整 `symbol,date` 排序。缺失交易日不补行，停牌与缺失数据不能仅靠
 日线缺行区分。证券代码保留前导零；不得将 `SH.000001` 与 `SZ.000001` 合并。
-字段投影不会绕过 OHLCV/成交额和重复键检查；目前是结果列投影，尚非完整存储扫描下推。
+字段投影会下推到实际输出查询和补充事实关联；即使只请求成交额，仍在 SQL 中校验
+所选日线的 OHLCV/成交额和重复键，不物化完整宽表。普通 DataFrame 读取最多
+500,000 行，超过时返回 `DAILY_TOO_LARGE`；事件长窗口请用下述分批接口。
 重复键在证券与日期过滤之后、lookback 截取之前检查：过滤范围内存在重复日线即返回
 DAILY_INVALID，即使重复日期不在最后 N 根内；过滤范围外的重复记录不影响本次查询。
 
@@ -59,7 +61,7 @@ DAILY_INVALID，即使重复日期不在最后 N 根内；过滤范围外的重�
 | symbol / market / code | 字符串 | 市场.代码、市场、代码 |
 | date | 日期，DataFrame 中为 datetime64 | 主库交易日期；不是内部重复日期列 |
 | name | 字符串，可空 | 主库该日保存的名称 |
-| pre_close | 浮点，元/股，可空 | 昨收 |
+| pre_close | 浮点，元/股，可空 | 当日参考前收价；除权日不等于上一条收盘价 |
 | open / high / low / close | 浮点，元/股 | 未复权 OHLC |
 | volume | 数值，股 | 成交量 |
 | amount | 数值，人民币元 | 成交额 |
@@ -67,11 +69,16 @@ DAILY_INVALID，即使重复日期不在最后 N 根内；过滤范围外的重�
 | vol_ratio | 浮点，倍，可空 | 主库保存的量比；来源可为报价值或收盘五日均量计算值 |
 | pct_chg / amplitude | 浮点，百分数，可空 | 涨跌幅、振幅 |
 | is_st | 可空布尔 | 当日主库保存的 ST 状态；未知不等于 False |
+| trading_status | 字符串，可空 | 已有依据的 TRADING/SUSPENDED；缺失不等于停牌 |
+| pre_close_source / is_st_source / trading_status_source | 字符串，可空 | 对应字段保存的数据来源 |
+| vol_ratio_source / turnover_rate_source / pct_chg_source / amplitude_source | 字符串，可空 | 指标来源或计算口径 |
+| float_share_source / total_share_source / float_mv_source / total_mv_source | 字符串，可空 | 日期股本依据及市值计算口径 |
 | total_share / float_share | 浮点，股，可空 | 总股本、流通股本 |
 | total_mv / float_mv | 浮点，人民币元，可空 | 总市值、流通市值 |
 | pe_ttm / pb | 浮点，倍，可空 | 主库保存的估值指标 |
 
 可选字段在所有返回结果中保持列结构；源文件无此列则返回有类型的空值。不能用 0 替换未知值。
+股票 `sync` 的字段补齐顺序、日期股本和收盘量比口径见 [日线补齐](daily_enrichment.md)。
 返回值不为 CLI 显示而舍入。纯技术 Screen 无须要求股本、估值非空；使用这些字段的策略自行
 检查所需字段覆盖率。空结果保持相同字段结构。投影可排除不需要的字段。
 
@@ -107,6 +114,23 @@ except DataPoolError as exc:
 一般参数错误也可能表现为 ValueError；DataPoolError 继承 ValueError，兼容原调用方。
 读取通过共享锁等待使用排他锁的 aspool 写入完成；直接绕过 API 写底层文件不受此机制保证。
 同一次读取完成后数据在内存中稳定，多次读取之间不保证版本相同。
+
+### 2.5 BaoStock 日期事实与基础资料
+
+完成 `aspool sync --source baostock` 或 `aspool update` 的补齐阶段后可读取：
+
+| API | 数据 |
+|---|---|
+| `read_security_daily(*, symbols=None, start=None, end=None)` | 按证券和日期保存的 pre_close、is_st、trading_status、source、fetched_at；包含可靠停牌会话 |
+| `read_security_info(*, symbols=None)` | listing_date、delisting_date、当前名称、source、fetched_at；退出日期可能是旧代码退出 |
+| `read_trading_calendar(*, start=None, end=None)` | 已存沪深自然日日历，trade_date、is_open、source |
+
+证券输入接受 `600519.SH` / `SH.600519`，输出采用 `代码.市场`；日期列为 `trade_date`。
+缺行不表示非 ST、停牌或休市。未建表返回 `DATASET_NOT_FOUND`。读取不创建表或联网。
+`attrs` 声明 `scope='SH,SZ'`、`source='baostock'`、`point_in_time=False`。
+能力开关为 `security_daily/security_info/stored_trading_calendar=True`；这不代表完整历史股票池、
+跨市场日历与回测交易状态契约已经实现，原 `calendar/trading_status` 扩展开关仍为 False。
+来源和合并规则见 [BaoStock 补充数据源](baostock.md)。
 
 ## 3. Backtest 扩展需求：尚未实现
 
@@ -223,3 +247,83 @@ ETF 不含 `up_count/down_count`，不能传给 `read_index_daily()`。
 扩展资产类别由 `DataPool.describe()["ex_categories"]` 发现，完整规划见
 [aspool ex 扩展资产域设计](aspool_ex_design.md)。只有 `status=implemented` 的类别允许进入
 数据同步；当前为 `ETF`，港股、美股和大宗期货仍是规划项。
+
+## 8. 连板跨缺行口径（v7）
+
+`read_limit_events()` 的 `consecutive_up` 按用户指定的口径接续：缺行前已有确定的
+涨停连板，缺行会话暂停计数；其后继续涨停则在原连板数上递增。例如前 3 板、
+中间缺 2 个会话、后 2 板，最终为 5 板。中间出现明确非涨停则归零。
+
+新增 `consecutive_gap_sessions`：当前连板累计跳过的缺行市场会话数，上例为 2。
+它不含已证实停牌的会话；大于 0 表示结果采用了跨缺行连续性假设。
+该标记沿当前连板传播，在明确非涨停时归零。未知连板及旧版事件返回 null。
+日汇总 `max_consecutive_up_note` 会说明是否包含此类接续连板。
+
+缺行日自身的事件状态和异常记录仍是未知；原始行情与停牌身份不因连板接续被改写。
+缺行前连板数未知、缺行前为非涨停，以及存在行情但价格非法、规则或参考价未知的情况，
+不适用本次“前连板 + 后连板”的接续条件。
+
+每日缺行中的可接续状态保存在 `daily_limit_gap_states`，与发布批次同事务更新，
+保证分日同步、进程重启后和全量顺序计算使用同一口径。
+
+## 9. 已发布事件与当日成交额的有界读取
+
+`DataPool.iter_limit_events_with_amount(*, start, end, symbols=None, fields=None,
+close_limit_up=None, min_consecutive_up=None, batch_days=7, max_rows=25000,
+memory_limit="512MB", threads=2, temp_directory=None)` 返回上下文管理器中的迭代器。
+`start/end` 必填且含边界；每批最多 7 个自然日和 25,000 条事件。筛选默认不排除
+未知事件；显式指定 `close_limit_up=True, min_consecutive_up=1` 才选择已知连板涨停。
+批次过大时报 `LIMIT_TOO_LARGE`，调用方可缩短 `batch_days` 或缩小证券范围。
+
+默认字段为 `trade_date, symbol, close_limit_up, close_limit_down, touched_limit_up,
+touched_limit_down, limit_up_price, limit_down_price, consecutive_up,
+consecutive_gap_sessions, amount, batch_id, rule_version, computed_at, published_at,
+stale, stale_reason`。`fields` 可以选取这些字段并保留指定顺序。证券格式为
+`000001.SZ`，`amount` 来自同证券同日已存日线，单位人民币元；没有同日日线或
+成交额时为 null；源 Parquet 没有 `amount` 列或多文件 schema 不一致时，同样保留 null。
+日线键重复时报 `DAILY_INVALID`；事件键重复时报 `LIMIT_INVALID`。
+不按前后交易日填补，也不丢弃缺成交额事件。
+每批 DataFrame 的 `attrs` 包含 `contract_version=1` 与 `amount_unit='CNY'`。
+
+```python
+from pathlib import Path
+from aspool import DataPool
+
+staging = Path("/tmp/regime-events-staging")  # 用本轮独立目录，失败时整轮丢弃
+staging.mkdir(parents=True, exist_ok=True)
+with DataPool("~/.aspool").iter_limit_events_with_amount(
+    start="2021-05-27", end="2026-09-24",
+    close_limit_up=True, min_consecutive_up=1,
+) as batches:
+    for index, frame in enumerate(batches):
+        frame.to_parquet(staging / f"part-{index:05d}.parquet")
+        del frame
+# 只有正常读到末尾、无 LIMIT_REVISION_CHANGED 时，才发布本轮缓存。
+```
+
+读取开始及每批边界会比较整个日期窗口的发布批次、发布时间、规则版本、计算时间及
+stale 状态。读中发生重发或修订时报 `LIMIT_REVISION_CHANGED`，调用方应删除本轮
+暂存结果并重试。上下文结束、提前退出及异常均关闭查询连接和锁，并清理本轮独立
+DuckDB spill 目录；`temp_directory` 指定其父目录，调用方负责提供可写目录。
+`memory_limit` 限制 DuckDB 引擎，不包含 Pandas/Arrow 和写缓存分配；总进程 RSS
+需独立测量。默认 `512MB` 为 DuckDB 十进制配置（显示约 488.2 MiB），线程为 2；
+`batch_days` 允许 1—31、`max_rows` 允许 1—100,000、`threads` 允许 1—8。
+普通日线读取的扫描和必要事实关联也各自使用 `512MB`、2 线程及自动清理的临时目录；
+仅请求 `symbol/date/amount` 时不关联 ST、参考价及其来源字段。输出超过 500,000 行报
+`DAILY_TOO_LARGE`；证券代码 `code` 仍为字符串。普通 DataFrame 接口不提供跨调用版本一致性。
+
+## 10. 旧主板 IPO 首日的连板计数（v8）
+
+按用户指定口径，2014-06-13（含）至 2023-04-10（不含）的沪深主板 IPO，
+只有证券上市日期明确等于计算日时，才将该上市首日排除在连板计数之外。
+后续第一个已确认涨停记为 1 板，连续涨停依次累计；同时保留 v7 的跨缺行接续口径。
+不使用日线文件的首条记录推断上市日期。
+
+这项调整只建立连板计数边界。首日特殊限价尚无充分计算依据时，该日涨跌停、
+触板及限价仍为 UNKNOWN，异常说明中记录“连板口径排除已确认的上市首日”。
+不得将其当作已确认的非涨停事件。
+
+边界以 `basis=legacy_ipo_first_day_excluded` 保存于
+`daily_limit_streak_boundaries`，与当日发布批次同事务更新。
+分日同步读取已发布边界，因此与连续全量重算使用相同计数起点。
+规则版本为 `cn-a-share-limit-v8`；全量重算报告另导出 `streak_boundaries.csv`。

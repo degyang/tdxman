@@ -37,6 +37,7 @@ Tables show common fields by default; pass `--fields all` for every returned fie
 
 ```bash
 tdxman quote "SZ 000001,SH 600519" --format table
+tdxman quote 600519.SH --source baostock --count 30 --format table
 tdxman kline SH 600519 --period DAILY --count 30 --format table
 tdxman tick SH 600519 --days 5 --format table
 ```
@@ -59,10 +60,11 @@ aspool sync --type ex --category ETF --source tdx --period daily &&
 aspool status
 ```
 
-This is a daily workflow, not an `aspool daily` command. For routine daily updates, refresh stock quotes then synchronize indices. Only when stock history has gaps or needs repair, first run `aspool sync --type stock --source tdx --period daily`, then update quotes. Do not use `--limit` for a complete pool update.
+This is a daily workflow, not an `aspool daily` command. For routine daily updates, `update` refreshes stock quotes and runs a BaoStock supplement before the subsequent index sync. For longer stock-history gaps, first run `aspool sync --type stock --source tdx --period daily`, then update quotes. Do not use `--limit` for a complete pool update.
 
 - Stock online sync fetches from the latest page back to a five-stored-bar overlap, paging across longer gaps. It combines K lines with stored low-frequency fields and calculated ratios. Every seven days it refreshes the A-share directory; new active symbols bootstrap their longest available history, and symbols with no server K lines remain pending for the next sync. Run `aspool universe` to refresh and inspect this directory manually.
-- Update refreshes only the current/latest trading day's stock record and low-frequency snapshots from quotes. It has no `--type` or `--period` option. Both update and online daily sync support `--async` and `--workers 1..8` (default 4 independent connections; 1 is serial). It rejects weekdays 09:00–15:30 inclusive using Asia/Shanghai time. This is a weekday guard, not a holiday calendar.
+- Update refreshes the current day's stock record and low-frequency snapshots from quotes, then supplements incomplete Shanghai/Shenzhen stock data over the last 30 trading days using BaoStock. Configure `aspool.baostock.enabled/lookback`, or use `--no-baostock` / `--lookback N`. It has no `--type` or `--period` option. Its TongDaXin stage supports `--async` and `--workers 1..8` (default 4); BaoStock uses one serial session. Update rejects weekdays 09:00–15:30 inclusive using Asia/Shanghai time; this is a weekday guard, not a holiday calendar. Prefer running after 16:00, since the supplement excludes the current day before that hour.
+- Use `aspool sync --source baostock --start YYYY-MM-DD --end YYYY-MM-DD` for explicit historical repairs. It fills raw daily prices, dated ST/reference-price fields, trading status and listing metadata, preserves valid primary values and reports conflicts. Missing rows are not suspensions. Beijing stocks are not covered. Consecutive limits remain unknown if the requested history has no reliable boundary. Inspect both price-limit and consecutive-limit coverage. See `docs/baostock.md` for local read APIs and reports.
 - Index sync reads all available history **only for initial creation or a newly added index**. Existing indices fetch incremental data with a five-stored-bar overlap to replace incomplete bars and recent revisions. Requests use 30-row pages and continue across longer gaps until reaching the overlap; do not reload the entire history for daily maintenance. Only `--source tdx --period daily` is supported. Online sync supports `--async`; offline reads only vipdoc and cannot guarantee online freshness.
 - Sync can run intraday and save an incomplete current-day bar. For daily closed-data consumption, run after close and select an explicitly confirmed closed trading date.
 - Stale, undated, future-dated and invalid quote records are rejected without overwriting existing bars. Unchanged files are not rewritten. Stock reports are in `ROOT/reports/maintenance/`; distinguish missing quotes from failures.

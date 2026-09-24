@@ -1,0 +1,25 @@
+{
+  "version": "1.1.1",
+  "module": "/tmp/up-rg-wheel-smoke312/lib/python3.12/site-packages/aspool/__init__.py",
+  "verified_python_files": 153,
+  "signature": "(self, *, start, end, symbols=None, fields=None, close_limit_up=None, min_consecutive_up=None, batch_days=7, max_rows=25000, memory_limit='512MB', threads=2, temp_directory=None)",
+  "daily_signature": "(self, *, symbols=None, start=None, end=None, lookback=None, fields=None)",
+  "rows": 53,
+  "wheel_sha256": "ba2be74fdd53712d7f6db51f42a043b65458f46b41a7b07543504a67ac157a56",
+  "status": "passed",
+  "python": "3.12.14",
+  "dependencies": {
+    "numpy": "2.5.2",
+    "baostock": "0.9.4",
+    "tdxman": "1.1.1",
+    "tzdata": "2026.3",
+    "six": "1.17.0",
+    "python-dateutil": "2.9.0.post0",
+    "pyarrow": "25.0.1",
+    "duckdb": "1.5.5",
+    "pandas": "3.0.5",
+    "click": "8.5.0"
+  },
+  "dependency_check": "uv pip check: all installed packages are compatible",
+  "system_site_packages": false
+}
