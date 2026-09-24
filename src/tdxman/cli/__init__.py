@@ -80,7 +80,7 @@ class TdxmanGroup(click.Group):
 
 
 @click.group(cls=TdxmanGroup)
-@click.version_option(version="1.1.0", prog_name="tdxman")
+@click.version_option(version="1.1.1", prog_name="tdxman")
 def cli() -> None:
     """通达信行情数据命令行工具。"""
     pass
