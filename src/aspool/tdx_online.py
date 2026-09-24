@@ -43,6 +43,12 @@ def _enrich_daily(rows: list[dict[str, object]], snapshot: dict[str, object] | N
     net_assets = snapshot.get("net_assets")
     enriched: list[dict[str, object]] = []
     for row in rows:
+        observed = snapshot.get("refreshed_at")
+        observed_day = observed.date() if isinstance(observed, datetime) else None
+        # A latest snapshot is evidence only for its observation date.
+        if observed_day is None or row.get("trade_date") != observed_day:
+            enriched.append(row)
+            continue
         close = row.get("close")
         volume = row.get("volume")
         values: dict[str, object] = {
@@ -106,14 +112,58 @@ def _minute_rows(frame: Any, symbol: str, start: datetime | None = None) -> list
 def _merge_rows(
     prior: list[dict[str, object]], incoming: list[dict[str, object]], key: str
 ) -> list[dict[str, object]]:
+    from .daily_storage import _same_values
+
+    dependencies = {
+        "pct_chg": {"close", "pre_close"},
+        "amplitude": {"high", "low", "pre_close"},
+        "vol_ratio": {"volume"},
+        "turnover": {"volume", "float_share"},
+        "turnover_rate": {"volume", "float_share"},
+        "total_mv": {"close", "total_share"},
+        "float_mv": {"close", "float_share"},
+    }
     merged: dict[object, dict[str, object]] = {}
-    for row in prior + incoming:
+    volume_changes, close_changes = set(), set()
+    for position, row in enumerate(prior + incoming):
         previous = merged.get(row[key], {})
-        merged[row[key]] = {
+        fresh = {field: value for field, value in row.items() if not is_missing_value(value)}
+        changed = {field for field, value in fresh.items()
+                   if not _same_values({field: previous.get(field)}, {field: value})}
+        result = {
             **previous,
-            **{field: value for field, value in row.items() if not is_missing_value(value)},
+            **fresh,
         }
-    return [merged[value] for value in sorted(merged)]
+        if previous:
+            for field, inputs in dependencies.items():
+                if inputs & changed and field not in changed:
+                    result[field] = None
+                    result[field + "_source"] = "unknown:inputs_changed"
+            if "volume" in changed:
+                volume_changes.add(row[key])
+            if "close" in changed:
+                close_changes.add(row[key])
+        elif position >= len(prior):
+            # Inserting an older missing session also changes later baselines.
+            if "volume" in fresh:
+                volume_changes.add(row[key])
+            if "close" in fresh:
+                close_changes.add(row[key])
+        merged[row[key]] = result
+    result = [merged[value] for value in sorted(merged)]
+    if key == "trade_date":
+        for index, row in enumerate(result):
+            if row[key] in volume_changes:
+                for later in result[index + 1:index + 6]:
+                    later["vol_ratio"] = None
+                    later["vol_ratio_source"] = "unknown:baseline_changed"
+            if row[key] in close_changes and index + 1 < len(result):
+                later = result[index + 1]
+                if later.get("pre_close_source") == "derived:tdx_xdxr":
+                    for field in ("pre_close", "pct_chg", "amplitude"):
+                        later[field] = None
+                        later[field + "_source"] = "unknown:previous_close_changed"
+    return result
 
 
 def _fill_close_vol_ratio(rows: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -229,7 +279,9 @@ async def _stock_records_async(client, job):
     raise ValueError("股票分页超过上限")
 
 
-async def _sync_daily_run(root, limit, asynchronous, workers, asset_type="stock"):
+async def _sync_daily_run(
+    root, limit, asynchronous, workers, asset_type="stock", derive_limits=True,
+):
     started = perf_counter()
     universe = {"listed": 0, "added": [], "inactive": [], "reactivated": []}
     # A limited run is intentionally isolated for diagnostics and tests.
@@ -328,7 +380,7 @@ async def _sync_daily_run(root, limit, asynchronous, workers, asset_type="stock"
             for change in entry.get("changed_dates", [])
         }
     )
-    if asset_type == "stock" and touched_dates:
+    if asset_type == "stock" and touched_dates and derive_limits:
         touched = [d.isoformat() for d in touched_dates]
         try:
             from .limit_events import compute_limit_events
@@ -411,12 +463,12 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
     return results, failures, quality_rows
 
 
-def update_daily(root, limit=None, workers=1, asset_type="stock"):
-    return asyncio.run(_sync_daily_run(root, limit, False, workers, asset_type))
+def update_daily(root, limit=None, workers=1, asset_type="stock", derive_limits=True):
+    return asyncio.run(_sync_daily_run(root, limit, False, workers, asset_type, derive_limits))
 
 
-async def update_daily_async(root, limit=None, workers=1, asset_type="stock"):
-    return await _sync_daily_run(root, limit, True, workers, asset_type)
+async def update_daily_async(root, limit=None, workers=1, asset_type="stock", derive_limits=True):
+    return await _sync_daily_run(root, limit, True, workers, asset_type, derive_limits)
 
 
 def update_minutes(
@@ -585,12 +637,13 @@ def update_online(
     limit: int | None = None,
     workers: int = 1,
     asset_type: str = "stock",
+    derive_limits: bool = True,
 ) -> tuple[int, int]:
     if period == "daily":
         return (
-            asyncio.run(update_daily_async(root, limit, workers, asset_type))
+            asyncio.run(update_daily_async(root, limit, workers, asset_type, derive_limits))
             if async_mode
-            else update_daily(root, limit, workers, asset_type)
+            else update_daily(root, limit, workers, asset_type, derive_limits)
         )
     return (
         asyncio.run(update_minutes_async(root, limit, asset_type))

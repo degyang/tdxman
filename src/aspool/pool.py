@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fcntl
 import re
+import tempfile
 from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
@@ -79,6 +80,88 @@ def writer(function):
     return wrapped
 
 
+def _overlay_dated_fields(root: Path, frame: pd.DataFrame, selected=None) -> pd.DataFrame:
+    """Expose dated facts and published reference corrections without rewriting bars."""
+    from .store import existing_tables, read_only_catalog
+
+    selected = set(frame.columns if selected is None else selected)
+    dated = {"pre_close", "pre_close_source", "is_st", "is_st_source",
+             "trading_status", "trading_status_source"}
+    if not selected.intersection(dated):
+        return frame
+    tables = existing_tables(root)
+    has_facts = "security_daily_facts" in tables
+    has_references = {"daily_limit_references", "daily_limit_publication",
+                      "daily_limit_staleness"} <= tables
+    if frame.empty or not (has_facts or has_references):
+        return frame
+    joins, replacements = [], {}
+    want_reference = bool(selected.intersection({"pre_close", "pre_close_source"}))
+    want_facts = bool(selected.intersection(dated))
+    reference, reference_source = "b.pre_close", "b.pre_close_source"
+    if has_references and want_reference:
+        joins.append("""left join (
+            select r.symbol, r.trade_date, r.reference_pre_close, r.basis
+            from daily_limit_references r
+            join daily_limit_publication p using (trade_date, batch_id)
+            where exists (select 1 from _daily_contract_rows k
+                          where k.symbol=r.symbol and k.date=r.trade_date)
+        ) r on r.symbol=b.symbol and r.trade_date=b.date
+        left join daily_limit_staleness st on st.trade_date=r.trade_date""")
+        reference = ("case when r.symbol is not null then "
+                     "case when st.trade_date is null then r.reference_pre_close end "
+                     "else b.pre_close end")
+        reference_source = ("case when r.symbol is not null then 'limit_derived:' || r.basis "
+                            "else b.pre_close_source end")
+    if has_facts and want_facts:
+        fact_fields = {"symbol", "trade_date"}
+        if any(key.endswith("_source") for key in selected.intersection(dated)):
+            fact_fields.add("source")
+        for key in ("pre_close", "is_st", "trading_status"):
+            if {key, key + "_source"}.intersection(selected):
+                fact_fields.add(key)
+        joins.append(
+            "left join (select " + ", ".join(sorted(fact_fields))
+            + " from security_daily_facts f where exists "
+            "(select 1 from _daily_contract_rows k "
+            "where k.symbol=f.symbol and k.date=f.trade_date)) f "
+            "on f.symbol=b.symbol and f.trade_date=b.date"
+        )
+        reference = f"coalesce(f.pre_close, {reference})"
+        reference_source = ("case when f.pre_close is not null then f.source else "
+                            f"{reference_source} end")
+        for key in ("is_st", "trading_status"):
+            if key in selected:
+                replacements[key] = f"coalesce(f.{key}, b.{key})"
+            if key + "_source" in selected:
+                replacements[key + "_source"] = (
+                    f"case when f.{key} is not null then f.source else b.{key}_source end"
+                )
+    if want_reference:
+        if "pre_close" in selected:
+            replacements["pre_close"] = reference
+        if "pre_close_source" in selected:
+            replacements["pre_close_source"] = reference_source
+    if not joins or not replacements:
+        return frame
+    selections = ", ".join(f"{expression} as {key}" for key, expression in replacements.items())
+    with (
+        tempfile.TemporaryDirectory(prefix="aspool-overlay-") as temp,
+        read_only_catalog(root) as conn,
+    ):
+        conn.execute("SET memory_limit = '512MB'")
+        conn.execute("SET threads = 2")
+        conn.execute("SET temp_directory = ?", [temp])
+        conn.register("_daily_contract_rows", frame)
+        try:
+            return conn.execute(
+                f"select b.* replace ({selections}) from _daily_contract_rows b "
+                + " ".join(joins) + " order by b.symbol, b.date"
+            ).fetchdf()
+        finally:
+            conn.unregister("_daily_contract_rows")
+
+
 class DataPool:
     """Read raw daily bars without network access or catalog mutations.
 
@@ -88,6 +171,24 @@ class DataPool:
 
     def __init__(self, root: str | Path = "~/.aspool"):
         self.root = Path(root).expanduser().resolve()
+
+    def read_security_daily(self, *, symbols=None, start=None, end=None):
+        """Read dated status/ST/reference-price facts, including suspended sessions."""
+        from .security_facts import DAILY_TABLE, read_facts
+
+        return read_facts(self.root, DAILY_TABLE, symbols=symbols, start=start, end=end)
+
+    def read_security_info(self, *, symbols=None):
+        """Read sourced listing and code-exit dates; names are current metadata."""
+        from .security_facts import BASIC_TABLE, read_facts
+
+        return read_facts(self.root, BASIC_TABLE, symbols=symbols)
+
+    def read_trading_calendar(self, *, start=None, end=None):
+        """Read the stored BaoStock Shanghai/Shenzhen calendar."""
+        from .security_facts import CALENDAR_TABLE, read_facts
+
+        return read_facts(self.root, CALENDAR_TABLE, start=start, end=end)
 
     @public_read
     def read_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
@@ -117,11 +218,30 @@ class DataPool:
             raise DataPoolError("INVALID_ARGUMENT", "Invalid date boundary") from exc
         if start and end and start > end:
             raise DataPoolError("INVALID_ARGUMENT", "start must not be after end")
+        normalized = _normalize_symbols(symbols)
         with pool_lock(self.root):
-            files = sorted((self.root / "lake/bars/daily").glob("market=*/symbol=*/bars.parquet"))
+            daily_root = self.root / "lake/bars/daily"
+            files = sorted(
+                daily_root.glob("market=*/symbol=*/**/bars.parquet")
+            )
             if not files:
                 raise DataPoolError("DAILY_NOT_FOUND", "No daily bars in aspool")
-            with duckdb.connect() as conn:
+            if normalized:
+                wanted = set(normalized)
+                narrowed = [
+                    path for path in files
+                    if ".".join(part.split("=", 1)[1] for part in
+                                path.relative_to(daily_root).parts[:2]) in wanted
+                ]
+                if narrowed:
+                    files = narrowed
+            with (
+                tempfile.TemporaryDirectory(prefix="aspool-daily-") as temp,
+                duckdb.connect() as conn,
+            ):
+                conn.execute("SET memory_limit = '512MB'")
+                conn.execute("SET threads = 2")
+                conn.execute("SET temp_directory = ?", [temp])
                 conn.read_parquet(
                     [str(p) for p in files], union_by_name=True, hive_partitioning=True
                 ).create_view("bars")
@@ -150,11 +270,16 @@ class DataPool:
                     clauses.append("trade_date <= ?")
                     params.append(end)
                 if symbols is not None:
-                    # 规范化为存储格式
-                    normalized = _normalize_symbols(symbols)
                     clauses.append(f"{market} || '.' || {code} IN (SELECT unnest(?))")
                     params.append(normalized)
                 where = " WHERE " + " AND ".join(clauses) if clauses else ""
+                if not lookback:
+                    count = conn.execute(f"SELECT count(*) FROM bars{where}", params).fetchone()[0]
+                    if count > 500_000:
+                        raise DataPoolError(
+                            "DAILY_TOO_LARGE", "DataFrame read exceeds 500000 rows; "
+                            "use bounded date windows or iter_limit_events_with_amount",
+                        )
                 # Validate the filtered population before a window can hide duplicates.
                 duplicate = conn.execute(
                     f"SELECT {market}, {code}, trade_date FROM bars{where} "
@@ -163,34 +288,53 @@ class DataPool:
                 ).fetchone()
                 if duplicate is not None:
                     raise DataPoolError("DAILY_INVALID", "Duplicate daily keys")
-                extensions = ", ".join(
-                    f'CAST("{key}" AS {dtype}) AS "{key}"'
-                    if key in names
-                    else f'CAST(NULL AS {dtype}) AS "{key}"'
-                    for key, (dtype, _) in OPTIONAL_FIELDS.items()
-                )
-                # 输出规范格式: code.market (如 000001.SH)
-                sql = f"""SELECT {code} || '.' || {market} AS symbol, {market} AS market,
-                    {code} AS code, trade_date AS date, open, high, low, close,
-                    {volume} AS volume, amount, {rate} AS turnover_rate,
-                    {extensions} FROM bars{where}"""
+                selected_rows = f"SELECT * FROM bars{where}"
+                query_params = list(params)
                 if lookback:
-                    sql += (
+                    selected_rows += (
                         " QUALIFY row_number() OVER "
-                        "(PARTITION BY market, code ORDER BY trade_date DESC) <= ?"
+                        "(PARTITION BY market, symbol ORDER BY trade_date DESC) <= ?"
                     )
-                    params.append(lookback)
-                frame = conn.execute(sql + " ORDER BY symbol, date", params).fetchdf()
-        required = ["open", "high", "low", "close", "volume", "amount"]
-        if frame[required].isna().any().any():
-            raise DataPoolError("DAILY_INVALID", "Daily OHLCV/amount is incomplete; repair aspool")
-        if not frame.empty:
-            import numpy as np
-
-            if not np.isfinite(frame[required].to_numpy(dtype=float)).all():
-                raise DataPoolError("DAILY_INVALID", "Non-finite daily values")
-            if (frame[required] < 0).any().any() or (frame.high < frame.low).any():
-                raise DataPoolError("DAILY_INVALID", "Invalid daily values")
+                    query_params.append(lookback)
+                # Run validation on the selected population even when callers omit prices.
+                # This query materializes only a scalar and never a wide Pandas frame.
+                bad = " OR ".join(
+                    f"{column} IS NULL OR NOT isfinite({column}) OR {column} < 0"
+                    for column in ("open", "high", "low", "close", "amount")
+                )
+                bad += f" OR {volume} IS NULL OR NOT isfinite({volume}) OR {volume} < 0"
+                bad += " OR high < low"
+                if conn.execute(
+                    f"SELECT 1 FROM ({selected_rows}) q WHERE {bad} LIMIT 1", query_params
+                ).fetchone() is not None:
+                    raise DataPoolError("DAILY_INVALID", "Invalid or incomplete daily OHLCV/amount")
+                row_count = conn.execute(
+                    f"SELECT count(*) FROM ({selected_rows}) q", query_params
+                ).fetchone()[0]
+                if row_count > 500_000:
+                    raise DataPoolError(
+                        "DAILY_TOO_LARGE",
+                        "DataFrame read exceeds 500000 rows; use bounded date windows or "
+                        "iter_limit_events_with_amount for event data",
+                    )
+                internal = list(dict.fromkeys([*selected, "symbol", "date"]))
+                expressions = {
+                    "symbol": "symbol || '.' || market AS symbol",
+                    "market": "market", "code": "CAST(symbol AS VARCHAR) AS code",
+                    "date": "trade_date AS date",
+                    "volume": f"{volume} AS volume", "turnover_rate": f"{rate} AS turnover_rate",
+                }
+                for key, (dtype, _) in OPTIONAL_FIELDS.items():
+                    expressions[key] = (
+                        f'CAST("{key}" AS {dtype}) AS "{key}"' if key in names
+                        else f'CAST(NULL AS {dtype}) AS "{key}"'
+                    )
+                projection = ", ".join(expressions.get(key, f'"{key}"') for key in internal)
+                frame = conn.execute(
+                    f"SELECT {projection} FROM ({selected_rows}) q ORDER BY symbol, date",
+                    query_params,
+                ).fetchdf()
+            frame = _overlay_dated_fields(self.root, frame, selected)
         frame.attrs.update(
             contract_version=2,
             price_adjustment="raw",
@@ -334,6 +478,7 @@ class DataPool:
             self.root, trade_date=trade_date, start=start, end=end, symbols=symbols
         )
 
+
     @public_read
     def read_limit_exceptions(self, *, trade_date=None, start=None, end=None, symbols=None):
         """已发布的异常/未知/无约束记录。"""
@@ -342,6 +487,13 @@ class DataPool:
         return read_limit_exceptions(
             self.root, trade_date=trade_date, start=start, end=end, symbols=symbols
         )
+
+    @public_read
+    def read_limit_references(self, *, start=None, end=None, symbols=None):
+        """Published reference-price evidence, including unresolved conflicts."""
+        from .limit_api import read_limit_references
+
+        return read_limit_references(self.root, start=start, end=end, symbols=symbols)
 
     @public_read
     def read_limit_coverage(self, *, start=None, end=None):
@@ -375,7 +527,7 @@ class DataPool:
         return describe_limits(self.root)
 
     def compute_limit_events(
-        self, trade_dates, *, scope_id="stock", asset_type="stock", propagate=True
+        self, trade_dates, *, scope_id="stock", asset_type="stock", propagate=True, cache_years=1
     ):
         """独立入口：重算并发布指定交易日的派生事件（可重试）。
 
@@ -389,6 +541,7 @@ class DataPool:
             scope_id=scope_id,
             asset_type=asset_type,
             propagate=propagate,
+            cache_years=cache_years,
         )
 
     def describe(self):
@@ -433,6 +586,9 @@ class DataPool:
                 "calendar": False,
                 "historical_universe": False,
                 "trading_status": False,
+                "security_daily": True,
+                "security_info": True,
+                "stored_trading_calendar": True,
                 "corporate_actions": False,
                 "adjustments": False,
                 "minute_bars": False,

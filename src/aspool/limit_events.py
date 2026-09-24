@@ -9,16 +9,19 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from dataclasses import field as dataclass_field
+from datetime import date, datetime, timedelta, timezone
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from .api_contract import DataPoolError
 from .pool import writer
 from .store import catalog
 
-RULE_VERSION = "cn-a-share-limit-v2"
+RULE_VERSION = "cn-a-share-limit-v8"
 
 # 事件标志；至少一个为 true 才入事件表。
 _EVENT_FLAGS = ("close_limit_up", "close_limit_down", "touched_limit_up", "touched_limit_down")
@@ -28,6 +31,30 @@ SUPPORTED_SCOPES = {"stock"}
 SUPPORTED_SCOPE_IDS = {"stock"}
 
 INITIALIZE_SQL = (
+    """
+    create table if not exists daily_limit_streak_boundaries (
+        batch_id varchar not null,
+        trade_date date not null,
+        symbol varchar not null,
+        basis varchar not null,
+        primary key (trade_date, symbol, batch_id)
+    )
+    """,
+    """
+    create table if not exists daily_limit_references (
+        batch_id varchar not null,
+        trade_date date not null,
+        symbol varchar not null,
+        stored_pre_close double,
+        reference_pre_close double,
+        close double,
+        pct_chg double,
+        candidate_min double,
+        candidate_max double,
+        basis varchar not null,
+        primary key (trade_date, symbol, batch_id)
+    )
+    """,
     """
     create table if not exists daily_limit_batches (
         batch_id varchar primary key,
@@ -57,6 +84,17 @@ INITIALIZE_SQL = (
         limit_up_price double,
         limit_down_price double,
         consecutive_up integer,
+        consecutive_gap_sessions integer,
+        primary key (trade_date, symbol, batch_id)
+    )
+    """,
+    """
+    create table if not exists daily_limit_gap_states (
+        batch_id varchar not null,
+        trade_date date not null,
+        symbol varchar not null,
+        consecutive_up integer not null,
+        consecutive_gap_sessions integer not null,
         primary key (trade_date, symbol, batch_id)
     )
     """,
@@ -123,6 +161,8 @@ def initialize_limits(root: Path) -> None:
     with catalog(root) as conn:
         for statement in INITIALIZE_SQL:
             conn.execute(statement)
+        conn.execute("alter table daily_limit_events add column if not exists "
+                     "consecutive_gap_sessions integer")
 
 
 def _split_symbol(symbol: str) -> tuple[str, str]:
@@ -142,6 +182,7 @@ class ScopeEntry:
     name: str | None
     asset_type: str | None
     listing_date: date | None = None
+    delisting_date: date | None = None
 
 
 def _read_asset_types(root: Path, market: str, code: str) -> str | None:
@@ -194,6 +235,9 @@ def load_scope(root: Path, asset_type: str = "stock") -> list[ScopeEntry]:
         listings = {}
 
     out: list[ScopeEntry] = []
+    from .security_facts import lifecycle_map
+
+    lifecycle = lifecycle_map(root)
     base = root / "lake" / "bars" / "daily"
     if not base.is_dir():
         return out
@@ -206,6 +250,7 @@ def load_scope(root: Path, asset_type: str = "stock") -> list[ScopeEntry]:
             row_asset = _read_asset_types(root, market, code)
             if (row_asset or "stock") != asset_type:
                 continue
+            basic = lifecycle.get(f"{code}.{market}", {})
             out.append(
                 ScopeEntry(
                     f"{code}.{market}",
@@ -213,24 +258,31 @@ def load_scope(root: Path, asset_type: str = "stock") -> list[ScopeEntry]:
                     code,
                     names.get(code),
                     row_asset,
-                    listings.get(code),
+                    basic.get("listing_date") or listings.get(code),
+                    basic.get("delisting_date"),
                 )
             )
     return out
 
 
 def _listed_days(
-    entry: ScopeEntry, session_axis: list[date], trade_date: date
+    entry: ScopeEntry, session_axis: list[date], trade_date: date,
+    calendar: dict[date, bool] | None = None,
 ) -> int | None:
     """该证券截至 trade_date 的已上市交易日数；无可靠依据返回 None。
 
-    观测到的市场日期并不等于完整交易日历：池可能缺市场会话，个股也可能
-    缺行。因此不把会话轴行数当作精确上市日龄。上市首日由可靠 listing_date
-    直接确认；其余日期交给 observed_sessions 作为排除窗口的下界，无法确认时
-    由规则解析返回 UNKNOWN。
+    只有覆盖上市日至目标日全部自然日的已保存日历才能用于精确计数。
+    日历缺日时仍只用 observed_sessions 作为排除窗口的下界。
     """
     if entry.listing_date is not None and trade_date == entry.listing_date:
         return 1
+    if entry.market != "BJ" and entry.listing_date is not None and calendar:
+        if entry.listing_date not in calendar or trade_date not in calendar:
+            return None
+        days = [entry.listing_date + timedelta(days=i)
+                for i in range((trade_date - entry.listing_date).days + 1)]
+        if days and all(day in calendar for day in days):
+            return sum(calendar[day] for day in days)
     return None
 
 
@@ -239,15 +291,88 @@ def _read_symbol_bars(root: Path, market: str, code: str) -> list[dict]:
 
     from .store import daily_paths
 
-    required = {"trade_date", "open", "high", "low", "close", "pre_close", "is_st"}
+    required = {"trade_date", "open", "high", "low", "close", "pre_close", "pre_close_source",
+                "pct_chg", "is_st", "trading_status"}
     rows = []
     for path in daily_paths(root, market, code):
         parquet = pq.ParquetFile(path)
         columns = sorted(required.intersection(parquet.schema_arrow.names))
         for batch in parquet.iter_batches(columns=columns):
             rows.extend(batch.to_pylist())
-    rows.sort(key=lambda r: r["trade_date"])
-    return rows
+    from .daily_storage import is_missing_value
+    from .security_facts import daily_facts
+
+    by_day = {row["trade_date"]: row for row in rows}
+    for fact in daily_facts(root, f"{code}.{market}"):
+        row = by_day.setdefault(fact["trade_date"], {"trade_date": fact["trade_date"]})
+        for field in ("pre_close", "is_st", "trading_status"):
+            if (fact.get(field) is not None
+                    and (is_missing_value(row.get(field)) or fact.get("source") == "baostock")):
+                row[field] = fact[field]
+                if field == "pre_close":
+                    row["pre_close_source"] = fact.get("source")
+    ordered = [by_day[day] for day in sorted(by_day)]
+    for previous, current in zip(ordered, ordered[1:]):
+        current["previous_trade_date"] = previous["trade_date"]
+        current["previous_close"] = previous.get("close")
+    return ordered
+
+
+class _SymbolBars:
+    """Compact, date-indexed bars for one security and one calculation year."""
+
+    def __init__(self, rows: list[dict], start: date, end: date, listing_date: date | None):
+        import numpy as np
+        import pyarrow as pa
+
+        window = []
+        self.prior_count = 0
+        for row in rows:
+            day = row["trade_date"]
+            if day < start:
+                if listing_date is None or day >= listing_date:
+                    self.prior_count += 1
+            elif day <= end:
+                window.append(row)
+
+        # Facts-only rows may come before traded bars. Preserve every field,
+        # including those absent from the first row in this window.
+        columns = sorted({key for row in window for key in row})
+        self.table = (
+            pa.Table.from_pylist([{key: row.get(key) for key in columns} for row in window])
+            if window else None
+        )
+        if self.table is None:
+            self.days = np.array([], dtype=np.int32)
+        else:
+            self.days = (
+                self.table["trade_date"]
+                .cast(pa.int32())
+                .combine_chunks()
+                .to_numpy(zero_copy_only=False)
+            )
+        self.listing_index = (
+            int(np.searchsorted(self.days, (listing_date - date(1970, 1, 1)).days))
+            if listing_date is not None and listing_date >= start
+            else 0
+        )
+
+    def on(self, day: date) -> dict | None:
+        import numpy as np
+
+        ordinal = (day - date(1970, 1, 1)).days
+        index = int(np.searchsorted(self.days, ordinal, side="left"))
+        if index == len(self.days) or self.days[index] != ordinal:
+            return None
+        assert self.table is not None
+        return self.table.slice(index, 1).to_pylist()[0]
+
+    def observed_sessions(self, day: date) -> int:
+        import numpy as np
+
+        ordinal = (day - date(1970, 1, 1)).days
+        through = int(np.searchsorted(self.days, ordinal, side="right"))
+        return self.prior_count + max(0, through - self.listing_index)
 
 
 def _session_axis(all_dates: dict[str, set[date]], limit: date | None = None) -> list[date]:
@@ -286,6 +411,75 @@ def _validate_ohlc(row: dict) -> str | None:
     return None
 
 
+def _reference_price(row: dict, previous_session: date | None = None):
+    """Recover only a unique cent price from the SAME day's rounded return.
+
+    Legacy imported raw OHLC and pre_close can use different adjustment bases.
+    Use a two-decimal percentage interval, including for legacy three-decimal
+    returns. Source rounding may be coarser than the displayed precision.
+    Never choose a price if that interval permits zero or multiple cent prices.
+    The original bar is unchanged; every correction/rejection is audited.
+    """
+    stored = row.get("pre_close")
+    # A share price must be on the cent grid, allowing only float32 transport
+    # noise. Adjusted OHLC cannot be combined with an unadjusted daily return.
+    for field in ("open", "high", "low", "close"):
+        value = row.get(field)
+        if _is_number(value) and abs(float(value) - float(
+                Decimal(str(value)).quantize(Decimal(".01"), rounding=ROUND_HALF_UP)
+        )) > max(.00001, abs(float(value)) * 1.5e-7):
+            return None, {
+                "stored_pre_close": float(stored) if _is_number(stored) else None,
+                "reference_pre_close": None,
+                "close": float(row["close"]) if _is_number(row.get("close")) else None,
+                "pct_chg": float(row["pct_chg"]) if _is_number(row.get("pct_chg")) else None,
+                "candidate_min": None, "candidate_max": None,
+                "basis": "ohlc_not_on_price_grid",
+            }
+    if row.get("pre_close_source") in {"baostock", "derived:tdx_xdxr"}:
+        return (float(Decimal(str(stored)).quantize(Decimal(".01"), rounding=ROUND_HALF_UP))
+                if _is_number(stored) and stored > 0 else None), None
+    pct = row.get("pct_chg")
+    if not _is_number(pct) or not _is_number(row.get("close")):
+        return (float(Decimal(str(stored)).quantize(Decimal(".01"), rounding=ROUND_HALF_UP))
+                if _is_number(stored) and stored > 0 else None), None
+    close = Decimal(str(row["close"])).quantize(Decimal(".01"), rounding=ROUND_HALF_UP)
+    base = Decimal(100) + Decimal(str(pct))
+    error = Decimal(".005000001")
+    if close <= 0 or base <= error:
+        return stored, None
+    lower = (close * 10000 / (base + error)).to_integral_value(rounding=ROUND_CEILING)
+    upper = (close * 10000 / (base - error)).to_integral_value(rounding=ROUND_FLOOR)
+    if _is_number(stored) and stored > 0:
+        cents = (Decimal(str(stored)) * 100).to_integral_value(rounding=ROUND_HALF_UP)
+        if lower <= cents <= upper:
+            reference = float(cents / 100)
+            if abs(reference - float(stored)) < 1e-8:
+                return reference, None
+            return reference, {
+                "stored_pre_close": float(stored), "reference_pre_close": reference,
+                "close": float(close), "pct_chg": float(pct),
+                "candidate_min": float(lower / 100), "candidate_max": float(upper / 100),
+                "basis": "validated_reference_cent_normalization",
+            }
+    reference = float(lower / 100) if lower == upper and lower > 0 else None
+    basis = ("same_day_return_unique_cent" if reference is not None
+             else "same_day_return_no_unique_cent")
+    if (reference is not None and previous_session is not None
+            and row.get("previous_trade_date") == previous_session
+            and _is_number(row.get("previous_close"))
+            and Decimal(str(row["previous_close"])).quantize(
+                Decimal(".01"), rounding=ROUND_HALF_UP) == lower / 100):
+        basis = "previous_session_close_confirmed_by_return"
+    return reference, {
+        "stored_pre_close": float(stored) if _is_number(stored) else None,
+        "reference_pre_close": reference,
+        "close": float(close), "pct_chg": float(pct),
+        "candidate_min": float(lower / 100), "candidate_max": float(upper / 100),
+        "basis": basis,
+    }
+
+
 @dataclass
 class DateResult:
     """单个交易日的计算结果（尚未发布）。"""
@@ -301,6 +495,27 @@ class DateResult:
     no_limit: int
     invalid: int
     out_of_scope: int = 0
+    references: list[dict] = dataclass_field(default_factory=list)
+    gap_states: list[dict] = dataclass_field(default_factory=list)
+    streak_boundaries: list[dict] = dataclass_field(default_factory=list)
+
+
+def _gap_sessions(state) -> int:
+    """Accept earlier three-item states while carrying the v7 gap provenance."""
+    return int(state[3] or 0) if state is not None and len(state) > 3 else 0
+
+
+def _exclude_legacy_ipo_from_streak(entry: ScopeEntry, trade_date: date) -> bool:
+    """Exclude a confirmed legacy main-board IPO date from streak counting only."""
+    from tdxman.codec.price_rules import (
+        MAIN_BOARD_IPO_WINDOW_EFFECTIVE,
+        MAIN_BOARD_LEGACY_IPO_EFFECTIVE,
+    )
+
+    main_board = ((entry.market == "SH" and entry.code.startswith("60"))
+                  or (entry.market == "SZ" and entry.code.startswith("00")))
+    return (main_board and entry.listing_date == trade_date
+            and MAIN_BOARD_LEGACY_IPO_EFFECTIVE <= trade_date < MAIN_BOARD_IPO_WINDOW_EFFECTIVE)
 
 
 def _null_event(trade_date: date, symbol: str) -> dict:
@@ -322,11 +537,12 @@ def _compute_date(
     scope: list[ScopeEntry],
     bars_by_symbol: dict[str, list[dict]],
     session_axis: list[date],
-    prior: dict[str, tuple[date, bool | None, int | None]],
+    prior: dict[str, tuple],
+    calendar: dict[date, bool] | None = None,
 ) -> DateResult:
     """计算单个交易日的事件、异常、范围与汇总。
 
-    prior: symbol -> (状态所属会话日, 是否收盘涨停, 当时连板数)。
+    prior: symbol -> (状态所属会话日, 是否收盘涨停, 当时连板数, 累计跳过缺行会话数)。
     """
     from tdxman.codec.price_rules import resolve_limit_rule
     from tdxman.models.enums import Market
@@ -334,10 +550,14 @@ def _compute_date(
     events: list[dict] = []
     exceptions: list[dict] = []
     processed_symbols: list[str] = []
+    references: list[dict] = []
+    gap_states: list[dict] = []
+    streak_boundaries: list[dict] = []
     known = unknown = no_limit = invalid = out_of_scope = 0
     close_up = close_down = touched_up = touched_down = unsealed_up = unsealed_down = 0
     max_consec: int | None = None
     max_consec_unknown = False
+    has_gap_streak = False
 
     axis_index = {d: i for i, d in enumerate(session_axis)}
     idx = axis_index.get(trade_date)
@@ -353,9 +573,28 @@ def _compute_date(
             out_of_scope += 1
             prior[symbol] = (trade_date, None, None)
             continue
+        if ((entry.listing_date is not None and trade_date < entry.listing_date)
+                or (entry.delisting_date is not None and trade_date >= entry.delisting_date)):
+            out_of_scope += 1
+            prior[symbol] = (trade_date, None, None)
+            continue
+        row = (
+            rows.on(trade_date)
+            if isinstance(rows, _SymbolBars)
+            else next((r for r in rows if r["trade_date"] == trade_date), None)
+        )
+        if row is not None and row.get("trading_status") == "SUSPENDED":
+            # No trading events or breadth denominator on a confirmed suspension.
+            # Pause the streak, advancing its session stamp without incrementing it.
+            tracked = prior.get(symbol)
+            prior[symbol] = (
+                (trade_date, tracked[1], tracked[2], _gap_sessions(tracked))
+                if tracked is not None and tracked[0] == prev_session
+                else (trade_date, None, None)
+            )
+            out_of_scope += 1
+            continue
         processed_symbols.append(symbol)
-
-        row = next((r for r in rows if r["trade_date"] == trade_date), None)
         if row is None:
             unknown += 1
             max_consec_unknown = True
@@ -370,7 +609,18 @@ def _compute_date(
                 }
             )
             events.append(_null_event(trade_date, symbol))
-            prior[symbol] = (trade_date, None, None)
+            tracked = prior.get(symbol)
+            if (tracked is not None and tracked[0] == prev_session
+                    and tracked[1] is True and tracked[2] is not None and tracked[2] > 0):
+                # User-defined continuity: absent bars pause an already known
+                # up streak. The absent session remains UNKNOWN, not suspended.
+                gaps = _gap_sessions(tracked) + 1
+                prior[symbol] = (trade_date, True, tracked[2], gaps)
+                gap_states.append({"trade_date": trade_date, "symbol": symbol,
+                                   "consecutive_up": tracked[2],
+                                   "consecutive_gap_sessions": gaps})
+            else:
+                prior[symbol] = (trade_date, None, None)
             continue
 
         invalid_reason = _validate_ohlc(row)
@@ -395,11 +645,15 @@ def _compute_date(
         raw_st = row.get("is_st")
         st_status = raw_st if isinstance(raw_st, bool) else None
 
-        observed = sum(
-            1
-            for r in rows
-            if r["trade_date"] <= trade_date
-            and (entry.listing_date is None or r["trade_date"] >= entry.listing_date)
+        observed = (
+            rows.observed_sessions(trade_date)
+            if isinstance(rows, _SymbolBars)
+            else sum(
+                1
+                for r in rows
+                if r["trade_date"] <= trade_date
+                and (entry.listing_date is None or r["trade_date"] >= entry.listing_date)
+            )
         )
         resolved = resolve_limit_rule(
             Market[entry.market],
@@ -407,7 +661,8 @@ def _compute_date(
             entry.name or "",
             trade_date,
             st_status,
-            listed_days=_listed_days(entry, session_axis, trade_date),
+            listed_days=(None if observed > 5 else
+                         _listed_days(entry, session_axis, trade_date, calendar)),
             observed_sessions=observed,
         )
 
@@ -424,29 +679,39 @@ def _compute_date(
                 }
             )
             events.append(_null_event(trade_date, symbol))
-            prior[symbol] = (trade_date, None, None)
-            max_consec_unknown = True
+            prior[symbol] = (trade_date, False, 0)
             continue
 
         if not resolved.is_known:
             unknown += 1
+            exclude_ipo = _exclude_legacy_ipo_from_streak(entry, trade_date)
+            reason = resolved.reason or "无可靠规则依据"
+            affected = ("close_limit_up,close_limit_down,touched_limit_up,"
+                        "touched_limit_down,limit_up_price,limit_down_price")
+            if exclude_ipo:
+                reason += "；连板口径排除已确认的上市首日，次日起计数"
+                streak_boundaries.append({"trade_date": trade_date, "symbol": symbol,
+                                          "basis": "legacy_ipo_first_day_excluded"})
+            else:
+                affected += ",consecutive_up"
             exceptions.append(
                 {
                     "trade_date": trade_date,
                     "symbol": symbol,
                     "kind": "UNKNOWN",
-                    "reason": resolved.reason or "无可靠规则依据",
-                    "affected_fields": "close_limit_up,close_limit_down,touched_limit_up,"
-                    "touched_limit_down,limit_up_price,limit_down_price,consecutive_up",
+                    "reason": reason,
+                    "affected_fields": affected,
                 }
             )
             events.append(_null_event(trade_date, symbol))
-            prior[symbol] = (trade_date, None, None)
+            prior[symbol] = (trade_date, False, 0, 0) if exclude_ipo else (trade_date, None, None)
             max_consec_unknown = True
             continue
 
-        # 参考价：只接受当日自带的 pre_close。不做跨日收盘替代（除权等日期不可直接替代）。
-        pre_close = row.get("pre_close")
+        # Same-day evidence only; never substitute the previous row's close.
+        pre_close, reference_audit = _reference_price(row, prev_session)
+        if reference_audit is not None:
+            references.append({"trade_date": trade_date, "symbol": symbol, **reference_audit})
         if not _is_number(pre_close) or float(pre_close) <= 0:
             unknown += 1
             exceptions.append(
@@ -464,13 +729,17 @@ def _compute_date(
             max_consec_unknown = True
             continue
 
-        pct = resolved.rule.limit_pct
-        limit_up = round(float(pre_close) * (1 + pct) + 0.00001, 2)
-        limit_down = round(float(pre_close) * (1 - pct) + 0.00001, 2)
+        def cents(value):
+            return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-        close = float(row["close"])
-        high = float(row["high"])
-        low = float(row["low"])
+        pct = Decimal(str(resolved.rule.limit_pct))
+        reference = cents(pre_close)
+        limit_up = float(cents(reference * (1 + pct)))
+        limit_down = float(cents(reference * (1 - pct)))
+
+        close = float(cents(row["close"]))
+        high = float(cents(row["high"]))
+        low = float(cents(row["low"]))
 
         c_up = close >= limit_up
         c_down = close <= limit_down
@@ -486,6 +755,7 @@ def _compute_date(
         unsealed_down += int(t_down and not c_down)
 
         consecutive: int | None = None
+        consecutive_gaps = 0
         if not c_up:
             consecutive = 0
         else:
@@ -499,13 +769,16 @@ def _compute_date(
             else:
                 prev_n = tracked[2] if tracked is not None else None
                 consecutive = None if prev_n is None else prev_n + 1
+                if consecutive is not None:
+                    consecutive_gaps = _gap_sessions(tracked)
                 if consecutive is None:
                     max_consec_unknown = True
 
         if consecutive is not None:
             max_consec = consecutive if max_consec is None else max(max_consec, consecutive)
 
-        prior[symbol] = (trade_date, c_up, consecutive)
+        prior[symbol] = (trade_date, c_up, consecutive, consecutive_gaps)
+        has_gap_streak = has_gap_streak or consecutive_gaps > 0
 
         events.append(
             {
@@ -518,6 +791,7 @@ def _compute_date(
                 "limit_up_price": limit_up,
                 "limit_down_price": limit_down,
                 "consecutive_up": consecutive,
+                "consecutive_gap_sessions": consecutive_gaps if consecutive is not None else None,
             }
         )
 
@@ -529,6 +803,8 @@ def _compute_date(
         note = "存在连板未知的个股，无法给出市场最高连板"
     else:
         note = None
+    if has_gap_streak:
+        note = (note + "；" if note else "") + "含跨缺行接续连板，缺行会话不计天数"
 
     summary = {
         "trade_date": trade_date,
@@ -560,6 +836,9 @@ def _compute_date(
         no_limit=no_limit,
         invalid=invalid,
         out_of_scope=out_of_scope,
+        references=references,
+        gap_states=gap_states,
+        streak_boundaries=streak_boundaries,
     )
 
 
@@ -571,40 +850,56 @@ def _is_index_like(market, code: str, name: str) -> bool:
 
 def _previous_session_states(
     root: Path, trade_date: date, symbols: list[str]
-) -> dict[str, tuple[date, bool | None, int | None]]:
+) -> dict[str, tuple]:
     """上一条已发布批次中各证券的收盘状态。"""
-    prior: dict[str, tuple[date, bool | None, int | None]] = {}
+    prior: dict[str, tuple] = {}
     with catalog(root) as conn:
         # stale 的前日状态不可作为可靠递推前史。
         prev = conn.execute(
             """
             select max(p.trade_date) from daily_limit_publication p
-            where p.trade_date < ?
+            join daily_limit_batches b on b.batch_id = p.batch_id
+            where p.trade_date < ? and b.rule_version = ?
               and not exists (
                   select 1 from daily_limit_staleness st where st.trade_date = p.trade_date
               )
             """,
-            [trade_date],
+            [trade_date, RULE_VERSION],
         ).fetchone()[0]
         if prev is None:
             return prior
         rows = conn.execute(
             """
-            select e.symbol, e.close_limit_up, e.consecutive_up
+            select e.symbol, e.close_limit_up, e.consecutive_up, e.consecutive_gap_sessions
             from daily_limit_events e
             join daily_limit_publication p on p.trade_date = e.trade_date
             where e.trade_date = ?
             """,
             [prev],
         ).fetchall()
-        with_events = {row[0]: (row[1], row[2]) for row in rows}
+        with_events = {row[0]: (row[1], row[2], row[3] or 0) for row in rows}
+        gap_states = {
+            row[0]: (prev, True, row[1], row[2])
+            for row in conn.execute(
+                """select g.symbol, g.consecutive_up, g.consecutive_gap_sessions
+                   from daily_limit_gap_states g
+                   join daily_limit_publication p using (trade_date, batch_id)
+                   where g.trade_date = ?""", [prev]).fetchall()
+        }
+        streak_boundaries = {
+            row[0] for row in conn.execute(
+                """select z.symbol from daily_limit_streak_boundaries z
+                   join daily_limit_publication p using (trade_date, batch_id)
+                   where z.trade_date = ? and z.basis = 'legacy_ipo_first_day_excluded'""",
+                [prev]).fetchall()
+        }
         unknown = {
             row[0]
             for row in conn.execute(
                 """
                 select distinct x.symbol from daily_limit_exceptions x
                 join daily_limit_publication p on p.trade_date = x.trade_date
-                where x.trade_date = ? and x.kind in ('UNKNOWN', 'INVALID', 'NO_LIMIT')
+                where x.trade_date = ? and x.kind in ('UNKNOWN', 'INVALID')
                 """,
                 [prev],
             ).fetchall()
@@ -621,13 +916,40 @@ def _previous_session_states(
             ).fetchall()
         }
     for symbol in symbols:
-        if symbol in unknown:
+        if symbol in streak_boundaries:
+            prior[symbol] = (prev, False, 0, 0)
+        elif symbol in gap_states:
+            prior[symbol] = gap_states[symbol]
+        elif symbol in unknown:
             prior[symbol] = (prev, None, None)
         elif symbol in with_events:
-            state, consec = with_events[symbol]
-            prior[symbol] = (prev, state, consec)
+            state, consec, gaps = with_events[symbol]
+            prior[symbol] = (prev, state, consec, gaps)
         elif symbol in in_scope:
             prior[symbol] = (prev, False, 0)
+    # A previous published suspension was outside that day's traded scope.
+    # Recover its earlier state across confirmed suspended sessions. An earlier
+    # missing-bar carry is restored from daily_limit_gap_states by the same reader.
+    from .security_facts import calendar_days, daily_facts
+
+    calendar = calendar_days(root)
+    for symbol in symbols:
+        if symbol in prior or not calendar:
+            continue
+        facts = {r["trade_date"]: r for r in daily_facts(root, symbol, end=prev)}
+        cursor = prev
+        suspended = []
+        while facts.get(cursor, {}).get("trading_status") == "SUSPENDED":
+            suspended.append(cursor)
+            cursor -= timedelta(days=1)
+            while cursor in calendar and not calendar[cursor]:
+                cursor -= timedelta(days=1)
+            if cursor not in calendar:
+                break
+        if suspended and cursor in calendar:
+            earlier = _previous_session_states(root, min(suspended), [symbol]).get(symbol)
+            if earlier is not None and earlier[0] == cursor:
+                prior[symbol] = (prev, earlier[1], earlier[2], _gap_sessions(earlier))
     return prior
 
 
@@ -636,15 +958,10 @@ def _mark_stale(root: Path, dates: list[date], reason: str) -> None:
         return
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     with catalog(root) as conn:
-        for day in dates:
-            conn.execute(
-                """
-                insert into daily_limit_staleness values (?, ?, ?)
-                on conflict(trade_date) do update set
-                    reason = excluded.reason, marked_at = excluded.marked_at
-                """,
-                [day, reason, now],
-            )
+        conn.execute(
+            "insert or replace into daily_limit_staleness "
+            "select unnest(?), ?, ?", [dates, reason, now],
+        )
 
 
 def _published_dates_from(root: Path, start: date) -> list[date]:
@@ -662,6 +979,19 @@ def _clear_stale(conn, dates: list[date]) -> None:
         conn.execute("delete from daily_limit_staleness where trade_date = ?", [day])
 
 
+def _insert_rows(conn, table: str, rows: list[dict]) -> None:
+    """Insert a daily batch without one SQL round trip per security."""
+    if not rows:
+        return
+    import pyarrow as pa
+
+    conn.register("_limit_batch_rows", pa.Table.from_pylist(rows))
+    try:
+        conn.execute(f"insert into {table} by name select * from _limit_batch_rows")
+    finally:
+        conn.unregister("_limit_batch_rows")
+
+
 def _publish_batch(root: Path, batch_id: str, result: DateResult, scope_id: str) -> None:
     """原子发布一个批次：写事件/异常/范围/汇总并切换发布指针。"""
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -674,6 +1004,9 @@ def _publish_batch(root: Path, batch_id: str, result: DateResult, scope_id: str)
                 "daily_limit_summary",
                 "daily_limit_batches",
                 "daily_limit_scope",
+                "daily_limit_references",
+                "daily_limit_gap_states",
+                "daily_limit_streak_boundaries",
             ):
                 conn.execute(f"delete from {table} where trade_date = ?", [result.trade_date])
             conn.execute(
@@ -694,39 +1027,25 @@ def _publish_batch(root: Path, batch_id: str, result: DateResult, scope_id: str)
                     None,
                 ],
             )
-            for event in result.events:
-                conn.execute(
-                    "insert into daily_limit_events values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [
-                        batch_id,
-                        event["trade_date"],
-                        event["symbol"],
-                        event["close_limit_up"],
-                        event["close_limit_down"],
-                        event["touched_limit_up"],
-                        event["touched_limit_down"],
-                        event["limit_up_price"],
-                        event["limit_down_price"],
-                        event["consecutive_up"],
-                    ],
-                )
-            for exc in result.exceptions:
-                conn.execute(
-                    "insert into daily_limit_exceptions values (?, ?, ?, ?, ?, ?)",
-                    [
-                        batch_id,
-                        exc["trade_date"],
-                        exc["symbol"],
-                        exc["kind"],
-                        exc["reason"],
-                        exc["affected_fields"],
-                    ],
-                )
-            for symbol in result.scope:
-                conn.execute(
-                    "insert into daily_limit_scope values (?, ?, ?)",
-                    [batch_id, result.trade_date, symbol],
-                )
+            _insert_rows(conn, "daily_limit_events", [
+                {"batch_id": batch_id, **event} for event in result.events
+            ])
+            _insert_rows(conn, "daily_limit_exceptions", [
+                {"batch_id": batch_id, **exc} for exc in result.exceptions
+            ])
+            _insert_rows(conn, "daily_limit_scope", [
+                {"batch_id": batch_id, "trade_date": result.trade_date, "symbol": symbol}
+                for symbol in result.scope
+            ])
+            _insert_rows(conn, "daily_limit_references", [
+                {"batch_id": batch_id, **reference} for reference in result.references
+            ])
+            _insert_rows(conn, "daily_limit_gap_states", [
+                {"batch_id": batch_id, **state} for state in result.gap_states
+            ])
+            _insert_rows(conn, "daily_limit_streak_boundaries", [
+                {"batch_id": batch_id, **boundary} for boundary in result.streak_boundaries
+            ])
             s = result.summary
             conn.execute(
                 "insert into daily_limit_summary values "
@@ -876,6 +1195,7 @@ def compute_limit_events(
     scope_id: str = "stock",
     asset_type: str = "stock",
     propagate: bool = True,
+    cache_years: int = 1,
 ) -> list[str]:
     """计算并发布派生事件。
 
@@ -894,6 +1214,8 @@ def compute_limit_events(
         raise DataPoolError("SCOPE_UNSUPPORTED", f"unsupported scope: {asset_type}")
     if scope_id not in SUPPORTED_SCOPE_IDS:
         raise DataPoolError("SCOPE_UNSUPPORTED", f"unsupported scope_id: {scope_id}")
+    if isinstance(cache_years, bool) or not isinstance(cache_years, int) or cache_years < 1:
+        raise DataPoolError("INVALID_ARGUMENT", "cache_years must be a positive integer")
     if not trade_dates:
         return []
     initialize_limits(root)
@@ -920,6 +1242,14 @@ def compute_limit_events(
             for batch in pq.ParquetFile(path).iter_batches(columns=["trade_date"]):
                 market_dates.update(batch.column(0).to_pylist())
 
+    from .security_facts import calendar_days
+
+    calendar = calendar_days(root)
+    if market_dates:
+        first_market_date = min(market_dates)
+        last_market_date = max(ordered[-1], max(market_dates))
+        market_dates.update(day for day, opened in calendar.items()
+                            if opened and first_market_date <= day <= last_market_date)
     axis = sorted(market_dates)
     if not axis:
         raise DataPoolError("DAILY_NOT_FOUND", "aspool 会话轴为空")
@@ -940,20 +1270,40 @@ def compute_limit_events(
     symbols = [e.symbol for e in scope]
     prior = _previous_session_states(root, plan[0], symbols)
 
-    class SymbolRows:
-        # _compute_date consumes one security at a time; do not cache histories.
-        def get(self, symbol):
-            code, market = _split_symbol(symbol)
-            return _read_symbol_bars(root, market, code)
-
-    bars_by_symbol = SymbolRows()
-
     batch_ids: list[str] = []
-    for trade_date in plan:
-        result = _compute_date(trade_date, scope, bars_by_symbol, axis, prior)
-        batch_id = f"daily-limit-{trade_date:%Y%m%d}-{scope_id}"
-        _publish_batch(root, batch_id, result, scope_id)
-        batch_ids.append(batch_id)
+    scope_by_symbol = {entry.symbol: entry for entry in scope}
+    years = sorted({day.year for day in plan})
+    for offset in range(0, len(years), cache_years):
+        group = set(years[offset:offset + cache_years])
+        year_plan = [day for day in plan if day.year in group]
+
+        class SymbolRows:
+            """Cache compact rows only for the selected window, not full histories."""
+
+            def __init__(self):
+                self.cache: dict[str, _SymbolBars] = {}
+
+            def get(self, symbol):
+                if symbol not in self.cache:
+                    code, market = _split_symbol(symbol)
+                    entry = scope_by_symbol[symbol]
+                    rows = _read_symbol_bars(root, market, code)
+                    self.cache[symbol] = _SymbolBars(
+                        rows, year_plan[0], year_plan[-1], entry.listing_date
+                    )
+                return self.cache[symbol]
+
+        bars_by_symbol = SymbolRows()
+        for trade_date in year_plan:
+            result = _compute_date(trade_date, scope, bars_by_symbol, axis, prior, calendar)
+            batch_id = f"daily-limit-{trade_date:%Y%m%d}-{scope_id}"
+            _publish_batch(root, batch_id, result, scope_id)
+            batch_ids.append(batch_id)
+            logging.getLogger(__name__).info(
+                "Published %s (%d/%d): known=%d unknown=%d invalid=%d limit_up=%d",
+                trade_date, len(batch_ids), len(plan), result.known, result.unknown,
+                result.invalid, result.summary["close_limit_up_count"],
+            )
     return batch_ids
 
 

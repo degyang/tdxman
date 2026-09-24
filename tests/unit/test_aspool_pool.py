@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
 import pytest
@@ -172,11 +172,13 @@ def test_same_date_code_in_different_markets_is_not_duplicate(tmp_path):
 
 def test_online_daily_rows_use_manual_snapshot_with_free_stockdb_field_names():
     rows = _enrich_daily(
-        [{"close": 10.0, "volume": 100_000.0}],
-        {"total_share": 1_000_000.0, "float_share": 800_000.0, "ttm_eps": 2.0, "net_assets": 20.0},
+        [{"trade_date": date(2026, 9, 16), "close": 10.0, "volume": 100_000.0}],
+        {"total_share": 1_000_000.0, "float_share": 800_000.0, "ttm_eps": 2.0,
+         "net_assets": 20.0, "refreshed_at": datetime(2026, 9, 16, 16)},
     )
     assert rows == [
         {
+            "trade_date": date(2026, 9, 16),
             "close": 10.0,
             "volume": 100_000.0,
             "total_share": 1_000_000.0,
@@ -188,6 +190,12 @@ def test_online_daily_rows_use_manual_snapshot_with_free_stockdb_field_names():
             "turnover": 12.5,
         }
     ]
+
+
+@pytest.mark.parametrize("observed", [None, datetime(2026, 9, 17, 16)])
+def test_manual_snapshot_without_same_day_evidence_does_not_fill_history(observed):
+    rows = [{"trade_date": date(2026, 9, 16), "close": 10.0, "volume": 100_000.0}]
+    assert _enrich_daily(rows, {"total_share": 1000., "refreshed_at": observed}) == rows
 
 
 def test_quote_turnover_is_not_replaced_by_the_derived_value():

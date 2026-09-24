@@ -13,7 +13,7 @@ from .store import catalog
 def _is_a_share(market: str, code: str) -> bool:
     prefixes = {
         "SH": ("600", "601", "603", "605", "688"),
-        "SZ": ("000", "001", "002", "003", "300", "301"),
+        "SZ": ("000", "001", "002", "003", "300", "301", "302"),
         "BJ": ("4", "8", "920"),
     }
     return code.startswith(prefixes[market])

@@ -124,7 +124,8 @@ def import_free_stockdb(
     help="ex 资产类别；当前已交付 ETF，其他类别按 ex 配置规划",
 )
 @click.option(
-    "--source", type=click.Choice(["tdx", "free-stockdb"]), default="tdx", show_default=True
+    "--source", type=click.Choice(["tdx", "free-stockdb", "baostock"]),
+    default="tdx", show_default=True
 )
 @click.option("--period", type=click.Choice(PERIODS), default="daily", show_default=True)
 @click.option(
@@ -144,6 +145,18 @@ def import_free_stockdb(
 )
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
+@click.option("--start", "start_date", type=click.DateTime(formats=["%Y-%m-%d"]),
+              help="股票日线字段补齐区间起点，YYYY-MM-DD。")
+@click.option("--end", "end_date", type=click.DateTime(formats=["%Y-%m-%d"]),
+              help="股票日线字段补齐区间终点，YYYY-MM-DD。")
+@click.option("--lookback", type=click.IntRange(min=1),
+              help="字段补齐交易日数；缺省读取配置（30）。")
+@click.option("--baostock/--no-baostock", default=None,
+              help="以 BaoStock 只读校对冲突样本；默认读取配置，不覆盖冲突数据。")
+@click.option("--enrich/--no-enrich", default=True,
+              help="补齐日期股本、参考价及量价指标，再重算涨跌停和连板。")
+@click.option("--enrich-only", is_flag=True,
+              help="跳过主源 K 线同步，仅执行股票日线字段补齐和派生重算。")
 def sync(
     source: str,
     period: str,
@@ -154,9 +167,33 @@ def sync(
     asset_type: str = "stock",
     workers: int = 4,
     category: str | None = None,
+    start_date=None,
+    end_date=None,
+    lookback: int | None = None,
+    baostock: bool | None = None,
+    enrich: bool = True,
+    enrich_only: bool = False,
 ) -> None:
     """从指定源校准历史数据，并补齐至最新在线行情。"""
     target = _root(root)
+    stock_daily = asset_type == "stock" and period == "daily"
+    if not stock_daily and (start_date or end_date or lookback is not None
+                            or baostock is not None or enrich_only):
+        raise click.UsageError("字段补齐参数仅支持 stock 日线")
+    if enrich_only and (not enrich or not stock_daily):
+        raise click.UsageError("--enrich-only 需要 stock 日线及 --enrich")
+    if start_date and end_date and start_date > end_date:
+        raise click.UsageError("--start 不能晚于 --end")
+    if enrich_only:
+        _complete_stock_sync(target, start_date, end_date, lookback, limit, workers,
+                             baostock, enrich)
+        return
+    if source == "baostock":
+        if asset_type != "stock" or period != "daily" or async_mode or tdx_mode != "online":
+            raise click.UsageError("baostock 仅支持 stock 日线串行补齐")
+        _complete_stock_sync(target, start_date, end_date, lookback, limit, workers,
+                             True, enrich, supplement=True)
+        return
     if asset_type == "index":
         if source != "tdx" or period != "daily":
             raise click.UsageError("指数仅支持 --source tdx --period daily")
@@ -229,19 +266,60 @@ def sync(
         if check["duplicates"] or check["invalid"]:
             raise click.ClickException(f"历史导入校验失败：{check}")
         click.echo(f"历史校准：{stats.symbols} 个标的，{stats.rows} 行 {period} K；校验通过")
+    primary_error = None
     if source == "tdx" and tdx_mode == "offline":
         if period != "daily":
             raise click.UsageError("tdx 离线同步当前仅支持 daily；分钟线请使用 free-stockdb 导入")
         symbols, rows = update_daily_offline(target, limit)
     else:
         try:
-            symbols, rows = update_online(target, period, async_mode, limit, workers=workers)
+            symbols, rows = update_online(target, period, async_mode, limit, workers=workers,
+                                          derive_limits=not (stock_daily and enrich))
         except ValueError as exc:
-            raise click.ClickException(str(exc)) from exc
+            if not stock_daily:
+                raise click.ClickException(str(exc)) from exc
+            primary_error = str(exc)
+            symbols, rows = 0, 0
+            click.echo(f"主源部分失败，继续字段补齐：{exc}")
     stage = "通达信 K 线校准" if source == "tdx" else "在线尾部校准"
     click.echo(f"{stage}：{symbols} 个标的，写入变化记录 {rows} 条 {period} K")
     if period == "daily" and not (source == "tdx" and tdx_mode == "offline"):
         _show_maintenance_report(target)
+    if stock_daily:
+        _complete_stock_sync(target, start_date, end_date, lookback, limit, workers,
+                             baostock, enrich)
+    if primary_error:
+        raise click.ClickException(primary_error)
+
+
+def _complete_stock_sync(root, start, end, lookback, limit, workers, baostock, enrich,
+                         supplement=False):
+    from .baostock_source import enabled, supplement_daily
+    from .config import read_config
+
+    failures = []
+    options = dict(start=start.date() if start else None, end=end.date() if end else None,
+                   lookback=lookback, limit=limit)
+    if supplement:
+        report, path = supplement_daily(root, **options, recompute_limits=not enrich)
+        _show_baostock_report(report, path)
+        if report["status"] != "ok":
+            failures.append(f"BaoStock：{path}")
+    if enrich:
+        from .enrichment import enrich_daily
+
+        options["lookback"] = lookback or int(read_config().get("aspool.baostock.lookback", "30"))
+        click.echo("补齐日期基础数据、量价指标，再重算涨跌停及连板……")
+        report, path = enrich_daily(root, **options, workers=workers,
+                                   compare_baostock=enabled() if baostock is None else baostock)
+        click.echo(f"字段补齐：{report['processed']}/{report['requested']} 个标的，"
+                   f"变化 {report['changed_rows']} 行，"
+                   f"涨跌停发布 {report.get('limit_batches', 0)} 日；"
+                   f"状态 {report['status']}；报告：{path}")
+        if report["status"] != "ok":
+            failures.append(f"字段补齐：{path}")
+    if failures:
+        raise click.ClickException("部分阶段未完成：" + "；".join(failures))
 
 
 def _show_maintenance_report(root):
@@ -255,6 +333,14 @@ def _show_maintenance_report(root):
         )
 
 
+def _show_baostock_report(report, path):
+    click.echo(
+        f"BaoStock 补齐：{report['success']}/{report['requested']} 个待补标的，"
+        f"变化日线 {report['changed_rows']} 行，日期事实 {report['fact_rows']} 行；"
+        f"冲突 {len(report['conflicts'])}，未覆盖标的 {len(report['unsupported'])}；报告：{path}"
+    )
+
+
 @cli.command(cls=AspoolCommand)
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
@@ -262,16 +348,56 @@ def _show_maintenance_report(root):
 @click.option(
     "--workers", type=click.IntRange(1, 8), default=4, show_default=True, help="独立报价连接数。"
 )
-def update(root: Path | None, limit: int | None, async_mode: bool, workers: int) -> None:
-    """收盘后用 quote 更新当前或最近交易日的完整日线记录。"""
+@click.option("--baostock/--no-baostock", default=None,
+              help="报价后运行 BaoStock 历史补齐；默认读取配置（启用）。")
+@click.option("--lookback", type=click.IntRange(min=1), help="BaoStock 补齐交易日数；默认 30。")
+def update(
+    root: Path | None, limit: int | None, async_mode: bool, workers: int,
+    baostock: bool | None = None, lookback: int | None = None,
+) -> None:
+    """收盘后更新报价，再用 BaoStock 补齐历史字段与交易状态。"""
+    from tdxman.exceptions import TdxError
+
+    from .baostock_source import enabled, supplement_daily
+    from .fundamentals import QuoteUpdateError
+
+    target = _root(root)
+    use_baostock = enabled() if baostock is None else baostock
+    if lookback is not None and not use_baostock:
+        raise click.UsageError("--lookback 需要启用 --baostock")
+    primary_error = None
     try:
         symbols, rows = update_from_quotes(
-            _root(root), limit, async_mode=async_mode, workers=workers
+            target, limit, async_mode=async_mode, workers=workers
         )
-    except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
-    click.echo(f"报价检查完成：{symbols} 个标的，写入变化日线 {rows} 行并刷新基本面快照")
-    _show_maintenance_report(_root(root))
+        click.echo(f"报价检查完成：{symbols} 个标的，写入变化日线 {rows} 行并刷新基本面快照")
+    except (ValueError, OSError, TdxError) as exc:
+        if not use_baostock or "09:00 至 15:30" in str(exc):
+            raise click.ClickException(str(exc)) from exc
+        primary_error = exc
+        click.echo(f"通达信阶段未全部完成：{exc}；继续执行 BaoStock 补齐。", err=True)
+    _show_maintenance_report(target)
+    if use_baostock:
+        report, path = supplement_daily(target, lookback=lookback, limit=limit)
+        _show_baostock_report(report, path)
+        if report["status"] != "ok":
+            raise click.ClickException(f"BaoStock 补齐未全部完成：{path}")
+        if isinstance(primary_error, QuoteUpdateError):
+            from .pool import pool_lock
+            from .security_facts import lifecycle_map
+
+            with pool_lock(target):
+                metadata = lifecycle_map(target)
+            day = primary_error.trade_date
+            omitted = [code for code in primary_error.report["missing"] if not any(
+                row.get("delisting_date") is not None and row["delisting_date"] <= day
+                for symbol, row in metadata.items() if symbol.startswith(code + ".")
+            )]
+            if not (omitted or primary_error.report["failed"] or primary_error.report["rejected"]
+                    or primary_error.report.get("limit_events", {}).get("status") == "failed"):
+                primary_error = None
+    if primary_error is not None:
+        raise click.ClickException(str(primary_error))
 
 
 @cli.command("fundamentals", cls=AspoolCommand)

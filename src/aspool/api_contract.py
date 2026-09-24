@@ -36,6 +36,13 @@ OPTIONAL_FIELDS = {
     "pct_chg": ("DOUBLE", "percent"),
     "amplitude": ("DOUBLE", "percent"),
     "is_st": ("BOOLEAN", None),
+    "trading_status": ("VARCHAR", None),
+    "pre_close_source": ("VARCHAR", None),
+    "is_st_source": ("VARCHAR", None),
+    "trading_status_source": ("VARCHAR", None),
+    **{field + "_source": ("VARCHAR", None) for field in
+       ("vol_ratio", "turnover_rate", "amplitude", "pct_chg", "float_share", "total_share",
+        "float_mv", "total_mv")},
     "total_share": ("DOUBLE", "share"),
     "float_share": ("DOUBLE", "share"),
     "total_mv": ("DOUBLE", "CNY"),

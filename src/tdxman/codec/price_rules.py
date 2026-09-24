@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from ..models.enums import Market
 from ..models.finance import FinanceInfo
@@ -17,6 +18,8 @@ MAIN_BOARD_INCEPTION = date(1996, 12, 16)  # 主板涨跌幅限制制度生效
 # The 2023 revised SSE Trading Rules apply to the first main-board stock
 # issued under the registration system, which listed on 2023-04-10.
 MAIN_BOARD_IPO_WINDOW_EFFECTIVE = date(2023, 4, 10)
+MAIN_BOARD_LEGACY_IPO_EFFECTIVE = date(2014, 6, 13)
+MAIN_BOARD_ST_TEN_PERCENT = date(2026, 7, 6)
 
 
 @dataclass(frozen=True)
@@ -58,7 +61,7 @@ def is_star_board(code: str) -> bool:
 
 
 def is_gem_board(code: str) -> bool:
-    return code.startswith(("300", "301"))
+    return code.startswith(("300", "301", "302"))
 
 
 def is_bj_board(code: str) -> bool:
@@ -69,6 +72,11 @@ def is_bj_board(code: str) -> bool:
 _MAIN_BOARD_SOURCE = (
     "《上海证券交易所交易规则》第3.4节 / 《深圳证券交易所交易规则》第3.4节："
     "主板日涨跌幅限制为10%；风险警示股票为5%（1998-04-22起实施风险警示制度）"
+)
+_MAIN_BOARD_2026_SOURCE = (
+    "沪深交易规则（2026年修订），2026-07-06起主板风险警示股票限幅10%；"
+    "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20260424_10816474.shtml；"
+    "https://www.szse.cn/lawrules/service/member/t20260630_621404.html"
 )
 _STAR_SOURCE = (
     "《上海证券交易所科创板股票交易特别规定》（2019-07-22施行）第4章："
@@ -193,13 +201,30 @@ def resolve_limit_rule(
             return LimitRuleResult(
                 None, f"早于主板涨跌幅制度生效日 {MAIN_BOARD_INCEPTION}，无可靠规则依据"
             )
-        if st_status is None:
+        if trade_date >= MAIN_BOARD_ST_TEN_PERCENT:
+            rule = LimitRule(0.10, "主板(2026新规)", MAIN_BOARD_ST_TEN_PERCENT,
+                             _MAIN_BOARD_2026_SOURCE)
+        elif st_status is None:
             return LimitRuleResult(None, "主板涨跌幅取决于风险警示状态，无历史 ST 依据")
-        pct = 0.05 if st_status else 0.10
-        label = "主板(ST)" if st_status else "主板"
-        rule = LimitRule(pct, label, MAIN_BOARD_INCEPTION, _MAIN_BOARD_SOURCE)
+        else:
+            pct = 0.05 if st_status else 0.10
+            label = "主板(ST)" if st_status else "主板"
+            rule = LimitRule(pct, label, MAIN_BOARD_INCEPTION, _MAIN_BOARD_SOURCE)
 
     # 上市无涨跌幅窗口：必须能可靠排除，否则不得按常规限价声称 KNOWN。
+    main_board = ((market == Market.SH and code.startswith("60"))
+                  or (market == Market.SZ and code.startswith("00")))
+    if (main_board
+            and MAIN_BOARD_LEGACY_IPO_EFFECTIVE <= trade_date < MAIN_BOARD_IPO_WINDOW_EFFECTIVE):
+        # Legacy IPO first-day bounds refer to the issue price, not pre_close.
+        # SSE: https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20150912_3988762.shtml
+        # SZSE: https://www.szse.cn/www/disclosure/notice/company/t20140613_508770.html
+        age = listed_days if listed_days is not None else observed_sessions
+        if age is not None and age > 1:
+            return LimitRuleResult(rule)
+        return LimitRuleResult(
+            None, "主板注册制前上市首日采用发行价特殊限幅，缺少首日排除依据或发行价"
+        )
     window_spec = resolve_no_limit_window(market, code, trade_date)
     if window_spec is None:
         return LimitRuleResult(
@@ -295,6 +320,7 @@ def compute_price_limits(
     pre_close: float,
     finance_info: FinanceInfo | None = None,
     listed_days: int | None = None,
+    trade_date: date | None = None,
 ) -> tuple[float | None, float | None]:
     """根据板块规则计算涨跌停价。
 
@@ -307,11 +333,14 @@ def compute_price_limits(
         listed_days:
             已上市交易天数（按交易日计，首日=1）。
             若提供该值，函数会按上市初期无涨跌幅限制规则优先返回 ``(None, None)``。
+        trade_date:
+            主板 ST 规则适用日，默认上海时区当日；完整历史规则使用 resolve_limit_rule。
     """
     if pre_close <= 0:
         return None, None
 
     upper_name = name.upper()
+    trade_date = trade_date or datetime.now(ZoneInfo("Asia/Shanghai")).date()
 
     # 指数/板块类代码通常无涨跌停。
     if _is_index_like(market, code, name):
@@ -322,19 +351,19 @@ def compute_price_limits(
         return None, None
 
     # 规则依据：
-    # - 主板(60/00): 普通±10%, ST±5%
+    # Main-board ST: 5% before 2026-07-06, 10% from that date.
     # - 创业板(30): 2020-08-24后注册制, 普通±20%, ST±20%
     # - 科创板(688): 注册制, 普通±20%, ST±20%
     # - 北交所(43/83/87/92): 普通±30%, ST±30%
 
     # 1. 科创板/创业板: 注册制板块, ST也是20%
-    if code.startswith("688") or code.startswith("300") or code.startswith("301"):
+    if is_star_board(code) or is_gem_board(code):
         limit_pct = 0.20
     # 2. 北交所: 30%
     elif code.startswith(("43", "83", "87", "92")):
         limit_pct = 0.30
-    # 3. 主板 ST: 5%
-    elif "ST" in upper_name:
+    # Main-board ST before the 2026 rule change.
+    elif "ST" in upper_name and trade_date < MAIN_BOARD_ST_TEN_PERCENT:
         limit_pct = 0.05
     # 4. 主板普通: 10%
     else:

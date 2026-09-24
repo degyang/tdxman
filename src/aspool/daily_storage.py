@@ -111,13 +111,37 @@ def _same_values(left, right):
 
 
 def merge_daily(
-    root, market, symbol, incoming, source, coverage=None, changed_dates=None, quality_rows=None
+    root, market, symbol, incoming, source, coverage=None, changed_dates=None, quality_rows=None,
+    _path=None,
 ):
+    from .store import daily_paths, daily_year_path, read_daily_table
     from .tdx_online import _fill_close_vol_ratio, _merge_rows
 
     dates = [row["trade_date"] for row in incoming]
     if not incoming or len(dates) != len(set(dates)):
         raise ValueError(f"{symbol}: empty or duplicate incoming dates")
+    paths = daily_paths(root, market, symbol) if _path is None else []
+    if paths and paths[0].parent.name.startswith("year="):
+        # Historical supplements may cross years; never put old dates in the
+        # most recent year partition or duplicate rows in an older partition.
+        total = 0
+        for year in sorted({row["trade_date"].year for row in incoming}):
+            total += merge_daily(
+                root, market, symbol,
+                [row for row in incoming if row["trade_date"].year == year], source,
+                coverage=[], changed_dates=changed_dates, quality_rows=quality_rows,
+                _path=daily_year_path(root, market, symbol, year),
+            )
+        if total:
+            full = read_daily_table(root, market, symbol)
+            entry = (symbol, market, full["trade_date"][0].as_py(),
+                     full["trade_date"][-1].as_py(), len(full), source, "daily")
+            if coverage is None:
+                record_coverage(root, *entry)
+            else:
+                coverage.append(entry)
+        return total
+
     for row in incoming:
         values = [row.get(k) for k in ("open", "high", "low", "close", "volume", "amount")]
         if (
@@ -125,7 +149,7 @@ def merge_daily(
             or row["high"] < row["low"]
         ):
             raise ValueError(f"{symbol}: invalid incoming OHLCV")
-    path = bars_path(root, "daily", market, symbol)
+    path = _path or bars_path(root, "daily", market, symbol)
     table = pq.ParquetFile(path).read() if path.exists() else None
     days = table["trade_date"].to_pylist() if table is not None else []
     if days != sorted(set(days)):
@@ -195,10 +219,19 @@ def merge_daily(
         if table is not None and offset
         else tail
     )
-    target = bars_path(root, "daily", market, symbol)
+    target = path
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(f".{uuid4().hex}.part")
     pq.write_table(result, temporary, compression="zstd")
+    # A historical source update invalidates all subsequent streaks, including
+    # when sync deliberately defers recomputation until enrichment has finished.
+    if source != "tdxman:etf":
+        from .limit_events import _mark_stale, _published_dates_from
+        from .store import existing_tables
+
+        if "daily_limit_publication" in existing_tables(root):
+            _mark_stale(root, _published_dates_from(root, min(touched)),
+                        "日线字段变化，等待补齐和重算")
     temporary.replace(target)
     entry = (
         symbol,

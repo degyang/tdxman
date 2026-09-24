@@ -40,6 +40,15 @@ FIELDS = (
 )
 
 
+class QuoteUpdateError(ValueError):
+    """Retain a primary-stage report for the following supplement stage."""
+
+    def __init__(self, report, path, trade_date):
+        super().__init__(f"部分报价未写入，请查看报告：{path}")
+        self.report = report
+        self.trade_date = trade_date
+
+
 def _load_tdxman() -> tuple[Any, Any, Any, Any, Any]:
     from tdxman.codec.bitmap import FieldBit, PresetField
     from tdxman.mac.client import AsyncMacClient, MacClient
@@ -59,6 +68,14 @@ def _symbols(root: Path, limit: int | None) -> list[str]:
         except Exception:
             rows = conn.execute("select symbol from coverage order by symbol").fetchall()
         symbols = [row[0] for row in rows]
+    from .security_facts import lifecycle_map
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    metadata = lifecycle_map(root)
+    excluded = {symbol[:6] for symbol, entry in metadata.items()
+                if (entry.get("delisting_date") is not None and entry["delisting_date"] <= today)
+                or (entry.get("listing_date") is not None and entry["listing_date"] > today)}
+    symbols = [code for code in symbols if code not in excluded]
     return symbols[:limit] if limit else symbols
 
 
@@ -206,6 +223,11 @@ def _quote_bar(quote: dict[str, object], trade_date: date) -> dict[str, object]:
         row["is_st"] = st_status
         row["is_st_source"] = "tdxman:quote_name"
         row["is_st_name_date"] = trade_date
+    if (quote.get("vol") is not None and float(quote["vol"]) > 0
+            and all(quote.get(key) is not None and float(quote[key]) > 0
+                    for key in ("open", "high", "low", "close"))):
+        row["trading_status"] = "TRADING"
+        row["trading_status_source"] = "tdxman:quote"
     if not is_missing_value(close) and not is_missing_value(pre_close):
         try:
             close_value = float(close)
@@ -367,7 +389,7 @@ def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
         Path(root) / "reports/maintenance/latest.json", {**report, "report": str(report_path)}
     )
     if incomplete:
-        raise ValueError(f"部分报价未写入，请查看报告：{report_path}")
+        raise QuoteUpdateError(report, report_path, now.date())
     return report["success"], report["changed_rows"]
 
 

@@ -35,7 +35,8 @@ def _sessions(start: date, count: int) -> list[date]:
     return out
 
 
-_ALL = _sessions(date(2026, 8, 17), 20)
+# ST-dependent cases exercise the period before the July 2026 rule change.
+_ALL = _sessions(date(2026, 5, 18), 20)
 WARMUP = _ALL[:14]  # 14 个会话，足以排除 5 日无涨跌幅窗口
 SESSIONS = _ALL[14:]  # 6 个会话
 THU, FRI, MON, TUE, WED, THU2 = SESSIONS
@@ -205,7 +206,7 @@ class TestRuleResolution:
         from tdxman.models.enums import Market
 
         result = resolve_limit_rule(
-            Market.SH, "600519", "贵州茅台", date(2026, 9, 10), None, observed_sessions=99
+            Market.SH, "600519", "贵州茅台", date(2026, 6, 30), None, observed_sessions=99
         )
         assert not result.is_known and "风险警示" in result.reason
 
@@ -214,13 +215,37 @@ class TestRuleResolution:
         from tdxman.models.enums import Market
 
         normal = resolve_limit_rule(
-            Market.SH, "600519", "贵州茅台", date(2026, 9, 10), False, observed_sessions=99
+            Market.SH, "600519", "贵州茅台", date(2026, 6, 30), False, observed_sessions=99
         )
         flagged = resolve_limit_rule(
-            Market.SH, "600519", "ST某某", date(2026, 9, 10), True, observed_sessions=99
+            Market.SH, "600519", "ST某某", date(2026, 6, 30), True, observed_sessions=99
         )
         assert normal.rule.limit_pct == 0.10
         assert flagged.rule.limit_pct == 0.05
+
+    @pytest.mark.parametrize("market,code", [("SH", "600001"), ("SZ", "000001")])
+    def test_legacy_main_board_excludes_only_first_session(self, market, code):
+        from tdxman.codec.price_rules import resolve_limit_rule
+        from tdxman.models.enums import Market
+
+        day = date(2021, 9, 24)
+        for st, pct in [(True, 0.05), (False, 0.10)]:
+            first = resolve_limit_rule(Market[market], code, "", day, st, observed_sessions=1)
+            assert not first.is_known and not first.is_no_limit
+            later = resolve_limit_rule(Market[market], code, "", day, st, observed_sessions=2)
+            assert later.is_known and later.rule.limit_pct == pct
+        missing_st = resolve_limit_rule(Market[market], code, "", day, observed_sessions=99)
+        assert not missing_st.is_known
+
+    @pytest.mark.parametrize("st", [None, False, True])
+    def test_main_board_after_july_2026_uses_ten_percent(self, st):
+        from tdxman.codec.price_rules import resolve_limit_rule
+        from tdxman.models.enums import Market
+
+        result = resolve_limit_rule(
+            Market.SH, "600001", "", date(2026, 7, 6), st, observed_sessions=99
+        )
+        assert result.is_known and result.rule.limit_pct == 0.10
 
     def test_missing_st_only_blocks_main_board_not_registered_gem(self, pool):
         """Rule quality follows production resolution, not joint field coverage."""
@@ -871,6 +896,7 @@ class TestIncrementalEqualsFullRecompute:
 
 def test_derivation_does_not_retain_all_symbol_histories(pool, monkeypatch):
     import weakref
+
     from aspool import limit_events as module
 
     for code in ("300001", "300002", "300003", "300004"):
@@ -1040,6 +1066,43 @@ class TestStaleCoverage:
         assert not DataPool(pool).read_limit_staleness().empty
         compute_limit_events(pool, [FRI])
         assert DataPool(pool).read_limit_staleness().empty
+
+
+def test_reference_correction_is_published_and_audited_without_rewriting_bars(pool):
+    rows = [_bar(FRI, 10.0, pre_close=8.0), _bar(MON, 12.0, pre_close=8.0)]
+    rows[0]["pct_chg"], rows[1]["pct_chg"] = 0.0, 20.0
+    _put(pool, "SZ", "300001", rows, name="参考价测试")
+    compute_limit_events(pool, [FRI, MON])
+    api = DataPool(pool)
+    event = api.read_limit_events(trade_date=MON).iloc[0]
+    assert event.close_limit_up and event.consecutive_up == 1
+    audit = api.read_limit_references(start=MON, end=MON, symbols="SZ.300001").iloc[0]
+    assert audit.stored_pre_close == 8.0 and audit.reference_pre_close == 10.0
+    assert audit.basis == "previous_session_close_confirmed_by_return"
+    assert not audit.stale
+    raw = pd.read_parquet(daily_path(pool, "SZ", "300001"))
+    assert raw.loc[raw.trade_date == MON, "pre_close"].iloc[0] == 8.0
+    public = api.read_research_daily(symbols="300001.SZ", start=MON, end=MON)
+    assert public.pre_close.iloc[0] == 10.0
+    assert public.pre_close_source.iloc[0].startswith("limit_derived:")
+    from aspool.limit_events import _mark_stale
+
+    _mark_stale(pool, [MON], "source changed")
+    stale = api.read_research_daily(symbols="300001.SZ", start=MON, end=MON)
+    assert pd.isna(stale.pre_close.iloc[0])
+
+
+def test_multi_year_cache_keeps_consecutive_state_identical(pool, tmp_path):
+    warmup = [_bar(d, 10.0) for d in _sessions(date(2025, 12, 1), 15)]
+    days = [date(2025, 12, 29), date(2025, 12, 30), date(2025, 12, 31), date(2026, 1, 5)]
+    rows = warmup + [_bar(d, c) for d, c in zip(days, [10.0, 12.0, 14.4, 17.28])]
+    _put(pool, "SZ", "300001", rows, name="跨年测试", warmup=False)
+    clone = _clone_pool(pool, tmp_path / "copy")
+    compute_limit_events(pool, [days[0], days[-1]], cache_years=1)
+    compute_limit_events(clone, [days[0], days[-1]], cache_years=6)
+    a, b = DataPool(pool).read_limit_events(), DataPool(clone).read_limit_events()
+    pd.testing.assert_frame_equal(a, b)
+    assert b[b.trade_date == pd.Timestamp(days[-1])].consecutive_up.iloc[0] == 3
 
 
 def _clone_pool(source, target):

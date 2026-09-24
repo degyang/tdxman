@@ -60,6 +60,7 @@ EVENT_FIELDS = {
     "limit_up_price": ("DOUBLE", "CNY/share"),
     "limit_down_price": ("DOUBLE", "CNY/share"),
     "consecutive_up": ("INTEGER", "count"),
+    "consecutive_gap_sessions": ("INTEGER", "count"),
     "batch_id": ("VARCHAR", None),
     "stale": ("BOOLEAN", None),
     "stale_reason": ("VARCHAR", None),
@@ -101,6 +102,8 @@ def _bounds(start, end) -> tuple[date | None, date | None]:
     try:
         lo = pd.Timestamp(start).date() if start is not None else None
         hi = pd.Timestamp(end).date() if end is not None else None
+        if (lo is not None and pd.isna(lo)) or (hi is not None and pd.isna(hi)):
+            raise ValueError("Missing date boundary")
     except (TypeError, ValueError) as exc:
         raise DataPoolError("INVALID_ARGUMENT", "Invalid date bounds") from exc
     if lo and hi and lo > hi:
@@ -133,7 +136,12 @@ def _normalize_requested_symbols(symbols):
 
 def _require_ready(root) -> None:
     """派生表未就绪则报明确错误；不创建任何文件。"""
-    missing = REQUIRED_TABLES - existing_tables(root)
+    try:
+        with pool_lock(root):
+            tables = existing_tables(root)
+    except FileNotFoundError:
+        tables = set()
+    missing = REQUIRED_TABLES - tables
     if missing:
         raise DataPoolError(
             "LIMIT_NOT_READY",
@@ -153,6 +161,26 @@ def _query(root, sql: str, params: list) -> pd.DataFrame:
         raise DataPoolError("LIMIT_NOT_READY", f"派生表未就绪：{exc}") from exc
     except duckdb.Error as exc:
         raise DataPoolError("LIMIT_INVALID", str(exc)) from exc
+
+
+@public_read
+def read_limit_references(root, *, start=None, end=None, symbols=None) -> pd.DataFrame:
+    """Read published reference-price corrections/rejections with their evidence."""
+    _require_ready(root)
+    lo, hi = _bounds(start, end)
+    clauses, params = [], []
+    _date_clause("r.trade_date", lo, hi, clauses, params)
+    if symbols is not None:
+        clauses.append("r.symbol IN (SELECT unnest(?))")
+        params.append(_normalize_requested_symbols(symbols))
+    where = " WHERE " + " AND ".join(clauses) if clauses else ""
+    return _query(root, f"""
+        select r.*, st.trade_date is not null as stale, st.reason as stale_reason
+        from daily_limit_references r
+        join daily_limit_publication p using (trade_date, batch_id)
+        left join daily_limit_staleness st on st.trade_date=r.trade_date
+        {where} order by r.trade_date, r.symbol
+        """, params)
 
 
 @public_read
@@ -187,6 +215,10 @@ def read_limit_summary(root, *, start=None, end=None) -> pd.DataFrame:
 def read_limit_events(root, *, trade_date=None, start=None, end=None, symbols=None) -> pd.DataFrame:
     """读取已发布的逐股事件；只含至少一个 true 的行。输出规范 symbol。"""
     _require_ready(root)
+    with pool_lock(root), read_only_catalog(root) as conn:
+        columns = {row[0] for row in conn.execute("describe daily_limit_events").fetchall()}
+    gap_column = ("e.consecutive_gap_sessions" if "consecutive_gap_sessions" in columns
+                  else "cast(null as integer)")
     lo, hi = _bounds(start, end)
     if trade_date is not None:
         lo = hi = pd.Timestamp(trade_date).date()
@@ -200,7 +232,8 @@ def read_limit_events(root, *, trade_date=None, start=None, end=None, symbols=No
     sql = f"""
         select e.trade_date, e.symbol, e.close_limit_up, e.close_limit_down,
                e.touched_limit_up, e.touched_limit_down, e.limit_up_price,
-               e.limit_down_price, e.consecutive_up, e.batch_id,
+               e.limit_down_price, e.consecutive_up,
+               {gap_column} as consecutive_gap_sessions, e.batch_id,
                (st.trade_date is not null) as stale,
                st.reason as stale_reason
         from daily_limit_events e
@@ -302,10 +335,12 @@ def read_limit_staleness(root, *, start=None, end=None) -> pd.DataFrame:
 
 def describe_limits(root) -> dict:
     """声明已实现的涨跌停派生能力与字段单位。只读。"""
+    from .limit_events import RULE_VERSION
+
     available = REQUIRED_TABLES <= existing_tables(root)
     return {
         "contract_version": 2,
-        "rule_version": "cn-a-share-limit-v2",
+        "rule_version": RULE_VERSION,
         "ready": available,
         "capabilities": {
             "daily_limit_events": available,
@@ -314,6 +349,7 @@ def describe_limits(root) -> dict:
             "daily_limit_scope": available,
             "daily_limit_exceptions": available,
             "daily_limit_staleness": available,
+            "daily_limit_references": "daily_limit_references" in existing_tables(root),
             "touched_count": False,
             "open_board_count": False,
             "realtime": False,
@@ -332,9 +368,19 @@ def describe_limits(root) -> dict:
             "null": "无法确认（规则/参考价/会话/上市依据不足）",
             "absent": "在已发布 scope 名单内、无异常且无事件行时，才是确定无事件",
             "all_unknown": "四个标志全为 null 的证券只进异常与 scope，不进事件表",
-            "consecutive_up": "确定当日未涨停为 0；前史不足或会话缺行为 null",
+            "consecutive_up": (
+                "确定当日未涨停为 0；可靠停牌暂停计数；"
+                "缺行前已知连板时跳过缺行并接续涨停，前史不足仍为 null；"
+                "v8 排除已确认的旧主板 IPO 首日，次日起从首板计数"),
+            "consecutive_gap_sessions": (
+                "当前连板累计跳过的缺行市场会话数，不含已证实停牌；"
+                "大于 0 表示采用跨缺行连续性假设，旧批次或连板未知为 null"),
             "sealed_ratio": "收盘涨停家数/(收盘涨停家数+触涨停未封家数)；分母为 0 时为 null",
             "max_consecutive_up": "已知样本最大值；note 说明是否有连板未知的个股",
+            "reference_price": (
+                "优先同口径当日参考价；历史冲突仅在当日收益的保守精度区间内"
+                "存在唯一分币参考价时恢复；修正及无法唯一恢复的记录可追溯"
+            ),
             "stale": "该日期结果已过期或派生失败，消费者应拒绝或降级使用",
             "stale_consumption": (
                 "事件/汇总/覆盖三种读取都带 stale 与 stale_reason；"
@@ -343,9 +389,10 @@ def describe_limits(root) -> dict:
         },
         "rule_basis": {
             "main_board": (
-                "主板±10%，风险警示±5%（需当日 ST 依据，否则 UNKNOWN）；"
+                "主板±10%；风险警示在2026-07-06前为±5%（需当日 ST 依据），此后±10%；"
                 "主板注册制新股前5个交易日窗口自2023-04-10首批主板注册制企业上市起，"
-                "此前窗口规则未确认时为 UNKNOWN"
+                "2014-06-13至2023-04-09在能排除上市首日后使用常规限幅；"
+                "首日发行价特殊限幅依据不足时为 UNKNOWN"
             ),
             "star": "科创板±20%（2019-07-22 起）",
             "gem": "创业板注册制后±20%（2020-08-24 起）；之前±10%/ST±5%",

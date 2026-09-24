@@ -8,3 +8,6 @@ aspool:
     root: "/mnt/d/Workstation/Developments/finances/free-stockdb/data/release-manylinux/unpacked/stockdb"
   update:
     quote_batch_size: 80
+  baostock:
+    enabled: true
+    lookback: 30
