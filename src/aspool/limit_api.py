@@ -344,6 +344,7 @@ def describe_limits(root) -> dict:
         "ready": available,
         "capabilities": {
             "daily_limit_events": available,
+            "daily_limit_event_amount_batches": available,
             "daily_limit_summary": available,
             "daily_limit_coverage": available,
             "daily_limit_scope": available,

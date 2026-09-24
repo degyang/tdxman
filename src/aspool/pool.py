@@ -478,6 +478,24 @@ class DataPool:
             self.root, trade_date=trade_date, start=start, end=end, symbols=symbols
         )
 
+    def iter_limit_events_with_amount(
+        self, *, start, end, symbols=None, fields=None, close_limit_up=None,
+        min_consecutive_up=None, batch_days=7, max_rows=25_000,
+        memory_limit="512MB", threads=2, temp_directory=None,
+    ):
+        """Read published events and same-day CNY amount in bounded date batches.
+
+        Use as a context manager. A changed publication/stale state raises
+        LIMIT_REVISION_CHANGED, so callers must discard their staging output.
+        """
+        from .limit_amount import EventAmountBatches
+
+        return EventAmountBatches(
+            self.root, start=start, end=end, symbols=symbols, fields=fields,
+            close_limit_up=close_limit_up, min_consecutive_up=min_consecutive_up,
+            batch_days=batch_days, max_rows=max_rows, memory_limit=memory_limit,
+            threads=threads, temp_directory=temp_directory,
+        )
 
     @public_read
     def read_limit_exceptions(self, *, trade_date=None, start=None, end=None, symbols=None):
