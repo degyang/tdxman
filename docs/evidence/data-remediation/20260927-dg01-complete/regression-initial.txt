@@ -1,0 +1,144 @@
+
+==================================== ERRORS ====================================
+____________ ERROR collecting tests/unit/test_daily_remediation.py _____________
+.venv/lib/python3.12/site-packages/_pytest/python.py:508: in importtestmodule
+    mod = import_path(
+.venv/lib/python3.12/site-packages/_pytest/pathlib.py:596: in import_path
+    importlib.import_module(module_name)
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/unit/test_daily_remediation.py:11: in <module>
+    from aspool.change_observation import daily_changes, empty_cost, row_version
+src/aspool/change_observation.py:14: in <module>
+    from .daily_storage import _same_values, is_missing_value
+src/aspool/daily_storage.py:12: in <module>
+    from .change_protocol import maintenance
+E     File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/change_protocol.py", line 587
+E       run["state"] = "partial_failure" if run.get("failed_operations") or run.get("observed_failure")
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   SyntaxError: expected 'else' after 'if' expression
+_____________ ERROR collecting tests/unit/test_change_protocol.py ______________
+.venv/lib/python3.12/site-packages/_pytest/python.py:508: in importtestmodule
+    mod = import_path(
+.venv/lib/python3.12/site-packages/_pytest/pathlib.py:596: in import_path
+    importlib.import_module(module_name)
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/unit/test_change_protocol.py:17: in <module>
+    from aspool.baostock_source import _publish as bao_publish
+src/aspool/baostock_source.py:16: in <module>
+    from .change_protocol import maintenance
+E     File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/change_protocol.py", line 587
+E       run["state"] = "partial_failure" if run.get("failed_operations") or run.get("observed_failure")
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   SyntaxError: expected 'else' after 'if' expression
+_______________ ERROR collecting tests/unit/test_aspool_pool.py ________________
+.venv/lib/python3.12/site-packages/_pytest/python.py:508: in importtestmodule
+    mod = import_path(
+.venv/lib/python3.12/site-packages/_pytest/pathlib.py:596: in import_path
+    importlib.import_module(module_name)
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/unit/test_aspool_pool.py:7: in <module>
+    from aspool.free_stockdb import _write_daily
+src/aspool/free_stockdb.py:17: in <module>
+    from .change_protocol import maintenance
+E     File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/change_protocol.py", line 587
+E       run["state"] = "partial_failure" if run.get("failed_operations") or run.get("observed_failure")
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   SyntaxError: expected 'else' after 'if' expression
+____________ ERROR collecting tests/unit/test_aspool_performance.py ____________
+.venv/lib/python3.12/site-packages/_pytest/python.py:508: in importtestmodule
+    mod = import_path(
+.venv/lib/python3.12/site-packages/_pytest/pathlib.py:596: in import_path
+    importlib.import_module(module_name)
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/unit/test_aspool_performance.py:12: in <module>
+    from aspool.daily_storage import build_field_quality_report, merge_daily
+src/aspool/daily_storage.py:12: in <module>
+    from .change_protocol import maintenance
+E     File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/change_protocol.py", line 587
+E       run["state"] = "partial_failure" if run.get("failed_operations") or run.get("observed_failure")
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   SyntaxError: expected 'else' after 'if' expression
+_______________ ERROR collecting tests/unit/test_aspool_index.py _______________
+.venv/lib/python3.12/site-packages/_pytest/python.py:508: in importtestmodule
+    mod = import_path(
+.venv/lib/python3.12/site-packages/_pytest/pathlib.py:596: in import_path
+    importlib.import_module(module_name)
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    exec(co, module.__dict__)
+tests/unit/test_aspool_index.py:12: in <module>
+    from aspool.cli import cli
+src/aspool/cli.py:12: in <module>
+    from .free_stockdb import import_adjustments, import_daily, import_minutes, validate_period
+src/aspool/free_stockdb.py:17: in <module>
+    from .change_protocol import maintenance
+E     File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/change_protocol.py", line 587
+E       run["state"] = "partial_failure" if run.get("failed_operations") or run.get("observed_failure")
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   SyntaxError: expected 'else' after 'if' expression
+=========================== short test summary info ============================
+ERROR tests/unit/test_daily_remediation.py
+ERROR tests/unit/test_change_protocol.py
+ERROR tests/unit/test_aspool_pool.py
+ERROR tests/unit/test_aspool_performance.py
+ERROR tests/unit/test_aspool_index.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!!
+5 errors in 0.61s

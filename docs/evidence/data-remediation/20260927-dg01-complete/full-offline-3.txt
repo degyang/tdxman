@@ -1,0 +1,62 @@
+ss................................................................ [ 10%]
+........................................................................ [ 22%]
+........................................................................ [ 33%]
+........................................................................ [ 45%]
+............................................................ [ 55%]
+........................................................................ [ 66%]
+....................F................................................... [ 78%]
+........................................................................ [ 89%]
+.........................ss....................................          [100%]
+=================================== FAILURES ===================================
+__________ TestScopeFiltering.test_etf_excluded_even_without_universe __________
+
+self = <tests.unit.test_limit_events.TestScopeFiltering object at 0x7f0f6d6dcc80>
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_etf_excluded_even_without0')
+
+    def test_etf_excluded_even_without_universe(self, pool):
+>       _put(pool, "SH", "510050", [_bar(FRI, 3.0), _bar(MON, 3.1)], name="50ETF", asset_type="etf")
+
+tests/unit/test_limit_events.py:766: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_limit_events.py:94: in _put
+    record_coverage(
+src/aspool/store.py:189: in record_coverage
+    record_coverages(root, [(symbol, market, start, end, rows, source, period)])
+src/aspool/store.py:205: in record_coverages
+    coverage_change(conn, table,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+conn = <_duckdb.DuckDBPyConnection object at 0x7f0f5c8300b0>, table = 'coverage'
+columns = ['symbol', 'market', 'start_date', 'end_date', 'row_count', 'source', ...]
+values = ['510050', 'SH', datetime.date(2026, 5, 18), datetime.date(2026, 6, 9), 16, 'test', ...]
+keys = ['symbol'], reason = 'coverage_extent_refresh', force = False
+
+    def coverage_change(conn, table, columns, values, keys, *, reason, force=False):
+        """Journal derived extent/provenance metadata without changing business revisions.
+    
+        Caller owns the catalog transaction. Only these two existing coverage schemas
+        are accepted; this is not an arbitrary catalog mutation interface.
+        """
+        from .daily_storage import _same_values
+    
+        if table not in {"coverage", "index_coverage"}:
+            raise ValueError("Unsupported coverage schema")
+        incoming = dict(zip(columns, values))
+        if table == "coverage":
+            for key in ("start_date", "end_date"):
+                if isinstance(incoming[key], date) and not isinstance(incoming[key], datetime):
+                    incoming[key] = datetime.combine(incoming[key], datetime.min.time())
+>       cursor = conn.execute(
+            f"SELECT * FROM {table} WHERE " + " AND ".join(f"{k}=?" for k in keys),
+            [incoming[k] for k in keys],
+        )
+E       _duckdb.CatalogException: Catalog Error: Table with name coverage does not exist!
+E       Did you mean "universe"?
+E       
+E       LINE 1: SELECT * FROM coverage WHERE symbol=?
+E                             ^
+
+src/aspool/change_protocol.py:202: CatalogException
+=========================== short test summary info ============================
+FAILED tests/unit/test_limit_events.py::TestScopeFiltering::test_etf_excluded_even_without_universe
+1 failed, 616 passed, 4 skipped, 18 subtests passed in 149.19s (0:02:29)

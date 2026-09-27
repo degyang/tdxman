@@ -1,0 +1,76 @@
+ss....................E........................................... [ 10%]
+........................................................................ [ 22%]
+.............!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/store.py:82: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+Traceback (most recent call last):
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/docs/evidence/data-remediation/20260927-dg01-complete/run_offline.py", line 20, in <module>
+    args = sys.argv[1:] or ['tests/', '-q', '--basetemp=' + str(LAB / ('full-offline-' + uuid4().hex))]
+                     ^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 201, in main
+    return _main(args=args, plugins=plugins, prog="pytest.main()")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 229, in _main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
+    raise exception
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/main.py", line 377, in pytest_cmdline_main
+    return wrap_session(config, _main)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/main.py", line 365, in wrap_session
+    config.hook.pytest_sessionfinish(
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
+    raise exception
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    teardown.throw(exception)
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/logging.py", line 888, in pytest_sessionfinish
+    return (yield)
+            ^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    teardown.throw(exception)
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/terminal.py", line 961, in pytest_sessionfinish
+    result = yield
+             ^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    teardown.throw(exception)
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/warnings.py", line 119, in pytest_sessionfinish
+    return (yield)
+            ^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 112, in pytest_sessionfinish
+    session._setupstate.teardown_exact(None)
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 579, in teardown_exact
+    raise exceptions[0]
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 568, in teardown_exact
+    fin()
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/fixtures.py", line 1166, in finish
+    raise exceptions[0]
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/fixtures.py", line 1156, in finish
+    fin()
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/fixtures.py", line 1014, in _teardown_yield_fixture
+    next(it)
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/tmpdir.py", line 305, in tmp_path
+    result_dict = request.node.stash[tmppath_result_key]
+                  ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/lib/python3.12/site-packages/_pytest/stash.py", line 84, in __getitem__
+    return cast(T, self._storage[key])
+                   ~~~~~~~~~~~~~^^^^^
+KeyError: <_pytest.stash.StashKey object at 0x72a11db9ecc0>

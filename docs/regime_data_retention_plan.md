@@ -111,3 +111,9 @@ v7 导出约 2 MiB。此数字是旧文件体积上限，不是承诺的净释�
 清理必须与补数、重算分开记录，避免将数据修复造成的状态变化归因于删除报表。
 
 后续执行纳入 [数据整治落地推进方案](data_remediation_execution_plan.md) 的 DG-00、DG-04 和 DG-08；本文件继续保存逐对象保留依据，任务状态以推进方案为准。
+
+## DG-01 变更链的保留边界
+
+新增 `change-state/preparing/**`、`pending/**` 是未结准备/恢复依赖，不能按年龄删除；pending 缺必要对象会阻断公开读。`applied/**` 的 manifest/逐行旧新值证据与 catalog 内业务、coverage 元数据日志和逻辑序号共同构成变更链，snapshot/manifest 必须纳入 `change-state/**`。保留恢复点、活动任务及未结问题引用检查也应包括这条链；没有新增按天自动清理工具。
+
+协议自身仅在确定已提交、或确定 preparing 从未进入发布队列时释放冗余临时 redo，保留行证据与状态；这不是旧历史/恢复点退役，不保留每代完整冷历史。`reports/changes` 和任务 JSON 仍是观测，不独自构成事务恢复链；不能因 JSON 成功存在或连续若干日无错误而删准备/唯一来源证据。本轮不执行生产清理，具体故障与恢复语义见 [DG-01 实施报告](data_remediation_dg01_implementation.md)。

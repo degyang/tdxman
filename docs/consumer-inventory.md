@@ -16,6 +16,8 @@
 
 ## 写入入口与旁路
 
+下表保留 DG-00/首批调查时的问题，当前 DG-01 实施状态以末段与完整验收矩阵为准。
+
 | 入口 | 数据对象 | 协调 / 已确认问题 |
 |---|---|---|
 | `tdx_online._publish_stock_rows`（经 `_sync_daily_run` 发布锁调用） | 股票/ETF 日线 → `merge_daily`、coverage | 在线获取在锁外，发布受协调；已有 no-op 文件跳过 |
@@ -36,6 +38,14 @@
 
 `pool_lock` 使用池目录的共享/独占 flock；`@writer` 组合独占锁与 `catalog_session`。公开读取使用共享锁。网络获取通常位于锁外，但旧 free-stockdb 导入持锁包含获取，锁耗时需单独观测。
 
-Parquet 临时文件替换只保证单文件原子性；coverage、stale、其他文件和数据库不是同一个事务。失效应在实际变化已确定后、替换文件之前执行；替换失败可以保守留下 stale，不能留下“已改变但仍有效”的发布。多证券失败可能部分完成，报告必须区分成功、失败和未执行。
+Parquet 临时文件替换只保证单文件原子性，不能覆盖多文件或文件与数据库。DG-01 准备队列在替换前持久化，未决状态阻断公开读；coverage/stale/变更日志/内部修订在同一 catalog 事务提交，失败通过前滚恢复。准备但未替换的失败不凭空增加 stale。多证券失败可能部分完成，报告必须区分成功、失败和未执行。
 
 所有写入试验必须使用显式独立 root。复用会话/创建 worktree 不会改变默认 `~/.aspool`。本阶段没有在生产池运行上述维护入口。
+
+## DG-01 实施后的入口复核
+
+本轮完整 [入口/验收矩阵](data_remediation_dg01_implementation.md) 覆盖上表全部日线源类别及 coverage helper。merge/enrichment/online/offline/free-stockdb/quote/index 文件统一使用准备后前滚；BaoStock calendar/lifecycle/facts 和 universe 采用 catalog 内真实差异事务日志。snapshot 单独作为当前事实对象，空响应不创建/清空，业务无变化不刷新业务文件；抓取健康与 universe/生命周期 TTL 分开。目录遗漏不自动 inactive，通用行删除/停用/retract 拒绝，已有明确内部可选字段撤销语义另有测试。
+
+内部 helper 仍由调用者持写锁，持 `pool_lock(write=True)` 而没有 catalog_session 也支持，真实子进程回归防止 self-lock。裸独占锁不自动恢复；实际源 writer 才在开始阶段恢复 pending，恢复点工具拒绝未决源，不偷偷前滚。原来源报告关联 change_run_id，业务与覆盖元数据日志/修订分开。
+
+协调者确认显式 compute_limit_events 仍是强制重算入口；DG-01 健康 no-op 针对源更新/补齐及其自动调度，派生一致发布/依赖逻辑修订仍归 DG-05/06。分钟、复权、可审阅白名单配置及 Fundwise 本期不变；不把所有外部未部署脚本视为已经识别。

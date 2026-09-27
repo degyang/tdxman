@@ -1,0 +1,15 @@
+{
+  "session_id": "01a0e191-287e-7692-82af-bdc700ad362f",
+  "model": "gpt-6-sol",
+  "effort": "high",
+  "requested_model": "gpt-6-sol",
+  "requested_effort": "high",
+  "cwd": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract",
+  "task_id": "task_c544312049ac",
+  "dispatch_id": "ctx_85e33bd51354",
+  "worker_terminal": "term_53175c77-60be-4618-9acd-c8a2cbc3f787",
+  "verification": "Allowlisted session rollout turn_context; coordinator requested/effective confirmation msg_7911afa09b42",
+  "rollout": "/home/ubuntu/.codex/sessions/2026/09/27/rollout-2026-09-27T14-33-01-01a0e191-287e-7692-82af-bdc700ad362f.jsonl",
+  "subagents": 0,
+  "model_or_effort_changes": 0
+}

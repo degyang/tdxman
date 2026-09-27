@@ -1,0 +1,306 @@
+ss................................................................ [ 10%]
+..........FFFFFFF....................................................... [ 22%]
+........................................................................ [ 34%]
+........................................................................ [ 45%]
+............................................................ [ 55%]
+............F........................................................... [ 67%]
+........................................................................ [ 79%]
+........................................................................ [ 90%]
+..................ss....................................                 [100%]
+=================================== FAILURES ===================================
+__________ test_duplicate_daily_keys_rejected_before_window[11-None] ___________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje0')
+lookback = None, duplicate_day = 11
+
+    @pytest.mark.parametrize("lookback", [None, 1, 2])
+    @pytest.mark.parametrize("duplicate_day", [11, 16])
+    def test_duplicate_daily_keys_rejected_before_window(tmp_path, lookback, duplicate_day):
+        from aspool import DataPoolError
+    
+>       put(tmp_path, "000001", [bar(11), bar(16), bar(duplicate_day)])
+
+tests/unit/test_aspool_pool.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_aspool_pool.py:13: in put
+    _write_daily(root, "SZ", code, rows)
+src/aspool/change_protocol.py:742: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje0')
+market = 'SZ', symbol = '000001'
+rows = [{'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date...high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}]
+
+    @maintenance
+    def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
+        from .change_observation import iter_daily_changes
+        from .change_protocol import note_range, publish_file, recover
+        from .daily_storage import _same_values
+        from .store import daily_paths, daily_year_path
+    
+        if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+>           raise ValueError("Empty or duplicate complete daily replacement")
+E           ValueError: Empty or duplicate complete daily replacement
+
+src/aspool/free_stockdb.py:140: ValueError
+____________ test_duplicate_daily_keys_rejected_before_window[11-1] ____________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje1')
+lookback = 1, duplicate_day = 11
+
+    @pytest.mark.parametrize("lookback", [None, 1, 2])
+    @pytest.mark.parametrize("duplicate_day", [11, 16])
+    def test_duplicate_daily_keys_rejected_before_window(tmp_path, lookback, duplicate_day):
+        from aspool import DataPoolError
+    
+>       put(tmp_path, "000001", [bar(11), bar(16), bar(duplicate_day)])
+
+tests/unit/test_aspool_pool.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_aspool_pool.py:13: in put
+    _write_daily(root, "SZ", code, rows)
+src/aspool/change_protocol.py:742: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje1')
+market = 'SZ', symbol = '000001'
+rows = [{'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date...high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}]
+
+    @maintenance
+    def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
+        from .change_observation import iter_daily_changes
+        from .change_protocol import note_range, publish_file, recover
+        from .daily_storage import _same_values
+        from .store import daily_paths, daily_year_path
+    
+        if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+>           raise ValueError("Empty or duplicate complete daily replacement")
+E           ValueError: Empty or duplicate complete daily replacement
+
+src/aspool/free_stockdb.py:140: ValueError
+____________ test_duplicate_daily_keys_rejected_before_window[11-2] ____________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje2')
+lookback = 2, duplicate_day = 11
+
+    @pytest.mark.parametrize("lookback", [None, 1, 2])
+    @pytest.mark.parametrize("duplicate_day", [11, 16])
+    def test_duplicate_daily_keys_rejected_before_window(tmp_path, lookback, duplicate_day):
+        from aspool import DataPoolError
+    
+>       put(tmp_path, "000001", [bar(11), bar(16), bar(duplicate_day)])
+
+tests/unit/test_aspool_pool.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_aspool_pool.py:13: in put
+    _write_daily(root, "SZ", code, rows)
+src/aspool/change_protocol.py:742: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje2')
+market = 'SZ', symbol = '000001'
+rows = [{'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date...high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}]
+
+    @maintenance
+    def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
+        from .change_observation import iter_daily_changes
+        from .change_protocol import note_range, publish_file, recover
+        from .daily_storage import _same_values
+        from .store import daily_paths, daily_year_path
+    
+        if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+>           raise ValueError("Empty or duplicate complete daily replacement")
+E           ValueError: Empty or duplicate complete daily replacement
+
+src/aspool/free_stockdb.py:140: ValueError
+__________ test_duplicate_daily_keys_rejected_before_window[16-None] ___________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje3')
+lookback = None, duplicate_day = 16
+
+    @pytest.mark.parametrize("lookback", [None, 1, 2])
+    @pytest.mark.parametrize("duplicate_day", [11, 16])
+    def test_duplicate_daily_keys_rejected_before_window(tmp_path, lookback, duplicate_day):
+        from aspool import DataPoolError
+    
+>       put(tmp_path, "000001", [bar(11), bar(16), bar(duplicate_day)])
+
+tests/unit/test_aspool_pool.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_aspool_pool.py:13: in put
+    _write_daily(root, "SZ", code, rows)
+src/aspool/change_protocol.py:742: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje3')
+market = 'SZ', symbol = '000001'
+rows = [{'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date...high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date(2026, 9, 16), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}]
+
+    @maintenance
+    def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
+        from .change_observation import iter_daily_changes
+        from .change_protocol import note_range, publish_file, recover
+        from .daily_storage import _same_values
+        from .store import daily_paths, daily_year_path
+    
+        if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+>           raise ValueError("Empty or duplicate complete daily replacement")
+E           ValueError: Empty or duplicate complete daily replacement
+
+src/aspool/free_stockdb.py:140: ValueError
+____________ test_duplicate_daily_keys_rejected_before_window[16-1] ____________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje4')
+lookback = 1, duplicate_day = 16
+
+    @pytest.mark.parametrize("lookback", [None, 1, 2])
+    @pytest.mark.parametrize("duplicate_day", [11, 16])
+    def test_duplicate_daily_keys_rejected_before_window(tmp_path, lookback, duplicate_day):
+        from aspool import DataPoolError
+    
+>       put(tmp_path, "000001", [bar(11), bar(16), bar(duplicate_day)])
+
+tests/unit/test_aspool_pool.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_aspool_pool.py:13: in put
+    _write_daily(root, "SZ", code, rows)
+src/aspool/change_protocol.py:742: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje4')
+market = 'SZ', symbol = '000001'
+rows = [{'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date...high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date(2026, 9, 16), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}]
+
+    @maintenance
+    def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
+        from .change_observation import iter_daily_changes
+        from .change_protocol import note_range, publish_file, recover
+        from .daily_storage import _same_values
+        from .store import daily_paths, daily_year_path
+    
+        if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+>           raise ValueError("Empty or duplicate complete daily replacement")
+E           ValueError: Empty or duplicate complete daily replacement
+
+src/aspool/free_stockdb.py:140: ValueError
+____________ test_duplicate_daily_keys_rejected_before_window[16-2] ____________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje5')
+lookback = 2, duplicate_day = 16
+
+    @pytest.mark.parametrize("lookback", [None, 1, 2])
+    @pytest.mark.parametrize("duplicate_day", [11, 16])
+    def test_duplicate_daily_keys_rejected_before_window(tmp_path, lookback, duplicate_day):
+        from aspool import DataPoolError
+    
+>       put(tmp_path, "000001", [bar(11), bar(16), bar(duplicate_day)])
+
+tests/unit/test_aspool_pool.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_aspool_pool.py:13: in put
+    _write_daily(root, "SZ", code, rows)
+src/aspool/change_protocol.py:742: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_daily_keys_reje5')
+market = 'SZ', symbol = '000001'
+rows = [{'trade_date': datetime.date(2026, 9, 11), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date...high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date(2026, 9, 16), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}]
+
+    @maintenance
+    def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
+        from .change_observation import iter_daily_changes
+        from .change_protocol import note_range, publish_file, recover
+        from .daily_storage import _same_values
+        from .store import daily_paths, daily_year_path
+    
+        if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+>           raise ValueError("Empty or duplicate complete daily replacement")
+E           ValueError: Empty or duplicate complete daily replacement
+
+src/aspool/free_stockdb.py:140: ValueError
+____________ test_duplicate_check_respects_date_and_symbol_filters _____________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_check_respects_0')
+
+    def test_duplicate_check_respects_date_and_symbol_filters(tmp_path):
+>       put(tmp_path, "000001", [bar(10), bar(10), bar(11), bar(16), bar(16)])
+
+tests/unit/test_aspool_pool.py:153: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_aspool_pool.py:13: in put
+    _write_daily(root, "SZ", code, rows)
+src/aspool/change_protocol.py:742: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_check_respects_0')
+market = 'SZ', symbol = '000001'
+rows = [{'trade_date': datetime.date(2026, 9, 10), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date...high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date(2026, 9, 16), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}]
+
+    @maintenance
+    def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
+        from .change_observation import iter_daily_changes
+        from .change_protocol import note_range, publish_file, recover
+        from .daily_storage import _same_values
+        from .store import daily_paths, daily_year_path
+    
+        if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+>           raise ValueError("Empty or duplicate complete daily replacement")
+E           ValueError: Empty or duplicate complete daily replacement
+
+src/aspool/free_stockdb.py:140: ValueError
+_______________________ test_duplicate_bar_key_is_error ________________________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_bar_key_is_erro0')
+
+    def test_duplicate_bar_key_is_error(tmp_path):
+>       _seed(tmp_path, duplicate=True)
+
+tests/unit/test_limit_amount.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_limit_amount.py:23: in _seed
+    _write_daily(root, "SZ", "000001", rows)
+src/aspool/change_protocol.py:742: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/full-offline/test_duplicate_bar_key_is_erro0')
+market = 'SZ', symbol = '000001'
+rows = [{'trade_date': datetime.date(2026, 9, 23), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}, {'trade_date': datetime.date(2026, 9, 23), 'open': 10.0, 'high': 11.0, 'low': 9.0, ...}]
+
+    @maintenance
+    def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
+        from .change_observation import iter_daily_changes
+        from .change_protocol import note_range, publish_file, recover
+        from .daily_storage import _same_values
+        from .store import daily_paths, daily_year_path
+    
+        if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+>           raise ValueError("Empty or duplicate complete daily replacement")
+E           ValueError: Empty or duplicate complete daily replacement
+
+src/aspool/free_stockdb.py:140: ValueError
+=========================== short test summary info ============================
+FAILED tests/unit/test_aspool_pool.py::test_duplicate_daily_keys_rejected_before_window[11-None]
+FAILED tests/unit/test_aspool_pool.py::test_duplicate_daily_keys_rejected_before_window[11-1]
+FAILED tests/unit/test_aspool_pool.py::test_duplicate_daily_keys_rejected_before_window[11-2]
+FAILED tests/unit/test_aspool_pool.py::test_duplicate_daily_keys_rejected_before_window[16-None]
+FAILED tests/unit/test_aspool_pool.py::test_duplicate_daily_keys_rejected_before_window[16-1]
+FAILED tests/unit/test_aspool_pool.py::test_duplicate_daily_keys_rejected_before_window[16-2]
+FAILED tests/unit/test_aspool_pool.py::test_duplicate_check_respects_date_and_symbol_filters
+FAILED tests/unit/test_limit_amount.py::test_duplicate_bar_key_is_error - Val...
+8 failed, 602 passed, 4 skipped, 18 subtests passed in 136.02s (0:02:16)
