@@ -25,7 +25,7 @@ Run：`run_e72d464ad133`。两个独立 worktree 解决并行代码修改冲突�
 
 ## 验收状态
 
-两任务已开始执行，尚未验收。不会将候选生成、stale 清零或单项查询提速单独等同于 DG-03/DG-04 完成。最终记录需要提交对应关系、完整负载原始样本、逐案数据处置、实际发布与消费结果，以及仍未独立证明的字段。
+DG-04 已验收并合并推送 main（`936b566`），DG-03 正在完成增长、更新与恢复试验。不会将候选生成、stale 清零或单项查询提速单独等同于 DG-03/DG-04 完成。最终记录需要提交对应关系、完整负载原始样本、逐案数据处置、实际发布与消费结果，以及仍未独立证明的字段。
 
 ### 已接受的过程检查点
 
@@ -49,7 +49,7 @@ DG-04 于 `2026-09-27T10:04:35Z` 完成当前源核验：catalog/lake/change-sta
 
 ### 完整候选读取与第二批修复审查
 
-DG-03 首次完整核验保存 40 个原始字段、17,862,387 行及 19 张 catalog 表；实际候选五年事件迭代器读取 82,772 行、258 批，最大批次 1,004 行、无缺失金额，抽核原 Parquet 33 个金额。峰值 RSS 222,425,088 字节（212.12 MiB），29.107 秒；完成/关闭和临时目录清理通过。对应 `5cd370d` 及实验根 `events.log`，协调者读取结果后未重跑。该时段存在其他隔离维护/来源核验，耗时不解读为无竞争 SLA；实际进程 RSS 和有界读取结果仍为有效观测。
+DG-03 首次完整核验保存 40 个原始字段、17,862,387 行及 18 张原 catalog 表（以 `parity.log` 的逐表集合为准）；实际候选五年事件迭代器读取 82,772 行、258 批，最大批次 1,004 行、无缺失金额，抽核原 Parquet 33 个金额。峰值 RSS 222,425,088 字节（212.12 MiB），29.107 秒；完成/关闭和临时目录清理通过。对应 `5cd370d` 及实验根 `events.log`，协调者读取结果后未重跑。该时段存在其他隔离维护/来源核验，耗时不解读为无竞争 SLA；实际进程 RSS 和有界读取结果仍为有效观测。
 
 初版单证券组合过滤扫描 17,862,387 行，60 日读取约 1.76 秒花在 Pandas 字段覆盖。候选新增 SQL 覆盖与证券索引有界临时关系，试验月内按证券排序；相关 10 项小测，以及三个 60 日全 35 字段窗口、单证券、ETF、指数的字段/元数据精确比对已接受。60 日读取观测约 0.74 秒，增长、连续维护与完整进程恢复尚待实际执行。旧版本的完整等值仅支持旧源码，新路径使用本次有影响的验证，不能混淆源码对应关系。
 
@@ -68,3 +68,12 @@ DG-04 对新取得的独立资料形成 2,506 条可选字段/日期事实补数
 独立复审读取实际权威 ledger、完整初始前序及最新 812 个恢复增量对象（997,684,831 字节）后，明确批准最终计划 `36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5`。计划绑定同一实际输入、4,372 项前序签名和本轮源码，见[复审定稿](evidence/data-remediation/20260927-dg04-gate-review/tdxman-dg04-gate-followup-review.md)与[实际绑定核对](evidence/data-remediation/20260927-dg04-gate-review/actual-publication-gate-result.json)。复审任务成功结案并已 release，归档 transcript。
 
 协调者签发[最终发布批准](evidence/data-remediation/20260927-dg04-gate-review/coordinator-publication-approval.json)，放行 1,213 日（2021-09-24～2026-09-24），每批最多 256 日，共 5 批顺序执行。运行源码为 `9308d55`，`13d627c` 新增测试、`4bb7484` 仅补数文档证据，不改变运行实现。首批实际 `11:08:07.483057Z`～`11:10:09.618288Z` 完成 256 日，122.14 秒、峰值 RSS 642.77 MiB，无错误；后续发布及实际消费尚待全部完成后验收，不以首批成功宣告任务完成。
+
+
+### DG-04 最终验收与集成
+
+Agent 最终提交 `75442bdea5670646f7f197c7ee5b21714c4cd39c`，成功结案消息 `msg_408ca0376e20`。协调者读取并接受[实施报告](data_remediation_dg04_implementation.md)、[执行源码与验证绑定](evidence/data-remediation/20260927-dg04/final-validation-linkage.json)、[实际发布回执](evidence/data-remediation/20260927-dg04/production-publication-execution.json)和[生产核验摘要](evidence/data-remediation/20260927-dg04/production-validation-summary.json)。五批共 1,213 日全部完成、pending=NULL，目标及全池 stale=0；发布进程累计 673.41 秒，峰值 RSS 706.17 MiB。实际产物包括 170,845 events、15,664 exceptions、1,019 gap states、115 IPO boundaries；四个真实证券的 224 events/7 exceptions/5 gaps/2 boundaries 与固定输入保守参考精确一致。目标内 derived references=0，健康前缀及非空专项证据另列，不虚称目标非空参考已验证。
+
+[Fundwise 实际窗口](evidence/data-remediation/20260927-dg04/fundwise-window-validation.json)在未修改源码、隔离缓存上完成 22 个会话、354,337 投影行、1,400 涨停事件，金额无缺失，耗时 39.39 秒、RSS 1,425.96 MiB。22 日仍为 partial，阶段分类确实执行但因必要驱动未知返回 unknown；完整主线排名未运行。现存真实板块缓存超过 24 小时有效门槛，没有伪造时间或联网刷新；[管线边界证据](evidence/data-remediation/20260927-dg04/fundwise-pipeline-boundary.json)将新鲜日期成分快照及真实排名联调列为 DG-07 依赖。
+
+合并提交 `936b566` 已推送 main 及 feature 分支。仅解决任务状态文档冲突，五个 Python 实现/测试文件与 agent 最终提交零差异；没有重复成功测试、旧 P0 或恢复演练。Agent 结案后立即请求 release；Orca 返回 `state=retained, reason=user_takeover, processAction=none`，保护已被用户接管的终端，不以强制关闭绕过该边界。工作区作为已合并分支与证据保留，不再是等待使用的任务空壳。
