@@ -1,0 +1,11 @@
+{
+  "tested_implementation_commit": "9308d5509ed0b0f378b94a098e0ea8b5357f65ff",
+  "implementation_sha256": "3fed8f0f39d899d74782c4cd4fa209ec2548045c027af01e4da84513278a0d9b",
+  "test_sha256": "7b16f38c483aa3fc6d5b3b6723983d10cbc0ebb3b1c99adfbf8c8dc98d0ae76c",
+  "command": ".venv/bin/pytest tests/unit/test_remediation_publication.py -k nonempty_initial_prior_normal_resume_and_between_batch_drift -q",
+  "result": "2 passed,14 deselected in2.99s",
+  "normal": "Initial prior height2; max_days1 then max_days2 preserves heights3/4/5",
+  "drift": "Original predecessor changed between batches to99; refusal before new stale/publication/checkpoint mutation",
+  "prior_regressions": "14 successful tests reused, not rerun",
+  "conditional_publication": "No producer source code changed since9308; tests/docs only"
+}

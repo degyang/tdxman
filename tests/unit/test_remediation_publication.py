@@ -301,3 +301,79 @@ def test_frozen_initial_predecessor_refuses_drift_before_any_write(setup, tmp_pa
             publications
             == conn.execute("SELECT * FROM daily_limit_publication ORDER BY ALL").fetchall()
         )
+
+
+@pytest.mark.parametrize("drift", [False, True])
+def test_nonempty_initial_prior_normal_resume_and_between_batch_drift(setup, tmp_path, drift):
+    root, days, _, _, _ = setup
+    warmup = [days[0] - timedelta(days=i) for i in range(10, 0, -1)]
+    merge_daily(
+        root,
+        "SZ",
+        "000001",
+        [
+            dict(
+                trade_date=d,
+                symbol="000001",
+                open=10.0,
+                high=10.0,
+                low=10.0,
+                close=10.0,
+                pre_close=10.0,
+                is_st=False,
+                volume=100.0,
+                amount=1000.0,
+            )
+            for d in warmup
+        ],
+        "test",
+    )
+    with catalog(root) as conn:
+        conn.executemany(
+            "INSERT INTO security_calendar VALUES (?,true,'test')", [(d,) for d in warmup]
+        )
+        conn.execute(
+            "INSERT INTO security_lifecycle VALUES ('000001.SZ',?,NULL,'NORMAL','test',now())",
+            [warmup[0]],
+        )
+    limits.compute_limit_events(root, [warmup[-1], days[1]])
+    from aspool.remediation import prior_state
+
+    assert prior_state(root, days[2], ["000001.SZ"])["000001.SZ"][2] == 2
+    manifest = tmp_path / "resume-recovery.json"
+    manifest.write_text("{}")
+    target, state = tmp_path / "resume-plan.json", tmp_path / "resume-state.json"
+    plan(root, days[2], days[-1], manifest, target)
+    assert execute(target, state, max_days=1)["next"] == 1
+    if drift:
+        with catalog(root) as conn:
+            conn.execute(
+                "UPDATE daily_limit_events SET consecutive_up=99 WHERE trade_date=?", [days[1]]
+            )
+            stale_before = conn.execute(
+                "SELECT * FROM daily_limit_staleness ORDER BY ALL"
+            ).fetchall()
+            pub_before = conn.execute(
+                "SELECT * FROM daily_limit_publication ORDER BY ALL"
+            ).fetchall()
+        state_before = state.read_bytes()
+        with pytest.raises(ValueError, match="predecessor state changed"):
+            execute(target, state, max_days=2)
+        assert state.read_bytes() == state_before
+        with catalog(root) as conn:
+            assert (
+                stale_before
+                == conn.execute("SELECT * FROM daily_limit_staleness ORDER BY ALL").fetchall()
+            )
+            assert (
+                pub_before
+                == conn.execute("SELECT * FROM daily_limit_publication ORDER BY ALL").fetchall()
+            )
+    else:
+        assert execute(target, state, max_days=2)["next"] == 3
+        with catalog(root) as conn:
+            query = (
+                "SELECT consecutive_up FROM daily_limit_events "
+                "WHERE trade_date>=? ORDER BY trade_date"
+            )
+            assert [row[0] for row in conn.execute(query, [days[2]]).fetchall()] == [3, 4, 5]

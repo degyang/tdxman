@@ -53,3 +53,7 @@
 这 2,506 条尚未写生产。隔离演练产生 2,726 条 raw/派生真实变化及 2,461 条日期事实变化；45 条日期事实为无业务变化，不刷新 fetched_at。**519,796 条既有 OHLCV 与日期键逐字段保持不变**，额外 row 变化为既有可选字段/派生依赖，无新增原始行。逐项差值、字段及来源文件 SHA 保留在实验目录 `base-gap-dispositions.json` / `base-gap-payload.json` / `production-base-gap-plan.json`，不把 raw 数据提交 Git。该补充必须独立通过精确 plan/source/recovery gate；通过后最终发布后缀为 2021-09-24～2026-09-24 共 1,213 日，否则仍为原 1,124 日，不先假定获批。
 
 为保护已完成的第一阶段新数据，保留 `recovery-after-initial-repair/` 与 `recovery-after-initial-manifest.json`：在只读锁及无 WAL/pending 条件下，复制并逐对象核验当前 catalog、30 个改变的日线文件及全部 change-state，共 77 对象、942,644,782 字节。此 delta 与原 DG-00 不变快照叠加，覆盖 post-initial-repair 水位；原 snapshot 和 reports 未改。恢复说明要求普通复制原快照到独立目录后 overlay delta，不能用旧快照覆盖后续已写入数据。原快照的已通过全量恢复演练继续复用，本项是新增当前状态的对象核验，尚不称完整新灾备演练或 RTO 达标。
+
+独立复审另要求证明“非空初始前史”的正常续跑与两批之间原前史漂移。仅新增并运行这两个案例：初始板数 2 经 max_days=1、max_days=2 两批得到 3/4/5；两批间将原前史改为 99，执行在任何新增 stale/发布/checkpoint 前拒绝。**2 passed、14 deselected，2.99 秒**；14 项通过证据复用，生产执行源码仍为 `9308d55`，只增测试与文档。此前三日与边界测试的 initial prior 为空，不能把它们单独当非空 initial prior 续跑证明。
+
+新增基础字段演练不是性能验收；DG-03 当时持有性能槽位，存在资源重叠，不能标为无争用样本。可靠的持久变更时间范围为 UTC 10:40:25.697004～10:41:32.091206，445 个变更操作；精确进程启动/退出与完整 inventory 起止没有提前埋点，只能用源变更及产物时间给诊断边界，不补造测量值。详见 `supplement-resource-timing.json`。后续生产维护和消费验证需使用协调者明确交还的槽位，并从启动时记录真实 UTC 起止及资源。
