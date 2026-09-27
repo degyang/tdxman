@@ -298,6 +298,42 @@
       ],
       "model_verification": "Initial requested/effective equal; reused exact process and TUI same model/high; reuse does not select a new model",
       "readiness_recovery": "READY probe succeeded; terminal switch; tui-idle satisfied; same terminal retry input accepted and turn_start observed"
+    },
+    {
+      "phase": "DG-03 monthly fallback independent review",
+      "taskId": "task_a2bb0a670f92",
+      "dispatchId": "ctx_6f47249c6704",
+      "terminal": "term_5a2e4765-5410-4fa5-aeef-3d8d2a689bd1",
+      "state": "ready",
+      "stage": "input_accepted",
+      "turnStart": "observed",
+      "launch": {
+        "requested": {
+          "agent": "codex",
+          "model": "gpt-6-astra",
+          "effort": "high"
+        },
+        "effective": {
+          "agent": "codex",
+          "model": "gpt-6-astra",
+          "effort": "high"
+        }
+      },
+      "processIncarnation": "a0d94d0d-ba1b-4cbc-8dae-cf822c3bb1ff",
+      "scope": "Read-only contract and recovery review; no tests, database connections, heavy operations or source changes.",
+      "outcome": "succeeded",
+      "worker_done": "msg_e670ae5572a9",
+      "cleanup": {
+        "state": "released",
+        "processAction": "closed_agent_terminal",
+        "archive": "transcript captured"
+      },
+      "review_report": "../20260927-dg03-monthly-review/review.md",
+      "findings": {
+        "P1": 2,
+        "P2": 2,
+        "owner_closure": "pending"
+      }
     }
   ],
   "dg04_followup_review": {

@@ -94,3 +94,12 @@ Agent 最终提交 `75442bdea5670646f7f197c7ee5b21714c4cd39c`，成功结案消�
 5× 全市场新增仍在 SQL 1 GB COMMIT 失败；随后 ROLLBACK 因事务已终止而掩盖原始 pin OOM，原 owner 将修复错误保真并补失败后状态核对。禁止拆开 `apply` 改变整组原子性、去掉主键/索引或提高预算。此失败阻止当前单全局 DuckDB 表成为生产架构，不能标为全负载已验收。
 
 协调者通过 `msg_ade55d57c6af` 回答原任务的 `msg_12b26250209c`：按任务卡进入完整 42 列月 Parquet 备选，原类型/键及 catalog 约束、同 35 字段读取、1×/2×/5× 冷月份、热点月更新/no-op、锁和恢复发布成本；1 线程、SQL 1 GB、RSS 3 GiB 守卫，预计额外 30～60 GB。若复制冷月份作压力，明确物理复制与逻辑日期映射，不将同日期重复伪装成长历史。只在隔离实验根运行；原 DuckDB 更多证券/恢复/bounds 也须收尾，已有原始逐值/P0/恢复成功证据不重复。最终选型及所有剩余门槛仍待真实备选结果。
+
+
+### 月度备选独立审查与失败状态核实
+
+`97fd0ef` 保留原始 COMMIT 错误，新增事务已自动终止的局部验证通过。实际失败的 5× 库与 prepared 输入对照：raw 仍为 89,311,935 行、新日期零行；facts/coverage/stale/revision/audit 差异均为零，没有半提交。完整原生 catalog 恢复已实测 before/after COMMIT SIGKILL、原生锁冲突、四种受控 flock 时序和六次顺序 writer 提交；4,881,295,773 字节副本恢复逐字节一致，12.11 秒。完整 42 列增长扫描也已完成；这些结果接受 agent 证据，不在协调层重跑。
+
+月度草稿独立审查 `task_a2bb0a670f92 / ctx_6f47249c6704` 实际请求/生效为 Astra/high，启动 ready、turnStart observed。见[绑定源码哈希的只读报告](evidence/data-remediation/20260927-dg03-monthly-review/review.md)。审查未运行测试、连接数据池或改动 tracked 文件；发现跨月删除 coverage 丢失及事件金额仍绑定全局表两项 P1、ETF 错误包装及混合批次重写无变化月份两项 P2。全部交由原 owner 修复，新增对应局部证据及真实月度发布恢复验证待验收；完整 catalog 拷贝费用、绝对路径恢复与孤儿文件边界必须披露。
+
+审查成功结案消息 `msg_e670ae5572a9` 已接受，随后立即 release：`state=released, processAction=closed_agent_terminal`，transcript captured。审查完成不等于实现验收，也没有批准生产切换。
