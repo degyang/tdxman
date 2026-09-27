@@ -19,8 +19,8 @@
 | --- | --- | --- | --- |
 | S0 | 需求交叉审核、修正、工作包 | 本轮[审核记录](sqlite_design_review.md)；区分设计通过与待实证事项 | 本轮完成 |
 | S1 | 四表存储核心、规范化、兼容日线读取 | FW-01；仅显式隔离目标 | 隔离 schema/连接已实现，公开读路由待接入 |
-| **S3a 提前** | **完整历史原始事实迁移** | FW-02；先样本后全量，原始日线/日期事实/全部来源事件因子逐字段对账 | 事实迁移已启动，不等待Regime扩展；结论以执行证据为准 |
-| **M0 开发数据** | **其他 VPS 可获取迁入事实与必要公共域** | 封闭工件同步、远端完整性与基础读取；tmux保护任务 | 已准备JakartaVPS环境，数据复制和校验按执行证据交付 |
+| **S3a 提前** | **完整历史原始事实迁移** | FW-02；先样本后全量，原始日线/日期事实/全部来源事件因子逐字段对账 | 已完成全部5,586只股票事实迁移、逐值比较和完整性校验；见[M0执行记录](sqlite_migration_m0_execution.md) |
+| **M0 开发数据** | **其他 VPS 可获取迁入事实与必要公共域** | 封闭工件同步、远端完整性与基础读取；tmux保护任务 | 已完成JakartaVPS数据复制与哈希/结构/计数/读取验收；完整性复用源端结果；见[M0执行记录](sqlite_migration_m0_execution.md) |
 | **S2-D** | **逐股派生 + 日频市场汇总** | FW-03；从已迁入事实重建 daily_features、D汇总，局部更新等价参考重建 | 待实施，接S3a |
 | **S4-D** | **对外接口 + Fundwise日频接入** | FW-04/FW-05；环境评分、周期/梯队、主线一并闭环 | 待实施，接S2-D；接口骨架可提前 |
 | S5-D | 首个可交付工作流和生产前核心验收 | FW-06；实际日更/历史回算/补数、五年RSS、故障/恢复/回退 | 待实施 |
@@ -59,12 +59,12 @@ MA20 结果缓存在 daily_features 的两个列；局部重算按最近 20 根�
 
 ## 4. 外部 ops 的职责
 
-拟新增 `scripts/ops/` 下的入口（尚未实现；迁移入口优先随FW-02交付）：
+`scripts/ops/` 下的入口状态：
 
-- `migrate_stocks_sqlite.py --source-root ... --target-root ...`：只迁到显式新目标，支持显式 facts/derived/verify 阶段：先迁入全部历史事实，逐股与日汇总计算就绪后有界回填派生；输出键/字段差异、未解决来源问题和计数。
-- `rebuild_stock_derived.py --root ... --start ... --end ...`：明确范围的历史规则重算；整史模式只允许在这里，需协调停写及受影响消费者。
-- `verify_stock_migration.py --source-root ... --target-root ...`：原始字段/公开读语义与新统计分别验证，不把旧批次整套带入新库。
-- `backup_restore_stocks.py`：正确备份 SQLite、校验恢复、新库切换后增量导出与必要反向应用；备份不靠复制活跃单个 sqlite 文件。
+- `migrate_stocks_sqlite.py --source-root ... --target-root ...`：事实阶段已实现，只迁到显式新目标，支持同源/同实现断点继续；输出字段差异、未解决来源问题和计数。派生有界回填由后续 ops 实现，不把规划阶段参数当作现有 CLI。
+- `rebuild_stock_derived.py --root ... --start ... --end ...`（待实现）：明确范围的历史规则重算；整史模式只允许在这里，需协调停写及受影响消费者。
+- `verify_stock_migration.py --target-root ... [--report ...]`：封闭事实工件校验已实现，检查SHA-256、schema/索引、完整性、计数和读取样例；源字段逐值比较由迁移过程完成。公开读语义与新统计随FW-03/04分别验证。
+- `backup_restore_stocks.py`（待实现）：正确备份 SQLite、校验恢复、新库切换后增量导出与必要反向应用；备份不靠复制活跃单个 sqlite 文件。
 
 迁移进度、源 manifest、日志和恢复材料保存外部文件，不在 stocks.sqlite 新建任务表、audit 表或 publication 表。源快照发生变化就明确重新计划迁移或按外部差异追平，不把迁移检查塞进正常日更。
 
@@ -144,7 +144,7 @@ v3 不制造 batch_id/stale=False 来欺骗旧消费者。旧应用在旧后端�
 
 主路径：`FW-01 → FW-02 → FW-03 → FW-04 → FW-05 → FW-06（M1） → FW-07`。FW-04 的契约/读实现、FW-05 的消费者适配可对接固定样例提前推进，但只有接入真实迁入数据才计完成。FW-03 内按“因子/参考价 → 限价/连板/MA20 → D汇总 → 局部writer → 历史回填”组织审查小提交，最后必须做一次集成闭环验证。
 
-提交按实际包交付，不一次性堆成大PR：`storage: add SQLite stock store`、`migration: import stock facts`、`derived: compute daily stock features`、`api: expose SQLite daily summaries`、Fundwise仓库的`regime: consume aspool daily features`，后续包单独提交。跨仓库发布记录绑定 tdxman/Fundwise 的具体提交与API契约；本轮仅制定顺序，没有创建提交或推送。
+提交按实际包交付，不一次性堆成大PR：`storage: add SQLite stock store`、`migration: import stock facts`、`derived: compute daily stock features`、`api: expose SQLite daily summaries`、Fundwise仓库的`regime: consume aspool daily features`，后续包单独提交。跨仓库发布记录绑定 tdxman/Fundwise 的具体提交与API契约；实现与事实迁移提交 `0191721` 已推送；后续按实际完成包继续提交，见[M0执行记录](sqlite_migration_m0_execution.md)。
 
 ## 10. 首个里程碑 M1：先支撑 Fundwise
 
@@ -163,7 +163,7 @@ W/M、多模型扩展与跨设备复制仍属于最终承诺；它们不作为M1
 
 ## 11. 启动边界与证据复用
 
-下一步具体开始 **FW-01 + FW-02迁移适配**，先在主项目 data/_staging/fw02 验证一组代表样本，再做冻结源事实迁移；不先安装复制服务，也不先重构所有评分模型。规则提取及Fundwise接口准备紧接推进。
+FW-01最小存储核心和FW-02冻结源事实迁移已落地；完成M0异机数据验收后，下一步执行 **FW-03日频派生闭环**，按因子/参考价、限价/连板/MA20、日汇总、局部writer、历史回填推进；公开读取和Fundwise接入紧随其后。
 
 本轮无待用户决定的业务口径阻塞；源数据冲突、性能和部署参数属于各工作包必须实证关闭的门槛，不等同于已经通过。真实VPS地址/认证/设备角色/同步窗口在FW-09部署前确认，隔离开发无需等待。
 
