@@ -2,16 +2,17 @@
   "symbols": [
     "000723.SZ",
     "001236.SZ",
+    "001317.SZ",
     "002385.SZ"
   ],
   "days": 1296,
   "counts": {
-    "events": 134,
-    "exceptions": 1,
-    "gaps": 0,
-    "boundaries": 1,
+    "events": 233,
+    "exceptions": 7,
+    "gaps": 5,
+    "boundaries": 2,
     "references": 166
   },
-  "seconds": 0.4984253149959841,
+  "seconds": 0.5713578919967404,
   "source": "repaired isolated source; conservative per-symbol sequential kernel on complete market/calendar axis"
 }

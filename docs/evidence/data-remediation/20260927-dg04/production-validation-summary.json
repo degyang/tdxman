@@ -1,0 +1,49 @@
+{
+  "stale_target": 0,
+  "stale_total": 0,
+  "sessions": 1213,
+  "component_counts": {
+    "daily_limit_batches": 1213,
+    "daily_limit_scope": 6239234,
+    "daily_limit_summary": 1213,
+    "daily_limit_events": 170845,
+    "daily_limit_exceptions": 15664,
+    "daily_limit_references": 0,
+    "daily_limit_gap_states": 1019,
+    "daily_limit_streak_boundaries": 115
+  },
+  "count_mismatches": 0,
+  "summary_batch_mismatches": 0,
+  "summary_event_mismatches": 0,
+  "component_outside_scope": {
+    "daily_limit_events": 0,
+    "daily_limit_exceptions": 0,
+    "daily_limit_references": 0,
+    "daily_limit_gap_states": 0,
+    "daily_limit_streak_boundaries": 0
+  },
+  "reference_bases": {},
+  "missing_open_sessions": 0,
+  "conservative_boundary_checks": {
+    "events": 224,
+    "exceptions": 7,
+    "gap_states": 5,
+    "boundaries": 2
+  },
+  "repair_inventory_matches": true,
+  "compute_input_matches": true,
+  "public_join_rows": 1213,
+  "plan_id": "36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5",
+  "source": "ddd0c37c09a299c8addaf9e4f09ba6928178079f1ced11f960b463018ab1e44b",
+  "checked_implementation_commit": "9308d5509ed0b0f378b94a098e0ea8b5357f65ff",
+  "new_gate_tests_commit": "13d627c2d71dd73cf139f49b23448552469295f7",
+  "start": "2021-09-24",
+  "end": "2026-09-24",
+  "exception_kind_counts": {
+    "INVALID": 17,
+    "NO_LIMIT": 4347,
+    "UNKNOWN": 11300
+  },
+  "raw_cases_external": true,
+  "reference_limitation": "No derived references in target1213sessions; nonempty166references in healthy preceding prefix checked via conservative per-symbol reference and synthetic reference test, neither implies independent certification of whole pool."
+}
