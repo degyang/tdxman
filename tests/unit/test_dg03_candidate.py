@@ -321,6 +321,11 @@ def test_all_null_string_dtype_compatibility(candidate):
         "name",
         pa.array([None] * len(table), type=pa.string()),
     )
+    table = table.set_column(
+        table.schema.get_field_index("trading_status"),
+        "trading_status",
+        pa.array([None] * len(table), type=pa.string()),
+    )
     pq.write_table(table, path)
     for root in [source, target]:
         with duckdb.connect(str(root / "catalog.duckdb")) as c:
@@ -329,9 +334,15 @@ def test_all_null_string_dtype_compatibility(candidate):
                 "pre_close DOUBLE,is_st BOOLEAN,trading_status VARCHAR,source VARCHAR)"
             )
             if root == target:
-                c.execute("UPDATE dg03_daily SET name=NULL WHERE __code='000001'")
-    expected = DataPool(source).read_daily(fields=["name", "pre_close"])
-    actual = pool.read_daily(fields=["name", "pre_close"])
+                c.execute(
+                    "UPDATE dg03_daily SET name=NULL,trading_status=NULL WHERE __code='000001'"
+                )
+    expected = DataPool(source).read_daily(
+        fields=["name", "pre_close", "trading_status", "trading_status_source"]
+    )
+    actual = pool.read_daily(
+        fields=["name", "pre_close", "trading_status", "trading_status_source"]
+    )
     pd.testing.assert_frame_equal(expected, actual)
     assert str(actual.name.dtype) == "Int32"
 

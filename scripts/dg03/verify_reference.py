@@ -20,21 +20,10 @@ def run():
                 [day],
             ).fetchall()
         ]
-    fallback = []
-    original = candidate._overlay_dated_fields
-
-    def observed(*args, **kwargs):
-        fallback.append(True)
-        return original(*args, **kwargs)
-
-    candidate._overlay_dated_fields = observed
-    try:
-        expected = DataPool(SNAPSHOT).read_daily(symbols=symbols, start=day, end=day)
-        actual = candidate.CandidatePool(LAB / "month-clustered").read_daily(
-            symbols=symbols, start=day, end=day
-        )
-    finally:
-        candidate._overlay_dated_fields = original
+    expected = DataPool(SNAPSHOT).read_daily(symbols=symbols, start=day, end=day)
+    actual = candidate.CandidatePool(LAB / "month-clustered").read_daily(
+        symbols=symbols, start=day, end=day
+    )
     pd.testing.assert_frame_equal(expected, actual)
     assert actual.pre_close_source.str.startswith("limit_derived:").any()
     emit(
@@ -44,7 +33,7 @@ def run():
         fields=len(actual.columns),
         exact=True,
         reference_sourced_rows=int(actual.pre_close_source.str.startswith("limit_derived:").sum()),
-        pandas_compatibility_fallback=bool(fallback),
+        pandas_compatibility="roundtrip retained inside bounded SQL connection",
     )
 
 

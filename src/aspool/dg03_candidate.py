@@ -19,7 +19,7 @@ import pyarrow.parquet as pq
 
 from .api_contract import DAILY_FIELDS, OPTIONAL_FIELDS, DataPoolError, public_read
 from .limit_amount import EventAmountBatches
-from .pool import DataPool, _normalize_symbols, _overlay_dated_fields, pool_lock
+from .pool import DataPool, _normalize_symbols, pool_lock
 from .store import read_only_catalog
 
 
@@ -203,13 +203,19 @@ def _read_with_overlay(conn, query, params, selected, root):
     if not selected.intersection(dated) or not (has_facts or has_references):
         return conn.execute(query, params).fetchdf()
     conn.execute("CREATE TEMP TABLE _daily_contract_rows AS " + query, params)
+    first, last = conn.execute("SELECT min(date),max(date) FROM _daily_contract_rows").fetchone()
+    if first is None:
+        return conn.execute("SELECT * FROM _daily_contract_rows ORDER BY symbol,date").fetchdf()
     for table in tables & {
         "security_daily_facts",
         "daily_limit_references",
         "daily_limit_publication",
         "daily_limit_staleness",
     }:
-        conn.execute(f"CREATE TEMP VIEW {table} AS SELECT * FROM candidate.{table}")
+        conn.execute(
+            f"CREATE TEMP VIEW {table} AS SELECT * FROM candidate.{table} "
+            f"WHERE trade_date BETWEEN DATE {literal(first)} AND DATE {literal(last)}"
+        )
     joins, replacements = [], {}
     want_reference = bool(selected.intersection({"pre_close", "pre_close_source"}))
     want_facts = bool(selected.intersection(dated))
@@ -279,11 +285,14 @@ def _read_with_overlay(conn, query, params, selected, root):
         if any(count == 0 for count in counts):
             # The existing Pandas/Arrow roundtrip infers untyped all-NULL object
             # columns as Int32. Keep that observable dtype behavior on this rare
-            # path; do not globally change public dtypes to claim a speedup.
+            # path in this connection, retaining bounded catalog views.
             frame = conn.execute(
                 "SELECT * FROM _daily_contract_rows ORDER BY symbol,date"
             ).fetchdf()
-            return _overlay_dated_fields(root, frame, selected)
+            conn.execute("DROP TABLE _daily_contract_rows")
+            # Keep a registered frame, as the old overlay does: a CTAS would
+            # concretize all-NULL SQLNULL columns as INTEGER before COALESCE.
+            conn.register("_daily_contract_rows", frame)
     selections = ", ".join(f"{expression} as {key}" for key, expression in replacements.items())
     return conn.execute(
         f"select b.* replace ({selections}) from _daily_contract_rows b "

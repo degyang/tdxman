@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Independent synthetic dated-fact growth; raw bars and derived tables stay fixed."""
 
+import argparse
 import json
+import time
 from pathlib import Path
 
 import duckdb
@@ -62,13 +64,13 @@ class ProfileDuck:
         return ProfileConnection(duckdb.connect(*args, **kwargs), self.path)
 
 
-def run():
+def run(existing=False, label=""):
     expected = candidate.CandidatePool(candidate_root()).read_daily(
         start="2026-07-27", end="2026-09-24"
     )
     for factor in (1, 2, 5):
         root = candidate_root() if factor == 1 else LAB / f"facts-growth-{factor}x"
-        if factor > 1:
+        if factor > 1 and not existing:
             root.mkdir()
             measured(f"facts_{factor}x_copy", lambda: clone(candidate_root(), root), root)
             with connect(root) as c:
@@ -99,14 +101,21 @@ def run():
         pool = candidate.CandidatePool(root)
 
         def read():
+            tick = time.perf_counter()
             frame = pool.read_daily(start="2026-07-27", end="2026-09-24")
+            api_seconds = time.perf_counter() - tick
             pd.testing.assert_frame_equal(frame, expected)
             assert frame.attrs == expected.attrs
-            return {"rows": len(frame), "fields": len(frame.columns), "exact_recent": True}
+            return {
+                "rows": len(frame),
+                "fields": len(frame.columns),
+                "exact_recent": True,
+                "api_seconds": api_seconds,
+            }
 
         for repeat in range(3):
-            measured(f"facts_{factor}x_public_60days_{repeat}", read, root)
-        path = LAB / f"facts_{factor}x_overlay_plan.json"
+            measured(f"facts_{factor}x{label}_public_60days_{repeat}", read, root)
+        path = LAB / f"facts_{factor}x{label}_overlay_plan.json"
         candidate.duckdb = ProfileDuck(path)
         try:
             read()
@@ -132,10 +141,16 @@ def run():
                 walk(child)
 
         walk(data)
-        emit("facts_growth_overlay_plan", factor=factor, scans=scans, profile=str(path))
+        emit(
+            "facts_growth_overlay_plan", factor=factor, label=label, scans=scans, profile=str(path)
+        )
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--existing", action="store_true")
+    parser.add_argument("--label", default="")
+    args = parser.parse_args()
     provenance()
     emit("facts_growth_source", path=__file__, sha256=file_sha256(Path(__file__)))
-    measured("phase_facts_growth", run, LAB)
+    measured("phase_facts_growth" + args.label, lambda: run(args.existing, args.label), LAB)
