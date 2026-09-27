@@ -1,0 +1,145 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+__________ test_revision_conflict_rejected_before_target_replacement ___________
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_revision_conflict_rejecte0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x75bbb154fbf0>
+
+    def test_revision_conflict_rejected_before_target_replacement(pool, monkeypatch):
+        target = daily_path(pool, "SZ", "000001")
+        original = target.read_bytes(), target.stat().st_mtime_ns
+        stop_at(pool, monkeypatch, "after_prepared")
+        with catalog(pool) as conn:
+            conn.execute("UPDATE business_revisions SET revision=revision+1 WHERE object_key=?",
+                         [str(target.relative_to(pool))])
+        before = state(pool), counts(pool)
+        with pool_lock(pool, write=True), pytest.raises(RuntimeError, match="revision"):
+            recover(pool)
+>       assert (target.read_bytes(), target.stat().st_mtime_ns) == original
+E       AssertionError: assert (b'PAR1\x15\x...5016202733625) == (b'PAR1\x15\x...5015338755928)
+E         
+E         At index 0 diff: b'PAR1\x15\x04\x15\x14\x15&L\x15\x02\x15\x00\x12\x00\x00(\xb5/\xfd \nQ\x00\x00\x06\x00\x00\x00000001\x15\x00\x15\x12\x15$,\x15\x02\x15\x10\x15\x06\x15\x06\x1c6\x00(\x06000001\x18\x06000001\x11\x11\x00\x00\x00(\xb5/\xfd \tI\x00\x00\x02\x00\x00\x00\x02\x01\x01\x02\x00\x15\x04\x15\x08\x15\x1aL\x15\x02\x15\x00\x12\x00\x00(\xb5/\xfd \x04!\x00\x00aP\x00\x00\x15\x00\x15\x12\x15$,\x15\x02\x15\x10\x15\x06\x15\x06\x1c\x18\x04aP\x00\x00\x18\x04aP\x00\x00\x16\x00(\x04aP\x00\x00\x18\x04aP\x00\x00\x11\x11\x00\x00\x00(\xb5/\xfd \tI\x00\x00\x02\x00\x00\x00\x02\x01\x01\...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/unit/test_change_protocol_review.py:42: AssertionError
+_ test_manifest_corruption_blocks_without_losing_stale_contract[after_prepared] _
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_manifest_corruption_block0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x75bbb12ff6e0>
+phase = 'after_prepared'
+
+    @pytest.mark.parametrize("phase", ["after_prepared", "after_catalog_commit"])
+    def test_manifest_corruption_blocks_without_losing_stale_contract(pool, monkeypatch, phase):
+        directory = stop_at(pool, monkeypatch, phase)
+        path = directory / "manifest.json"
+        manifest = json.loads(path.read_text())
+        manifest["stale_start"] = None
+        path.write_text(json.dumps(manifest))
+        before = state(pool), counts(pool), daily_path(pool, "SZ", "000001").read_bytes()
+>       with pool_lock(pool, write=True), pytest.raises(RuntimeError, match="manifest"):
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/unit/test_change_protocol_review.py:55: Failed
+_ test_manifest_corruption_blocks_without_losing_stale_contract[after_catalog_commit] _
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_manifest_corruption_block1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x75bbb12fefc0>
+phase = 'after_catalog_commit'
+
+    @pytest.mark.parametrize("phase", ["after_prepared", "after_catalog_commit"])
+    def test_manifest_corruption_blocks_without_losing_stale_contract(pool, monkeypatch, phase):
+        directory = stop_at(pool, monkeypatch, phase)
+        path = directory / "manifest.json"
+        manifest = json.loads(path.read_text())
+        manifest["stale_start"] = None
+        path.write_text(json.dumps(manifest))
+        before = state(pool), counts(pool), daily_path(pool, "SZ", "000001").read_bytes()
+>       with pool_lock(pool, write=True), pytest.raises(RuntimeError, match="manifest"):
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/unit/test_change_protocol_review.py:55: Failed
+_______________ test_applied_recovery_validates_catalog_revision _______________
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_applied_recovery_validate0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x75bbb116ce90>
+
+    def test_applied_recovery_validates_catalog_revision(pool, monkeypatch):
+        stop_at(pool, monkeypatch, "after_catalog_commit")
+        with catalog(pool) as conn:
+            conn.execute("UPDATE business_revisions SET revision=99")
+>       with pool_lock(pool, write=True), pytest.raises(RuntimeError, match="revision"):
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/unit/test_change_protocol_review.py:67: Failed
+_______________ test_first_pool_creation_fsyncs_every_new_parent _______________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_first_pool_creation_fsync0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x75bbb116d160>
+
+    def test_first_pool_creation_fsyncs_every_new_parent(tmp_path, monkeypatch):
+        import aspool.change_protocol as protocol
+    
+        synced = []
+        real_sync = protocol._sync_directory
+    
+        def sync(path):
+            synced.append(path)
+            real_sync(path)
+    
+        monkeypatch.setattr(protocol, "_sync_directory", sync)
+        root = tmp_path / "new-parent" / "pool"
+        with pool_lock(root, write=True):
+            initialize(root)
+            merge_daily(root, "SZ", "000001", [bar()], "test")
+        directories = {p for p in root.rglob("*") if p.is_dir()} | {root, root.parent}
+>       assert {p.parent for p in directories} <= set(synced)
+E       AssertionError: assert {PosixPath('/...l/lake'), ...} <= {PosixPath('/...paring'), ...}
+E         
+E         Extra items in the left set:
+E         PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_first_pool_creation_fsync0')
+E         PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_first_pool_creation_fsync0/new-parent/pool/lake')
+E         PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_first_pool_creation_fsync0/new-parent')
+E         PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_first_pool_creation_fsync0/new-parent/pool/lake/bars')
+
+tests/unit/test_change_protocol_review.py:88: AssertionError
+_________ test_stock_reclassification_invalidates_previous_name_scope __________
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_stock_reclassification_in0')
+
+    def test_stock_reclassification_invalidates_previous_name_scope(pool):
+        _publish_universe(pool, [dict(symbol="000001", market="SZ", name="甲", asset_type="etf")])
+>       assert [row[0] for row in state(pool)["stale"]] == [DAY]
+E       assert [] == [datetime.date(2026, 5, 4)]
+E         
+E         Right contains one more item: datetime.date(2026, 5, 4)
+E         Use -v to get more diff
+
+tests/unit/test_change_protocol_review.py:93: AssertionError
+______ test_only_changed_etf_in_mixed_directory_does_not_invalidate_stock ______
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red3/test_only_changed_etf_in_mixed0')
+
+    def test_only_changed_etf_in_mixed_directory_does_not_invalidate_stock(pool):
+        _publish_universe(pool, [dict(symbol="159915", market="SZ", name="ETF", asset_type="etf")])
+        _publish_universe(pool, [dict(symbol="000001", market="SZ", name="甲"),
+                                 dict(symbol="159915", market="SZ", name="ETF2", asset_type="etf")])
+>       assert state(pool)["stale"] == []
+E       AssertionError: assert [(datetime.da... 42, 822243))] == []
+E         
+E         Left contains one more item: (datetime.date(2026, 5, 4), 'universe_scope', datetime.datetime(2026, 9, 27, 15, 43, 42, 822243))
+E         Use -v to get more diff
+
+tests/unit/test_change_protocol_review.py:100: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_change_protocol_review.py::test_revision_conflict_rejected_before_target_replacement
+FAILED tests/unit/test_change_protocol_review.py::test_manifest_corruption_blocks_without_losing_stale_contract[after_prepared]
+FAILED tests/unit/test_change_protocol_review.py::test_manifest_corruption_blocks_without_losing_stale_contract[after_catalog_commit]
+FAILED tests/unit/test_change_protocol_review.py::test_applied_recovery_validates_catalog_revision
+FAILED tests/unit/test_change_protocol_review.py::test_first_pool_creation_fsyncs_every_new_parent
+FAILED tests/unit/test_change_protocol_review.py::test_stock_reclassification_invalidates_previous_name_scope
+FAILED tests/unit/test_change_protocol_review.py::test_only_changed_etf_in_mixed_directory_does_not_invalidate_stock
+7 failed in 8.14s

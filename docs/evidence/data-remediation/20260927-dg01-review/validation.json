@@ -1,0 +1,173 @@
+{
+  "date": "2026-09-27",
+  "verdict": "DG-01 feature implementation and independent isolated review passed; coordinator main integration pending",
+  "base_commit": "981ab5f96ab0d4bb3c872f79fe936938240861e3",
+  "reviewed_implementation_commit": "c3c45f96c05c343fab86ca090b9395dcbf63a0ef",
+  "reviewed_documentation_commit": "9db1718",
+  "validated_code_commit": "bbb50b05a6adef5e1bc7381258bfc170e504ea44",
+  "task_id": "task_e72b8369e2bb",
+  "dispatch_id": "ctx_a6a121f168bf",
+  "full_offline": {
+    "command": ".venv/bin/python docs/evidence/data-remediation/20260927-orca-review/run_offline.py tests/ -q --basetemp=/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/full-final",
+    "exit_code": 0,
+    "passed": 640,
+    "skipped": 4,
+    "subtests_passed": 18,
+    "elapsed_seconds": 177.8,
+    "log": "full-offline-final.txt",
+    "skip_reasons": [
+      "2 live network tests disabled",
+      "2 external tick_stock_panel host tests not configured"
+    ]
+  },
+  "targeted_runs": {
+    "regression-after-1.txt": "68 passed; recovery/scope/bootstrap changes",
+    "regression-after-2.txt": "39 passed; source failure, TTL, costs, concurrency and existing remediation tests",
+    "regression-after-3.txt": "19 passed; final independent review regressions including full-command recovery"
+  },
+  "raw_red_logs": {
+    "regression-before.txt": "collection error, test import corrected",
+    "regression-before-2.txt": "setup error, lab parent created",
+    "regression-before-3.txt": "7 substantive failures",
+    "regression-before-4.txt": "2 substantive TTL failures and 2 missing calendar fixture failures",
+    "regression-before-5.txt": "5 substantive failures after fixture correction",
+    "regression-before-6.txt": "1 substantive full-command recovery retry failure"
+  },
+  "checks": {
+    "lint": {
+      "command": [
+        ".venv/bin/ruff",
+        "check",
+        "scripts/aspool_dg01_lab.py",
+        "scripts/aspool_recovery_baseline.py",
+        "scripts/aspool_verify_baseline.py",
+        "src/aspool/baostock_source.py",
+        "src/aspool/change_observation.py",
+        "src/aspool/change_protocol.py",
+        "src/aspool/daily_storage.py",
+        "src/aspool/enrichment.py",
+        "src/aspool/free_stockdb.py",
+        "src/aspool/fundamentals.py",
+        "src/aspool/index_pool.py",
+        "src/aspool/limit_events.py",
+        "src/aspool/pool.py",
+        "src/aspool/security_facts.py",
+        "src/aspool/store.py",
+        "src/aspool/tdx_online.py",
+        "src/aspool/universe.py",
+        "tests/unit/test_aspool_performance.py",
+        "tests/unit/test_aspool_pool.py",
+        "tests/unit/test_change_protocol.py",
+        "tests/unit/test_change_protocol_review.py",
+        "tests/unit/test_daily_remediation.py",
+        "tests/unit/test_limit_amount.py"
+      ],
+      "exit_code": 0
+    },
+    "format": {
+      "command": [
+        ".venv/bin/ruff",
+        "format",
+        "--check",
+        "src/aspool/change_protocol.py",
+        "src/aspool/change_observation.py",
+        "scripts/aspool_dg01_lab.py",
+        "tests/unit/test_change_protocol.py",
+        "tests/unit/test_change_protocol_review.py"
+      ],
+      "exit_code": 0
+    },
+    "diff-check": {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "981ab5f..HEAD",
+        "--",
+        "src/",
+        "tests/",
+        "scripts/",
+        "docs/consumer-inventory.md",
+        "docs/data_remediation_dg01_implementation.md",
+        "docs/data_remediation_execution_plan.md",
+        "docs/recovery-plan.md",
+        "docs/regime_data_retention_plan.md"
+      ],
+      "exit_code": 0
+    }
+  },
+  "python": "3.12.14",
+  "dependencies": {
+    "duckdb": "1.5.5",
+    "pyarrow": "25.0.1",
+    "pandas": "3.0.5",
+    "pytest": "9.1.1",
+    "ruff": "0.16.7"
+  },
+  "source_files_sha256": {
+    "src/aspool/__init__.py": "84095002e0cd36a875433317d36701366de5c66380b264a67bb18876e25d3537",
+    "src/aspool/api_contract.py": "106b3f0305968d71b9326270ef7a3df0b932031dd49356879e0a00f2959fa71a",
+    "src/aspool/baostock_source.py": "93ac8f61f5b35a49a2ed2f696c19d939fa15050f95503e9e278e347a7cf88b15",
+    "src/aspool/change_observation.py": "f6a7cb93655807b8d46352f2150cb32d0aecd1bff76332149930348beda1af98",
+    "src/aspool/change_protocol.py": "01955446fdb699c3e719f662b4d3e9e709c54bee6caa08c143cebd961b3df12e",
+    "src/aspool/cli.py": "f8cd6a7662900ef36f9317f56018a1b7740011913c7087a0f7c9c0dc35175d5a",
+    "src/aspool/config.py": "8c97bc1e5ebf591cea14315e17a7a19b6c7e2fa064acc6f077b31e89cd12a741",
+    "src/aspool/daily_storage.py": "09813b353f4bbcbda9706db46be0c7ff358a45e7a41ab641543f84d6f47cda4c",
+    "src/aspool/enrichment.py": "5103f440a9528b2b14c233d6e98c9550ec8e92a4f096cce6d583d11cc721eb1f",
+    "src/aspool/etf_api.py": "82f42d135f609026392cc8a4e124b204a0725b23b7b2fda46faf3fedb9c6d44a",
+    "src/aspool/etf_lists.py": "ef6be4ab8773d9b40647703d5a4f4f348b42b3bbaabc5130076a93bbefab9800",
+    "src/aspool/ex_domain.py": "1185c23f0b207f984637ed40f4a94fe3c8976fdd561fdf9e1bef3bd7796ac4fb",
+    "src/aspool/fetch.py": "ba0ce75597859b38b7c12faf02291f37ef21097e12cfc05ae6435e84858b1955",
+    "src/aspool/free_stockdb.py": "0865540441c673c6fbb375ee943cfc342020423c4728c4ce1394be9ab0f0601b",
+    "src/aspool/fundamentals.py": "25523788c96924cdc2a52198c2950836f135167eb8c536617881ce3877b8c539",
+    "src/aspool/help.py": "1d522e8b446478829614bb1fe8165978f1686a4e1ff0ff519aa5d4c9f466dabe",
+    "src/aspool/index_api.py": "b1e0a72056dbf1abd0e39b510198e9bc59521a5ca5729edb1318fa0c16b5b14a",
+    "src/aspool/index_lists.py": "af14a2ef4547a1bfabead40facb4d22d78315c376ff4fecac8917240102441a3",
+    "src/aspool/index_pool.py": "7cd3c63078d866a8c0cf3eb4d995c66a8791b8b9e4a40f00a6c54b7a9dc65bee",
+    "src/aspool/limit_amount.py": "730a25a827268482de366a4e2c820722455624960e54c47aca9fdf8499540cf9",
+    "src/aspool/limit_api.py": "a0c3bb6f2e91a2f2ab650c51a2879bfa3c63eb2fec759f1fb5e9fe4d7bed0ef9",
+    "src/aspool/limit_events.py": "3e2aea3a9baa2141110a0145f50e6ca5350aa67b4e83c0cce482f8ef69e46f33",
+    "src/aspool/pool.py": "9c2f758daa163b620a9ab9bda1f652643dcfcb80eaddf1735aca2ea53740ef6d",
+    "src/aspool/security_facts.py": "3c0bfb466c4f4885d7292f7195fc7ac15a198d104cc17bace934f79a70ee8ec8",
+    "src/aspool/st_source.py": "8fae4bab6de2d69b8af103c9224decd6322df7afe0b5911ea63d27cc2092bd71",
+    "src/aspool/store.py": "8809b53943300212463c4409b632a5e7a2ecaf50fc82ae03cbed20ba46daadc3",
+    "src/aspool/tdx_online.py": "082ab96740894a1324da0444e86731e08570baa0d3dc2b924c2d14055f23096e",
+    "src/aspool/universe.py": "a09de13b4e321d5930754d99b760a5e102ef00e49a6954d5c8f278dfa5c2c4a3"
+  },
+  "review_test_sha256": "a7bb5f60211d5335a1c90397e6985798abce214b221e0320434ae5409a6fe07b",
+  "validation_reuse": "Prior implementation real sample, source fingerprints and artifact hashes verified and reused; no unchanged successful suite/check rerun after final acceptance",
+  "remaining_in_scope_defects": [],
+  "boundaries": [
+    "Explicit compute_limit_events remains forced publish by coordinator approval; healthy source no-op skips automatic recompute",
+    "No public logical revision/cache API; observation/catalog writes can still invalidate Fundwise physical fingerprints (DG-06)",
+    "Existing whole-security/touched-year reads and conservative dependency suffix are DG-02/05 work",
+    "Process-exit tests are not power-loss/device/Windows-native/disaster-recovery proof",
+    "Direct low-level recover without maintenance context has no separate recovery task elapsed/RSS (unavailable); normal writers record recovery in their task context",
+    "Old experimental pending manifests without checksum fail closed; no production deployment or state migration authorized"
+  ],
+  "guard": "Existing Python audit hook blocks external socket connections and production/recovery mutations; subprocess tests use explicit disposable lab roots and no market I/O; no OS sandbox claim",
+  "ownership": {
+    "main_edit": false,
+    "push": false,
+    "production_or_recovery_write": false,
+    "subagents": false
+  },
+  "artifact_sha256": {
+    "checks.json": "727e530754db17426d03db4a354dcbe51c95844dd2f85f2e2a9e940288a40760",
+    "diff-check.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "format.txt": "f114d83b30c5c657ee43a847a45bafccaea255d82673feb87c26d252c61e29c1",
+    "full-offline-final.txt": "9819a0db5baaecc847d9a4f644a955c0ae605b1389f29ef195f387b47c9ffb00",
+    "implementation-evidence-check.json": "6df0968ef1c168767011bb6c0c7a5a838652868be35c5f02b45429789760a91c",
+    "lint.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "regression-after-1.txt": "7ec956111fea5e07c7fb8aeca7e783aa4f557f7d36fa3f71e82d113e8016d0ad",
+    "regression-after-2.txt": "0b6250e9d3e156822b7258d41f061d767377b6230ab6db51247cd4b591ca4514",
+    "regression-after-3.txt": "6b029d08ea219817e67c63565c061468e24404a51bb3ddf03692580b8be43879",
+    "regression-before-2.txt": "2be2aaa882e8d40e0504e71485e95cc009c6496d1effb20038bd3de799eb29b4",
+    "regression-before-3.txt": "caa2a46f6754362f860f036ac6d43f41ed4cdb411c9462d80083e0c2b80e09a7",
+    "regression-before-4.txt": "2935903285c264c151385417feef35f9f7bd7ecf7d04be8a23eba0004f28a280",
+    "regression-before-5.txt": "5afe222eb62f5827d935c35d9aac1cbf80d66d477d0841666d1e51efcd16093d",
+    "regression-before-6.txt": "b2149a10d993517afcea398e63764195f83bb7490914710e6d77c6a2c3981e99",
+    "regression-before.txt": "30d42d1b1dbee5ec5fe7ce0c21dbec2774d1b25f9b1550bcd09faa00268d9f52",
+    "session.json": "7d5eba9c452f4ff8b6369a2538e4f312ac970238019853bdd64125dfa1a5a198"
+  }
+}

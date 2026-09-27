@@ -1,6 +1,6 @@
 # Aspool 数据整治与日线存储重构推进方案
 
-日期：2026-09-27。状态：DG-00 工程基线补齐；DG-01 首批已集成，剩余入口、持久恢复与成本实施通过隔离验收，待协调者独立关键恢复审查及集成。最终离线结果：617 项及 18 个子测试通过、4 项明确原因跳过，scoped lint 通过；真实 12 行样本修正后重放零业务变化。见 [本轮完整实施与证据](data_remediation_dg01_implementation.md)，首批四个基线失败结案保留 [第一批审查报告](data_remediation_first_batch_review.md)。
+日期：2026-09-27。状态：DG-00 工程基线补齐；DG-01 feature 经独立关键恢复审查、修复与隔离验收通过，待协调者集成 main。修复提交 `bbb50b0`，最终离线 640 项及 18 个子测试通过、4 项明确原因跳过，23 个相关 Python 文件 scoped lint 通过；原真实 12 行样本证据核验后复用。见 [独立恢复审查](data_remediation_dg01_review.md) 及 [完整实施记录](data_remediation_dg01_implementation.md)，首批四个基线失败结案保留 [第一批审查报告](data_remediation_first_batch_review.md)。
 
 ## 1. 目标、范围与权威入口
 
@@ -34,8 +34,8 @@
 | 1,296 日限价发布、605 日 stale | 2026-09-27 00:34:55 上海时间观测 | 不能沿用为执行时状态；DG-00 重新查询 |
 | 两个旧备份无损重压缩 | 前轮已完成 | 释放 24.31 MiB；未替代恢复演练 |
 | DG-00 一致副本与恢复演练 | 工程基线就绪 | [baseline.json](evidence/data-remediation/20260927/baseline.json)：13,742 文件、2,702,716,946 字节；完整复制恢复与校验 10.349 秒，指定证券文件恢复与校验 2.636 秒。[本轮核验](evidence/data-remediation/20260927-dg00/baseline-verification.json)源与快照一致，契约/入口/恢复计划已补齐；业务 RTO 等未知项仍保留 |
-| Orca CLI、技能与 WSL worktree 链路 | 基础验证通过 | [执行约定](orca_remediation_workflow.md)；未启动多 agent、生产任务或候选后端 |
-| 本方案所列工程整改、生产修复与迁移 | 工程整改开始；生产修复/迁移待实施 | DG-01 剩余工程实现通过隔离验证，待独立关键恢复审查/集成；不代表生产修复验收 |
+| Orca CLI、技能与 WSL worktree 链路 | 基础验证及受监督顺序协作已使用 | [执行约定](orca_remediation_workflow.md)；本轮实施 `task_c544312049ac / gpt-6-sol high` 结束后，独立审查 `task_e72b8369e2bb / gpt-6-astra high` 接续，身份已核验；未执行生产任务或候选后端 |
+| 本方案所列工程整改、生产修复与迁移 | 工程整改开始；生产修复/迁移待实施 | DG-01 独立恢复审查与隔离验证通过，待 main 集成；不代表生产修复验收 |
 
 ## 3. 推进路径与任务看板
 
@@ -44,7 +44,7 @@
 | ID | 优先级 | 交付 | 依赖 | 责任模块 | 状态 |
 |---|---|---|---|---|---|
 | DG-00 | P0 | 当前数据基线、字段契约、修复前恢复点 | 无 | aspool + 消费方验收 | 工程基线就绪：契约/清单/恢复计划及复核齐备；业务恢复目标未知项显式保留，生产切换前确定 |
-| DG-01 | P0 | 实际变更清单、幂等性、操作成本观测 | DG-00 | aspool 写入/补齐 | 完整工程实现/隔离验收通过：入口、真实变化、持久前滚、业务/覆盖元数据日志及有界任务成本；617+18 通过、4 明确跳过，待协调者独立恢复审查与集成 |
+| DG-01 | P0 | 实际变更清单、幂等性、操作成本观测 | DG-00 | aspool 写入/补齐 | feature 实现/独立恢复审查通过：入口、真实变化、持久前滚、业务/覆盖元数据日志及有界任务成本；640+18 通过、4 明确跳过，待协调者 main 集成 |
 | DG-02 | P1 | 统一日线存储访问边界，旧后端兼容 | DG-00 | aspool 存储/公开 API | 待实施 |
 | DG-03 | P1 | 完整候选后端及增长/并发验证，形成选型结论 | DG-02；修订重放使用 DG-01 | aspool 存储 | 待实施 |
 | DG-04 | P0 | 存量字段/缺口/冲突闭环及限价重新发布 | DG-00；生产变更追踪使用 DG-01 | aspool 数据维护 | 待实施 |
@@ -83,7 +83,7 @@
 
 验收：同样输入第二次执行不重写业务数据、不增加 stale、不改变业务 revision；源故障不被解释为删除；每次扩大影响范围能追溯到变化及规则。尚未完成依赖验证的字段保持保守失效。
 
-首批 `981ab5f` 已由协调者集成 main/feature；`f949dbc` / `30870a5` 的首批缺陷结案保留原 [审查证据](data_remediation_first_batch_review.md)。本轮 DG-01 剩余实现覆盖 merge/enrichment、在线/离线/free-stockdb、quote/快照、BaoStock 三类事实、index/coverage 与 universe scope，补齐真实变化、内部业务/元数据修订、逐行有界证据、文件准备后前滚、catalog 原子日志/coverage/stale/聚合及任务成本。详见 [完整实施与隔离验收](data_remediation_dg01_implementation.md) 和 [最终摘要](evidence/data-remediation/20260927-dg01-complete/validation.json)；关键恢复独立审查及集成由协调者执行。
+首批 `981ab5f` 已由协调者集成 main/feature；`f949dbc` / `30870a5` 的首批缺陷结案保留原 [审查证据](data_remediation_first_batch_review.md)。本轮 DG-01 剩余实现覆盖 merge/enrichment、在线/离线/free-stockdb、quote/快照、BaoStock 三类事实、index/coverage 与 universe scope，补齐真实变化、内部业务/元数据修订、逐行有界证据、文件准备后前滚、catalog 原子日志/coverage/stale/聚合及任务成本。完整差异经独立审查，修复恢复版本/manifest/父目录持久化、源故障/重试、UTC TTL、范围失效与成本记录问题；见 [审查报告](data_remediation_dg01_review.md) 和 [最终摘要](evidence/data-remediation/20260927-dg01-review/validation.json)。main 集成仍由协调者执行。
 
 无变化承诺针对源更新/补齐及其自动调度；协调者已明确确认显式 `compute_limit_events` 保留强制重算/重新发布语义，派生依赖/发布修订仍归 DG-05/06。单文件原子替换与 catalog 事务之间、多文件任务不是整体事务：pending 阻断公开读，源 writer 在下一写锁内前滚，snapshot 只锁并拒绝 pending，不隐式改源。缺失/损坏必要恢复对象安全拒绝，不能假称 applied。公开 revision/cache 与 Fundwise 不变。跨年/旧后端仍保守读取历史，优化留给 DG-02；隔离验收不授权生产修复、迁移、切换或清理。
 
@@ -194,7 +194,7 @@ ST 和板块继续沿用现有业务口径，记录所用快照。快照变化�
 
 ## 7. 第一轮可直接执行的工作包
 
-DG-00 已补齐 [data-contract.md](data-contract.md)、[consumer-inventory.md](consumer-inventory.md)、[recovery-plan.md](recovery-plan.md)，既有恢复点与当前源逐文件哈希一致。DG-01 首批修复与隔离证据见 [实施记录](data_remediation_progress_20260927.md)，剩余入口/前滚协议/成本实现及最终隔离证据见 [本轮完整记录](data_remediation_dg01_implementation.md)；经协调者独立关键恢复审查与集成后再开展 DG-02 的旧后端访问封装。生产修复前仍需判断恢复点是否覆盖最新输入，不为文档补齐重复复制全池；两项共同触及写入/存储入口，默认顺序推进。
+DG-00 已补齐 [data-contract.md](data-contract.md)、[consumer-inventory.md](consumer-inventory.md)、[recovery-plan.md](recovery-plan.md)，既有恢复点与当前源逐文件哈希一致。DG-01 首批修复与隔离证据见 [实施记录](data_remediation_progress_20260927.md)，剩余入口/前滚协议/成本实现见 [本轮完整记录](data_remediation_dg01_implementation.md)，当前判定见 [独立恢复审查](data_remediation_dg01_review.md)；独立审查已通过，待协调者集成后开展 DG-02 的旧后端访问封装。生产修复前仍需判断恢复点是否覆盖最新输入，不为文档补齐重复复制全池；两项共同触及写入/存储入口，默认顺序推进。
 
 第一轮结束应能回答：哪些数据有问题、每次究竟改了什么、影响了哪里、发生失败可以回到哪一版，以及哪些入口仍依赖物理文件。此时可推进 DG-04 的存量修复和 DG-03 的完整候选验证，不需要先等待全量架构迁移。
 

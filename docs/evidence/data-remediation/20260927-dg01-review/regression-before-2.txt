@@ -1,0 +1,109 @@
+EEEEEEE                                                                  [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_revision_conflict_rejected_before_target_replacement __
+
+self = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2'
+
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/pathlib.py:1311: FileNotFoundError
+_ ERROR at setup of test_manifest_corruption_blocks_without_losing_stale_contract[after_prepared] _
+
+self = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2'
+
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/pathlib.py:1311: FileNotFoundError
+_ ERROR at setup of test_manifest_corruption_blocks_without_losing_stale_contract[after_catalog_commit] _
+
+self = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2'
+
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/pathlib.py:1311: FileNotFoundError
+______ ERROR at setup of test_applied_recovery_validates_catalog_revision ______
+
+self = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2'
+
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/pathlib.py:1311: FileNotFoundError
+______ ERROR at setup of test_first_pool_creation_fsyncs_every_new_parent ______
+
+self = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2'
+
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/pathlib.py:1311: FileNotFoundError
+_ ERROR at setup of test_stock_reclassification_invalidates_previous_name_scope _
+
+self = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2'
+
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/pathlib.py:1311: FileNotFoundError
+_ ERROR at setup of test_only_changed_etf_in_mixed_directory_does_not_invalidate_stock _
+
+self = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2')
+mode = 448, parents = False, exist_ok = False
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red2'
+
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/pathlib.py:1311: FileNotFoundError
+=========================== short test summary info ============================
+ERROR tests/unit/test_change_protocol_review.py::test_revision_conflict_rejected_before_target_replacement
+ERROR tests/unit/test_change_protocol_review.py::test_manifest_corruption_blocks_without_losing_stale_contract[after_prepared]
+ERROR tests/unit/test_change_protocol_review.py::test_manifest_corruption_blocks_without_losing_stale_contract[after_catalog_commit]
+ERROR tests/unit/test_change_protocol_review.py::test_applied_recovery_validates_catalog_revision
+ERROR tests/unit/test_change_protocol_review.py::test_first_pool_creation_fsyncs_every_new_parent
+ERROR tests/unit/test_change_protocol_review.py::test_stock_reclassification_invalidates_previous_name_scope
+ERROR tests/unit/test_change_protocol_review.py::test_only_changed_etf_in_mixed_directory_does_not_invalidate_stock
+7 errors in 0.35s

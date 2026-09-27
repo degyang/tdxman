@@ -1,0 +1,19 @@
+{
+  "task_id": "task_e72b8369e2bb",
+  "dispatch_id": "ctx_a6a121f168bf",
+  "role": "independent critical recovery review",
+  "launch": {
+    "requested": {
+      "agent": "codex",
+      "model": "gpt-6-astra",
+      "effort": "high"
+    },
+    "effective": {
+      "agent": "codex",
+      "model": "gpt-6-astra",
+      "effort": "high"
+    }
+  },
+  "model_effort_authorization": "live dispatch and CLAUDE.md recovery review default; high ceiling",
+  "subagents": false
+}

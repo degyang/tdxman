@@ -1,0 +1,63 @@
+{
+  "lint": {
+    "command": [
+      ".venv/bin/ruff",
+      "check",
+      "scripts/aspool_dg01_lab.py",
+      "scripts/aspool_recovery_baseline.py",
+      "scripts/aspool_verify_baseline.py",
+      "src/aspool/baostock_source.py",
+      "src/aspool/change_observation.py",
+      "src/aspool/change_protocol.py",
+      "src/aspool/daily_storage.py",
+      "src/aspool/enrichment.py",
+      "src/aspool/free_stockdb.py",
+      "src/aspool/fundamentals.py",
+      "src/aspool/index_pool.py",
+      "src/aspool/limit_events.py",
+      "src/aspool/pool.py",
+      "src/aspool/security_facts.py",
+      "src/aspool/store.py",
+      "src/aspool/tdx_online.py",
+      "src/aspool/universe.py",
+      "tests/unit/test_aspool_performance.py",
+      "tests/unit/test_aspool_pool.py",
+      "tests/unit/test_change_protocol.py",
+      "tests/unit/test_change_protocol_review.py",
+      "tests/unit/test_daily_remediation.py",
+      "tests/unit/test_limit_amount.py"
+    ],
+    "exit_code": 0
+  },
+  "format": {
+    "command": [
+      ".venv/bin/ruff",
+      "format",
+      "--check",
+      "src/aspool/change_protocol.py",
+      "src/aspool/change_observation.py",
+      "scripts/aspool_dg01_lab.py",
+      "tests/unit/test_change_protocol.py",
+      "tests/unit/test_change_protocol_review.py"
+    ],
+    "exit_code": 0
+  },
+  "diff-check": {
+    "command": [
+      "git",
+      "diff",
+      "--check",
+      "981ab5f..HEAD",
+      "--",
+      "src/",
+      "tests/",
+      "scripts/",
+      "docs/consumer-inventory.md",
+      "docs/data_remediation_dg01_implementation.md",
+      "docs/data_remediation_execution_plan.md",
+      "docs/recovery-plan.md",
+      "docs/regime_data_retention_plan.md"
+    ],
+    "exit_code": 0
+  }
+}

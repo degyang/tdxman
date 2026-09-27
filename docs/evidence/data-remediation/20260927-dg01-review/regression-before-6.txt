@@ -1,0 +1,50 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_enrichment_command_recovers_before_its_planning_read ___________
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red6/test_enrichment_command_recove0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x707190980da0>
+
+    def test_enrichment_command_recovers_before_its_planning_read(pool, monkeypatch):
+        from aspool.enrichment import enrich_daily
+    
+        with catalog(pool) as conn:
+            conn.execute("INSERT INTO security_calendar VALUES (?, true, 'test')", [DAY])
+        stop_at(pool, monkeypatch, "after_replace")
+        old_count = counts(pool)[0]
+        monkeypatch.setattr("aspool.enrichment.client_factory", lambda *args: (None, None))
+        monkeypatch.setattr("aspool.enrichment.fetch_sync", lambda *args: [
+            (("000001", "SZ"), None, OSError("source down"), 0)])
+>       report, _ = enrich_daily(pool, start=DAY, end=DAY, compare_baostock=False)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_change_protocol_review.py:328: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/aspool/change_protocol.py:924: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/aspool/enrichment.py:480: in enrich_daily
+    with pool_lock(root), read_only_catalog(root) as conn:
+         ^^^^^^^^^^^^^^^
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+src/aspool/pool.py:93: in pool_lock
+    assert_readable(root)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red6/test_enrichment_command_recove0')
+
+    def assert_readable(root):
+        if pending(root):
+            from .api_contract import DataPoolError
+    
+>           raise DataPoolError(
+                "RECOVERY_REQUIRED", "Daily-domain commit pending; recover under write lock"
+            )
+E           aspool.api_contract.DataPoolError: Daily-domain commit pending; recover under write lock
+
+src/aspool/change_protocol.py:282: DataPoolError
+=========================== short test summary info ============================
+FAILED tests/unit/test_change_protocol_review.py::test_enrichment_command_recovers_before_its_planning_read
+1 failed, 18 deselected in 2.46s
