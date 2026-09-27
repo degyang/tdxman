@@ -18,7 +18,9 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 from .api_contract import DAILY_FIELDS, OPTIONAL_FIELDS, DataPoolError, public_read
+from .limit_amount import EventAmountBatches
 from .pool import DataPool, _normalize_symbols, _overlay_dated_fields, pool_lock
+from .store import read_only_catalog
 
 
 def ident(value):
@@ -79,6 +81,16 @@ class CandidateStorage:
 DailyStorage = CandidateStorage
 
 
+def copy_ancillary(snapshot, target):
+    """Keep existing index/fundamental/adjustment files on their unchanged APIs."""
+    lake = Path(snapshot) / "lake"
+    if not lake.exists():
+        return
+    for directory in lake.iterdir():
+        if directory.name != "bars":
+            shutil.copytree(directory, Path(target) / "lake" / directory.name)
+
+
 def build(snapshot, target, *, limit=None):
     """Copy the complete catalog, preserving its constraints; retain every raw field."""
     snapshot, target = Path(snapshot).resolve(), Path(target).resolve()
@@ -90,6 +102,7 @@ def build(snapshot, target, *, limit=None):
         raise ValueError("unsafe experiment target")
     target.mkdir(parents=True, exist_ok=False)
     shutil.copy2(snapshot / "catalog.duckdb", target / "catalog.duckdb")
+    copy_ancillary(snapshot, target)
     files = sorted((snapshot / "lake/bars/daily").glob("market=*/symbol=*/**/bars.parquet"))
     if limit:
         files = files[:limit]
@@ -137,7 +150,7 @@ class CandidatePool(DataPool):
             # Growth/recovery copies opt in by copying the same schema manifest.
             raise ValueError("candidate requires its source-schema.json manifest")
 
-    def apply(self, changes, *, source, reason):
+    def apply(self, changes, *, source, reason, _fault_hook=None):
         """Explicit raw fact changes; NULL merge ignored, clear/delete require operations.
 
         Derived recomputation remains DG-05: record conservative stale suffixes when
@@ -151,10 +164,12 @@ class CandidatePool(DataPool):
         ):
             c.execute("SET threads=2; SET memory_limit='1GB'")
             c.execute("BEGIN")
+            committed = False
             try:
                 revision = c.execute("SELECT revision FROM dg03_revision").fetchone()[0]
                 raw_names = [r[0] for r in c.execute("DESCRIBE dg03_daily").fetchall()]
                 records = []
+                seen = set()
                 for change in changes:
                     market, code, day = change["market"], change["code"], change["trade_date"]
                     day = pd.Timestamp(day).date()
@@ -162,6 +177,10 @@ class CandidatePool(DataPool):
                     domain = change.get("domain", "bars")
                     if domain not in {"bars", "facts"}:
                         raise ValueError("unknown domain")
+                    identity = (domain, market, code, day)
+                    if identity in seen:
+                        raise ValueError("duplicate change key")
+                    seen.add(identity)
                     table = "dg03_daily" if domain == "bars" else "security_daily_facts"
                     names = (
                         raw_names
@@ -270,18 +289,34 @@ class CandidatePool(DataPool):
                             [reason, first],
                         )
                     if "coverage" in tables:
-                        for market, code in sorted(
-                            {(r[1], r[2]) for r in records if not r[4].startswith("facts:")}
-                        ):
-                            key_records = [r for r in records if (r[1], r[2]) == (market, code)]
-                            if all(r[7] != "null" and r[8] != "null" for r in key_records):
-                                # Value-only corrections cannot change coverage extents/count.
+                        grouped = {}
+                        for record in records:
+                            if not record[4].startswith("facts:"):
+                                grouped.setdefault((record[1], record[2]), []).append(record)
+                        for (market, code), key_records in sorted(grouped.items()):
+                            added = [r[3] for r in key_records if r[7] == "null"]
+                            removed = [r[3] for r in key_records if r[8] == "null"]
+                            if not added and not removed:
                                 continue
-                            extent = c.execute(
-                                """SELECT min(trade_date),max(trade_date),count(*)
-                                FROM dg03_daily WHERE __market=? AND __code=?""",
+                            old_extent = c.execute(
+                                "SELECT start_date,end_date,row_count FROM coverage "
+                                "WHERE market=? AND symbol=?",
                                 [market, code],
                             ).fetchone()
+                            if old_extent and not ({old_extent[0], old_extent[1]} & set(removed)):
+                                # Ordinary appends and interior deletions use metadata only.
+                                extent = (
+                                    min([old_extent[0], *added]),
+                                    max([old_extent[1], *added]),
+                                    old_extent[2] + len(added) - len(removed),
+                                )
+                            else:
+                                # Boundary deletion or missing coverage is an explicit repair path.
+                                extent = c.execute(
+                                    """SELECT min(trade_date),max(trade_date),count(*)
+                                    FROM dg03_daily WHERE __market=? AND __code=?""",
+                                    [market, code],
+                                ).fetchone()
                             if extent[2]:
                                 c.execute(
                                     """INSERT INTO coverage VALUES (?,?,?,?,?,?,current_timestamp)
@@ -296,10 +331,16 @@ class CandidatePool(DataPool):
                                     "DELETE FROM coverage WHERE symbol=? AND market=?",
                                     [code, market],
                                 )
+                if _fault_hook:
+                    _fault_hook("before_commit")
                 c.execute("COMMIT")
+                committed = True
+                if _fault_hook:
+                    _fault_hook("after_commit")
                 return {"changed": len(records), "revision": revision + bool(records)}
             except BaseException:
-                c.execute("ROLLBACK")
+                if not committed:
+                    c.execute("ROLLBACK")
                 raise
 
     @public_read
@@ -464,3 +505,127 @@ class CandidatePool(DataPool):
             dataset_version=None,
         )
         return frame[selected].copy()
+
+    @public_read
+    def status(self):
+        with pool_lock(self.root):
+            storage = DailyStorage(self.root)
+            with duckdb.connect() as conn:
+                try:
+                    files = storage.bind(conn, "bars")
+                except ValueError as exc:
+                    raise DataPoolError("DAILY_INVALID", str(exc)) from exc
+                if not files:
+                    return {"backend": "aspool", "status": "empty", "root": str(self.root)}
+                names = {row[0] for row in conn.execute("describe bars").fetchall()}
+                asset_clause = (
+                    "WHERE asset_type IS NULL OR asset_type <> 'etf'"
+                    if "asset_type" in names
+                    else ""
+                )
+                rows, symbols, start, end = conn.execute(
+                    f"""SELECT count(*), count(distinct (market, symbol)),
+                    min(trade_date), max(trade_date) FROM bars {asset_clause}"""
+                ).fetchone()
+                etf_rows = etf_symbols = etf_start = etf_end = 0
+                if "asset_type" in names:
+                    etf_rows, etf_symbols, etf_start, etf_end = conn.execute(
+                        """SELECT count(*), count(distinct (market, symbol)),
+                        min(trade_date), max(trade_date) FROM bars WHERE asset_type = 'etf'"""
+                    ).fetchone()
+        return dict(
+            backend="aspool",
+            status="available",
+            root=str(self.root),
+            row_count=rows,
+            symbol_count=symbols,
+            start=str(start),
+            end=str(end),
+            price_adjustment="raw",
+            etf_row_count=etf_rows,
+            etf_symbol_count=etf_symbols,
+            etf_start=str(etf_start) if etf_start is not None else None,
+            etf_end=str(etf_end) if etf_end is not None else None,
+        )
+
+    @public_read
+    def read_etf_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
+        """Read ETF daily bars with security (share/amount/turnover) semantics."""
+        from .dg03_etf import read_etf_daily
+
+        return read_etf_daily(
+            self.root, symbols=symbols, start=start, end=end, lookback=lookback, fields=fields
+        )
+
+    @public_read
+    def list_etfs(self, *, symbols=None):
+        """List synchronized ETFs and their actual date coverage."""
+        from .dg03_etf import list_etfs
+
+        return list_etfs(self.root, symbols=symbols)
+
+    def iter_limit_events_with_amount(
+        self,
+        *,
+        start,
+        end,
+        symbols=None,
+        fields=None,
+        close_limit_up=None,
+        min_consecutive_up=None,
+        batch_days=7,
+        max_rows=25_000,
+        memory_limit="512MB",
+        threads=2,
+        temp_directory=None,
+    ):
+        """Read published events and same-day CNY amount in bounded date batches.
+
+        Use as a context manager. A changed publication/stale state raises
+        LIMIT_REVISION_CHANGED, so callers must discard their staging output.
+        """
+
+        return CandidateEventAmountBatches(
+            self.root,
+            start=start,
+            end=end,
+            symbols=symbols,
+            fields=fields,
+            close_limit_up=close_limit_up,
+            min_consecutive_up=min_consecutive_up,
+            batch_days=batch_days,
+            max_rows=max_rows,
+            memory_limit=memory_limit,
+            threads=threads,
+            temp_directory=temp_directory,
+        )
+
+
+class CandidateEventAmountBatches(EventAmountBatches):
+    """Retain bounded batch/version checks; replace only the amount lookup."""
+
+    def _versions(self):
+        base = super()._versions()
+        with pool_lock(self.root), read_only_catalog(self.root) as c:
+            revision = c.execute("SELECT revision FROM dg03_revision").fetchone()[0]
+        return base, revision
+
+    def _attach_amount(self, frame, lo, hi):
+        import numpy as np
+
+        with pool_lock(self.root), read_only_catalog(self.root) as c:
+            self._configure(c)
+            keys = frame[["trade_date", "symbol"]].copy()
+            keys["__code"] = keys.symbol.str.split(".").str[0]
+            keys["__market"] = keys.symbol.str.split(".").str[1]
+            c.register("event_keys", keys)
+            amount = c.execute(
+                """SELECT e.trade_date,e.symbol,d.amount FROM event_keys e
+                JOIN dg03_daily d USING(__market,__code,trade_date)
+                WHERE d.trade_date BETWEEN ? AND ?""",
+                [lo, hi],
+            ).fetchdf()
+        finite = amount.amount.dropna().to_numpy(dtype=float)
+        if not np.isfinite(finite).all() or (finite < 0).any():
+            raise DataPoolError("DAILY_INVALID", "Invalid daily amount")
+        return frame.merge(amount, on=["trade_date", "symbol"], how="left", validate="one_to_one")

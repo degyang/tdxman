@@ -72,8 +72,12 @@ def measured(name, fn, root=None):
     thread = threading.Thread(target=watch, daemon=True)
     thread.start()
     start = time.perf_counter()
+    result = None
+    failure = None
     try:
         result = fn()
+    except BaseException as exc:
+        failure = exc
     finally:
         elapsed = time.perf_counter() - start
         done.set()
@@ -88,7 +92,11 @@ def measured(name, fn, root=None):
         disk_after=tree_bytes(root) if root else 0,
         peak_sampled_disk=max(peak_disk),
         result=result,
+        status="failed" if failure else "passed",
+        error=repr(failure) if failure else None,
     )
+    if failure:
+        raise failure
     return result
 
 
@@ -101,6 +109,8 @@ def connect(root, read_only=False):
 def clone(source, target):
     for name in ["catalog.duckdb", "source-schema.json"]:
         shutil.copy2(source / name, target / name)
+    if (source / "lake").exists():
+        shutil.copytree(source / "lake", target / "lake")
 
 
 def provenance():
@@ -271,7 +281,7 @@ def reads():
         lambda: candidate_etf(LAB / "candidate", start=start, end=end),
     )
     # Five-year full-market all-column API is deliberately bounded by 60 natural days.
-    for repeat in range(3):
+    for repeat in range(1):
         start = date(2021, 9, 25)
         total = 0
         old_total = new_total = 0
@@ -307,6 +317,10 @@ def reads():
             candidate_seconds=new_total,
             exact=True,
         )
+    sparse()
+
+
+def sparse():
     with connect(LAB / "candidate", True) as c:
         events = c.execute(
             "SELECT e.symbol,e.trade_date FROM daily_limit_events e "
@@ -453,6 +467,32 @@ def growth(factors=(1, 2, 5), more_securities=True):
                 .to_dict()
             )
         pool = CandidatePool(root)
+        with connect(root, True) as c:
+            names = [r[0] for r in c.execute("DESCRIBE dg03_daily").fetchall()]
+            seeds = c.execute(
+                "SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'"
+            ).fetchall()
+        market_changes = []
+        for item in seeds:
+            values = dict(zip(names, item))
+            market_changes.append(
+                dict(
+                    market=values.pop("__market"),
+                    code=values.pop("__code"),
+                    trade_date="2026-09-25",
+                    values={k: v for k, v in values.items() if k != "trade_date"},
+                )
+            )
+        measured(
+            f"growth_{factor}x_full_market_insert",
+            lambda: pool.apply(market_changes, source="synthetic", reason="whole market next day"),
+            root,
+        )
+        measured(
+            f"growth_{factor}x_full_market_noop",
+            lambda: pool.apply(market_changes, source="synthetic", reason="whole market retry"),
+            root,
+        )
         for cycle in range(12):
             changes = [
                 dict(
@@ -564,23 +604,24 @@ def mutations():
 def process_child(mode, root):
     # The parent waits for READY, then SIGKILLs genuine separate processes.
     if mode in {"crash_uncommitted", "crash_committed"}:
-        c = connect(root)
-        c.execute("SET wal_autocheckpoint='1GB'")
-        c.execute("CREATE TABLE IF NOT EXISTS crash_probe(id INTEGER PRIMARY KEY)")
-        key = c.execute(
-            "SELECT __market,__code,trade_date,amount FROM dg03_daily "
-            "ORDER BY __market,__code,trade_date LIMIT 1"
-        ).fetchone()
-        c.execute("CHECKPOINT; BEGIN; INSERT INTO crash_probe VALUES (1)")
-        c.execute(
-            "UPDATE dg03_daily SET amount=amount+7 WHERE __market=? AND __code=? AND trade_date=?",
-            list(key[:3]),
+        with connect(root, True) as c:
+            key = c.execute(
+                "SELECT __market,__code,trade_date,amount FROM dg03_daily "
+                "ORDER BY __market,__code,trade_date LIMIT 1"
+            ).fetchone()
+
+        def fault(point):
+            expected = "before_commit" if mode == "crash_uncommitted" else "after_commit"
+            if point == expected:
+                print("READY", flush=True)
+                time.sleep(300)
+
+        CandidatePool(root).apply(
+            [dict(market=key[0], code=key[1], trade_date=key[2], values={"amount": key[3] + 7})],
+            source="crash:test",
+            reason="crash test",
+            _fault_hook=fault,
         )
-        c.execute("UPDATE dg03_revision SET revision=revision+1")
-        if mode == "crash_committed":
-            c.execute("COMMIT")
-        print("READY", flush=True)
-        time.sleep(300)
     elif mode == "hold_write":
         with pool_lock(root, write=True), connect(root) as c:
             print("READY", flush=True)
@@ -637,7 +678,12 @@ def recovery():
         p.wait()
         tick = time.perf_counter()
         with connect(root) as c:
-            count = c.execute("SELECT count(*) FROM crash_probe").fetchone()[0]
+            count = c.execute("SELECT count(*) FROM dg03_changes").fetchone()[0]
+            tables = {r[0] for r in c.execute("SHOW TABLES").fetchall()}
+            if "daily_limit_staleness" in tables:
+                stale = c.execute("SELECT count(*) FROM daily_limit_staleness").fetchone()[0]
+            else:
+                stale = None
             amount = c.execute(
                 "SELECT amount FROM dg03_daily ORDER BY __market,__code,trade_date LIMIT 1"
             ).fetchone()[0]
@@ -650,6 +696,7 @@ def recovery():
             returncode=p.returncode,
             wal_before_kill=wal,
             recovered_rows=count,
+            recovered_stale_count=stale,
             recovered_amount=amount,
             recovered_revision=revision,
             recovery_seconds=time.perf_counter() - tick,
@@ -707,7 +754,8 @@ def recovery():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "phase", choices=["build", "parity", "reads", "mutations", "growth", "recovery", "child"]
+        "phase",
+        choices=["build", "parity", "reads", "mutations", "growth", "recovery", "sparse", "child"],
     )
     parser.add_argument("--mode")
     parser.add_argument("--factor", type=int, choices=[1, 2, 5])
@@ -724,6 +772,7 @@ def main():
             "build": build_phase,
             "parity": parity,
             "reads": reads,
+            "sparse": sparse,
             "mutations": mutations,
             "growth": lambda: growth(
                 [args.factor] if args.factor else [1, 2, 5],

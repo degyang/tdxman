@@ -227,3 +227,48 @@ def test_frozen_public_read_semantics():
     original = ast.parse(textwrap.dedent(inspect.getsource(DataPool.read_daily.__wrapped__)))
     candidate = ast.parse(textwrap.dedent(inspect.getsource(CandidatePool.read_daily.__wrapped__)))
     assert ast.dump(original) == ast.dump(candidate)
+
+
+def test_candidate_public_status_and_etf_routes(candidate):
+    source, target, pool = candidate
+    expected = DataPool(source).status()
+    actual = pool.status()
+    expected.pop("root")
+    actual.pop("root")
+    assert actual == expected
+    pd.testing.assert_frame_equal(DataPool(source).read_etf_daily(), pool.read_etf_daily())
+    pd.testing.assert_frame_equal(DataPool(source).list_etfs(), pool.list_etfs())
+
+
+def test_candidate_event_amount_revision_and_missing(tmp_path):
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location(
+        "old_amount_fixture", Path(__file__).with_name("test_limit_amount.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    source = tmp_path / "source"
+    module._seed(source)
+    target = tmp_path / "candidate"
+    build(source, target)
+    pool = CandidatePool(target)
+    params = dict(start="2026-09-23", end="2026-09-24", batch_days=1)
+    with DataPool(source).iter_limit_events_with_amount(**params) as old:
+        expected = list(old)
+    with pool.iter_limit_events_with_amount(**params) as new:
+        actual = list(new)
+    for a, b in zip(expected, actual, strict=True):
+        pd.testing.assert_frame_equal(a, b)
+    with pool.iter_limit_events_with_amount(**params) as new:
+        next(new)
+        pool.apply(
+            [dict(market="SZ", code="000001", trade_date="2026-09-23", values={"amount": 13000.0})],
+            source="test",
+            reason="correction",
+        )
+        with pytest.raises(DataPoolError) as error:
+            next(new)
+        assert error.value.code == "LIMIT_REVISION_CHANGED"
+    assert new.closed
