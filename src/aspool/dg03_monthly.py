@@ -71,7 +71,9 @@ def month_bounds(key):
 
 def initialize(snapshot, target, schema_source):
     target = Path(target).resolve()
-    if target == Path(snapshot).resolve() or str(target).startswith(str(Path.home() / ".aspool")):
+    if target.is_relative_to(Path(snapshot).resolve()) or str(target).startswith(
+        str(Path.home() / ".aspool")
+    ):
         raise ValueError("unsafe monthly target")
     target.mkdir(parents=True, exist_ok=False)
     shutil.copy2(Path(snapshot) / "catalog.duckdb", target / "catalog.duckdb")

@@ -194,3 +194,29 @@ def test_monthly_changed_months_and_portable_snapshot(monthly, tmp_path):
         with pytest.raises(DataPoolError) as caught:
             method()
         assert caught.value.code == "DAILY_INVALID"
+
+
+def test_monthly_facts_only_plus_noop_preserves_parts(monthly):
+    root, pool, _ = monthly
+    with connection(root) as c:
+        c.execute(
+            "CREATE TABLE security_daily_facts(symbol VARCHAR,trade_date DATE,"
+            "pre_close DOUBLE,is_st BOOLEAN,trading_status VARCHAR,source VARCHAR,"
+            "fetched_at TIMESTAMP,PRIMARY KEY(symbol,trade_date))"
+        )
+        before = c.execute("SELECT * FROM dg03_monthly_parts ORDER BY month").fetchall()
+    changes = [
+        dict(market="SH", code="000001", trade_date="2025-01-02", values={"amount": 1000.0}),
+        dict(
+            domain="facts",
+            market="SH",
+            code="000001",
+            trade_date="2025-01-02",
+            values=dict(pre_close=9.0, source="new", fetched_at="2025-01-02"),
+        ),
+    ]
+    result = pool.apply(changes, source="test", reason="facts with raw no-op")
+    assert result["changed"] == 1 and result["published_months"] == 0
+    with connection(root, True) as c:
+        assert c.execute("SELECT * FROM dg03_monthly_parts ORDER BY month").fetchall() == before
+        assert c.execute("SELECT pre_close FROM security_daily_facts").fetchone() == (9.0,)
