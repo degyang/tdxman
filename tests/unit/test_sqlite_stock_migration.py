@@ -124,12 +124,24 @@ def test_full_source_migration_and_resume(tmp_path):
     verified = verifier.verify(target)
     assert verified["status"] == "verified"
     assert verified["counts"]["daily_bars"] == 1
+    reused = verifier.verify(target, reuse_source_integrity=True)
+    assert reused["integrity_check_origin"] == "source_reused_after_sha256_match"
+    result_path = target / "_reports/facts-result.json"
+    original_result = result_path.read_text()
+    missing_evidence = json.loads(original_result)
+    missing_evidence.pop("integrity_check")
+    result_path.write_text(json.dumps(missing_evidence))
+    with pytest.raises(ValueError, match="Source integrity evidence"):
+        verifier.verify(target, reuse_source_integrity=True)
+    result_path.write_text(original_result)
     with stock_connection(target, read_only=False) as c:
         c.execute("UPDATE daily_bars SET close=9.75")
         c.commit()
         c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     with pytest.raises(ValueError, match="checksum"):
         verifier.verify(target)
+    with pytest.raises(ValueError, match="checksum"):
+        verifier.verify(target, reuse_source_integrity=True)
     with pytest.raises(FileExistsError):
         migration.migrate(frozen, target)
     (frozen / "catalog.duckdb").write_bytes(b"changed")

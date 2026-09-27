@@ -24,7 +24,7 @@ def digest(path):
     return value.hexdigest()
 
 
-def verify(root):
+def verify(root, *, reuse_source_integrity=False):
     root = root.resolve()
     report = json.loads((root / "_reports/facts-result.json").read_text())
     path = root / "stocks.sqlite"
@@ -46,8 +46,14 @@ def verify(root):
             "SELECT name FROM sqlite_master WHERE type='index'")}
         if tables != TABLES or not INDEXES <= indexes:
             raise ValueError("Missing/extra tables or missing indexes")
-        if conn.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
-            raise ValueError("SQLite integrity check failed")
+        if reuse_source_integrity:
+            if report.get("integrity_check") != "ok":
+                raise ValueError("Source integrity evidence is missing or unsuccessful")
+            integrity_origin = "source_reused_after_sha256_match"
+        else:
+            if conn.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
+                raise ValueError("SQLite integrity check failed")
+            integrity_origin = "local_full_check"
         counts = {table: conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
                   for table in sorted(TABLES)}
         if counts != dict(report["rows"], market_daily_summary=0):
@@ -56,7 +62,9 @@ def verify(root):
                               "WHERE symbol=? ORDER BY trade_date DESC LIMIT 5", ["000001.SZ"])
         sample = [dict(zip([c[0] for c in cursor.description], row)) for row in cursor.fetchall()]
         return {"status": "verified", "stage": "source_facts_only", "counts": counts,
-                "database_bytes": path.stat().st_size, "integrity_check": "ok",
+                "database_bytes": path.stat().st_size,
+                "database_sha256": report["database_sha256"],
+                "integrity_check": "ok", "integrity_check_origin": integrity_origin,
                 "sqlite_version": sqlite3.sqlite_version, "sample": sample,
                 "derived_ready": False, "production_ready": False}
     finally:
@@ -67,8 +75,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target-root", type=Path, required=True)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--reuse-source-integrity", action="store_true",
+                        help="Reuse successful source integrity evidence only after exact "
+                             "SHA-256/size match; still check local schema, counts and reads")
     args = parser.parse_args()
-    result = verify(args.target_root)
+    result = verify(args.target_root, reuse_source_integrity=args.reuse_source_integrity)
     payload = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
