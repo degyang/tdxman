@@ -324,5 +324,28 @@
     "archive": "transcript captured",
     "followup_reuse_preflight": "agent_unconfigured; no new dispatch created",
     "recovery": "fresh supervised review on same main read-only placement"
+  },
+  "dg03_independent_review": {
+    "task_id": "task_1ef9487d36e2",
+    "dispatch_id": "ctx_0ce55fe1c106",
+    "terminal": "term_6d207442-afb6-42cd-993c-858b8a631680",
+    "state": "ready",
+    "stage": "input_accepted",
+    "turn_start": "observed",
+    "requested": {
+      "model": "gpt-6-astra",
+      "effort": "high"
+    },
+    "effective": {
+      "model": "gpt-6-astra",
+      "effort": "high"
+    },
+    "process_incarnation": "5dce064a-0793-43c1-964c-20fc62292cd0",
+    "source_commit": "c1a46fb05cd3f119eecfb36a4d59d6c61a10a8db",
+    "scope": "read-only protocol/source review; no successful tests or benchmarks repeated",
+    "report": "docs/evidence/data-remediation/20260927-dg03-review/review.md",
+    "outcome": "succeeded (review completed with two P2 proof gaps)",
+    "worker_done": "msg_a4ce04405e69",
+    "cleanup": "released; closed_agent_terminal; transcript captured"
   }
 }
