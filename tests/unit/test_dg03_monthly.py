@@ -252,3 +252,15 @@ def test_monthly_bind_preserves_caller_threads(monthly):
             c.execute("SET threads=?", [threads])
             MonthlyStorage(root).bind(c, "bars", symbols=["SH.000001"])
             assert c.execute("SELECT current_setting('threads')").fetchone() == (threads,)
+
+
+def test_monthly_status_and_etf_listing(monthly):
+    _, pool, expected = monthly
+    left, right = pool.status(), expected.status()
+    left.pop("root")
+    right.pop("root")
+    assert left == right
+    pd.testing.assert_frame_equal(pool.list_etfs(), expected.list_etfs())
+    pd.testing.assert_frame_equal(
+        pool.list_etfs(symbols=["510300.SH"]), expected.list_etfs(symbols=["510300.SH"])
+    )
