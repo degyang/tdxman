@@ -142,6 +142,8 @@ def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, obje
 def import_daily(
     root: Path, source_root: Path, incremental: bool, limit: int | None = None
 ) -> ImportStats:
+    from .daily_storage import merge_daily
+
     initialize(root)
     source_name = f"free-stockdb:{source_root.resolve()}"
     run_id = uuid4().hex
@@ -170,29 +172,14 @@ def import_daily(
             else:
                 records = source.daily_bars_many(symbols)
             for symbol, raw_rows in records:
-                start = last_date(root, symbol) if incremental else None
                 rows = _normalize(raw_rows, symbol)
                 if not rows:
                     continue
                 market = _market(symbol)
-                if incremental and start is not None:
-                    existing = daily_path(root, market, symbol)
-                    if existing.exists():
-                        prior = pq.read_table(existing).to_pylist()
-                        rows = _normalize(prior + rows, symbol)
                 deduplicated = {row["trade_date"]: row for row in rows}
                 rows = [deduplicated[key] for key in sorted(deduplicated)]
-                _write_daily(root, market, symbol, rows)
-                record_coverage(
-                    root,
-                    symbol,
-                    market,
-                    rows[0]["trade_date"],
-                    rows[-1]["trade_date"],
-                    len(rows),
-                    source_name,
-                )
-                stats = ImportStats(stats.symbols + 1, stats.rows + len(rows))
+                changed = merge_daily(root, market, symbol, rows, source_name)
+                stats = ImportStats(stats.symbols + 1, stats.rows + changed)
         with catalog(root) as conn:
             conn.execute(
                 "update sync_runs set finished_at=current_timestamp, symbols=?, "

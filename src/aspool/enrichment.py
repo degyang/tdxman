@@ -11,6 +11,7 @@ from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from itertools import product
 from pathlib import Path
+from time import perf_counter
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -269,6 +270,7 @@ def derive_rows(rows, facts, source, sessions, start, end):
 
 @writer
 def _publish(root, jobs, sessions, start, end):
+    from .change_observation import add_cost, daily_changes, empty_cost, save_changes
     from .limit_events import _mark_stale, _published_dates_from, initialize_limits
     from .security_facts import initialize_facts
     from .store import catalog
@@ -276,32 +278,46 @@ def _publish(root, jobs, sessions, start, end):
     results = []
     initialize_facts(root)
     initialize_limits(root)
-    _mark_stale(root, _published_dates_from(root, start), "日线指标及参考价补齐，等待重算")
     for code, market, source in jobs:
+        started = perf_counter()
+        metrics, applied_changes = empty_cost(), []
+        lifecycle_changed = False
         try:
             if source:
                 raw_ipo = str(source["finance"].get("ipo_date", ""))
                 if len(raw_ipo) == 8:
                     ipo = datetime.strptime(raw_ipo, "%Y%m%d").date()
                     with catalog(root) as conn:
-                        conn.execute(
-                            """INSERT INTO security_lifecycle
-                            (symbol,listing_date,source,fetched_at) VALUES (?,?,?,current_timestamp)
-                            ON CONFLICT(symbol) DO UPDATE SET
-                            listing_date=coalesce(security_lifecycle.listing_date,excluded.listing_date)
-                            """,
-                            [f"{code}.{market}", ipo, "tdx:finance"],
-                        )
+                        prior_lifecycle = conn.execute(
+                            "SELECT listing_date FROM security_lifecycle WHERE symbol=?",
+                            [f"{code}.{market}"],
+                        ).fetchone()
+                        if prior_lifecycle is None or prior_lifecycle[0] is None:
+                            stale = _published_dates_from(root, ipo)
+                            _mark_stale(root, stale, "新增上市日期事实，等待重算")
+                            add_cost(metrics, stale_date_marks=len(stale))
+                            conn.execute(
+                                """INSERT INTO security_lifecycle
+                                (symbol,listing_date,source,fetched_at)
+                                VALUES (?,?,?,current_timestamp)
+                                ON CONFLICT(symbol) DO UPDATE SET listing_date=excluded.listing_date
+                                """,
+                                [f"{code}.{market}", ipo, "tdx:finance"],
+                            )
+                            lifecycle_changed = True
             paths = daily_paths(root, market, code)
             tables = []
             rows = []
             for p in paths:
                 table = pq.ParquetFile(p).read()
+                add_cost(metrics, files_read=1, rows_read=len(table),
+                         file_bytes_read_proxy=p.stat().st_size)
                 dates = table["trade_date"].to_pylist()
                 offset = max(0, bisect_left(dates, start - timedelta(days=30)) - 5)
                 tail = table.slice(offset)
                 tables.append((p, table, offset, tail))
                 rows.extend(tail.to_pylist())
+                add_cost(metrics, rows_materialized=len(tail))
             if [r["trade_date"] for r in rows] != sorted({r["trade_date"] for r in rows}):
                 raise ValueError("Duplicate or unordered daily dates")
             # Read pre-window status facts for rolling volume baselines.
@@ -313,6 +329,7 @@ def _publish(root, jobs, sessions, start, end):
                 rows, facts, source, sessions, start, end
             )
             replacements = {r["trade_date"]: r for r in updates}
+            before = {r["trade_date"]: r for r in rows}
             for path, table, offset, tail in tables:
                 if not any(d in replacements for d in tail["trade_date"].to_pylist()):
                     continue
@@ -326,8 +343,23 @@ def _publish(root, jobs, sessions, start, end):
                     result = pa.concat_tables([table.slice(0, offset), result],
                                               promote_options="permissive")
                 temp = path.with_suffix(f".{uuid4().hex}.part")
-                pq.write_table(result, temp, compression="zstd")
-                temp.replace(path)
+                tail_days = set(tail["trade_date"].to_pylist())
+                file_updates = [r for r in updates if r["trade_date"] in tail_days]
+                delta = daily_changes(before, file_updates, f"{code}.{market}",
+                                      VERSION, "optional_field_enrichment")
+                try:
+                    pq.write_table(result, temp, compression="zstd")
+                    stale = _published_dates_from(root, min(r["trade_date"] for r in file_updates))
+                    _mark_stale(root, stale, "日线指标及参考价变化，等待重算")
+                    add_cost(metrics, stale_date_marks=len(stale))
+                    written_bytes = temp.stat().st_size
+                    temp.replace(path)
+                finally:
+                    temp.unlink(missing_ok=True)
+                applied_changes.extend(delta)
+                add_cost(metrics, files_rewritten=1, file_bytes_rewritten=written_bytes,
+                         rows_rewritten=len(result), changed_rows=len(delta))
+            metrics["elapsed_seconds"] = perf_counter() - started
             results.append(
                 dict(
                     symbol=f"{code}.{market}",
@@ -335,11 +367,42 @@ def _publish(root, jobs, sessions, start, end):
                     fields=dict(counts),
                     missing=dict(missing),
                     conflicts=conflicts,
+                    change_report=save_changes(root, applied_changes),
+                    change_start=min(replacements).isoformat() if replacements else None,
+                    change_end=max(replacements).isoformat() if replacements else None,
+                    cost=metrics,
+                    lifecycle_changed=lifecycle_changed,
                 )
             )
         except Exception as exc:
-            results.append(dict(symbol=f"{code}.{market}", error=str(exc)))
+            metrics["elapsed_seconds"] = perf_counter() - started
+            results.append(dict(symbol=f"{code}.{market}", error=str(exc),
+                                changed_rows=len(applied_changes),
+                                change_report=save_changes(root, applied_changes, status="partial"),
+                                change_start=min((r["trade_date"] for r in applied_changes),
+                                                 default=None),
+                                change_end=max((r["trade_date"] for r in applied_changes),
+                                               default=None),
+                                cost=metrics, lifecycle_changed=lifecycle_changed))
     return results
+
+
+def _recompute_dates(root, start, end, results):
+    """Keep retries for existing stale/missing publications, skip true no-ops."""
+    with pool_lock(root), read_only_catalog(root) as conn:
+        pending = {row[0] for row in conn.execute(
+            "SELECT trade_date FROM daily_limit_staleness WHERE trade_date BETWEEN ? AND ?",
+            [start, end],
+        ).fetchall()}
+        pending.update(row[0] for row in conn.execute(
+            "SELECT c.trade_date FROM security_calendar c WHERE c.is_open "
+            "AND c.trade_date BETWEEN ? AND ? AND NOT EXISTS "
+            "(SELECT 1 FROM daily_limit_publication p WHERE p.trade_date=c.trade_date)",
+            [start, end],
+        ).fetchall())
+    pending.update(date.fromisoformat(result[key]) for result in results
+                   for key in ("change_start", "change_end") if result.get(key))
+    return sorted(pending)
 
 
 def audit_conflicts(root, results):
@@ -469,8 +532,10 @@ def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers
         if recompute:
             from .limit_events import compute_limit_events
 
-            report["limit_batches"] = len(compute_limit_events(
-                root, [start - timedelta(days=120), end], cache_years=6))
+            dates = _recompute_dates(root, start, end, report["results"])
+            report["limit_requested_dates"] = [day.isoformat() for day in dates]
+            report["limit_batches"] = (len(compute_limit_events(root, dates, cache_years=6))
+                                       if dates else 0)
         report["status"] = (
             "partial"
             if report["source_failures"] or any("error" in r for r in report["results"])

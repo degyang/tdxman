@@ -11,7 +11,7 @@ import pyarrow.parquet as pq
 
 from .daily_storage import build_field_quality_report, is_missing_value, merge_daily
 from .fetch import client_factory, fetch_async, fetch_sync
-from .free_stockdb import _market, _normalize, _write_daily
+from .free_stockdb import _market, _normalize
 from .index_lists import atomic_json
 from .pool import writer
 from .store import (
@@ -136,7 +136,8 @@ def _merge_rows(
         }
         if previous:
             for field, inputs in dependencies.items():
-                if inputs & changed and field not in changed:
+                if (inputs & changed and field not in changed
+                        and (field in previous or field + "_source" in previous)):
                     result[field] = None
                     result[field + "_source"] = "unknown:inputs_changed"
             if "volume" in changed:
@@ -413,6 +414,8 @@ async def _sync_daily_run(
 
 @writer
 def _publish_stock_rows(root, pending, asset_type="stock"):
+    from .change_observation import empty_cost, save_changes
+
     coverage = []
     quality_rows = []
     results, failures = [], []
@@ -438,6 +441,7 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
                     {**row, "name": names.get(symbol), "asset_type": "etf"} for row in incoming
                 ]
             changed_dates: list = []
+            changes, metrics = [], empty_cost()
             changed = merge_daily(
                 root,
                 _market(symbol),
@@ -447,6 +451,8 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
                 coverage=coverage,
                 changed_dates=changed_dates,
                 quality_rows=quality_rows,
+                changes=changes,
+                metrics=metrics,
             )
             results.append(
                 {
@@ -455,6 +461,8 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
                     "changed_rows": changed,
                     # ISO 字符串：直接进入 JSON 报告。
                     "changed_dates": [d.isoformat() for d in changed_dates],
+                    "change_report": save_changes(root, changes),
+                    "cost": metrics,
                 }
             )
         except Exception as exc:
@@ -534,10 +542,6 @@ def update_daily_offline(
         market = _tdx_market(symbol, Market)
         if market == Market.BJ:
             continue
-        path = bars_path(root, "daily", _market(symbol), symbol)
-        prior = _normalize(pq.read_table(path).to_pylist(), symbol) if path.exists() else []
-        if asset_type == "etf":
-            prior = [row for row in prior if row["trade_date"] >= ETF_HISTORY_START]
         try:
             source = read_daily_bars(find_daily_bar_file(market, symbol))
             if existing:
@@ -568,20 +572,10 @@ def update_daily_offline(
             ]
         if not incoming:
             continue
-        rows = _fill_close_vol_ratio(_merge_rows(prior, incoming, "trade_date"))
-        _write_daily(root, _market(symbol), symbol, rows)
-        record_coverage(
-            root,
-            symbol,
-            _market(symbol),
-            rows[0]["trade_date"],
-            rows[-1]["trade_date"],
-            len(rows),
-            f"tdxman:{asset_type}:offline",
-            "daily",
-        )
+        changed = merge_daily(root, _market(symbol), symbol, incoming,
+                              f"tdxman:{asset_type}:offline")
         count += 1
-        written += len(incoming)
+        written += changed
     return count, written
 
 

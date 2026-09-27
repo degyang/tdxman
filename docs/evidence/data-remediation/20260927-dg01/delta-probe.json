@@ -1,0 +1,410 @@
+{
+  "observed_at": "2026-09-27T06:06:51.090014+00:00",
+  "snapshot": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot",
+  "root": "/home/ubuntu/aspool-labs/20260927-dg01/delta-probe-final/pool",
+  "base_commit": "6cc4fd9622656a23c92fbf4e1fdbce76bb4922f5",
+  "source_hashes": {
+    "daily_storage.py": "bbe63689746c3df79c8936f4fe663a643db78bfe9314f1971238c1e5880eaa50",
+    "change_observation.py": "8793e32c6f98574eb5304a82db7e0174ef5882111f5ab13295cc426533dcf5ea",
+    "tdx_online.py": "94b020eeb861fcdf545a3d50c4f3aa47ff50077f45086db3100d4ad3105631e1"
+  },
+  "dependencies": {
+    "duckdb": "1.5.5",
+    "pyarrow": "25.0.1",
+    "pandas": "3.0.5"
+  },
+  "peak_rss_bytes": 329109504,
+  "public_rows": 8,
+  "results": [
+    {
+      "symbol": "000001.SZ",
+      "correction": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 520106,
+        "rows_read": 6318,
+        "rows_materialized": 6,
+        "files_rewritten": 1,
+        "file_bytes_rewritten": 520106,
+        "rows_rewritten": 6318,
+        "changed_rows": 1,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.053021976998934406
+      },
+      "replay": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 520106,
+        "rows_read": 6318,
+        "rows_materialized": 6,
+        "files_rewritten": 0,
+        "file_bytes_rewritten": 0,
+        "rows_rewritten": 0,
+        "changed_rows": 0,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.005733345000408008
+      },
+      "source_sha256": "b7404e0948c573d934606647a014be1e9713613268adc1c635ff8b4105fbc1a1",
+      "changes": [
+        {
+          "symbol": "000001.SZ",
+          "trade_date": "2026-09-24",
+          "operation": "update",
+          "fields": [
+            "amount"
+          ],
+          "before": {
+            "amount": 1186736896
+          },
+          "after": {
+            "amount": 1186736897
+          },
+          "source": "isolated:delta-probe",
+          "reason": "daily_merge",
+          "input_row_version": "53530a9d8e766c721cec548305a146349d36d0a91c87b9a49d424d491bd4bf53",
+          "output_row_version": "d818212b06b7ea7a8772245f58f537d57dd1f2b08c06ac640d8e38f771635fe9"
+        }
+      ]
+    },
+    {
+      "symbol": "000002.SZ",
+      "correction": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 530818,
+        "rows_read": 6266,
+        "rows_materialized": 6,
+        "files_rewritten": 1,
+        "file_bytes_rewritten": 530818,
+        "rows_rewritten": 6266,
+        "changed_rows": 1,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.050236170000061975
+      },
+      "replay": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 530818,
+        "rows_read": 6266,
+        "rows_materialized": 6,
+        "files_rewritten": 0,
+        "file_bytes_rewritten": 0,
+        "rows_rewritten": 0,
+        "changed_rows": 0,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.0053960750010446645
+      },
+      "source_sha256": "fc3d1cafd3468fc7448a969cffabcf9cf763663c87d23ba0eba2eb9c2c5a42cf",
+      "changes": [
+        {
+          "symbol": "000002.SZ",
+          "trade_date": "2026-09-24",
+          "operation": "update",
+          "fields": [
+            "amount"
+          ],
+          "before": {
+            "amount": 2512837888
+          },
+          "after": {
+            "amount": 2512837889
+          },
+          "source": "isolated:delta-probe",
+          "reason": "daily_merge",
+          "input_row_version": "869379cc690c1e7b79c4777300c15581bc3018918f4cf12d683456301a13e09d",
+          "output_row_version": "edf14ffd8cdbf97b951fb4e489f7d8910c73cc67d81e0525053f92284138ba0f"
+        }
+      ]
+    },
+    {
+      "symbol": "000333.SZ",
+      "correction": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 333676,
+        "rows_read": 3102,
+        "rows_materialized": 6,
+        "files_rewritten": 1,
+        "file_bytes_rewritten": 333677,
+        "rows_rewritten": 3102,
+        "changed_rows": 1,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.048003017998780706
+      },
+      "replay": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 333677,
+        "rows_read": 3102,
+        "rows_materialized": 6,
+        "files_rewritten": 0,
+        "file_bytes_rewritten": 0,
+        "rows_rewritten": 0,
+        "changed_rows": 0,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.003012827000929974
+      },
+      "source_sha256": "12f706206a96feba6c48dbb8147568d9b17f2c0553cd5121f6bdb4dda231c375",
+      "changes": [
+        {
+          "symbol": "000333.SZ",
+          "trade_date": "2026-09-24",
+          "operation": "update",
+          "fields": [
+            "amount"
+          ],
+          "before": {
+            "amount": 1184739584
+          },
+          "after": {
+            "amount": 1184739585
+          },
+          "source": "isolated:delta-probe",
+          "reason": "daily_merge",
+          "input_row_version": "02d22026122546861feb7625cddb532fd418bcbf0da8097835c02bebf8f33956",
+          "output_row_version": "261e0910769e50fa7f267027fa15f2d59d01ccf4a9ad6ec10becfed6da67b72b"
+        }
+      ]
+    },
+    {
+      "symbol": "000651.SZ",
+      "correction": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 540252,
+        "rows_read": 6265,
+        "rows_materialized": 6,
+        "files_rewritten": 1,
+        "file_bytes_rewritten": 540252,
+        "rows_rewritten": 6265,
+        "changed_rows": 1,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.04890532000172243
+      },
+      "replay": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 540252,
+        "rows_read": 6265,
+        "rows_materialized": 6,
+        "files_rewritten": 0,
+        "file_bytes_rewritten": 0,
+        "rows_rewritten": 0,
+        "changed_rows": 0,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.005457593999381061
+      },
+      "source_sha256": "446a78d399159451d34a5999815d1a179ebe02973651c7e7759debb18294fa53",
+      "changes": [
+        {
+          "symbol": "000651.SZ",
+          "trade_date": "2026-09-24",
+          "operation": "update",
+          "fields": [
+            "amount"
+          ],
+          "before": {
+            "amount": 972664128
+          },
+          "after": {
+            "amount": 972664129
+          },
+          "source": "isolated:delta-probe",
+          "reason": "daily_merge",
+          "input_row_version": "643aa166a6329279f4d97177e08ed8e02853865f57909d728d912f670098ad35",
+          "output_row_version": "34a94bd31d73bcc5b1bd5215e8f78752f47242f9c33a04c5e8270e8c42148077"
+        }
+      ]
+    },
+    {
+      "symbol": "600000.SH",
+      "correction": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 497957,
+        "rows_read": 6355,
+        "rows_materialized": 6,
+        "files_rewritten": 1,
+        "file_bytes_rewritten": 497957,
+        "rows_rewritten": 6355,
+        "changed_rows": 1,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.04949291800039646
+      },
+      "replay": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 497957,
+        "rows_read": 6355,
+        "rows_materialized": 6,
+        "files_rewritten": 0,
+        "file_bytes_rewritten": 0,
+        "rows_rewritten": 0,
+        "changed_rows": 0,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.0055135359998530475
+      },
+      "source_sha256": "084ba6cfbfcd78e2bd50ba5db04d5bb96fc1fcdf67f3d39748bcf244ca06666f",
+      "changes": [
+        {
+          "symbol": "600000.SH",
+          "trade_date": "2026-09-24",
+          "operation": "update",
+          "fields": [
+            "amount"
+          ],
+          "before": {
+            "amount": 475964896
+          },
+          "after": {
+            "amount": 475964897
+          },
+          "source": "isolated:delta-probe",
+          "reason": "daily_merge",
+          "input_row_version": "7883577383b81be447b2d699cb7bf7d6b801427f97812c53def0932db450906e",
+          "output_row_version": "3ef7748f2daf32c93a2a138068c3eddf96c29b557bd36e994e59f14ccca95713"
+        }
+      ]
+    },
+    {
+      "symbol": "600036.SH",
+      "correction": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 541343,
+        "rows_read": 5869,
+        "rows_materialized": 6,
+        "files_rewritten": 1,
+        "file_bytes_rewritten": 541343,
+        "rows_rewritten": 5869,
+        "changed_rows": 1,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.04946488399946247
+      },
+      "replay": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 541343,
+        "rows_read": 5869,
+        "rows_materialized": 6,
+        "files_rewritten": 0,
+        "file_bytes_rewritten": 0,
+        "rows_rewritten": 0,
+        "changed_rows": 0,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.004726683000626508
+      },
+      "source_sha256": "1d381bf868c587e36e81f294d6a6c1ad5e6995f1abd4460e45e245bdc2bfcf66",
+      "changes": [
+        {
+          "symbol": "600036.SH",
+          "trade_date": "2026-09-24",
+          "operation": "update",
+          "fields": [
+            "amount"
+          ],
+          "before": {
+            "amount": 2057945472
+          },
+          "after": {
+            "amount": 2057945473
+          },
+          "source": "isolated:delta-probe",
+          "reason": "daily_merge",
+          "input_row_version": "d4cb18df68a7709fd9d3d4850ae104c9a8d11ca9d5657d99ca377d574bf2846f",
+          "output_row_version": "eb09b10135e255a96cb99800664585d0757fba665ed4813fa0ad581f5bf18b0b"
+        }
+      ]
+    },
+    {
+      "symbol": "600519.SH",
+      "correction": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 604229,
+        "rows_read": 6012,
+        "rows_materialized": 6,
+        "files_rewritten": 1,
+        "file_bytes_rewritten": 604230,
+        "rows_rewritten": 6012,
+        "changed_rows": 1,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.051253929999802494
+      },
+      "replay": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 604230,
+        "rows_read": 6012,
+        "rows_materialized": 6,
+        "files_rewritten": 0,
+        "file_bytes_rewritten": 0,
+        "rows_rewritten": 0,
+        "changed_rows": 0,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.005015703000026406
+      },
+      "source_sha256": "0769d6ac74a7f94a55cf688fcfc630e1821236d0d3cb89fbf3e558fb4391a6e4",
+      "changes": [
+        {
+          "symbol": "600519.SH",
+          "trade_date": "2026-09-24",
+          "operation": "update",
+          "fields": [
+            "amount"
+          ],
+          "before": {
+            "amount": 3867310848
+          },
+          "after": {
+            "amount": 3867310849
+          },
+          "source": "isolated:delta-probe",
+          "reason": "daily_merge",
+          "input_row_version": "bfc47f985463fb64460cf9c246e23fd3efc8c447dd7274e4b7477c585da2e496",
+          "output_row_version": "32149e450c5e2d2e7bb455b57f397b443da4e19d8bdcd275687b9479eedff90f"
+        }
+      ]
+    },
+    {
+      "symbol": "601318.SH",
+      "correction": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 476167,
+        "rows_read": 4694,
+        "rows_materialized": 6,
+        "files_rewritten": 1,
+        "file_bytes_rewritten": 476168,
+        "rows_rewritten": 4694,
+        "changed_rows": 1,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.04669527099940751
+      },
+      "replay": {
+        "files_read": 1,
+        "file_bytes_read_proxy": 476168,
+        "rows_read": 4694,
+        "rows_materialized": 6,
+        "files_rewritten": 0,
+        "file_bytes_rewritten": 0,
+        "rows_rewritten": 0,
+        "changed_rows": 0,
+        "stale_date_marks": 0,
+        "elapsed_seconds": 0.004024797000965918
+      },
+      "source_sha256": "e604ab3e37f7df7505ef6ccc94a62e0a5a09c7ac8b66c35a442042512c776312",
+      "changes": [
+        {
+          "symbol": "601318.SH",
+          "trade_date": "2026-09-24",
+          "operation": "update",
+          "fields": [
+            "amount"
+          ],
+          "before": {
+            "amount": 2886593280
+          },
+          "after": {
+            "amount": 2886593281
+          },
+          "source": "isolated:delta-probe",
+          "reason": "daily_merge",
+          "input_row_version": "3382efaa2009b4438f6efa5c0cde99ed76bb28546fe5d097b696fc3e1cd60a75",
+          "output_row_version": "29c28cf19001df78e4e23f2ac79b39c530866e9f3093dc915670b8032d201b6f"
+        }
+      ]
+    }
+  ],
+  "result": "passed",
+  "limitations": [
+    "Eight selected securities; not a five-year RSS or market-wide benchmark",
+    "No limit publications in the lab; invalidation covered by unit tests",
+    "No cold-cache, lock-contention or device-I/O measurement"
+  ]
+}

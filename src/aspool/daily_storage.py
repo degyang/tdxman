@@ -3,6 +3,7 @@
 import math
 from bisect import bisect_left
 from numbers import Real
+from time import perf_counter
 from uuid import uuid4
 
 import pandas as pd
@@ -112,8 +113,9 @@ def _same_values(left, right):
 
 def merge_daily(
     root, market, symbol, incoming, source, coverage=None, changed_dates=None, quality_rows=None,
-    _path=None,
+    _path=None, changes=None, metrics=None,
 ):
+    from .change_observation import add_cost, daily_changes
     from .store import daily_paths, daily_year_path, read_daily_table
     from .tdx_online import _fill_close_vol_ratio, _merge_rows
 
@@ -131,17 +133,25 @@ def merge_daily(
                 [row for row in incoming if row["trade_date"].year == year], source,
                 coverage=[], changed_dates=changed_dates, quality_rows=quality_rows,
                 _path=daily_year_path(root, market, symbol, year),
+                changes=changes, metrics=metrics,
             )
         if total:
+            coverage_started = perf_counter()
             full = read_daily_table(root, market, symbol)
+            if metrics is not None:
+                all_paths = daily_paths(root, market, symbol)
+                add_cost(metrics, files_read=len(all_paths), rows_read=len(full),
+                         file_bytes_read_proxy=sum(p.stat().st_size for p in all_paths))
             entry = (symbol, market, full["trade_date"][0].as_py(),
                      full["trade_date"][-1].as_py(), len(full), source, "daily")
             if coverage is None:
                 record_coverage(root, *entry)
             else:
                 coverage.append(entry)
+            add_cost(metrics, elapsed_seconds=perf_counter() - coverage_started)
         return total
 
+    started = perf_counter()
     for row in incoming:
         values = [row.get(k) for k in ("open", "high", "low", "close", "volume", "amount")]
         if (
@@ -151,12 +161,16 @@ def merge_daily(
             raise ValueError(f"{symbol}: invalid incoming OHLCV")
     path = _path or bars_path(root, "daily", market, symbol)
     table = pq.ParquetFile(path).read() if path.exists() else None
+    add_cost(metrics, files_read=int(table is not None),
+             file_bytes_read_proxy=path.stat().st_size if table is not None else 0,
+             rows_read=len(table) if table is not None else 0)
     days = table["trade_date"].to_pylist() if table is not None else []
     if days != sorted(set(days)):
         raise ValueError(f"{symbol}: duplicate or unordered stored dates")
     # Five preceding bars provide the rolling volume baseline; older rows stay in Arrow.
     offset = max(0, bisect_left(days, min(r["trade_date"] for r in incoming)) - 5)
     prior = table.slice(offset).to_pylist() if table is not None else []
+    add_cost(metrics, rows_materialized=len(prior))
     identity = {}
     for row in reversed(prior):
         for field in ("code", "name", "market"):
@@ -202,11 +216,12 @@ def merge_daily(
     touched = [r["trade_date"] for r in merged if not _same_values(before.get(r["trade_date"]), r)]
     changed = len(touched)
     if not changed:
+        add_cost(metrics, elapsed_seconds=perf_counter() - started)
         if quality_rows is not None:
             quality_rows.extend(quality)
         return 0
-    if changed_dates is not None:
-        changed_dates.extend(touched)
+    delta = (daily_changes(before, merged, f"{symbol}.{market}", source, "daily_merge")
+             if changes is not None else [])
     columns = dict.fromkeys(
         [
             *(table.column_names if table is not None else []),
@@ -222,17 +237,28 @@ def merge_daily(
     target = path
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(f".{uuid4().hex}.part")
-    pq.write_table(result, temporary, compression="zstd")
     # A historical source update invalidates all subsequent streaks, including
     # when sync deliberately defers recomputation until enrichment has finished.
-    if source != "tdxman:etf":
-        from .limit_events import _mark_stale, _published_dates_from
-        from .store import existing_tables
+    try:
+        pq.write_table(result, temporary, compression="zstd")
+        if source not in {"tdxman:etf", "tdxman:etf:offline"}:
+            from .limit_events import _mark_stale, _published_dates_from
+            from .store import existing_tables
 
-        if "daily_limit_publication" in existing_tables(root):
-            _mark_stale(root, _published_dates_from(root, min(touched)),
-                        "日线字段变化，等待补齐和重算")
-    temporary.replace(target)
+            if "daily_limit_publication" in existing_tables(root):
+                stale_dates = _published_dates_from(root, min(touched))
+                _mark_stale(root, stale_dates, "日线字段变化，等待补齐和重算")
+                add_cost(metrics, stale_date_marks=len(stale_dates))
+        written_bytes = temporary.stat().st_size
+        temporary.replace(target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    if changed_dates is not None:
+        changed_dates.extend(touched)
+    if changes is not None:
+        changes.extend(delta)
+    add_cost(metrics, files_rewritten=1, file_bytes_rewritten=written_bytes,
+             rows_rewritten=len(result), changed_rows=changed)
     entry = (
         symbol,
         market,
@@ -248,4 +274,5 @@ def merge_daily(
         coverage.append(entry)
     if quality_rows is not None:
         quality_rows.extend(quality)
+    add_cost(metrics, elapsed_seconds=perf_counter() - started)
     return changed
