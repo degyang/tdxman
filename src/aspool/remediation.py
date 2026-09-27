@@ -169,6 +169,18 @@ def output_version(root, day):
     return digest.hexdigest()
 
 
+def prior_state(root, day, symbols):
+    """Capture all recursive predecessor state using a strictly read-only session."""
+    from .store import _active_catalog
+
+    with read_only_catalog(root) as conn:
+        token = _active_catalog.set((Path(root).resolve(), conn))
+        try:
+            return limits._previous_session_states(root, day, symbols)
+        finally:
+            _active_catalog.reset(token)
+
+
 def plan(root, start, end, recovery_manifest, destination):
     root, destination = Path(root).resolve(), Path(destination).resolve()
     if root == destination or root in destination.parents:
@@ -210,6 +222,7 @@ def plan(root, start, end, recovery_manifest, destination):
             axis=sorted(axis),
             dates=days,
             scope=[asdict(entry) for entry in scope],
+            prior_state_hash=signature(prior_state(root, days[0], [e.symbol for e in scope])),
             algorithm="v8 conservative sequential reference; full source histories",
         )
         result["plan_id"] = signature(result)
@@ -276,6 +289,11 @@ def execute(plan_path, state_path, *, max_days, approval=None):
         assert_readable(root)
         if inputs(root) != spec["source"]:
             raise ValueError("Source changed; audit and approve a new plan")
+        initial_prior = prior_state(
+            root, date.fromisoformat(spec["dates"][0]), [entry["symbol"] for entry in spec["scope"]]
+        )
+        if signature(initial_prior) != spec.get("prior_state_hash"):
+            raise ValueError("Initial predecessor state changed; audit a new publication plan")
         conn.execute("""CREATE TABLE IF NOT EXISTS remediation_runs (
             plan_id VARCHAR PRIMARY KEY, state_json VARCHAR NOT NULL,
             state_hash VARCHAR NOT NULL, previous_hash VARCHAR)""")

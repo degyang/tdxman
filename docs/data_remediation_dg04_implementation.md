@@ -41,3 +41,15 @@
 补入计划 `/home/ubuntu/aspool-labs/dg04-20260927/production-repair-plan-v2.json`；发布计划 `/home/ubuntu/aspool-labs/dg04-20260927/production-publication-plan.json`。先按最多 8 证券重放补入、核对完整源与预计 post 水位，再按最多 256 日顺序重新发布。保持恢复快照和全部 reports；现有快照涵盖本次写入前完整输入，DG-01 的新的 change-state 和 DG04 ledger 后续恢复一并保留。不覆盖为旧池而丢失新写入，优先续跑已准备操作；需要整池回退时须协调停写并保留/重放后续变更。
 
 发布后检查目标 stale、summary/coverage/events/exceptions/batch 关联、scope 计数、独立与派生参考、IPO 首日及跨缺行连板边界；保留所有剩余 unknown/invalid。Fundwise 按其 AGENTS 的只读入口验证实际最近30自然日消费窗口、向前60自然日预热、截止日 name/ST 和上证会话，必要时再验证默认扩展窗口；不改消费规则或 live cache。完整长窗口计算须另获重型槽位，不能与 DG-03 基准争用。当前尚无生产修复、重新发布或 Fundwise 运行成功的结论。
+
+## 已授权的生产补数与新独立审查（续接）
+
+协调者及独立审查批准 `a410d735` 的 `13414aed...` 修复计划，生产按 8/16/24/30 四批完成，实际 748 行、594 日期事实；完整 post 输入 inventory 为 `eff91eab...`，与已审批准值及隔离演练一致，pending=NULL。现有 1,124 日 stale 持续保留，未执行旧发布计划。许可文件、四批日志及 `production-repair-validation.json` 位于实验目录。
+
+独立审查复现旧发布计划的初始前史漂移（连板 1 改 99 后仍可计算 100），明确拒绝旧 publication plan。已新增完整语义前史 hash：规划时绑定 `_previous_session_states(first_day, frozen_scope)` 的会话日、是否涨停、板数和缺行计数，以及递归恢复的明确停牌链；执行在创建 ledger、标记 stale 或发布前验证该 hash，并在续跑时再验证。规划使用只读 catalog session。新前史 1→99、gap 状态、prefix stale、递归停牌前史漂移均拒绝且不新增 stale/发布/状态文件；连同受影响非空 reference/IPO/gap 续跑等 **14 项通过，13.24 秒**。算术 kernel 不变，复用此前三日通过证据。
+
+随后仅对已实查缺失的基础字段做独立查询，逐证券/日期检查 OHLC、量额与已知 pre_close/is_st。当前新增 **2,506 条**可补基础字段记录，245 个证券，均为独立来源明确 TRADING，pre_close 有限正数、is_st 为布尔；无新证券或会话，无名称/ST/板块规则推断。10 条与有效主 pre_close 冲突，延期不写；3,695 条缺独立记录，其中 3,693 条为 BJ 来源不支持、2 条查询空记录，保留 unknown。
+
+这 2,506 条尚未写生产。隔离演练产生 2,726 条 raw/派生真实变化及 2,461 条日期事实变化；45 条日期事实为无业务变化，不刷新 fetched_at。**519,796 条既有 OHLCV 与日期键逐字段保持不变**，额外 row 变化为既有可选字段/派生依赖，无新增原始行。逐项差值、字段及来源文件 SHA 保留在实验目录 `base-gap-dispositions.json` / `base-gap-payload.json` / `production-base-gap-plan.json`，不把 raw 数据提交 Git。该补充必须独立通过精确 plan/source/recovery gate；通过后最终发布后缀为 2021-09-24～2026-09-24 共 1,213 日，否则仍为原 1,124 日，不先假定获批。
+
+为保护已完成的第一阶段新数据，保留 `recovery-after-initial-repair/` 与 `recovery-after-initial-manifest.json`：在只读锁及无 WAL/pending 条件下，复制并逐对象核验当前 catalog、30 个改变的日线文件及全部 change-state，共 77 对象、942,644,782 字节。此 delta 与原 DG-00 不变快照叠加，覆盖 post-initial-repair 水位；原 snapshot 和 reports 未改。恢复说明要求普通复制原快照到独立目录后 overlay delta，不能用旧快照覆盖后续已写入数据。原快照的已通过全量恢复演练继续复用，本项是新增当前状态的对象核验，尚不称完整新灾备演练或 RTO 达标。

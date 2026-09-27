@@ -251,3 +251,53 @@ def test_nonempty_reference_ipo_and_gap_boundaries_survive_resume(tmp_path):
             ).fetchone()[0]
             == 2
         )
+
+
+@pytest.mark.parametrize("mutation", ["height", "stale", "gap", "suspended_height"])
+def test_frozen_initial_predecessor_refuses_drift_before_any_write(setup, tmp_path, mutation):
+    root, days, _, _, _ = setup
+    limits.compute_limit_events(root, [days[0], days[1]])
+    # Force a real nonempty up predecessor independent of fixture IPO rules.
+    with catalog(root) as conn:
+        predecessor = days[0] if mutation == "suspended_height" else days[1]
+        conn.execute(
+            "INSERT INTO daily_limit_events VALUES "
+            "(?, ?, '000001.SZ', true,false,true,false,11,9,1,0)",
+            [f"daily-limit-{predecessor:%Y%m%d}-stock", predecessor],
+        )
+        conn.execute("DELETE FROM daily_limit_exceptions WHERE trade_date=?", [predecessor])
+        if mutation == "suspended_height":
+            conn.execute("DELETE FROM daily_limit_exceptions WHERE trade_date=?", [days[1]])
+            conn.execute("DELETE FROM daily_limit_scope WHERE trade_date=?", [days[1]])
+            conn.execute(
+                "INSERT INTO security_daily_facts VALUES "
+                "('000001.SZ',?,10,false,'SUSPENDED','test',now())",
+                [days[1]],
+            )
+    manifest = tmp_path / "new-recovery.json"
+    manifest.write_text("{}")
+    target, state = tmp_path / "suffix.json", tmp_path / "suffix-state.json"
+    plan(root, days[2], days[-1], manifest, target)
+    with catalog(root) as conn:
+        if mutation in ("height", "suspended_height"):
+            conn.execute(
+                "UPDATE daily_limit_events SET consecutive_up=99 WHERE trade_date=?", [predecessor]
+            )
+        elif mutation == "stale":
+            conn.execute("INSERT INTO daily_limit_staleness VALUES (?, 'drift',now())", [days[1]])
+        else:
+            conn.execute(
+                "UPDATE daily_limit_events SET consecutive_gap_sessions=99 WHERE trade_date=?",
+                [days[1]],
+            )
+        before = conn.execute("SELECT * FROM daily_limit_staleness ORDER BY ALL").fetchall()
+        publications = conn.execute("SELECT * FROM daily_limit_publication ORDER BY ALL").fetchall()
+    with pytest.raises(ValueError, match="predecessor state changed"):
+        execute(target, state, max_days=1)
+    assert not state.exists()
+    with catalog(root) as conn:
+        assert before == conn.execute("SELECT * FROM daily_limit_staleness ORDER BY ALL").fetchall()
+        assert (
+            publications
+            == conn.execute("SELECT * FROM daily_limit_publication ORDER BY ALL").fetchall()
+        )
