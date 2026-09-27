@@ -273,14 +273,70 @@ def writes(factor):
     root, changes = LAB / f"monthly-{factor}x", changes_for_day()
     pool = MonthlyPool(root)
 
+    def manifest():
+        with connection(root, True) as c:
+            return {
+                r[0]: r[1:]
+                for r in c.execute(
+                    "SELECT month,path,sha256,row_count FROM dg03_monthly_parts"
+                ).fetchall()
+            }
+
+    initial = manifest()
+    fingerprints = {}
+    for key, record in initial.items():
+        info = part_path(root, record[0]).stat()
+        fingerprints[key] = (info.st_ino, info.st_size, info.st_mtime_ns)
+
     def apply(name, changes):
-        return measured(
+        before = manifest()
+        result = measured(
             f"monthly_{factor}x_{name}",
             lambda: pool.apply(changes, source="dg03:synthetic", reason=name),
             root,
         )
+        after = manifest()
+        changed = sorted(
+            key for key in before.keys() | after.keys() if before.get(key) != after.get(key)
+        )
+        assert len(changed) == result["published_months"]
+        emit(
+            "monthly_rewrite_bound",
+            factor=factor,
+            operation=name,
+            changed_months=changed,
+            old_rows=sum(before[k][2] for k in changed if k in before),
+            new_rows=sum(after[k][2] for k in changed if k in after),
+            new_file_bytes=sum(
+                part_path(root, after[k][0]).stat().st_size for k in changed if k in after
+            ),
+            catalog_copied_bytes=result["catalog_copied_bytes"],
+            unchanged_manifest_months=len(before.keys() - set(changed)),
+        )
+        return result
 
     assert apply("fullmarket_insert", changes)["changed"] == len(changes)
+    with connection(root, True) as c:
+        c.execute(f"ATTACH {literal(candidate_root() / 'catalog.duckdb')} AS origin (READ_ONLY)")
+        path = part_path(root, manifest()["2026-09"][0])
+        expected = (
+            "SELECT * REPLACE(DATE '2026-09-25' AS trade_date) FROM origin.dg03_daily "
+            "WHERE trade_date=DATE '2026-09-24'"
+        )
+        actual = f"SELECT * FROM read_parquet({literal(path)}) WHERE trade_date=DATE '2026-09-25'"
+        for left, right in [(actual, expected), (expected, actual)]:
+            assert (
+                c.execute(f"SELECT count(*) FROM (({left}) EXCEPT ALL ({right}))").fetchone()[0]
+                == 0
+            )
+        emit(
+            "monthly_fullmarket_insert_parity",
+            factor=factor,
+            rows=len(changes),
+            fields=42,
+            exact=True,
+            atomic_revision=1,
+        )
     before = file_sha256(root / "catalog.duckdb")
     assert apply("fullmarket_noop", changes)["changed"] == 0
     assert file_sha256(root / "catalog.duckdb") == before
@@ -304,11 +360,25 @@ def writes(factor):
     ]
     assert apply("backfill_two_months", backfill)["changed"] == 20
     assert apply("backfill_noop", backfill)["changed"] == 0
+    final = manifest()
+    cold = [key for key in initial if key != "2026-09"]
+    for key in cold:
+        assert initial[key] == final[key]
+        info = part_path(root, final[key][0]).stat()
+        assert fingerprints[key] == (info.st_ino, info.st_size, info.st_mtime_ns)
+    emit(
+        "monthly_cold_files_unchanged",
+        factor=factor,
+        months=len(cold),
+        verified="manifest/path/SHA plus inode,size,mtime unchanged across all operations",
+    )
     with connection(root) as c:
         measured(f"monthly_{factor}x_checkpoint", lambda: c.execute("CHECKPOINT").fetchall(), root)
         manifest = c.execute(
             "SELECT month,row_count,path FROM dg03_monthly_parts ORDER BY month"
         ).fetchall()
+        assert sum(r[1] for r in manifest) == factor * 17862387 + 7285
+        assert c.execute("SELECT revision FROM dg03_revision").fetchone()[0] == 15
         emit(
             "monthly_write_state",
             factor=factor,
