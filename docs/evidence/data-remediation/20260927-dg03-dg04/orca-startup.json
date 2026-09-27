@@ -149,7 +149,19 @@
         }
       ],
       "model_verification": "Initial requested/effective equal; reused exact process and TUI same model/high; reuse does not select a new model",
-      "readiness_recovery": "READY probe succeeded; terminal switch; tui-idle satisfied; same terminal retry input accepted and turn_start observed"
+      "readiness_recovery": "READY probe succeeded; terminal switch; tui-idle satisfied; same terminal retry input accepted and turn_start observed",
+      "outcome": "succeeded",
+      "worker_done": "msg_19a98d5ce204",
+      "dispatchId": "ctx_eaf6fc0a6fb8",
+      "final_commit": "6d47e175aeb5529b9e886f9c5c7d114c9cc949fb",
+      "main_merge": "87e6811",
+      "acceptance": "Assessment accepted; both prototypes rejected for production admission; no backend cutover",
+      "cleanup": {
+        "state": "retained",
+        "reason": "user_takeover",
+        "processAction": "none"
+      },
+      "coordinator_validation": "Source/scripts/tests exactly match accepted worker commit; successful agent tests not repeated"
     },
     {
       "phase": "DG-04",
@@ -297,7 +309,17 @@
         }
       ],
       "model_verification": "Initial requested/effective equal; reused exact process and TUI same model/high; reuse does not select a new model",
-      "readiness_recovery": "READY probe succeeded; terminal switch; tui-idle satisfied; same terminal retry input accepted and turn_start observed"
+      "readiness_recovery": "READY probe succeeded; terminal switch; tui-idle satisfied; same terminal retry input accepted and turn_start observed",
+      "outcome": "succeeded",
+      "worker_done": "msg_408ca0376e20",
+      "dispatchId": "ctx_6b4aa5a0b9c2",
+      "final_commit": "75442bdea5670646f7f197c7ee5b21714c4cd39c",
+      "main_merge": "936b566",
+      "cleanup": {
+        "state": "retained",
+        "reason": "user_takeover",
+        "processAction": "none"
+      }
     },
     {
       "phase": "DG-03 monthly fallback independent review",

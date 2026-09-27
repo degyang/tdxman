@@ -144,6 +144,8 @@
 
 ## 同一月后端的具体后续任务
 
+具体执行顺序、调遣与验收见[DG-03 补做任务卡](data_remediation_dg03_followup.md)。本轮候选评估已完成，工程准入门槛仍未通过。
+
 可行的下一步是让 live catalog 的一个事务同时拥有 manifest/facts/coverage/stale/revision/audit，用有PK/索引的TEMP表暂存触碰月，先完成新immutable parts的fsync，再提交catalog事务；全no-op用批量或索引比较，避免逐行无索引查询。这样可移除每次933.5MB catalog复制，但不是把一行shutil.copy换掉：现有共用apply拥有锁、连接、BEGIN/COMMIT和异常清理，必须抽出由调用者拥有的事务核心，改变native与monthly两条路径的提交责任。
 
 验收必须重新覆盖TEMP键/索引、raw+facts六域、part fsync前/后与COMMIT前/后真实SIGKILL、只读首次重开时WAL恢复、实际多进程读写/版本中断、备份旧版本保留与1×/2×/5×更新/no-op界限。当前checkpoint+catalog rename协议的恢复成功不能替代live WAL协议的证明；正常single-history与锁等待预算仍需消费者明确验收。因此将其列为后续DG03/DG07受控任务，本轮不扩展新协议，不因技术方向可行而声称当前实现准入。

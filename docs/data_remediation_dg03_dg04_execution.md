@@ -103,3 +103,18 @@ Agent 最终提交 `75442bdea5670646f7f197c7ee5b21714c4cd39c`，成功结案消�
 月度草稿独立审查 `task_a2bb0a670f92 / ctx_6f47249c6704` 实际请求/生效为 Astra/high，启动 ready、turnStart observed。见[绑定源码哈希的只读报告](evidence/data-remediation/20260927-dg03-monthly-review/review.md)。审查未运行测试、连接数据池或改动 tracked 文件；发现跨月删除 coverage 丢失及事件金额仍绑定全局表两项 P1、ETF 错误包装及混合批次重写无变化月份两项 P2。全部交由原 owner 修复，新增对应局部证据及真实月度发布恢复验证待验收；完整 catalog 拷贝费用、绝对路径恢复与孤儿文件边界必须披露。
 
 审查成功结案消息 `msg_e670ae5572a9` 已接受，随后立即 release：`state=released, processAction=closed_agent_terminal`，transcript captured。审查完成不等于实现验收，也没有批准生产切换。
+
+
+### DG-03 最终评估验收、main 集成与下一包
+
+实际 Orca owner `task_43714f545a49 / ctx_eaf6fc0a6fb8` 在 `2026-09-27T13:13:47Z` 成功结案，消息 `msg_19a98d5ce204`，最终 feature `6d47e175aeb5529b9e886f9c5c7d114c9cc949fb`、工作树干净。协调者接受[架构决策](architecture-decision.md)、[源码/证据 inventory](evidence/data-remediation/20260927-dg03/inventory.json)、[月度最终指标](evidence/data-remediation/20260927-dg03/monthly-final-metrics.json)及原始失败/恢复记录。Agent 已复核 189 份归档与 25 个源码哈希，24 项新增测试按改动增量验证，相关 Ruff 和最终指标断言通过；不把这些表述为在最终 HEAD 一次全量重跑。
+
+月度完整 42 列三倍率分别 17,862,387 / 35,724,774 / 89,311,935 行，原 18 catalog 表/约束保留；实际三倍率全市场新增、12 轮修订/no-op、删除/两月回补和 checkpoint 全部通过，新增 7,266 行完整字段精确等值、冷月文件与 manifest 保持不变。公开 35 字段的原双线程/512 MB 60 日中位为 0.821/0.807/0.865 秒；单证券全史为 1.214/2.172/6.134 秒。独立月度五年事件读 82,772 行、258 批、金额无 NULL、33 个原金额抽核、完成/关闭/临时清理通过，RSS 212,905,984 字节（203.04 MiB），36.918 秒。该金额路径保持其已验证的实际 1 线程，daily 配置修补没有改变已成功的 ETF/事件配置，所以没有重跑 P0。
+
+全局 DuckDB 的 5× 整日原子提交在原双线程和新增单线程反事实中均触及 SQL 1 GB COMMIT pin 上限。单线程一次失败 65.660 秒，首版 harness 未捕获包装后的 TransactionException，保留真实失败；随后仅补只读状态核验：新日零行、raw 89,311,935、原 12 次点修订/审计/revision 及其他域正确保留，没有再次执行该写负载。
+
+月度原型全市场新增约 63.6/69.0/68.1 秒，写量约 990 MB；单行修订写量中位约 963 MB，其中每次复制 catalog 933,507,072 字节。三倍率各 15 次有效提交合计内核写约 14.51/14.55/14.54 GB，目录因历史 catalog 留存各增长约 14.15 GB。全市场无变化虽零写仍约 24 秒。此结果否决当前月度发布协议的生产准入，不能从冷月零重写推导整体成本有界；未来日期 facts/derived/catalog 增长及月方案更多证券压力仍是未验证门。
+
+裁决为**候选评估完成、DG-03 工程准入未通过**，保留现有生产后端。两个原型都不会因近期读取变快而自动切换。下一包[事务 manifest 与 TEMP 索引整改](data_remediation_dg03_followup.md)明确事务核心、文件 fsync 与 catalog COMMIT、WAL 首次只读恢复、六域 SIGKILL、并发/版本、旧版本引用以及 1×/2×/5× 成本门。DG-05/06 可继续依托当前存储边界，DG-07 还需真实新鲜成分及完整阶段/主线结果，DG-08 退役须等待恢复与切换验收。
+
+合并提交 `87e6811`，只解决任务状态文档冲突并保留 DG-04 已完成事实；三个模块、所有 DG-03 脚本及测试与接受的 owner 提交零差异。协调者没有重跑成功测试或旧数据验证。结案后立即 worker-release；Orca 返回 `retained / user_takeover / processAction=none`，尊重用户已接管终端的保留边界。两个实现工作区均已合并，独立审查终端均已 release，工作区和实验数据保留作证据。
