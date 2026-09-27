@@ -323,8 +323,53 @@ def _read_with_overlay(conn, query, params, selected, root):
     ).fetchdf()
 
 
+def normalized_row(change, names, before, market, code, day, domain):
+    operation = change.get("operation", "merge")
+    if operation not in {"merge", "clear", "delete"}:
+        raise ValueError("unknown change operation")
+    after = None if operation == "delete" else dict(before or dict.fromkeys(names))
+    if after is not None:
+        values = change.get("values", {})
+        immutable = (
+            {"__market", "__code", "trade_date"} if domain == "bars" else {"symbol", "trade_date"}
+        )
+        if set(values) - (set(names) - immutable):
+            raise ValueError("unknown or immutable field")
+        for field, value in values.items():
+            if operation == "merge" and (value is None or pd.isna(value)):
+                continue
+            if (
+                field == "pre_close"
+                and value is not None
+                and (
+                    not isinstance(value, (int, float))
+                    or not float("-inf") < value < float("inf")
+                    or value <= 0
+                )
+            ):
+                raise ValueError("invalid pre_close")
+            if field == "is_st" and value is not None and not isinstance(value, bool):
+                raise ValueError("invalid is_st")
+            after[field] = None if operation == "clear" else value
+        if domain == "facts":
+            after.update(symbol=f"{code}.{market}", trade_date=day)
+            if not after.get("source") or after.get("fetched_at") is None:
+                raise ValueError("facts require source and fetched_at")
+        else:
+            after.update(__market=market, __code=code, trade_date=day)
+            required = ["open", "high", "low", "close", "volume", "amount"]
+            if any(after[k] is None or not 0 <= after[k] < float("inf") for k in required):
+                raise ValueError("invalid OHLCV/amount")
+            if after["high"] < after["low"]:
+                raise ValueError("high below low")
+    return operation, after, immutable if after is not None else set()
+
+
 class CandidatePool(DataPool):
     """Explicit experiment-only API; callers supply an independent candidate root."""
+
+    storage_type = CandidateStorage
+    write_threads = 2
 
     def __init__(self, root):
         super().__init__(root)
@@ -344,7 +389,8 @@ class CandidatePool(DataPool):
             pool_lock(self.root, write=True),
             duckdb.connect(str(self.root / "catalog.duckdb")) as c,
         ):
-            c.execute("SET threads=2; SET memory_limit='1GB'")
+            c.execute("SET threads=?", [self.write_threads])
+            c.execute("SET memory_limit='1GB'")
             c.execute("BEGIN")
             committed = False
             try:
@@ -379,53 +425,9 @@ class CandidatePool(DataPool):
                         f"SELECT * FROM {table} WHERE {predicate}", query_key
                     ).fetchone()
                     before = dict(zip(names, old)) if old else None
-                    operation = change.get("operation", "merge")
-                    if operation not in {"merge", "clear", "delete"}:
-                        raise ValueError("unknown change operation")
-                    after = None if operation == "delete" else dict(before or dict.fromkeys(names))
-                    if after is not None:
-                        values = change.get("values", {})
-                        immutable = (
-                            {"__market", "__code", "trade_date"}
-                            if domain == "bars"
-                            else {"symbol", "trade_date"}
-                        )
-                        if set(values) - (set(names) - immutable):
-                            raise ValueError("unknown or immutable field")
-                        for field, value in values.items():
-                            if operation == "merge" and (value is None or pd.isna(value)):
-                                continue
-                            if (
-                                field == "pre_close"
-                                and value is not None
-                                and (
-                                    not isinstance(value, (int, float))
-                                    or not float("-inf") < value < float("inf")
-                                    or value <= 0
-                                )
-                            ):
-                                raise ValueError("invalid pre_close")
-                            if (
-                                field == "is_st"
-                                and value is not None
-                                and not isinstance(value, bool)
-                            ):
-                                raise ValueError("invalid is_st")
-                            after[field] = None if operation == "clear" else value
-                        if domain == "facts":
-                            after.update(symbol=f"{code}.{market}", trade_date=day)
-                            if not after.get("source") or after.get("fetched_at") is None:
-                                raise ValueError("facts require source and fetched_at")
-                        else:
-                            after.update(__market=market, __code=code, trade_date=day)
-                            required = ["open", "high", "low", "close", "volume", "amount"]
-                            if any(
-                                after[k] is None or not 0 <= after[k] < float("inf")
-                                for k in required
-                            ):
-                                raise ValueError("invalid OHLCV/amount")
-                            if after["high"] < after["low"]:
-                                raise ValueError("high below low")
+                    operation, after, immutable = normalized_row(
+                        change, names, before, market, code, day, domain
+                    )
                     if before == after:
                         continue
                     # UPDATE avoids DuckDB delete/reinsert PK conflicts in a transaction.
@@ -567,7 +569,7 @@ class CandidatePool(DataPool):
             raise DataPoolError("INVALID_ARGUMENT", "start must not be after end")
         normalized = _normalize_symbols(symbols)
         with pool_lock(self.root):
-            storage = DailyStorage(self.root)
+            storage = self.storage_type(self.root)
             with (
                 tempfile.TemporaryDirectory(prefix="aspool-daily-") as temp,
                 duckdb.connect() as conn,
@@ -706,7 +708,7 @@ class CandidatePool(DataPool):
     @public_read
     def status(self):
         with pool_lock(self.root):
-            storage = DailyStorage(self.root)
+            storage = self.storage_type(self.root)
             with duckdb.connect() as conn:
                 try:
                     files = storage.bind(conn, "bars")

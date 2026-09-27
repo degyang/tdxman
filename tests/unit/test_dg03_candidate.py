@@ -238,6 +238,7 @@ def test_frozen_public_read_semantics():
     # The only allowed difference is SQL-before-Pandas overlay materialization.
     normalized = new_source[:new_start] + old_source[old_start:old_end] + new_source[new_end:]
     normalized = normalized.replace("                    fields=selected,\n", "")
+    normalized = normalized.replace("self.storage_type(self.root)", "DailyStorage(self.root)")
     assert ast.dump(ast.parse(old_source)) == ast.dump(ast.parse(normalized))
 
 

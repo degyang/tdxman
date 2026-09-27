@@ -48,7 +48,16 @@ def _selected(fields):
     return selected
 
 
-def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, listing=False):
+def _read(
+    root,
+    symbols=None,
+    start=None,
+    end=None,
+    lookback=None,
+    fields=None,
+    listing=False,
+    storage_type=None,
+):
     selected = _selected(fields)
     if lookback is not None and (
         isinstance(lookback, bool) or not isinstance(lookback, int) or lookback < 1
@@ -73,7 +82,7 @@ def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, 
             normalized.append(_normalize_symbol(v))
         requested = normalized
     with pool_lock(root):
-        storage = DailyStorage(root)
+        storage = (storage_type or DailyStorage)(root)
         with duckdb.connect() as conn:
             try:
                 files = storage.bind(conn, "bars", symbols=requested, start=start, end=end)
@@ -172,5 +181,5 @@ def read_etf_daily(root, **kwargs):
     return _read(root, **kwargs)
 
 
-def list_etfs(root, symbols=None):
-    return _read(root, symbols=symbols, listing=True)
+def list_etfs(root, symbols=None, *, storage_type=None):
+    return _read(root, symbols=symbols, listing=True, storage_type=storage_type)
