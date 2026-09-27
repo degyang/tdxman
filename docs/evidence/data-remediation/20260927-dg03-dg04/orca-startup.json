@@ -1,0 +1,328 @@
+{
+  "run_id": "run_e72d464ad133",
+  "code_baseline": "be60d78",
+  "effort_ceiling": "high",
+  "workers": [
+    {
+      "phase": "DG-03",
+      "starts": [
+        {
+          "taskId": "task_43714f545a49",
+          "dispatchId": "ctx_6a559ac756bc",
+          "state": "failed",
+          "stage": "agent_readiness",
+          "turnStart": null,
+          "launch": {
+            "requested": {
+              "agent": "codex",
+              "model": "gpt-6-astra",
+              "effort": "high"
+            },
+            "effective": {
+              "agent": "codex",
+              "model": "gpt-6-astra",
+              "effort": "high"
+            }
+          },
+          "effects": [
+            {
+              "kind": "worktree",
+              "action": "created_top_level",
+              "id": "22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg03-storage"
+            },
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "created",
+              "id": "term_53dc9870-0f5b-4fc2-96bf-5c1151c13787",
+              "tabId": "pty:22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg03-storage@@69130639",
+              "leafId": "pty:22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg03-storage@@69130639"
+            },
+            {
+              "kind": "setup",
+              "action": "skip",
+              "requested": "skip",
+              "effective": "skip",
+              "source": "explicit_request",
+              "hookFound": false,
+              "startupPolicy": "start-immediately",
+              "state": "not_configured"
+            }
+          ],
+          "prompt": null
+        },
+        {
+          "taskId": "task_43714f545a49",
+          "dispatchId": "ctx_a23ce0252ee9",
+          "state": "failed",
+          "stage": "agent_readiness",
+          "turnStart": null,
+          "launch": {
+            "requested": {
+              "agent": "codex",
+              "model": "gpt-6-astra",
+              "effort": "high"
+            },
+            "effective": {
+              "agent": "codex",
+              "model": "gpt-6-astra",
+              "effort": "high"
+            }
+          },
+          "effects": [
+            {
+              "kind": "worktree",
+              "action": "reused",
+              "id": "22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg03-storage"
+            },
+            {
+              "kind": "setup",
+              "action": "not_applicable",
+              "state": "not_applicable"
+            },
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "created",
+              "id": "term_0be8d24e-a48c-4c35-b932-9b443ba6262c",
+              "surface": "visible"
+            }
+          ],
+          "prompt": null
+        },
+        {
+          "taskId": "task_43714f545a49",
+          "dispatchId": "ctx_eaf6fc0a6fb8",
+          "state": "ready",
+          "stage": "input_accepted",
+          "turnStart": "observed",
+          "launch": {
+            "requested": {
+              "agent": null,
+              "model": null,
+              "effort": null
+            },
+            "effective": {
+              "agent": null,
+              "model": null,
+              "effort": null
+            }
+          },
+          "effects": [
+            {
+              "kind": "worktree",
+              "action": "reused",
+              "id": "22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg03-storage"
+            },
+            {
+              "kind": "setup",
+              "action": "not_applicable",
+              "state": "not_applicable"
+            },
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "reused",
+              "id": "term_0be8d24e-a48c-4c35-b932-9b443ba6262c"
+            },
+            {
+              "kind": "dispatch_input",
+              "role": "agent",
+              "id": "term_0be8d24e-a48c-4c35-b932-9b443ba6262c",
+              "state": "accepted"
+            }
+          ],
+          "prompt": {
+            "requestId": "abbd6f9b-a2d6-470b-bda6-ac4c79c4d3e7",
+            "stages": [
+              "input_accepted",
+              "turn_started"
+            ],
+            "provider": "codex",
+            "observation": "supported",
+            "processIncarnation": "0bc60ba1-b38d-48af-8098-12decad4d351",
+            "generation": 39,
+            "baselineWorkingSequence": 3,
+            "baselineExplicitWorkingStartedAt": null,
+            "baselinePermissionSequence": 0
+          }
+        }
+      ],
+      "model_verification": "Initial requested/effective equal; reused exact process and TUI same model/high; reuse does not select a new model",
+      "readiness_recovery": "READY probe succeeded; terminal switch; tui-idle satisfied; same terminal retry input accepted and turn_start observed"
+    },
+    {
+      "phase": "DG-04",
+      "starts": [
+        {
+          "taskId": "task_9cdaed33aadf",
+          "dispatchId": "ctx_aeac6dc44a32",
+          "state": "failed",
+          "stage": "agent_readiness",
+          "turnStart": null,
+          "launch": {
+            "requested": {
+              "agent": "codex",
+              "model": "gpt-6-sol",
+              "effort": "high"
+            },
+            "effective": {
+              "agent": "codex",
+              "model": "gpt-6-sol",
+              "effort": "high"
+            }
+          },
+          "effects": [
+            {
+              "kind": "worktree",
+              "action": "created_top_level",
+              "id": "22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg04-repair"
+            },
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "created",
+              "id": "term_64120c60-e618-4f5b-8e6a-4cd5c9d2f136",
+              "tabId": "pty:22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg04-repair@@d84b6bf5",
+              "leafId": "pty:22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg04-repair@@d84b6bf5"
+            },
+            {
+              "kind": "setup",
+              "action": "skip",
+              "requested": "skip",
+              "effective": "skip",
+              "source": "explicit_request",
+              "hookFound": false,
+              "startupPolicy": "start-immediately",
+              "state": "not_configured"
+            }
+          ],
+          "prompt": null
+        },
+        {
+          "taskId": "task_9cdaed33aadf",
+          "dispatchId": "ctx_a02ac295eaa5",
+          "state": "failed",
+          "stage": "agent_readiness",
+          "turnStart": null,
+          "launch": {
+            "requested": {
+              "agent": "codex",
+              "model": "gpt-6-sol",
+              "effort": "high"
+            },
+            "effective": {
+              "agent": "codex",
+              "model": "gpt-6-sol",
+              "effort": "high"
+            }
+          },
+          "effects": [
+            {
+              "kind": "worktree",
+              "action": "reused",
+              "id": "22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg04-repair"
+            },
+            {
+              "kind": "setup",
+              "action": "not_applicable",
+              "state": "not_applicable"
+            },
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "created",
+              "id": "term_2def86fe-620a-49f6-8288-7afa1049035f",
+              "surface": "visible"
+            }
+          ],
+          "prompt": null
+        },
+        {
+          "taskId": "task_9cdaed33aadf",
+          "dispatchId": "ctx_6b4aa5a0b9c2",
+          "state": "ready",
+          "stage": "input_accepted",
+          "turnStart": "observed",
+          "launch": {
+            "requested": {
+              "agent": null,
+              "model": null,
+              "effort": null
+            },
+            "effective": {
+              "agent": null,
+              "model": null,
+              "effort": null
+            }
+          },
+          "effects": [
+            {
+              "kind": "worktree",
+              "action": "reused",
+              "id": "22c2da29-bb15-4753-a964-6f46a150441c::\\\\wsl.localhost\\Ubuntu-24.04\\home\\ubuntu\\orca\\workspaces\\tdxman\\aspool-dg04-repair"
+            },
+            {
+              "kind": "setup",
+              "action": "not_applicable",
+              "state": "not_applicable"
+            },
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "reused",
+              "id": "term_2def86fe-620a-49f6-8288-7afa1049035f"
+            },
+            {
+              "kind": "dispatch_input",
+              "role": "agent",
+              "id": "term_2def86fe-620a-49f6-8288-7afa1049035f",
+              "state": "accepted"
+            }
+          ],
+          "prompt": {
+            "requestId": "46d14a9e-d42c-48ed-87bd-7d2c9daa15b0",
+            "stages": [
+              "input_accepted",
+              "turn_started"
+            ],
+            "provider": "codex",
+            "observation": "supported",
+            "processIncarnation": "95f02817-69bc-4d20-8fa0-8905334b2709",
+            "generation": 40,
+            "baselineWorkingSequence": 3,
+            "baselineExplicitWorkingStartedAt": null,
+            "baselinePermissionSequence": 0
+          }
+        }
+      ],
+      "model_verification": "Initial requested/effective equal; reused exact process and TUI same model/high; reuse does not select a new model",
+      "readiness_recovery": "READY probe succeeded; terminal switch; tui-idle satisfied; same terminal retry input accepted and turn_start observed"
+    }
+  ],
+  "dg04_followup_review": {
+    "taskId": "task_d77082c8d20c",
+    "dispatchId": "ctx_87bd2259dcf0",
+    "state": "ready",
+    "turnStart": "observed",
+    "launch": {
+      "requested": {
+        "agent": "codex",
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "effective": {
+        "agent": "codex",
+        "model": "gpt-6-astra",
+        "effort": "high"
+      }
+    }
+  },
+  "dg04_initial_review_cleanup": {
+    "dispatch": "ctx_de52cce11af9",
+    "state": "released",
+    "archive": "transcript captured",
+    "followup_reuse_preflight": "agent_unconfigured; no new dispatch created",
+    "recovery": "fresh supervised review on same main read-only placement"
+  }
+}

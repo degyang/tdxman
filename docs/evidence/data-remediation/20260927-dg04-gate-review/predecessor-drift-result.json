@@ -1,0 +1,9 @@
+{
+  "source_root": "/home/ubuntu/aspool-labs/dg04-gate-review-20260927/predecessor-drift-pool-v2",
+  "source_unchanged": true,
+  "prior_before": 1,
+  "prior_mutated": 99,
+  "expected_without_drift": 2,
+  "actual_after": 100,
+  "accepted_next": 1
+}
