@@ -526,9 +526,15 @@ class CandidatePool(DataPool):
                 if _fault_hook:
                     _fault_hook("after_commit")
                 return {"changed": len(records), "revision": revision + bool(records)}
-            except BaseException:
+            except BaseException as error:
                 if not committed:
-                    c.execute("ROLLBACK")
+                    try:
+                        c.execute("ROLLBACK")
+                    except duckdb.Error as rollback_error:
+                        # A failed COMMIT can already have aborted the transaction.
+                        # Preserve its actionable cause instead of masking it.
+                        if "no transaction is active" not in str(rollback_error):
+                            error.add_note(f"Rollback also failed: {rollback_error}")
                 raise
 
     @public_read

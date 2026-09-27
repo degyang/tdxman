@@ -456,3 +456,53 @@ def test_large_symbol_population_keeps_public_row_guard(candidate):
     with pytest.raises(DataPoolError) as error:
         pool.read_daily(symbols="999999.SZ")
     assert error.value.code == "DAILY_TOO_LARGE"
+
+
+def test_commit_abort_preserves_original_error(candidate, monkeypatch):
+    import aspool.dg03_candidate as module
+
+    _, target, pool = candidate
+
+    class Connection:
+        def __init__(self, conn):
+            self.conn = conn
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.conn.close()
+
+        def __getattr__(self, key):
+            return getattr(self.conn, key)
+
+        def execute(self, sql, *args):
+            if sql == "COMMIT":
+                self.conn.execute("ROLLBACK")
+                raise duckdb.TransactionException("simulated commit resource failure")
+            self.conn.execute(sql, *args)
+            return self
+
+    class Duck:
+        def __getattr__(self, key):
+            return getattr(duckdb, key)
+
+        def connect(self, *args, **kwargs):
+            return Connection(duckdb.connect(*args, **kwargs))
+
+    monkeypatch.setattr(module, "duckdb", Duck())
+    with pytest.raises(duckdb.TransactionException, match="simulated commit resource failure"):
+        pool.apply(
+            [dict(market="SH", code="000001", trade_date="2025-01-02", values={"amount": 123.0})],
+            source="test",
+            reason="commit abort",
+        )
+    with duckdb.connect(str(target / "catalog.duckdb"), read_only=True) as c:
+        assert c.execute("SELECT revision FROM dg03_revision").fetchone()[0] == 0
+        assert c.execute("SELECT count(*) FROM dg03_changes").fetchone()[0] == 0
+        assert (
+            c.execute(
+                "SELECT amount FROM dg03_daily WHERE __code='000001' AND trade_date='2025-01-02'"
+            ).fetchone()[0]
+            == 1000.0
+        )
