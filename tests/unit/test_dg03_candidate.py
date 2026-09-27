@@ -353,8 +353,21 @@ def test_split_growth_preparation_preserves_full_rows_and_resume(candidate, monk
             "min(trade_date) start_date,max(trade_date) end_date,count(*) row_count,"
             "'fixture' AS source,current_timestamp updated_at FROM dg03_daily GROUP BY ALL"
         )
-    bench.prepare_growth(2)
+    original_measured = bench.measured
+
+    def fail_after_committed_chunk(name, fn, root=None):
+        result = original_measured(name, fn, root)
+        if name.startswith("prepare_2x_add_"):
+            raise RuntimeError("simulated stop after committed prefix")
+        return result
+
+    monkeypatch.setattr(bench, "measured", fail_after_committed_chunk)
+    with pytest.raises(RuntimeError, match="committed prefix"):
+        bench.prepare_growth(2)
+    monkeypatch.setattr(bench, "measured", original_measured)
     root = target.parent / "prepared-2x"
+    assert not (root / "prepared.json").exists()
+    bench.prepare_growth(2, resume=True)
     fingerprint = bench.file_sha256(root / "catalog.duckdb")
     bench.prepare_growth(2, resume=True)
     with duckdb.connect(str(root / "catalog.duckdb"), read_only=True) as c:
