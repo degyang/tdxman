@@ -37,3 +37,22 @@ def test_streamed_full_schema_profiles_keep_date_windows_bounded(tmp_path, monke
     assert len(scans) == 9
     assert [sample["returned_rows"] for sample in scans] == [1, 2, 3] * 3
     assert all(sample["columns"] == 42 and sample["scans"] for sample in scans)
+
+
+def test_joint_sigkill_atomicity_and_controlled_process_overlap(tmp_path, monkeypatch):
+    scripts = Path(__file__).resolve().parents[2] / "scripts/dg03"
+    monkeypatch.syspath_prepend(str(scripts))
+    protocol = importlib.import_module("recovery_protocol")
+    events = []
+
+    def record(name, **values):
+        events.append({"name": name, **values})
+
+    protocol.joint_recovery(tmp_path, record)
+    protocol.process_concurrency(tmp_path / "joint-base", record)
+    crashes = [event for event in events if event["name"].startswith("joint_crash_")]
+    assert len(crashes) == 2 and all(event["all_six_domains_exact"] for event in crashes)
+    overlapping = next(event for event in events if event["name"] == "controlled_read_read")
+    assert overlapping["shared_overlap"] and overlapping["protocol_verified"]
+    assert len(events) == 9
+    assert events[-1]["committed_without_loss"] == 6

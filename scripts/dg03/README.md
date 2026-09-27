@@ -28,7 +28,8 @@ nice -n 19 ionice -c 3 env DG03_THREADS=1 DG03_MEMORY_LIMIT=1GB \
   DG03_PREP_RSS_LIMIT=3221225472 .venv/bin/python scripts/dg03/bench.py prepare-growth --factor 1
 # Repeat preparation sequentially with --factor 2 and --factor 5.
 # 5x reuses the committed 2x prefix, preserving all 42 raw/key columns.
-# Additional copies commit source years separately; progress keys are transactional.
+# Additional copies commit at most 128 securities; progress keys are transactional.
+# Completed source-year prefixes from failed earlier strategies remain reusable.
 # An interrupted preparation supports --resume after diagnosis, never overwrite.
 nice -n 19 ionice -c 3 env DG03_THREADS=1 DG03_MEMORY_LIMIT=1GB \
   DG03_PREP_RSS_LIMIT=3221225472 .venv/bin/python scripts/dg03/bench.py prepare-securities
@@ -48,7 +49,8 @@ and logs; do not silently overwrite evidence. JSONL samples append to
 `/home/ubuntu/aspool-labs/dg03-20260927/samples.jsonl`, profiles and large databases
 stay beside them. Each phase records commit, exact source hashes, interpreter,
 imports, versions and the source manifest hash. No phase reruns DG00–02 suites.
-Run only `pytest tests/unit/test_dg03_candidate.py` for this candidate's new tests.
+New checks live only in `tests/unit/test_dg03_candidate.py` and
+`tests/unit/test_dg03_harness.py`; select affected tests after a fix.
 
 Interpretation limits:
 
@@ -88,5 +90,7 @@ These paths are measured separately from baseline Parquet and initial DuckDB lay
 expanding only `security_daily_facts` from 410,467 to 820,934 / 2,052,335 rows.
 Cold synthetic facts move 40 years per copy and carry an explicit synthetic source;
 three complete recent-window reads must remain exactly equal to the real candidate.
+`growth_bounds.py` streams all 42 raw/key columns with 65,536-row batches for day,
+60-day and five-year windows at each factor, retaining plans and zonemap upper bounds.
 A process-local diagnostic wrapper records the actual final overlay plan separately
 from ordinary public-call timings. This does not claim derived recursion scales.

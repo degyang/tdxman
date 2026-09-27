@@ -954,35 +954,9 @@ def recovery():
     root = LAB / "concurrency"
     root.mkdir()
     clone(candidate_root(), root)
-    p = child("hold_write", root)
-    assert p.stdout.readline().strip() == "READY"
-    other = child("uncoordinated", root)
-    out, err = other.communicate()
-    assert other.returncode == 0, err
-    p.wait()
-    emit("native_process_conflict", result=json.loads(out))
-    p = child("hold_write", root)
-    assert p.stdout.readline().strip() == "READY"
-    other = child("coordinated_read", root)
-    out, err = other.communicate()
-    assert other.returncode == 0, err
-    p.wait()
-    emit("coordinated_writer_reader", result=json.loads(out))
-    p = child("hold_read", root)
-    assert p.stdout.readline().strip() == "READY"
-    other = child("coordinated_read", root)
-    out, err = other.communicate()
-    assert other.returncode == 0, err
-    p.wait()
-    emit("concurrent_readers", result=json.loads(out))
-    for holder in ["hold_write", "hold_read"]:
-        p = child(holder, root)
-        assert p.stdout.readline().strip() == "READY"
-        other = child("coordinated_write", root)
-        out, err = other.communicate()
-        assert other.returncode == 0, err
-        p.wait()
-        emit(holder + "_then_writer", result=json.loads(out))
+    from recovery_protocol import process_concurrency
+
+    process_concurrency(root)
     target = LAB / "restored"
     target.mkdir()
     tick = time.perf_counter()
