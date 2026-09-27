@@ -1,0 +1,10 @@
+{
+  "observed_at": "2026-09-27T04:15:34.358986+00:00",
+  "scope": "/home/ubuntu/.aspool/lake/bars/daily",
+  "method": "Filesystem logical byte sizes only; no content or performance audit.",
+  "files": 7288,
+  "logical_bytes": 1587409942,
+  "mean_bytes": 217811.46295279913,
+  "median_bytes": 174711.5,
+  "max_bytes": 604229
+}

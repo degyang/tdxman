@@ -1,0 +1,92 @@
+{
+  "observed_at": "2026-09-26T16:34:55.268684+00:00",
+  "publication": {
+    "days": 1296,
+    "start": "2021-05-27 00:00:00",
+    "end": "2026-09-24 00:00:00",
+    "rule_versions": [
+      "cn-a-share-limit-v8"
+    ],
+    "stale_days": 605,
+    "stale_start": "2024-04-01 00:00:00",
+    "stale_end": "2026-09-24 00:00:00"
+  },
+  "shanghai_index": {
+    "rows": 8717,
+    "start": "1990-12-19 00:00:00",
+    "end": "2026-09-24 00:00:00",
+    "null_close": 0,
+    "duplicate_dates": 0
+  },
+  "size_bytes": {
+    "lake/bars/daily": 1602371584,
+    "lake/indices": 91279360,
+    "lake/fundamentals": 103444480,
+    "lake/adjustments": 290816,
+    "reports": 1580093440,
+    "reports/daily-enrichment": 1321447424,
+    "reports/limit-history": 195530752,
+    "reports/tdx-missing-audit": 44482560,
+    "reports/breakpoint-audit": 2330624,
+    "reports/data-issues": 2621440,
+    "reports/tdx-gap-repair": 651264,
+    "reports/maintenance": 8863744,
+    "reports/index-sync": 2359296,
+    "reports/streak-diagnosis": 868352
+  },
+  "catalog_bytes": 933507072,
+  "stock_footer_inventory": {
+    "files": 7288,
+    "stored_rows": 17862387,
+    "footer_start": "2000-01-04",
+    "footer_end": "2026-09-24",
+    "row_groups_without_date_stats": 0,
+    "files_without_physical_columns": {
+      "close": 0,
+      "pre_close": 1702,
+      "pct_chg": 1702,
+      "amount": 0,
+      "turnover_rate": 1705,
+      "name": 0,
+      "is_st": 1702
+    },
+    "note": "Parquet footer/schema inventory only; does not prove per-security session coverage, non-nullness, correctness, or public overlay availability.",
+    "asset_type_file_counts": {
+      "unspecified": 5586,
+      "etf": 1702
+    },
+    "missing_columns_by_asset_type": {
+      "etf": {
+        "pre_close": 1702,
+        "pct_chg": 1702,
+        "turnover_rate": 1702,
+        "is_st": 1702
+      },
+      "unspecified": {
+        "turnover_rate": 3
+      }
+    }
+  },
+  "cleanup_candidates": [
+    {
+      "path": "/home/ubuntu/.aspool/reports/daily-enrichment/20260924T150123Z/daily.before.tar.gz",
+      "logical_bytes": 1317187183,
+      "action": "defer_retirement",
+      "gate": "Repair and field/coverage acceptance completed; verified replacement recovery baseline; seven successful trading-day updates; preserve remaining investigation evidence."
+    },
+    {
+      "path": "/home/ubuntu/.aspool/reports/limit-history/20260924T171110Z/catalog.before.duckdb.gz",
+      "logical_bytes": 190984256,
+      "action": "defer_retirement",
+      "gate": "Repair and field/coverage acceptance completed; verified replacement recovery baseline; seven successful trading-day updates; preserve remaining investigation evidence."
+    },
+    {
+      "path": "/home/ubuntu/.aspool/reports/limit-history/20260924T161916Z",
+      "logical_bytes": 2138609,
+      "action": "defer_retirement",
+      "gate": "Repair and field/coverage acceptance completed; verified replacement recovery baseline; seven successful trading-day updates; preserve remaining investigation evidence."
+    }
+  ],
+  "plan_only": true,
+  "new_deletions": []
+}

@@ -1,0 +1,124 @@
+{
+    "total_bytes_written": 0,
+    "total_bytes_read": 0,
+    "system_peak_temp_dir_size": 0,
+    "system_peak_buffer_memory": 680361392,
+    "rows_returned": 1,
+    "wal_replay_entry_count": 0,
+    "result_set_size": 32,
+    "query_name": "SELECT count(*) n, sum(close) close_sum, sum(amount) amount_sum, sum(volume) volume_sum FROM bars WHERE trade_date = DATE '2026-09-24'",
+    "waiting_to_attach_latency": 0.0,
+    "attach_load_storage_latency": 0.0,
+    "blocked_thread_time": 0.0,
+    "cpu_time": 1.341012230000004,
+    "extra_info": {},
+    "total_memory_allocated": 0,
+    "cumulative_cardinality": 16711,
+    "checkpoint_latency": 0.0,
+    "cumulative_rows_scanned": 35724774,
+    "write_to_wal_latency": 0.0,
+    "latency": 1.138861445,
+    "attach_replay_wal_latency": 0.0,
+    "commit_local_storage_latency": 0.0,
+    "children": [
+        {
+            "system_peak_temp_dir_size": 0,
+            "system_peak_buffer_memory": 0,
+            "result_set_size": 32,
+            "operator_timing": 0.007619095000000003,
+            "operator_type": "UNGROUPED_AGGREGATE",
+            "cpu_time": 1.3410088900000041,
+            "extra_info": {
+                "Aggregates": [
+                    "count_star()",
+                    "sum(#0)",
+                    "sum(#1)",
+                    "sum(#2)"
+                ]
+            },
+            "cumulative_cardinality": 16711,
+            "cumulative_rows_scanned": 35724774,
+            "operator_cardinality": 1,
+            "operator_name": "UNGROUPED_AGGREGATE",
+            "operator_rows_scanned": 0,
+            "children": [
+                {
+                    "system_peak_temp_dir_size": 0,
+                    "system_peak_buffer_memory": 0,
+                    "result_set_size": 133680,
+                    "operator_timing": 0.0009097030000000009,
+                    "operator_type": "PROJECTION",
+                    "cpu_time": 1.3333897950000042,
+                    "extra_info": {
+                        "Projections": [
+                            "close",
+                            "amount",
+                            "volume"
+                        ],
+                        "Estimated Cardinality": "3572477"
+                    },
+                    "cumulative_cardinality": 16710,
+                    "cumulative_rows_scanned": 35724774,
+                    "operator_cardinality": 5570,
+                    "operator_name": "PROJECTION",
+                    "operator_rows_scanned": 0,
+                    "children": [
+                        {
+                            "system_peak_temp_dir_size": 0,
+                            "system_peak_buffer_memory": 0,
+                            "result_set_size": 133680,
+                            "operator_timing": 0.008287048000000012,
+                            "operator_type": "PROJECTION",
+                            "cpu_time": 1.3324800920000042,
+                            "extra_info": {
+                                "Projections": [
+                                    "close",
+                                    "volume",
+                                    "amount"
+                                ],
+                                "Estimated Cardinality": "3572477"
+                            },
+                            "cumulative_cardinality": 11140,
+                            "cumulative_rows_scanned": 35724774,
+                            "operator_cardinality": 5570,
+                            "operator_name": "PROJECTION",
+                            "operator_rows_scanned": 0,
+                            "children": [
+                                {
+                                    "system_peak_temp_dir_size": 0,
+                                    "system_peak_buffer_memory": 0,
+                                    "result_set_size": 178240,
+                                    "operator_timing": 1.3241930440000043,
+                                    "operator_type": "TABLE_SCAN",
+                                    "cpu_time": 1.3241930440000043,
+                                    "extra_info": {
+                                        "Function": "PARQUET_SCAN",
+                                        "Projections": [
+                                            "amount",
+                                            "close",
+                                            "volume",
+                                            "vol"
+                                        ],
+                                        "Filters": [
+                                            "trade_date='2026-09-24'::DATE",
+                                            "((asset_type IS NULL) OR (asset_type != 'etf'))"
+                                        ],
+                                        "Estimated Cardinality": "3572477",
+                                        "Total Files Read": "7288",
+                                        "Filename(s)": "/home/ubuntu/.aspool/lake/bars/daily/market=BJ/symbol=920000/bars.parquet, /home/ubuntu/.aspool/lake/bars/daily/market=BJ/symbol=920001/bars.parquet, /home/ubuntu/.aspool/lake/bars/daily/market=BJ/symbol=920002/bars.parquet, /home/ubuntu/.aspool/lake/bars/daily/market=BJ/symbol=920003/bars.parquet, /home/ubuntu/.aspool/lake/bars/daily/market=BJ/symbol=920005/bars.parquet, ..."
+                                    },
+                                    "cumulative_cardinality": 5570,
+                                    "cumulative_rows_scanned": 35724774,
+                                    "operator_cardinality": 5570,
+                                    "operator_name": "PARQUET_SCAN",
+                                    "operator_rows_scanned": 35724774,
+                                    "children": []
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
