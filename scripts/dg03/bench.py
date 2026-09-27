@@ -515,22 +515,55 @@ def prepare_growth(factor, resume=False):
     else:
         state = json.loads((root / "prepare-source.json").read_text())
         assert state["factor"] == factor and state["base"] == str(candidate_root())
+    with connect(candidate_root(), True) as base:
+        base_rows = base.execute("SELECT count(*) FROM dg03_daily").fetchone()[0]
+        years = [
+            r[0]
+            for r in base.execute(
+                "SELECT DISTINCT year(trade_date) FROM dg03_daily ORDER BY 1"
+            ).fetchall()
+        ]
+    batch_state = root / "prepare-batches.json"
+    with connect(root) as c:
+        if batch_state.exists():
+            initial_copies = json.loads(batch_state.read_text())["initial_copies"]
+        else:
+            rows = c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0]
+            assert rows % base_rows == 0 and 1 <= rows // base_rows <= factor
+            initial_copies = rows // base_rows
+            batch_state.write_text(json.dumps({"initial_copies": initial_copies}))
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS dg03_growth_build("
+            "copy INTEGER,source_year INTEGER,PRIMARY KEY(copy,source_year))"
+        )
+        completed = set(c.execute("SELECT * FROM dg03_growth_build").fetchall())
+    for i in range(initial_copies, factor):
+        for year in years:
+            if (i, year) in completed:
+                continue
+
+            def append_year(i=i, year=year):
+                # Close after each bounded transaction to release cached ART nodes.
+                # The progress key commits atomically with its complete year rows.
+                with connect(root) as c, preparation_guard(c):
+                    c.execute(
+                        f"ATTACH {literal(candidate_root() / 'catalog.duckdb')} AS base (READ_ONLY)"
+                    )
+                    c.execute("BEGIN")
+                    n = c.execute(
+                        "INSERT INTO dg03_daily SELECT * REPLACE "
+                        f"((trade_date - INTERVAL '{40 * i} years')::DATE AS trade_date) "
+                        "FROM base.dg03_daily WHERE trade_date >= make_date(?,1,1) "
+                        "AND trade_date < make_date(?,1,1)",
+                        [year, year + 1],
+                    ).fetchone()[0]
+                    c.execute("INSERT INTO dg03_growth_build VALUES (?,?)", [i, year])
+                    c.execute("COMMIT")
+                    return {"copy": i, "source_year": year, "rows": n}
+
+            measured(f"prepare_{factor}x_add_{i}_year_{year}", append_year, root)
+        (root / "prepare-progress.json").write_text(json.dumps({"copies_committed": i + 1}))
     with connect(root) as c, preparation_guard(c):
-        c.execute(f"ATTACH {literal(candidate_root() / 'catalog.duckdb')} AS base (READ_ONLY)")
-        base_rows = c.execute("SELECT count(*) FROM base.dg03_daily").fetchone()[0]
-        rows = c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0]
-        assert rows % base_rows == 0 and 1 <= rows // base_rows <= factor
-        for i in range(rows // base_rows, factor):
-            measured(
-                f"prepare_{factor}x_add_{i}",
-                lambda i=i: c.execute(
-                    "INSERT INTO dg03_daily SELECT * REPLACE "
-                    f"((trade_date - INTERVAL '{40 * i} years')::DATE AS trade_date) "
-                    "FROM base.dg03_daily"
-                ).fetchone(),
-                root,
-            )
-            (root / "prepare-progress.json").write_text(json.dumps({"copies_committed": i + 1}))
         refresh_synthetic_coverage(c)
         c.execute("CHECKPOINT")
         rows = c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0]
