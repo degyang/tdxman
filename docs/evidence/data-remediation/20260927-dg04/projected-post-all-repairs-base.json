@@ -1,0 +1,46 @@
+{
+  "baseline": {
+    "rows": 6229645,
+    "absent_bar": 10135,
+    "absent_status_unconfirmed": 9652,
+    "independent_unknown_is_st": 5183,
+    "raw_missing_pct_chg": 193,
+    "independent_unknown_pre_close": 193,
+    "invalid_open": 67,
+    "invalid_high": 67,
+    "invalid_low": 67,
+    "listing_unknown": 2,
+    "unknown_turnover_rate": 1271,
+    "absent_known_suspended": 483,
+    "invalid_close": 19
+  },
+  "changed_record_delta": {
+    "rows": 465,
+    "invalid_open": 0,
+    "invalid_high": 0,
+    "invalid_low": 0,
+    "invalid_close": 0,
+    "unknown_turnover_rate": -1260,
+    "raw_missing_pct_chg": -154,
+    "independent_unknown_pre_close": -154,
+    "independent_unknown_is_st": -1490,
+    "absent_bar": -465,
+    "absent_status_unconfirmed": -465
+  },
+  "expected_after": {
+    "absent_bar": 9670,
+    "absent_status_unconfirmed": 9187,
+    "raw_missing_pct_chg": 39,
+    "invalid_open": 67,
+    "listing_unknown": 2,
+    "independent_unknown_is_st": 3693,
+    "unknown_turnover_rate": 11,
+    "independent_unknown_pre_close": 39,
+    "absent_known_suspended": 483,
+    "rows": 6230110,
+    "invalid_low": 67,
+    "invalid_close": 19,
+    "invalid_high": 67
+  },
+  "method": "Original full audit plus exact3100 independently-planned record differences; existing OHLCV immutable and unrelated fields unchanged; source layer known does not imply independently certified entire pool"
+}

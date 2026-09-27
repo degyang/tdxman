@@ -27,7 +27,7 @@
 
 `remediation_repair.py` 将来源记录冻结为一次补入计划，隔离演练记录各证券 source before / after_daily / after 水位；生产按 `--max-symbols` 逐证券重放，使用 DG-01 `merge_daily/catalog_rows` 的变化证据与前滚协议。日线已提交而日期事实未提交的失败仅在精确匹配已演练中间水位时继续；不相关输入变化拒绝。生产输入、独立证据文件及代码版本必须与演练完全相同。生命周期、名称、calendar、ST/板块规则没有改动。
 
-输出批次有界，不宣称源读取已按 DG-05 优化：当前保守 v8 每证券读取完整历史，然后构建所选日期窗口的 compact cache。每次续跑重新核对完整输入哈希及 completed 输出哈希，属于显式维护任务。生产 1,124 日拟用每批最多 256 日，共 5 批，避免逐日重做计划和全源水位检查；保留单日 checkpoint，可在取消/异常后续跑。每批全源哈希涉及约 1.7 GiB lake 逻辑字节，completed 输出核验随完成日增长；这不是设备 I/O 测量或日常热点能力。
+输出批次有界，不宣称源读取已按 DG-05 优化：当前保守 v8 每证券读取完整历史，然后构建所选日期窗口的 compact cache。每次续跑重新核对完整输入哈希及 completed 输出哈希，属于显式维护任务。最终生产 1,213 日拟用每批最多 256 日，共 5 批，避免逐日重做计划和全源水位检查；保留单日 checkpoint，可在取消/异常后续跑。每批全源哈希涉及约 1.7 GiB lake 逻辑字节，completed 输出核验随完成日增长；这不是设备 I/O 测量或日常热点能力。
 
 ## 已完成的新验证
 
@@ -36,11 +36,13 @@
 - 同计划在另一隔离输入上 4 次 max_symbols=8 顺序续跑（8/16/24/30），最终完整源 inventory 与演练精确一致。最早实际变更 2022-02-11，因此 conservative publication 后缀扩为 1,124 日至 2026-09-24，不能只重算旧 605 日。
 - 新专项测试覆盖状态篡改/越界/伪造 initialized、源变化、外部 stale、丢镜像恢复、每日提交后崩溃、补行情后/日期事实前崩溃、精确重放/no-op、版本门槛及非空 reference/IPO/gap 状态恢复。精确命令、源码指纹和测试提交链接见本目录证据摘要；不重复 DG-00～02 成功套件。
 
-## 待 gate 的具体生产动作
+## 当前生产发布门槛与消费验证
 
-补入计划 `/home/ubuntu/aspool-labs/dg04-20260927/production-repair-plan-v2.json`；发布计划 `/home/ubuntu/aspool-labs/dg04-20260927/production-publication-plan.json`。先按最多 8 证券重放补入、核对完整源与预计 post 水位，再按最多 256 日顺序重新发布。保持恢复快照和全部 reports；现有快照涵盖本次写入前完整输入，DG-01 的新的 change-state 和 DG04 ledger 后续恢复一并保留。不覆盖为旧池而丢失新写入，优先续跑已准备操作；需要整池回退时须协调停写并保留/重放后续变更。
+两阶段补数已按具体 gate 完成；发布尚未执行。最终实际输入发布计划为实验目录 `production-authorized-publication-plan.json`，plan ID `36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5`，source `ddd0c37c09a299c8addaf9e4f09ba6928178079f1ced11f960b463018ab1e44b`，initial prior `00aaa72f98803d6cecb5370d478db204675e89342eda36e6e51055764e4a1ec8`。完整连续后缀为 2021-09-24～2026-09-24 共 1,213 个会话，拟按最多 256 日、5 批顺序重新发布；当前这 1,213 日 stale 保留，必须经实际计算/单日事务清除。
 
-发布后检查目标 stale、summary/coverage/events/exceptions/batch 关联、scope 计数、独立与派生参考、IPO 首日及跨缺行连板边界；保留所有剩余 unknown/invalid。Fundwise 按其 AGENTS 的只读入口验证实际最近30自然日消费窗口、向前60自然日预热、截止日 name/ST 和上证会话，必要时再验证默认扩展窗口；不改消费规则或 live cache。完整长窗口计算须另获重型槽位，不能与 DG-03 基准争用。当前尚无生产修复、重新发布或 Fundwise 运行成功的结论。
+发布前当前恢复包 `recovery-before-publication/` 及 `recovery-before-publication-manifest.json` SHA `0231763157911fea7b6d24590db2b359dcd0a7541850220107b590d818a4e237`，覆盖当前 catalog、两次变更日线文件并集和全部 change-state，共 812 对象、997,684,831 字节。在只读锁下复制并逐对象对比原件/副本哈希、验证副本 catalog 可读与生产无 WAL；与固定 DG-00 快照 overlay 后覆盖当前已修复输入。复用基线完整恢复演练，不宣称新全量 RTO 验收。发布还需独立审查及协调者对具体新 plan/source/recovery 的 single-writer 与资源时段批准。
+
+发布后检查目标 stale、summary/coverage/events/exceptions/batch 关联、scope 计数、独立与派生参考、IPO 首日及跨缺行连板边界；保留所有剩余 unknown/invalid。Fundwise 按其 AGENTS 的入口验证实际最近 30 自然日消费窗口、向前 60 自然日预热、截止日 name/ST 和上证会话；不改消费规则或 live cache。当前尚无重新发布或 Fundwise 运行成功结论。
 
 ## 已授权的生产补数与新独立审查（续接）
 
@@ -50,10 +52,12 @@
 
 随后仅对已实查缺失的基础字段做独立查询，逐证券/日期检查 OHLC、量额与已知 pre_close/is_st。当前新增 **2,506 条**可补基础字段记录，245 个证券，均为独立来源明确 TRADING，pre_close 有限正数、is_st 为布尔；无新证券或会话，无名称/ST/板块规则推断。10 条与有效主 pre_close 冲突，延期不写；3,695 条缺独立记录，其中 3,693 条为 BJ 来源不支持、2 条查询空记录，保留 unknown。
 
-这 2,506 条尚未写生产。隔离演练产生 2,726 条 raw/派生真实变化及 2,461 条日期事实变化；45 条日期事实为无业务变化，不刷新 fetched_at。**519,796 条既有 OHLCV 与日期键逐字段保持不变**，额外 row 变化为既有可选字段/派生依赖，无新增原始行。逐项差值、字段及来源文件 SHA 保留在实验目录 `base-gap-dispositions.json` / `base-gap-payload.json` / `production-base-gap-plan.json`，不把 raw 数据提交 Git。该补充必须独立通过精确 plan/source/recovery gate；通过后最终发布后缀为 2021-09-24～2026-09-24 共 1,213 日，否则仍为原 1,124 日，不先假定获批。
+这 2,506 条已获独立审查及协调者具体批准，11:00:02.631901～11:02:56.595289 UTC 按 max_symbols=8 顺序 31 批完成，245 completed、pending=NULL。生产产生 2,726 条 raw/派生变化及 2,461 日期事实变化，与隔离演练完整水位精确相符。隔离演练产生 2,726 条 raw/派生真实变化及 2,461 条日期事实变化；45 条日期事实为无业务变化，不刷新 fetched_at。**519,796 条既有 OHLCV 与日期键逐字段保持不变**，额外 row 变化为既有可选字段/派生依赖，无新增原始行。逐项差值、字段及来源文件 SHA 保留在实验目录 `base-gap-dispositions.json` / `base-gap-payload.json` / `production-base-gap-plan.json`，不把 raw 数据提交 Git。该补充已通过精确 plan/source/recovery gate，实际 source inventory `ff7cff8b970e2b9290dd2bb855211e9763552f831c28a52b5e065c1b55a00587`、compute inputs `ddd0c37c09a299c8addaf9e4f09ba6928178079f1ced11f960b463018ab1e44b`。最终发布后缀为 2021-09-24～2026-09-24 共 1,213 日。
 
 为保护已完成的第一阶段新数据，保留 `recovery-after-initial-repair/` 与 `recovery-after-initial-manifest.json`：在只读锁及无 WAL/pending 条件下，复制并逐对象核验当前 catalog、30 个改变的日线文件及全部 change-state，共 77 对象、942,644,782 字节。此 delta 与原 DG-00 不变快照叠加，覆盖 post-initial-repair 水位；原 snapshot 和 reports 未改。恢复说明要求普通复制原快照到独立目录后 overlay delta，不能用旧快照覆盖后续已写入数据。原快照的已通过全量恢复演练继续复用，本项是新增当前状态的对象核验，尚不称完整新灾备演练或 RTO 达标。
 
 独立复审另要求证明“非空初始前史”的正常续跑与两批之间原前史漂移。仅新增并运行这两个案例：初始板数 2 经 max_days=1、max_days=2 两批得到 3/4/5；两批间将原前史改为 99，执行在任何新增 stale/发布/checkpoint 前拒绝。**2 passed、14 deselected，2.99 秒**；14 项通过证据复用，生产执行源码仍为 `9308d55`，只增测试与文档。此前三日与边界测试的 initial prior 为空，不能把它们单独当非空 initial prior 续跑证明。
 
 新增基础字段演练不是性能验收；DG-03 当时持有性能槽位，存在资源重叠，不能标为无争用样本。可靠的持久变更时间范围为 UTC 10:40:25.697004～10:41:32.091206，445 个变更操作；精确进程启动/退出与完整 inventory 起止没有提前埋点，只能用源变更及产物时间给诊断边界，不补造测量值。详见 `supplement-resource-timing.json`。后续生产维护和消费验证需使用协调者明确交还的槽位，并从启动时记录真实 UTC 起止及资源。
+
+两阶段修复后的基础质量采用原完整当前审计加两个冻结 payload 的去重逐日期实际差量核算，未重复全池审计：原始行 6,230,110，缺行情 9,670（明确停牌 483、状态未确认 9,187），来源层 ST 未知 3,693、参考价/pct_chg 缺失各 39、换手缺失 11；原非正 OHLC 和上市日期未知不变。差量脚本对两个阶段涉及的记录从固定快照和修复后隔离源读取实际行及日期事实；不能将来源层已有字段称为全池新独立认证。逐项拒绝/延期/未确认记录仍在池外证据中。
