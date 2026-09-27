@@ -1,0 +1,18 @@
+.................................................................. [  9%]
+........................................................................ [ 20%]
+........................................................................ [ 31%]
+........................................................................ [ 42%]
+........................................................................ [ 52%]
+............................................................ [ 61%]
+........................................................................ [ 72%]
+........................................................................ [ 83%]
+........................................................................ [ 94%]
+ss....................................                                   [100%]
+=============================== warnings summary ===============================
+tests/unit/test_daily_access.py::test_import_repair_enrichment_and_cli_preserve_extension[legacy]
+tests/unit/test_daily_access.py::test_import_repair_enrichment_and_cli_preserve_extension[yearly]
+  /home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/cli.py:544: DeprecationWarning: fetch_arrow_table() is deprecated, use to_arrow_table() instead.
+    table = conn.execute(sql + f" order by {key}", params).fetch_arrow_table()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+666 passed, 2 skipped, 2 warnings, 18 subtests passed in 180.19s (0:03:00)

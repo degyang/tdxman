@@ -49,3 +49,11 @@ Parquet 临时文件替换只保证单文件原子性，不能覆盖多文件或
 内部 helper 仍由调用者持写锁，持 `pool_lock(write=True)` 而没有 catalog_session 也支持，真实子进程回归防止 self-lock。裸独占锁不自动恢复；实际源 writer 才在开始阶段恢复 pending，恢复点工具拒绝未决源，不偷偷前滚。原来源报告关联 change_run_id，业务与覆盖元数据日志/修订分开。
 
 协调者确认显式 compute_limit_events 仍是强制重算入口；DG-01 健康 no-op 针对源更新/补齐及其自动调度，派生一致发布/依赖逻辑修订仍归 DG-05/06。分钟、复权、可审阅白名单配置及 Fundwise 本期不变；不把所有外部未部署脚本视为已经识别。
+
+## DG-02 实施后的布局边界复核
+
+证券 Parquet 日线统一经 `daily_access.DailyStorage` 的键/范围/字段、批读取、覆盖、内部修订和发布操作。公开 daily/research/status/ETF、稀疏事件 amount、限价 scope/日期轴/字段读取、merge、enrichment、BaoStock 规划、在线调度/离线/free-stockdb 导入、quote 及实际维护脚本的日线读取已接入；`store` 既有 helper 委托该入口。指数保留独立 namespace，分钟/复权和当前 snapshot 不属本次证券日线布局。
+
+正常已命中的单证券请求不先枚举全池。不存在键/年份与旧池 ETF schema 错误区别，使用首文件存在性或 metadata-only、首匹配停止的 schema 探测；证明全局不存在 `asset_type` 时可能遍历全池 footer，此兼容例外已由协调者接受，DG-03 后续评估 metadata index。分年冷历史正常 coverage 只读 footer，无统计则日期列保守回退；不能把字段投影或元数据读取称为零物理 I/O。
+
+每个实际入口及历史恢复、物理快照审计、固定旧布局 benchmark 等有理由的范围外项见 [DG-02 完整登记与验收](data_remediation_dg02_implementation.md)。历史证据脚本未被改写为跨布局迁移验收；Fundwise 文件统计兜底仍归 DG-06，不宣称所有外部部署脚本已经发现。

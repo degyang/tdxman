@@ -1,0 +1,175 @@
+{
+  "status": "passed_feature_acceptance_pending_main_integration",
+  "recorded_at": "2026-09-27T08:20:31.398272+00:00",
+  "base_commit": "5b42c52",
+  "implementation_commit": "6c851137e514c3e0795d3217385fcdbec945ec45",
+  "source_sha256": "7b07e04b05299e9b3f70b887124d0c6f073169d1b5c49e81febdff7a59f090a8",
+  "workspace": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract",
+  "branch": "degyang/aspool-dg00-contract",
+  "model": {
+    "requested": "gpt-6-sol",
+    "effort": "high",
+    "verified_by": "coordinator dispatch message; no subagents"
+  },
+  "environment": {
+    "python": "3.12.14 (main, Aug 14 2026, 15:34:45) [Clang 22.1.3 ]",
+    "executable": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/bin/python",
+    "imported_aspool": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/__init__.py",
+    "independent_venv": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv",
+    "packages": {
+      "duckdb": "1.5.5",
+      "pandas": "3.0.5",
+      "pyarrow": "25.0.1",
+      "pytest": "9.1.1",
+      "ruff": "0.16.7"
+    }
+  },
+  "roots": {
+    "unit": "/home/ubuntu/aspool-labs/20260927-dg02/unit/full",
+    "tmp": "/home/ubuntu/aspool-labs/20260927-dg02/tmp",
+    "snapshot": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot",
+    "snapshot_policy": "Read-only DataPool API; directory shared flock; no whole-pool copy"
+  },
+  "unit": {
+    "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m pytest tests/unit/ -q --basetemp /home/ubuntu/aspool-labs/20260927-dg02/unit/full --junitxml docs/evidence/data-remediation/20260927-dg02/unit.xml > docs/evidence/data-remediation/20260927-dg02/unit.log 2>&1",
+    "exit_code": 0,
+    "passed": 666,
+    "subtests_passed": 18,
+    "skipped": 2,
+    "seconds": 180.19,
+    "junit_summary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "2",
+      "tests": "686",
+      "time": "180.181",
+      "timestamp": "2026-09-27T16:13:46.265897+08:00",
+      "hostname": "DESKTOP-IICR8K2"
+    },
+    "skips": [
+      {
+        "test": "tests.unit.test_tick_stock_panel_host_contract.test_real_registration_and_matrix",
+        "reason": "Set TICK_STOCK_PANEL_ROOT for read-only host contract tests"
+      },
+      {
+        "test": "tests.unit.test_tick_stock_panel_host_contract.test_reproduce_repository_500_and_verify_revert",
+        "reason": "Set TICK_STOCK_PANEL_ROOT for read-only host contract tests"
+      }
+    ],
+    "warnings": "Two existing fetch_arrow_table deprecation warnings triggered by new CLI coverage; no failure",
+    "log": "unit.log",
+    "junit": "unit.xml"
+  },
+  "lint": {
+    "command": ".venv/bin/ruff check src/aspool/daily_access.py src/aspool/daily_storage.py src/aspool/store.py src/aspool/pool.py src/aspool/etf_api.py src/aspool/limit_events.py src/aspool/limit_amount.py src/aspool/enrichment.py src/aspool/free_stockdb.py src/aspool/baostock_source.py src/aspool/tdx_online.py src/aspool/cli.py src/aspool/fundamentals.py scripts/rebuild_limit_history.py scripts/supplement_limit_references.py tests/unit/test_daily_access.py",
+    "exit_code": 0,
+    "result": "All checks passed!; captured from pre-commit tool output, same source as implementation commit",
+    "format_command": ".venv/bin/ruff format --check src/aspool/daily_access.py tests/unit/test_daily_access.py",
+    "format_exit_code": 0,
+    "format_result": "2 files already formatted",
+    "git_diff_check_exit_code": 0
+  },
+  "development_checks": [
+    {
+      "command": ".venv/bin/python -m pytest tests/unit/test_daily_remediation.py tests/unit/test_aspool_pool.py tests/unit/test_aspool_etf.py tests/unit/test_limit_amount.py tests/unit/test_limit_events.py tests/unit/test_aspool_performance.py --basetemp /home/ubuntu/aspool-labs/20260927-dg02/unit/initial -q",
+      "passed": 141,
+      "failed": 11,
+      "reason": "Read-only catalog relation view creation; repaired to CREATE TEMP VIEW",
+      "evidence": "Observed tool result; final complete suite supersedes development result; no standalone trial log retained"
+    },
+    {
+      "command": ".venv/bin/python -m pytest tests/unit/test_daily_access.py tests/unit/test_limit_amount.py --basetemp /home/ubuntu/aspool-labs/20260927-dg02/unit/access -q --tb=short",
+      "passed": 36,
+      "failed": 2,
+      "reason": "New sparse event fixture missed required batch count fields; corrected fixture",
+      "evidence": "Observed tool result; final complete suite supersedes development result; no standalone trial log retained"
+    },
+    {
+      "command": ".venv/bin/python -m pytest tests/unit/test_daily_access.py --basetemp /home/ubuntu/aspool-labs/20260927-dg02/unit/extra -q --tb=short",
+      "passed": 26,
+      "failed": 0,
+      "evidence": "Observed tool result; final complete suite supersedes development result; no standalone trial log retained"
+    },
+    {
+      "command": ".venv/bin/python -m pytest tests/unit/test_daily_access.py tests/unit/test_daily_remediation.py --basetemp /home/ubuntu/aspool-labs/20260927-dg02/unit/dependencies -q --tb=short",
+      "passed": 47,
+      "failed": 0,
+      "evidence": "Observed tool result; final complete suite supersedes development result; no standalone trial log retained"
+    }
+  ],
+  "benchmark": {
+    "command": "TMPDIR=/home/ubuntu/aspool-labs/20260927-dg02/tmp OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python scripts/benchmark_regime_bounded_read.py --root /home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot --start 2021-09-24 --end 2026-09-24 --verify --output docs/evidence/data-remediation/20260927-dg02/p0-five-year.json > docs/evidence/data-remediation/20260927-dg02/p0-five-year.log 2>&1",
+    "artifact": "p0-five-year.json",
+    "source_manifest": "p0-five-year.sources.json",
+    "policy": "Serial after full unit suite; single default repeat; no explicit warmup or cold-cache reset",
+    "exit_code": 0,
+    "status": "passed",
+    "sessions": 1213,
+    "source_sha256": "5885619ddc38c9a2906de5cccbfa01e68dabafa204a977915a532c6bf7feaa25",
+    "run": {
+      "rows": 82772,
+      "batches": 258,
+      "max_batch_rows": 1004,
+      "null_amounts": 0,
+      "compared_rows": 82772,
+      "compared_windows": 261,
+      "amount_checked": 30,
+      "seconds": 71.178,
+      "process_highwater_rss": 298508288,
+      "baseline": {
+        "rss": 168284160,
+        "swap": 0,
+        "cache_bytes": 0,
+        "spill_bytes": 0,
+        "fds": 4,
+        "threads": 21
+      },
+      "peak": {
+        "rss": 298192896,
+        "swap": 0,
+        "cache_bytes": 4818642,
+        "spill_bytes": 0,
+        "fds": 13,
+        "threads": 41
+      },
+      "ended": {
+        "rss": 203751424,
+        "swap": 0,
+        "cache_bytes": 4838443,
+        "spill_bytes": 0,
+        "fds": 4,
+        "threads": 21
+      },
+      "monitor_errors": []
+    },
+    "code": {
+      "source_sha256": "7b07e04b05299e9b3f70b887124d0c6f073169d1b5c49e81febdff7a59f090a8",
+      "git_head": "6c851137e514c3e0795d3217385fcdbec945ec45",
+      "python": "3.12.14",
+      "duckdb": "1.5.5",
+      "pandas": "3.0.5",
+      "pyarrow": "25.0.1",
+      "openblas_threads": "1",
+      "omp_threads": "1"
+    },
+    "limits": "One run with verify on legacy snapshot, no explicit warmup/cache flush; 82772 event rows exact, 30 amount samples exact, not an all-row independent amount audit or cold-cache/P95 study"
+  },
+  "limitations": [
+    "Legacy files/selected rewrite partitions can require full decode/rewrite; footer reads are real I/O.",
+    "Incomplete footer stats require a date-column fallback, observed separately; no correctness shortcut.",
+    "Exceptional metadata-only schema/existence probes preserve empty-key/ETF errors; global schema absence can inspect all legacy footers; coordinator explicitly accepted this exception, DG03 metadata-index follow-up.",
+    "Full single-security replacement remains conservative to reject row deletions.",
+    "Limit-event axis/recursive suffix and public logical revision/consistent dependency publication remain DG05/DG06.",
+    "No production writes, online fetches, migration, cleanup, Fundwise edits, main merge/push, force push or global environment changes."
+  ],
+  "report": "docs/data_remediation_dg02_implementation.md",
+  "artifact_sha256": {
+    "unit.log": "732f216430be2dcf545c0be9968dd8a44dcb4c2f83704524af3e3fe4d0196c5d",
+    "unit.xml": "2f80646857395847e64adbe4f7554fd7cc0182f90a773f818a390fe1e5424b58",
+    "p0-five-year.json": "d50fabb1318d8a83b74882cbf3344125f133a10d692665c3101e6b186ce388ec",
+    "p0-five-year.log": "1e6868d1098458f6a9058b7c025223a57c94980be8232fe86aaaa6dc9f4b120e",
+    "p0-five-year.sources.json": "b9dfdeebfb7c950750bf78463dc8f670d0390c171929bf13afe4bdc8bb914077"
+  },
+  "review_handoff": "Coordinator observed final full-suite/P0 and unchanged tested source; evidence reused, no ownership-transfer rerun"
+}
