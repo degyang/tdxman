@@ -35,9 +35,41 @@ class CandidateStorage:
     def __init__(self, root):
         self.root = Path(root)
 
-    def bind(self, conn, name, *, symbols=None, start=None, end=None):
+    def bind(self, conn, name, *, symbols=None, start=None, end=None, fields=None):
         conn.execute(f"ATTACH {literal(self.root / 'catalog.duckdb')} AS candidate (READ_ONLY)")
         names = [r[0] for r in conn.execute("DESCRIBE candidate.dg03_daily").fetchall()]
+        relation = "candidate.dg03_daily"
+        if symbols and start is None and end is None:
+            # DuckDB 1.5.5 drops the ART path when both market and code filters
+            # reach the scan. Resolve the indexed code population once, then
+            # apply the exact market/asset predicates to that bounded relation.
+            required = {
+                "__market",
+                "__code",
+                "trade_date",
+                "open",
+                "high",
+                "low",
+                "close",
+                "amount",
+                "volume",
+                "vol",
+                "turnover",
+                "turnover_rate",
+                "asset_type",
+            }
+            wanted = set(names if fields is None else fields) | required
+            names = [n for n in names if n in wanted]
+            codes = sorted({value.split(".")[1] for value in symbols})
+            conn.execute(
+                "CREATE TEMP TABLE _dg03_requested AS SELECT "
+                + ",".join(ident(n) for n in names)
+                + " FROM candidate.dg03_daily "
+                + "WHERE __code IN ("
+                + ",".join(literal(code) for code in codes)
+                + ")"
+            )
+            relation = "_dg03_requested"
         columns = [ident(n) for n in names if n not in {"symbol", "market", "__market", "__code"}]
         columns += ["__market AS market", "__code AS symbol"]
         clauses = []
@@ -62,7 +94,7 @@ class CandidateStorage:
         conn.execute(
             f"CREATE TEMP VIEW {ident(name)} AS SELECT "
             + ",".join(columns)
-            + " FROM candidate.dg03_daily"
+            + f" FROM {relation}"
             + where
         )
         return [self.root / "catalog.duckdb"]
@@ -129,7 +161,11 @@ def build(snapshot, target, *, limit=None):
         query = """SELECT * EXCLUDE(filename),
             regexp_extract(filename, 'market=([^/]+)', 1) AS __market,
             regexp_extract(filename, 'symbol=([^/]+)', 1) AS __code FROM incoming"""
-        c.execute("CREATE TABLE dg03_daily AS " + query + " ORDER BY trade_date,__market,__code")
+        c.execute(
+            "CREATE TABLE dg03_daily AS "
+            + query
+            + " ORDER BY date_trunc('month',trade_date),__market,__code,trade_date"
+        )
         c.execute("ALTER TABLE dg03_daily ADD PRIMARY KEY (__market,__code,trade_date)")
         c.execute("CREATE INDEX dg03_security ON dg03_daily(__code)")
         c.execute("CREATE TABLE dg03_revision(id INTEGER PRIMARY KEY, revision BIGINT)")
@@ -139,6 +175,121 @@ def build(snapshot, target, *, limit=None):
                      before_json VARCHAR, after_json VARCHAR)""")
         c.execute("CHECKPOINT")
     return inventory
+
+
+def _read_with_overlay(conn, query, params, selected, root):
+    """Execute the unchanged overlay expressions before one Pandas materialization."""
+    selected = set(selected)
+    dated = {
+        "pre_close",
+        "pre_close_source",
+        "is_st",
+        "is_st_source",
+        "trading_status",
+        "trading_status_source",
+    }
+    tables = {
+        r[0]
+        for r in conn.execute(
+            "SELECT table_name FROM duckdb_tables() WHERE database_name='candidate'"
+        ).fetchall()
+    }
+    has_facts = "security_daily_facts" in tables
+    has_references = {
+        "daily_limit_references",
+        "daily_limit_publication",
+        "daily_limit_staleness",
+    } <= tables
+    if not selected.intersection(dated) or not (has_facts or has_references):
+        return conn.execute(query, params).fetchdf()
+    conn.execute("CREATE TEMP TABLE _daily_contract_rows AS " + query, params)
+    for table in tables & {
+        "security_daily_facts",
+        "daily_limit_references",
+        "daily_limit_publication",
+        "daily_limit_staleness",
+    }:
+        conn.execute(f"CREATE TEMP VIEW {table} AS SELECT * FROM candidate.{table}")
+    joins, replacements = [], {}
+    want_reference = bool(selected.intersection({"pre_close", "pre_close_source"}))
+    want_facts = bool(selected.intersection(dated))
+    reference, reference_source = "b.pre_close", "b.pre_close_source"
+    if has_references and want_reference:
+        joins.append("""left join (
+            select r.symbol, r.trade_date, r.reference_pre_close, r.basis
+            from daily_limit_references r
+            join daily_limit_publication p using (trade_date, batch_id)
+            where exists (select 1 from _daily_contract_rows k
+                          where k.symbol=r.symbol and k.date=r.trade_date)
+        ) r on r.symbol=b.symbol and r.trade_date=b.date
+        left join daily_limit_staleness st on st.trade_date=r.trade_date""")
+        reference = (
+            "case when r.symbol is not null then "
+            "case when st.trade_date is null then r.reference_pre_close end "
+            "else b.pre_close end"
+        )
+        reference_source = (
+            "case when r.symbol is not null then 'limit_derived:' || r.basis "
+            "else b.pre_close_source end"
+        )
+    if has_facts and want_facts:
+        fact_fields = {"symbol", "trade_date"}
+        if any(key.endswith("_source") for key in selected.intersection(dated)):
+            fact_fields.add("source")
+        for key in ("pre_close", "is_st", "trading_status"):
+            if {key, key + "_source"}.intersection(selected):
+                fact_fields.add(key)
+        joins.append(
+            "left join (select "
+            + ", ".join(sorted(fact_fields))
+            + " from security_daily_facts f where exists "
+            "(select 1 from _daily_contract_rows k "
+            "where k.symbol=f.symbol and k.date=f.trade_date)) f "
+            "on f.symbol=b.symbol and f.trade_date=b.date"
+        )
+        reference = f"coalesce(f.pre_close, {reference})"
+        reference_source = (
+            f"case when f.pre_close is not null then f.source else {reference_source} end"
+        )
+        for key in ("is_st", "trading_status"):
+            if key in selected:
+                replacements[key] = f"coalesce(f.{key}, b.{key})"
+            if key + "_source" in selected:
+                replacements[key + "_source"] = (
+                    f"case when f.{key} is not null then f.source else b.{key}_source end"
+                )
+    if want_reference:
+        if "pre_close" in selected:
+            replacements["pre_close"] = reference
+        if "pre_close_source" in selected:
+            replacements["pre_close_source"] = reference_source
+    if not joins or not replacements:
+        return conn.execute("SELECT * FROM _daily_contract_rows ORDER BY symbol,date").fetchdf()
+    strings = [
+        row[0]
+        for row in conn.execute("DESCRIBE _daily_contract_rows").fetchall()
+        if row[1] == "VARCHAR" and row[0] not in replacements
+    ]
+    if strings:
+        counts = conn.execute(
+            "SELECT "
+            + ",".join(f"count({ident(n)})" for n in strings)
+            + " FROM _daily_contract_rows"
+        ).fetchone()
+        if any(count == 0 for count in counts):
+            # The existing Pandas/Arrow roundtrip infers untyped all-NULL object
+            # columns as Int32. Keep that observable dtype behavior on this rare
+            # path; do not globally change public dtypes to claim a speedup.
+            frame = conn.execute(
+                "SELECT * FROM _daily_contract_rows ORDER BY symbol,date"
+            ).fetchdf()
+            return _overlay_dated_fields(root, frame, selected)
+    selections = ", ".join(f"{expression} as {key}" for key, expression in replacements.items())
+    return conn.execute(
+        f"select b.* replace ({selections}) from _daily_contract_rows b "
+        + " ".join(joins)
+        + " order by b.symbol, b.date"
+    ).fetchdf()
 
 
 class CandidatePool(DataPool):
@@ -388,6 +539,7 @@ class CandidatePool(DataPool):
                         symbols=normalized if symbols is not None else None,
                         start=start,
                         end=end,
+                        fields=selected,
                     )
                 except ValueError as exc:
                     raise DataPoolError("DAILY_INVALID", str(exc)) from exc
@@ -489,11 +641,13 @@ class CandidatePool(DataPool):
                         else f'CAST(NULL AS {dtype}) AS "{key}"'
                     )
                 projection = ", ".join(expressions.get(key, f'"{key}"') for key in internal)
-                frame = conn.execute(
+                frame = _read_with_overlay(
+                    conn,
                     f"SELECT {projection} FROM ({selected_rows}) q ORDER BY symbol, date",
                     query_params,
-                ).fetchdf()
-            frame = _overlay_dated_fields(self.root, frame, selected)
+                    selected,
+                    self.root,
+                )
         frame.attrs.update(
             contract_version=2,
             price_adjustment="raw",

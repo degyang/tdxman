@@ -8,7 +8,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from aspool.api_contract import DataPoolError
+from aspool.api_contract import OPTIONAL_FIELDS, DataPoolError
 from aspool.dg03_candidate import CandidatePool, build
 from aspool.dg03_etf import read_etf_daily
 from aspool.pool import DataPool
@@ -28,6 +28,11 @@ def candidate(tmp_path):
             pa.Table.from_pylist(
                 [
                     dict(
+                        **{
+                            name: ("trading" if name == "trading_status" else "fixture")
+                            for name, (kind, _) in OPTIONAL_FIELDS.items()
+                            if kind == "VARCHAR"
+                        },
                         symbol="raw-" + code,
                         code=code,
                         trade_date=date(2025, 1, d),
@@ -224,9 +229,16 @@ def test_frozen_public_read_semantics():
     import inspect
     import textwrap
 
-    original = ast.parse(textwrap.dedent(inspect.getsource(DataPool.read_daily.__wrapped__)))
-    candidate = ast.parse(textwrap.dedent(inspect.getsource(CandidatePool.read_daily.__wrapped__)))
-    assert ast.dump(original) == ast.dump(candidate)
+    old_source = textwrap.dedent(inspect.getsource(DataPool.read_daily.__wrapped__))
+    new_source = textwrap.dedent(inspect.getsource(CandidatePool.read_daily.__wrapped__))
+    old_start = old_source.index("            frame = conn.execute(")
+    old_end = old_source.index("    frame.attrs.update(", old_start)
+    new_start = new_source.index("            frame = _read_with_overlay(")
+    new_end = new_source.index("    frame.attrs.update(", new_start)
+    # The only allowed difference is SQL-before-Pandas overlay materialization.
+    normalized = new_source[:new_start] + old_source[old_start:old_end] + new_source[new_end:]
+    normalized = normalized.replace("                    fields=selected,\n", "")
+    assert ast.dump(ast.parse(old_source)) == ast.dump(ast.parse(normalized))
 
 
 def test_candidate_public_status_and_etf_routes(candidate):
@@ -272,3 +284,53 @@ def test_candidate_event_amount_revision_and_missing(tmp_path):
             next(new)
         assert error.value.code == "LIMIT_REVISION_CHANGED"
     assert new.closed
+
+
+def test_sql_overlay_published_reference_stale_and_projection(candidate):
+    source, target, pool = candidate
+    for root in [source, target]:
+        with duckdb.connect(str(root / "catalog.duckdb")) as c:
+            c.execute("CREATE TABLE daily_limit_publication(trade_date DATE,batch_id VARCHAR)")
+            c.execute(
+                "CREATE TABLE daily_limit_references(trade_date DATE,batch_id VARCHAR,"
+                "symbol VARCHAR,reference_pre_close DOUBLE,basis VARCHAR)"
+            )
+            c.execute("CREATE TABLE daily_limit_staleness(trade_date DATE PRIMARY KEY)")
+            c.execute("INSERT INTO daily_limit_publication VALUES ('2025-01-02','b')")
+            c.execute(
+                "INSERT INTO daily_limit_references VALUES "
+                "('2025-01-02','b','000001.SH',11.,'test')"
+            )
+    for stale in [False, True]:
+        if stale:
+            for root in [source, target]:
+                with duckdb.connect(str(root / "catalog.duckdb")) as c:
+                    c.execute("INSERT INTO daily_limit_staleness VALUES ('2025-01-02')")
+        for fields in [None, ["pre_close"], ["pre_close_source"], ["is_st_source"], ["amount"]]:
+            pd.testing.assert_frame_equal(
+                DataPool(source).read_daily(fields=fields), pool.read_daily(fields=fields)
+            )
+
+
+def test_all_null_string_dtype_compatibility(candidate):
+    source, target, pool = candidate
+    path = source / "lake/bars/daily/market=SH/symbol=000001/bars.parquet"
+    table = pq.ParquetFile(path).read()
+    table = table.set_column(
+        table.schema.get_field_index("name"),
+        "name",
+        pa.array([None] * len(table), type=pa.string()),
+    )
+    pq.write_table(table, path)
+    for root in [source, target]:
+        with duckdb.connect(str(root / "catalog.duckdb")) as c:
+            c.execute(
+                "CREATE TABLE security_daily_facts(symbol VARCHAR,trade_date DATE,"
+                "pre_close DOUBLE,is_st BOOLEAN,trading_status VARCHAR,source VARCHAR)"
+            )
+            if root == target:
+                c.execute("UPDATE dg03_daily SET name=NULL WHERE __code='000001'")
+    expected = DataPool(source).read_daily(fields=["name", "pre_close"])
+    actual = pool.read_daily(fields=["name", "pre_close"])
+    pd.testing.assert_frame_equal(expected, actual)
+    assert str(actual.name.dtype) == "Int32"

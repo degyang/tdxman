@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import resource
 import shutil
@@ -36,6 +37,13 @@ SNAPSHOT = Path("/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot
 LAB = Path("/home/ubuntu/aspool-labs/dg03-20260927")
 
 
+def candidate_root():
+    name = os.environ.get("DG03_CANDIDATE", "candidate")
+    if Path(name).name != name or name in {".", ".."}:
+        raise ValueError("candidate must name a directory inside the fixed experiment lab")
+    return LAB / name
+
+
 def io():
     return {
         k: int(v)
@@ -55,14 +63,24 @@ def emit(name, **values):
     return entry
 
 
+def current_rss():
+    for line in Path("/proc/self/status").read_text().splitlines():
+        if line.startswith("VmRSS:"):
+            return int(line.split()[1]) * 1024
+    return 0
+
+
 def measured(name, fn, root=None):
     before = io()
     disk_before = tree_bytes(root) if root else 0
     peak_disk = [disk_before]
+    rss_start = current_rss()
+    peak_rss = [rss_start]
     done = threading.Event()
 
     def watch():
         while not done.wait(0.1):
+            peak_rss[0] = max(peak_rss[0], current_rss())
             if root:
                 try:
                     peak_disk[0] = max(peak_disk[0], tree_bytes(root))
@@ -87,6 +105,9 @@ def measured(name, fn, root=None):
         name,
         seconds=elapsed,
         maxrss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
+        rss_start=rss_start,
+        rss_end=current_rss(),
+        peak_sampled_rss=max(peak_rss),
         io_delta={k: after[k] - before[k] for k in before},
         disk_before=disk_before,
         disk_after=tree_bytes(root) if root else 0,
@@ -130,6 +151,7 @@ def provenance():
         },
         snapshot=str(SNAPSHOT),
         lab=str(LAB),
+        candidate=str(candidate_root()),
         manifest_sha256=hashlib.sha256(
             (SNAPSHOT.parent / "manifest.json").read_bytes()
         ).hexdigest(),
@@ -143,12 +165,12 @@ def provenance():
 
 
 def build_phase():
-    inventory = measured("build_full", lambda: len(build(SNAPSHOT, LAB / "candidate")), LAB)
+    inventory = measured("build_full", lambda: len(build(SNAPSHOT, candidate_root())), LAB)
     emit("inventory_count", count=inventory)
 
 
 def parity():
-    root = LAB / "candidate"
+    root = candidate_root()
     inventory = json.loads((root / "source-schema.json").read_text())
     manifest = json.loads((SNAPSHOT.parent / "manifest.json").read_text())
     expected = {r["path"]: r["sha256"] for r in manifest["files"]}
@@ -257,7 +279,7 @@ def compare_call(name, old_call, new_call, repeats=3):
 
 
 def reads():
-    old, new = DataPool(SNAPSHOT), CandidatePool(LAB / "candidate")
+    old, new = DataPool(SNAPSHOT), CandidatePool(candidate_root())
     end = date(2026, 9, 24)
     compare_call(
         "public_day",
@@ -278,7 +300,7 @@ def reads():
     compare_call(
         "etf_60_natural_days",
         lambda: read_etf_daily(SNAPSHOT, start=start, end=end),
-        lambda: candidate_etf(LAB / "candidate", start=start, end=end),
+        lambda: candidate_etf(candidate_root(), start=start, end=end),
     )
     # Five-year full-market all-column API is deliberately bounded by 60 natural days.
     for repeat in range(1):
@@ -321,7 +343,7 @@ def reads():
 
 
 def sparse():
-    with connect(LAB / "candidate", True) as c:
+    with connect(candidate_root(), True) as c:
         events = c.execute(
             "SELECT e.symbol,e.trade_date FROM daily_limit_events e "
             "JOIN daily_limit_publication p USING(trade_date,batch_id) "
@@ -422,9 +444,9 @@ def growth(factors=(1, 2, 5), more_securities=True):
     for factor in factors:
         root = LAB / f"growth-{factor}x"
         root.mkdir()
-        clone(LAB / "candidate", root)
+        clone(candidate_root(), root)
         with connect(root) as c:
-            c.execute(f"ATTACH {literal(LAB / 'candidate/catalog.duckdb')} AS base (READ_ONLY)")
+            c.execute(f"ATTACH {literal(candidate_root() / 'catalog.duckdb')} AS base (READ_ONLY)")
             for i in range(1, factor):
                 measured(
                     f"growth_{factor}x_add_{i}",
@@ -454,8 +476,8 @@ def growth(factors=(1, 2, 5), more_securities=True):
                 )
                 profile(
                     c,
-                    "SELECT * FROM dg03_daily WHERE __code='000001' AND __market='SZ'",
-                    f"growth_{factor}x_single_{repeat}",
+                    "SELECT * FROM dg03_daily WHERE __code='000001'",
+                    f"growth_{factor}x_code_index_population_{repeat}",
                 )
             seed = (
                 c.execute(
@@ -467,6 +489,18 @@ def growth(factors=(1, 2, 5), more_securities=True):
                 .to_dict()
             )
         pool = CandidatePool(root)
+        for workload, kwargs in [
+            ("day", dict(start="2026-09-24", end="2026-09-24")),
+            ("60_natural_days", dict(start="2026-07-27", end="2026-09-24")),
+            ("single_history", dict(symbols="000001.SZ")),
+        ]:
+            for repeat in range(3):
+
+                def read_sample(kwargs=kwargs):
+                    frame = pool.read_daily(**kwargs)
+                    return {"rows": len(frame), "fields": len(frame.columns), "attrs": frame.attrs}
+
+                measured(f"growth_{factor}x_public_{workload}_{repeat}", read_sample, root)
         with connect(root, True) as c:
             names = [r[0] for r in c.execute("DESCRIBE dg03_daily").fetchall()]
             seeds = c.execute(
@@ -527,7 +561,7 @@ def growth(factors=(1, 2, 5), more_securities=True):
     # Independent more-securities scenario: duplicate identities, keep full history and all fields.
     root = LAB / "growth-securities"
     root.mkdir()
-    clone(LAB / "candidate", root)
+    clone(candidate_root(), root)
     with connect(root) as c:
         measured(
             "growth_double_securities",
@@ -555,7 +589,7 @@ def growth(factors=(1, 2, 5), more_securities=True):
 def mutations():
     root = LAB / "mutations"
     root.mkdir()
-    clone(LAB / "candidate", root)
+    clone(candidate_root(), root)
     pool = CandidatePool(root)
     with connect(root, True) as c:
         names = [r[0] for r in c.execute("DESCRIBE dg03_daily").fetchall()]
@@ -665,7 +699,7 @@ def recovery():
     for mode in ["crash_uncommitted", "crash_committed"]:
         root = LAB / mode
         root.mkdir()
-        clone(LAB / "candidate", root)
+        clone(candidate_root(), root)
         with connect(root, True) as c:
             before = c.execute(
                 "SELECT amount FROM dg03_daily ORDER BY __market,__code,trade_date LIMIT 1"
@@ -703,7 +737,7 @@ def recovery():
         )
     root = LAB / "concurrency"
     root.mkdir()
-    clone(LAB / "candidate", root)
+    clone(candidate_root(), root)
     p = child("hold_write", root)
     assert p.stdout.readline().strip() == "READY"
     other = child("uncoordinated", root)
