@@ -1,0 +1,11 @@
+{
+  "counts": {
+    "inserted": 465,
+    "existing_ohlcv_preserved": 87240
+  },
+  "earliest_change": "2022-02-11",
+  "plan_id": "13414aedffc0ad72e3e33e6cc0f1faea8e9b4fe24e818461505932a364819641",
+  "source": "244df2024ea64ba0ea2ad42bc18b6698d385b2189515ccd73f7d576ddbe9cd0d",
+  "after": "eff91eab10e43c3b1df52c78320f51c2e26653e99159d9320daca41a6e937bdd",
+  "exact_isolated_replay": true
+}

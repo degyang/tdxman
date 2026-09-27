@@ -1,0 +1,69 @@
+{
+  "plan_id": "36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5",
+  "chunks": [
+    {
+      "batch": 1,
+      "max_days": 256,
+      "start_utc": "2026-09-27T11:08:07.483057+00:00",
+      "end_utc": "2026-09-27T11:10:09.618288+00:00",
+      "seconds": 122.1352518509957,
+      "exit_code": 0,
+      "stdout": "{\"next\": 256, \"pending\": null, \"completed\": 256}\n",
+      "stderr": "peak_rss_kib=658200\n"
+    },
+    {
+      "batch": 2,
+      "max_days": 256,
+      "start_utc": "2026-09-27T11:10:29.119858+00:00",
+      "end_utc": "2026-09-27T11:12:39.638985+00:00",
+      "seconds": 130.51912936699955,
+      "exit_code": 0,
+      "stdout": "{\"next\": 512, \"pending\": null, \"completed\": 512}\n",
+      "stderr": "peak_rss_kib=689212\n"
+    },
+    {
+      "batch": 3,
+      "max_days": 256,
+      "start_utc": "2026-09-27T11:12:57.832427+00:00",
+      "end_utc": "2026-09-27T11:15:14.225205+00:00",
+      "seconds": 136.39278182199632,
+      "exit_code": 0,
+      "stdout": "{\"next\": 768, \"pending\": null, \"completed\": 768}\n",
+      "stderr": "peak_rss_kib=707132\n"
+    },
+    {
+      "batch": 4,
+      "max_days": 256,
+      "start_utc": "2026-09-27T11:15:26.847506+00:00",
+      "end_utc": "2026-09-27T11:17:57.374891+00:00",
+      "seconds": 150.528416713998,
+      "exit_code": 0,
+      "stdout": "{\"next\": 1024, \"pending\": null, \"completed\": 1024}\n",
+      "stderr": "peak_rss_kib=700496\n"
+    },
+    {
+      "batch": 5,
+      "max_days": 256,
+      "start_utc": "2026-09-27T11:18:06.662493+00:00",
+      "end_utc": "2026-09-27T11:20:20.495273+00:00",
+      "seconds": 133.83278407400212,
+      "exit_code": 0,
+      "stdout": "{\"next\": 1213, \"pending\": null, \"completed\": 1213}\n",
+      "stderr": "peak_rss_kib=723120\n"
+    }
+  ],
+  "seconds": 673.4083638279917,
+  "resource_context": {
+    "kind": "actual maintenance timing, not DG05 performance acceptance",
+    "first_batches": "1 and 2 serialized heavy slot; batch3 may overlap near end after coordinator message timestamp",
+    "coordination_message": "msg_cb4d85045eea",
+    "message_utc": "2026-09-27T11:14:54Z",
+    "later_batches": "Coordinator authorized DG03 low-priority isolated growth construction in parallel, nice19/ioniceidle, one process/one thread/SQL1GB/RSS3GiB guard; no DG03 performance sampling. Batches4 and5 and verification may share resource pressure; do not claim uncontended SLA."
+  },
+  "completion": {
+    "next": 1213,
+    "pending": null
+  },
+  "implementation_commit": "9308d5509ed0b0f378b94a098e0ea8b5357f65ff",
+  "new_gate_tests_commit": "13d627c2d71dd73cf139f49b23448552469295f7"
+}

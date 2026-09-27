@@ -1,0 +1,55 @@
+{
+  "checked_utc": "2026-09-27T11:28:14.670122+00:00",
+  "fundwise_commit": "1b2565859f7c5c24a7ecd13e2a1625a196c402d8",
+  "phases": {
+    "segments": [],
+    "total": 0,
+    "unknown_days": 22
+  },
+  "mainline_read": {
+    "rows": 0,
+    "status": {
+      "status": "not_computed"
+    }
+  },
+  "market_pipeline": "Actual _recompute_market already executed attach_ladder and classify_phases; phase_days0 is not an unexecuted pipeline.",
+  "phase_missing_drivers": {
+    "max_consecutive_up": 0,
+    "first_board": 22,
+    "ge2_count": 22,
+    "sealed_ratio": 0,
+    "promo_rate": 22
+  },
+  "partial_reason_counts": {
+    "unknown_scope": 21,
+    "unknown_scope,invalid_scope": 1
+  },
+  "membership": {
+    "path": "/mnt/d/Workstation/Projects/Fundwise/.fundwise/regime/membership.json",
+    "bytes": 2652558,
+    "sha256": "cad8c8477d2f0ed31552af3e978d0728016afbe69cc292a2e6dcdae7047b2f59",
+    "version": 1,
+    "metadata": {
+      "source": "tdxman.MacClient.get_board_list/get_board_members",
+      "snapshot_at": "2026-09-24T16:26:09.095073+00:00",
+      "boards": 614,
+      "classification": "通达信概念及二级行业；与目标同花顺成分分类存在差异"
+    },
+    "age_seconds": 241325.575049,
+    "required_max_age_seconds": 86400,
+    "mapping_rows": {
+      "concept": 46904,
+      "industry": 5572
+    },
+    "eligible_for_real_cached_pipeline": false
+  },
+  "code_files": {
+    "/mnt/d/Workstation/Projects/Fundwise/fundwise/data/regime_membership.py": "9967123e0784b72c440d1ac02516de6af9cb2703296399a1ed905ee631c198e4",
+    "/mnt/d/Workstation/Projects/Fundwise/fundwise/regime/cycle.py": "9f8926cb3fb1fff72f3e4532e440b62256e4ecc5c4856c169a02e51559936022"
+  },
+  "mainline_ranking_disposition": "Deferred DG07: unchanged read_membership rejects expired cache and then fetches board directory/members over network. Need a credible current dated membership snapshot and serialized actual ranking validation; do not modify timestamps, override readers, fabricate membership, or repeat market recomputation.",
+  "production_reads": false,
+  "network_calls": false,
+  "consumer_repo_writes": false,
+  "seconds": 0.05001416699815309
+}
