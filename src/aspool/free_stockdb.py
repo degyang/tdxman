@@ -14,6 +14,7 @@ from uuid import uuid4
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from .change_protocol import maintenance
 from .pool import writer
 from .store import bars_path, catalog, daily_path, initialize, last_date, record_coverage
 
@@ -128,14 +129,56 @@ def _normalize(rows: list[dict[str, object]], symbol: str) -> list[dict[str, obj
     return normalized
 
 
+@maintenance
 def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, object]]) -> None:
-    target = daily_path(root, market, symbol)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_suffix(f".{uuid4().hex}.part")
-    keys = dict.fromkeys(key for row in rows for key in row)
-    table = pa.Table.from_pylist([{key: row.get(key) for key in keys} for row in rows])
-    pq.write_table(table, temporary, compression="zstd")
-    temporary.replace(target)
+    from .change_observation import iter_daily_changes
+    from .change_protocol import note_range, publish_file, recover
+    from .daily_storage import _same_values
+    from .store import daily_paths, daily_year_path
+
+    if not rows or len({r["trade_date"] for r in rows}) != len(rows):
+        raise ValueError("Empty or duplicate complete daily replacement")
+    if any(r.get("operation", "update") not in {"insert", "update"} for r in rows):
+        raise ValueError("Explicit daily row deletions/retractions are unsupported")
+    initialize(root)
+    recover(root)
+    paths = daily_paths(root, market, symbol)
+    yearly = bool(paths and paths[0].parent.name.startswith("year="))
+    before = {}
+    for path in paths:
+        table = pq.ParquetFile(path).read()
+        note_range("read", rows=len(table), path=path, bytes_proxy=path.stat().st_size,
+                   start=table["trade_date"][0].as_py() if len(table) else None,
+                   end=table["trade_date"][-1].as_py() if len(table) else None)
+        before.update((r["trade_date"], r) for r in table.to_pylist())
+    if set(before) - {r["trade_date"] for r in rows}:
+        raise ValueError("Explicit row deletions are unsupported by _write_daily")
+    rows = [{**before.get(r["trade_date"], {}), **{k:v for k,v in r.items() if k != "operation"}}
+            for r in rows]
+    note_range("candidate", rows=len(rows), start=min(r["trade_date"] for r in rows),
+               end=max(r["trade_date"] for r in rows))
+    touched = [r["trade_date"] for r in rows if not _same_values(before.get(r["trade_date"]), r)]
+    if not touched:
+        return
+    outputs = [(daily_year_path(root, market, symbol, year),
+                [r for r in rows if r["trade_date"].year == year])
+               for year in sorted({d.year for d in touched})] if yearly else [
+                   (daily_path(root, market, symbol), rows)]
+    actual_days = set(before)
+    for target, output in outputs:
+        output_years = {r["trade_date"].year for r in output}
+        keys = dict.fromkeys(key for row in output for key in row)
+        table = pa.Table.from_pylist([{key: row.get(key) for key in keys} for row in output])
+        actual_days.update(r["trade_date"] for r in output)
+        coverage = ("coverage", ["symbol", "market", "start_date", "end_date", "row_count",
+                                 "source", "updated_at"],
+                    [symbol, market, min(actual_days), max(actual_days), len(actual_days),
+                     "internal", datetime.now()], ["symbol"])
+        publish_file(root, target, table,
+                     iter_daily_changes(before, output, f"{symbol}.{market}",
+                                        "internal", "direct_daily"),
+                     source="internal", reason="direct_daily", coverage=coverage,
+                     stale_start=min(d for d in touched if d.year in output_years))
 
 
 @writer
@@ -148,6 +191,9 @@ def import_daily(
     initialize(root)
     source_name = f"free-stockdb:{source_root.resolve()}"
     run_id = uuid4().hex
+    from .change_protocol import attach_run
+
+    attach_run({"run_id": run_id})
     with catalog(root) as conn:
         conn.execute(
             "insert into sync_runs values (?, ?, ?, current_timestamp, null, 0, 0, "

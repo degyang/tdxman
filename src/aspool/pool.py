@@ -6,6 +6,7 @@ import fcntl
 import re
 import tempfile
 from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import wraps
 from pathlib import Path
 
@@ -13,6 +14,13 @@ import duckdb
 import pandas as pd
 
 from .api_contract import DAILY_FIELDS, OPTIONAL_FIELDS, DataPoolError, public_read
+
+_pool_locks = ContextVar("aspool_pool_locks", default=())
+
+
+def _holds_write_lock(root):
+    return any(path == Path(root).expanduser().resolve() and write
+               for path, write in _pool_locks.get())
 
 # 支持的符号格式: 000001.SH (规范) 或 SH.000001 (兼容)
 _SYMBOL_PATTERN = re.compile(r"^(\d{6})\.(SH|SZ|BJ)$|^(SH|SZ|BJ)\.(\d{6})$")
@@ -55,6 +63,16 @@ def _normalize_symbols(values):
 def pool_lock(root: Path, *, write: bool = False):
     """Coordinate batch writers and readers without opening the DuckDB catalog."""
     root = Path(root).expanduser().resolve()
+    held = next((mode for path, mode in _pool_locks.get() if path == root), None)
+    if held is not None:
+        if write and not held:
+            raise RuntimeError("Pool lock upgrade requires releasing the read lock first")
+        if not write:
+            from .change_protocol import assert_readable
+
+            assert_readable(root)
+        yield
+        return
     if write:
         root.mkdir(parents=True, exist_ok=True)
     # Directory locks allow a reader to remain strictly read-only.
@@ -62,8 +80,20 @@ def pool_lock(root: Path, *, write: bool = False):
 
     fd = os.open(root, os.O_RDONLY)
     try:
+        from time import perf_counter
+
+        from .change_protocol import assert_readable, note_lock
+
+        tick = perf_counter()
         fcntl.flock(fd, fcntl.LOCK_EX if write else fcntl.LOCK_SH)
-        yield
+        note_lock(perf_counter() - tick)
+        if not write:
+            assert_readable(root)
+        token = _pool_locks.set((*_pool_locks.get(), (root, write)))
+        try:
+            yield
+        finally:
+            _pool_locks.reset(token)
     finally:
         fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)
@@ -75,9 +105,14 @@ def writer(function):
         from .store import catalog_session
 
         with pool_lock(root, write=True), catalog_session(root):
+            from .change_protocol import recover
+
+            recover(root)
             return function(root, *args, **kwargs)
 
-    return wrapped
+    from .change_protocol import maintenance
+
+    return maintenance(wrapped)
 
 
 def _overlay_dated_fields(root: Path, frame: pd.DataFrame, selected=None) -> pd.DataFrame:

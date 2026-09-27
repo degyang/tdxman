@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from .change_protocol import maintenance
 from .daily_storage import _same_values
 from .fetch import client_factory, fetch_sync
 from .index_lists import atomic_json
@@ -270,8 +271,15 @@ def derive_rows(rows, facts, source, sessions, start, end):
 
 @writer
 def _publish(root, jobs, sessions, start, end):
-    from .change_observation import add_cost, daily_changes, empty_cost, save_changes
-    from .limit_events import _mark_stale, _published_dates_from, initialize_limits
+    from .change_observation import (
+        ChangeSpool,
+        add_cost,
+        empty_cost,
+        iter_daily_changes,
+        save_changes,
+    )
+    from .change_protocol import catalog_rows, note_range, publish_file
+    from .limit_events import _published_dates_from, initialize_limits
     from .security_facts import initialize_facts
     from .store import catalog
 
@@ -280,7 +288,7 @@ def _publish(root, jobs, sessions, start, end):
     initialize_limits(root)
     for code, market, source in jobs:
         started = perf_counter()
-        metrics, applied_changes = empty_cost(), []
+        metrics, applied_changes = empty_cost(), ChangeSpool(root)
         lifecycle_changed = False
         lifecycle_start = None
         result_entry = {}
@@ -299,16 +307,14 @@ def _publish(root, jobs, sessions, start, end):
                             # Establishing a listing date also changes the treatment of
                             # previously published sessions before that date.
                             stale = _published_dates_from(root, date.min)
-                            _mark_stale(root, stale, "新增上市日期事实，等待重算")
-                            add_cost(metrics, stale_date_marks=len(stale))
-                            conn.execute(
-                                """INSERT INTO security_lifecycle
-                                (symbol,listing_date,source,fetched_at)
-                                VALUES (?,?,?,current_timestamp)
-                                ON CONFLICT(symbol) DO UPDATE SET listing_date=excluded.listing_date
-                                """,
-                                [f"{code}.{market}", ipo, "tdx:finance"],
+                            catalog_rows(
+                                root, "security_lifecycle", ["symbol"],
+                                [dict(symbol=f"{code}.{market}", listing_date=ipo,
+                                      source="tdx:finance", fetched_at=datetime.now())],
+                                source="tdx:finance", reason="listing_date_established",
+                                ignore=("fetched_at",), stale_start=date.min,
                             )
+                            add_cost(metrics, stale_date_marks=len(stale))
                             lifecycle_changed = True
                             lifecycle_start = min(stale).isoformat() if stale else ipo.isoformat()
             paths = daily_paths(root, market, code)
@@ -316,6 +322,9 @@ def _publish(root, jobs, sessions, start, end):
             rows = []
             for p in paths:
                 table = pq.ParquetFile(p).read()
+                note_range("read", rows=len(table), path=p, bytes_proxy=p.stat().st_size,
+                           start=table["trade_date"][0].as_py(),
+                           end=table["trade_date"][-1].as_py())
                 add_cost(metrics, files_read=1, rows_read=len(table),
                          file_bytes_read_proxy=p.stat().st_size)
                 dates = table["trade_date"].to_pylist()
@@ -331,6 +340,7 @@ def _publish(root, jobs, sessions, start, end):
                 r["trade_date"]: r
                 for r in daily_facts(root, f"{code}.{market}", start - timedelta(days=30), end)
             }
+            note_range("candidate", rows=len(rows), start=start, end=end)
             updates, counts, missing, conflicts = derive_rows(
                 rows, facts, source, sessions, start, end
             )
@@ -349,23 +359,21 @@ def _publish(root, jobs, sessions, start, end):
                 if offset:
                     result = pa.concat_tables([table.slice(0, offset), result],
                                               promote_options="permissive")
-                temp = path.with_suffix(f".{uuid4().hex}.part")
                 tail_days = set(tail["trade_date"].to_pylist())
                 file_updates = [r for r in updates if r["trade_date"] in tail_days]
-                delta = daily_changes(before, file_updates, f"{code}.{market}",
-                                      VERSION, "optional_field_enrichment")
+                def deltas():
+                    return iter_daily_changes(before, file_updates, f"{code}.{market}",
+                                              VERSION, "optional_field_enrichment")
                 try:
-                    pq.write_table(result, temp, compression="zstd")
-                    stale = _published_dates_from(root, min(r["trade_date"] for r in file_updates))
-                    _mark_stale(root, stale, "日线指标及参考价变化，等待重算")
-                    add_cost(metrics, stale_date_marks=len(stale))
-                    written_bytes = temp.stat().st_size
-                    temp.replace(path)
-                finally:
-                    temp.unlink(missing_ok=True)
-                applied_changes.extend(delta)
-                add_cost(metrics, files_rewritten=1, file_bytes_rewritten=written_bytes,
-                         rows_rewritten=len(result), changed_rows=len(delta))
+                    publish_file(root, path, result, deltas(), source=VERSION,
+                                 reason="optional_field_enrichment",
+                                 stale_start=min(r["trade_date"] for r in file_updates),
+                                 metrics=metrics)
+                except Exception as exc:
+                    if getattr(exc, "committed_change", None):
+                        applied_changes.extend(deltas())
+                    raise
+                applied_changes.extend(deltas())
             result_entry.update(fields=dict(counts), missing=dict(missing), conflicts=conflicts)
         except Exception as exc:
             result_entry["error"] = str(exc)
@@ -382,16 +390,22 @@ def _publish(root, jobs, sessions, start, end):
         metrics["elapsed_seconds"] = perf_counter() - started
         results.append(dict(
             result_entry, symbol=f"{code}.{market}", changed_rows=len(applied_changes),
-            change_start=min((r["trade_date"] for r in applied_changes), default=None),
-            change_end=max((r["trade_date"] for r in applied_changes), default=None),
+            change_start=applied_changes.start, change_end=applied_changes.end,
             cost=metrics, lifecycle_changed=lifecycle_changed, lifecycle_start=lifecycle_start,
         ))
+        applied_changes.close()
     return results
 
 
 def _recompute_dates(root, start, end, results):
     """Keep retries for existing stale/missing publications, skip true no-ops."""
-    with pool_lock(root), read_only_catalog(root) as conn:
+    from contextlib import nullcontext
+
+    from .store import _active_catalog
+
+    held = _active_catalog.get()
+    lock = nullcontext() if held is not None else pool_lock(root)
+    with lock, read_only_catalog(root) as conn:
         pending = {row[0] for row in conn.execute(
             "SELECT trade_date FROM daily_limit_staleness WHERE trade_date BETWEEN ? AND ?",
             [start, end],
@@ -449,6 +463,7 @@ def audit_conflicts(root, results):
     return report
 
 
+@maintenance
 def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers=4,
                  recompute=True, compare_baostock=True):
     """Enrich existing stock history, cache raw evidence and report residual gaps."""
@@ -494,6 +509,9 @@ def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers
         source_failures=[],
         results=[],
     )
+    from .change_protocol import attach_run
+
+    attach_run(report)
     atomic_json(path, report)
     cached, fetch = [], []
     for code, market in securities:

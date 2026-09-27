@@ -145,7 +145,7 @@ def test_recompute_keeps_existing_stale_and_unpublished_dates(pool):
     assert _recompute_dates(root, days[0], days[-1], []) == [days[2], days[-1]]
 
 
-def test_failed_enrichment_replace_retains_stale_and_original_file(pool, monkeypatch):
+def test_failed_enrichment_replace_retains_pending_and_original_file(pool, monkeypatch):
     root, days = pool
     path = daily_path(root, "SZ", "000001")
     original = path.read_bytes()
@@ -161,7 +161,14 @@ def test_failed_enrichment_replace_retains_stale_and_original_file(pool, monkeyp
     assert "injected" in results[0]["error"]
     assert results[0]["change_report"] is None
     assert path.read_bytes() == original
-    assert stale(root)
+    from aspool import DataPool
+    from aspool.api_contract import DataPoolError
+    from aspool.change_protocol import pending
+
+    assert pending(root)
+    assert stale(root) == []  # Catalog transaction has not committed.
+    with pytest.raises(DataPoolError, match="recover"):
+        DataPool(root).read_research_daily(symbols="000001.SZ")
     assert list(path.parent.glob("*.part")) == []
 
 
@@ -484,29 +491,27 @@ def test_free_stockdb_failed_run_records_committed_rows(pool, monkeypatch):
         )
 
 
-def test_noop_retry_repairs_failed_coverage_without_rewriting_bars(pool, monkeypatch):
-    import aspool.daily_storage as storage
+def test_noop_retry_recovers_catalog_failure_without_rewriting_bars(pool, monkeypatch):
+    import aspool.change_protocol as protocol
 
     root, days = pool
     next_day = days[-1] + timedelta(days=1)
-    real_record = storage.record_coverage
-
-    def fail_coverage(*args, **kwargs):
-        raise OSError("coverage unavailable")
-
-    monkeypatch.setattr(storage, "record_coverage", fail_coverage)
+    def fail(phase):
+        if phase == "after_coverage":
+            raise OSError("coverage unavailable")
+    monkeypatch.setattr(protocol, "_fault", fail)
     with pytest.raises(OSError, match="coverage unavailable"):
         merge_daily(root, "SZ", "000001", [bar(next_day)], "test")
     path = daily_path(root, "SZ", "000001")
-    original = path.read_bytes(), path.stat().st_mtime_ns, stale(root)
-    monkeypatch.setattr(storage, "record_coverage", real_record)
+    original = path.read_bytes(), path.stat().st_mtime_ns
+    monkeypatch.setattr(protocol, "_fault", lambda phase: None)
     metrics = empty_cost()
     assert merge_daily(root, "SZ", "000001", [bar(next_day)], "test", metrics=metrics) == 0
-    assert metrics["coverage_repairs"] == 1
     assert metrics["files_rewritten"] == metrics["changed_rows"] == 0
-    assert (path.read_bytes(), path.stat().st_mtime_ns, stale(root)) == original
+    assert (path.read_bytes(), path.stat().st_mtime_ns) == original
+    assert not protocol.pending(root)
     with catalog(root) as conn:
         assert conn.execute("SELECT row_count FROM coverage").fetchone()[0] == len(days) + 1
-    metrics = empty_cost()
-    assert merge_daily(root, "SZ", "000001", [bar(next_day)], "test", metrics=metrics) == 0
-    assert metrics["coverage_repairs"] == 0
+    before = stale(root)
+    assert merge_daily(root, "SZ", "000001", [bar(next_day)], "test") == 0
+    assert stale(root) == before

@@ -13,6 +13,7 @@ import pyarrow.parquet as pq
 from tdxman.baostock import BaostockClient
 from tdxman.models.enums import Market
 
+from .change_protocol import maintenance
 from .config import read_config
 from .daily_storage import daily_field_quality, is_missing_value, merge_daily
 from .index_lists import atomic_json
@@ -67,7 +68,13 @@ def _rows(root, market, code, start, end, *, planning=False):
             if planning
             else None
         )
-        for row in parquet.read(columns=columns).to_pylist():
+        table = parquet.read(columns=columns)
+        from .change_protocol import note_range
+
+        note_range("read", rows=len(table), path=path, bytes_proxy=path.stat().st_size,
+                   start=table["trade_date"][0].as_py() if len(table) else None,
+                   end=table["trade_date"][-1].as_py() if len(table) else None)
+        for row in table.to_pylist():
             if start <= row["trade_date"] <= end:
                 if row["trade_date"] in result:
                     raise ValueError(f"{code}.{market}: 重复日线日期")
@@ -103,13 +110,16 @@ def _initialize(root):
 
 @writer
 def _publish_calendar(root, frame):
-    with catalog(root) as conn:
-        conn.executemany(
-            f"INSERT INTO {CALENDAR_TABLE} VALUES (?, ?, ?) "
-            "ON CONFLICT (trade_date) DO UPDATE SET "
-            "is_open=excluded.is_open, source=excluded.source",
-            [(r["date"], r["is_open"], r["source"]) for r in frame.to_dict("records")],
-        )
+    from .change_protocol import catalog_rows
+
+    if "operation" in frame and not frame.operation.isin(["insert", "update"]).all():
+        raise ValueError("Explicit calendar deletions/retractions are unsupported")
+    return catalog_rows(
+        root, CALENDAR_TABLE, ["trade_date"],
+        (dict(trade_date=r["date"], is_open=r["is_open"], source=r["source"])
+         for r in frame.to_dict("records")),
+        source="baostock", reason="calendar_fact", stale_start=date.min,
+    )
 
 
 @writer
@@ -127,6 +137,8 @@ def _invalidate(root, days):
 
 @writer
 def _publish(root, market, code, basic, frame, start, end):
+    if "operation" in frame and not frame.operation.isin(["insert", "update"]).all():
+        raise ValueError("Explicit BaoStock deletions/retractions are unsupported")
     symbol = f"{code}.{market}"
     prior = _rows(root, market, code, start, end)
     old_facts = {r["trade_date"]: r for r in daily_facts(root, symbol, start, end)}
@@ -170,6 +182,7 @@ def _publish(root, market, code, basic, frame, start, end):
                     }
                 )
                 continue
+        previous = old_facts.get(day, {})
         fact = {
             "symbol": symbol,
             "trade_date": day,
@@ -180,7 +193,7 @@ def _publish(root, market, code, basic, frame, start, end):
         for key in ("pre_close", "is_st"):
             value = incoming[key]
             quality = daily_field_quality(incoming)[key]
-            fact[key] = value if quality == "valid" else None
+            fact[key] = value if quality == "valid" else previous.get(key)
             if quality != "valid":
                 if daily_field_quality(row)[key] != "valid":
                     rejected.append(
@@ -207,6 +220,7 @@ def _publish(root, market, code, basic, frame, start, end):
                     }
                 )
                 fact[key] = None
+                fact.setdefault("_retract_fields", []).append(key)
         row["trading_status"] = incoming["trading_status"]
         row["trading_status_source"] = "baostock"
         if is_missing_value(row.get("turnover_rate")) and not is_missing_value(row.get("turnover")):
@@ -225,8 +239,8 @@ def _publish(root, market, code, basic, frame, start, end):
         if not suspended or old is not None:
             if all(not is_missing_value(row.get(k)) and float(row[k]) >= 0 for k in _OHLCV):
                 updates.append(row)
-        previous = old_facts.get(day, {})
-        if any(previous.get(k) != fact[k] for k in fact if k != "fetched_at"):
+        if any(previous.get(k) != fact[k] for k in fact
+               if k not in {"fetched_at", "_retract_fields"}):
             facts.append(fact)
     coverage, changed_dates = [], []
     changed = (
@@ -237,44 +251,27 @@ def _publish(root, market, code, basic, frame, start, end):
         else 0
     )
     record_coverages(root, coverage)
-    with catalog(root) as conn:
-        conn.execute(
-            f"INSERT INTO {BASIC_TABLE} VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(symbol) "
-            "DO UPDATE SET listing_date=excluded.listing_date, "
-            "delisting_date=excluded.delisting_date, "
-            "name=excluded.name, source=excluded.source, fetched_at=excluded.fetched_at",
-            [
-                symbol,
-                basic["listing_date"],
-                basic["delisting_date"],
-                basic["name"],
-                "baostock",
-                fetched,
-            ],
-        )
-        if facts:
-            conn.executemany(
-                f"INSERT INTO {DAILY_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?) "
-                "ON CONFLICT(symbol, trade_date) DO UPDATE SET "
-                "pre_close=excluded.pre_close, is_st=excluded.is_st, "
-                "trading_status=excluded.trading_status, source=excluded.source, "
-                "fetched_at=excluded.fetched_at",
-                [
-                    (
-                        r["symbol"],
-                        r["trade_date"],
-                        r["pre_close"],
-                        r["is_st"],
-                        r["trading_status"],
-                        r["source"],
-                        r["fetched_at"],
-                    )
-                    for r in facts
-                ],
-            )
-    return changed, len(facts), conflicts, rejected
+    from .change_protocol import catalog_rows
+
+    catalog_rows(root, BASIC_TABLE, ["symbol"],
+                 [dict(symbol=symbol, listing_date=basic["listing_date"],
+                       delisting_date=basic["delisting_date"], name=basic["name"],
+                       source="baostock", fetched_at=fetched)],
+                 source="baostock", reason="lifecycle_fact", ignore=("fetched_at",),
+                 stale_start=date.min)
+    fact_count = catalog_rows(root, DAILY_TABLE, ["symbol", "trade_date"], facts,
+                              source="baostock", reason="dated_security_fact",
+                              ignore=("fetched_at",),
+                              stale_start=min((r["trade_date"] for r in facts), default=None))
+    from .change_protocol import observe
+
+    if "fetched_at" not in basic:
+        with catalog(root) as conn:
+            observe(conn, f"lifecycle:{symbol}")
+    return changed, fact_count, conflicts, rejected
 
 
+@maintenance
 def supplement_daily(
     root: Path,
     *,
@@ -324,6 +321,9 @@ def supplement_daily(
         "conflicts": [],
         "rejected": [],
     }
+    from .change_protocol import attach_run
+
+    attach_run(report)
     atomic_json(path, report)
     days, jobs = [], []
     try:
@@ -337,6 +337,12 @@ def supplement_daily(
             _publish_calendar(root, calendar)
             with pool_lock(root):
                 metadata = lifecycle_map(root)
+                from .store import existing_tables
+
+                with read_only_catalog(root) as conn:
+                    observed = (dict(conn.execute(
+                        "SELECT object_key, observed_at FROM fetch_observations").fetchall())
+                        if "fetch_observations" in existing_tables(root) else {})
                 with read_only_catalog(root) as conn:
                     has_universe = conn.execute(
                         "SELECT count(*) FROM information_schema.tables WHERE table_name='universe'"
@@ -360,10 +366,13 @@ def supplement_daily(
                     basic = metadata.get(symbol)
                     rows = _rows(root, market, code, first, end, planning=True)
                     facts = {r["trade_date"]: r for r in daily_facts(root, symbol, first, end)}
+                    last_observed = observed.get(f"lifecycle:{symbol}",
+                                                  basic.get("fetched_at") if basic else None)
                     stale_basic = (
-                        basic is None
+                        basic is None or is_missing_value(last_observed)
                         or (
-                            now.astimezone(timezone.utc).replace(tzinfo=None) - basic["fetched_at"]
+                            now.astimezone(timezone.utc).replace(tzinfo=None)
+                            - last_observed
                         ).days
                         >= 7
                     )
@@ -379,8 +388,6 @@ def supplement_daily(
             report["requested"] = len(jobs)
             report["not_selected"] = report["planned"] - len(jobs)
             atomic_json(path, report)
-            if jobs:
-                _invalidate(root, days)
             consecutive_failures = 0
             for index, (code, market, basic, stale_basic) in enumerate(jobs):
                 symbol = f"{code}.{market}"
@@ -405,6 +412,12 @@ def supplement_daily(
                     report["rejected"].extend(rejected)
                     consecutive_failures = 0
                 except Exception as exc:
+                    committed = getattr(exc, "committed_change", None)
+                    if committed:
+                        report["changed_rows"] += committed["changed_rows"]
+                    fact_commit = getattr(exc, "committed_catalog_change", None)
+                    if fact_commit and fact_commit["object_key"] == DAILY_TABLE:
+                        report["fact_rows"] += fact_commit["changed_rows"]
                     report["failed"].append({"symbol": symbol, "error": str(exc)})
                     consecutive_failures += 1
                     if consecutive_failures >= 3:
@@ -412,13 +425,18 @@ def supplement_daily(
                         break
                 if (index + 1) % 100 == 0:
                     atomic_json(path, report)
-        if jobs and days and recompute_limits:
+        from .enrichment import _recompute_dates
+
+        recompute = (_recompute_dates(root, first, end, [])
+                     if days and not report["failed"] else [])
+        if recompute and recompute_limits:
             from .limit_events import compute_limit_events
 
             try:
                 report["limit_events"] = {
                     "status": "ok",
-                    "batches": compute_limit_events(root, days),
+                    "batches": compute_limit_events(root, recompute),
+                    "dates": [str(d) for d in recompute],
                 }
                 from .pool import DataPool
 

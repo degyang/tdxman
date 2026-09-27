@@ -18,9 +18,15 @@ def _seed(root, *, duplicate=False):
     initialize_limits(root)
     rows = [dict(trade_date=date(2026, 9, 23), open=10., high=11., low=9.,
                  close=10., volume=1000., amount=12000.)]
-    if duplicate:
-        rows *= 2
     _write_daily(root, "SZ", "000001", rows)
+    if duplicate:
+        # Inject an invalid existing file to test the public reader's guard.
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        from aspool.store import daily_path
+
+        pq.write_table(pa.Table.from_pylist(rows * 2), daily_path(root, "SZ", "000001"))
     with catalog(root) as conn:
         for day, suffix in ((date(2026, 9, 23), "a"), (date(2026, 9, 24), "b")):
             conn.execute(

@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from .change_protocol import maintenance
 from .config import read_config
 from .daily_storage import build_field_quality_report, is_missing_value, merge_daily
 from .fetch import client_factory, fetch_async, fetch_sync
@@ -119,27 +120,47 @@ def _snapshot_rows(frame: Any, refreshed_at: datetime) -> list[dict[str, object]
 def _same_snapshot(left: dict[str, object] | None, right: dict[str, object]) -> bool:
     if left is None:
         return False
-    return all(left.get(field) == right.get(field) for field in FIELDS if field != "refreshed_at")
+    from .daily_storage import _same_values
+
+    return _same_values({k: v for k, v in left.items() if k != "refreshed_at"},
+                        {k: v for k, v in right.items() if k != "refreshed_at"})
 
 
+@maintenance
 def _write(root: Path, incoming: list[dict[str, object]]) -> bool:
+    from .change_protocol import recover
+
+    recover(root)
     path = root / SNAPSHOT_FILE
     prior = pq.read_table(path).to_pylist() if path.exists() else []
+    from .change_protocol import note_range
+
+    note_range("candidate", rows=len(incoming), path=path)
+    if path.exists():
+        note_range("read", rows=len(prior), path=path, bytes_proxy=path.stat().st_size)
     # Accept snapshots written by the short-lived plural field spelling during
     # the initial rollout, then rewrite them with free-stockdb field names.
     for row in prior:
         row.setdefault("total_share", row.pop("total_shares", None))
         row.setdefault("float_share", row.pop("float_shares", None))
     merged = {row["symbol"]: row for row in prior}
-    changed = not path.exists()
+    changed = False
     for row in incoming:
+        if row.get("operation", "update") not in {"insert", "update"}:
+            raise ValueError("Explicit snapshot deletions/retractions are unsupported")
+        old = merged.get(row["symbol"], {})
+        row = {**old, **{k: v for k, v in row.items()
+                        if k != "operation" and not is_missing_value(v)}}
         if not _same_snapshot(merged.get(row["symbol"]), row):
             merged[row["symbol"]] = row
             changed = True
     if not changed:
+        from .change_protocol import observe
+
+        if incoming:
+            with catalog(root) as conn:
+                observe(conn, "fundamental_snapshot")
         return False
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(".part")
     schema = pa.schema(
         [
             pa.field("symbol", pa.string()),
@@ -155,10 +176,35 @@ def _write(root: Path, incoming: list[dict[str, object]]) -> bool:
             pa.field("source", pa.string()),
         ]
     )
-    pq.write_table(
-        pa.Table.from_pylist(list(merged.values()), schema=schema), temporary, compression="zstd"
-    )
-    temporary.replace(path)
+    from .change_observation import _value, row_version
+    from .change_protocol import publish_file
+    from .daily_storage import _same_values
+
+    old = {row["symbol"]: row for row in prior}
+
+    def deltas():
+        for symbol, row in merged.items():
+            previous = old.get(symbol)
+            if _same_snapshot(previous, row):
+                continue
+            fields = [k for k in FIELDS if k != "refreshed_at"
+                      and not _same_values({k: (previous or {}).get(k)}, {k: row.get(k)})]
+            yield dict(symbol=f"{symbol}.{row['market']}", trade_date=None,
+                       operation="update" if previous else "insert", fields=fields,
+                       before={k: _value((previous or {}).get(k)) for k in fields},
+                       after={k: _value(row.get(k)) for k in fields},
+                       source="tdxman:mac:quote", reason="fundamental_snapshot",
+                       input_row_version=row_version({k:v for k,v in previous.items()
+                                                    if k != "refreshed_at"}) if previous else None,
+                       output_row_version=row_version({k:v for k,v in row.items()
+                                                       if k != "refreshed_at"}))
+
+    publish_file(root, path, pa.Table.from_pylist(list(merged.values()), schema=schema), deltas(),
+                 source="tdxman:mac:quote", reason="fundamental_snapshot")
+    from .change_protocol import observe
+
+    with catalog(root) as conn:
+        observe(conn, "fundamental_snapshot")
     return True
 
 
@@ -247,6 +293,7 @@ def _quote_bar(quote: dict[str, object], trade_date: date) -> dict[str, object]:
     return row
 
 
+@maintenance
 def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
     """Refresh dated quote records, reporting omissions and avoiding unchanged rewrites."""
     started = perf_counter()
@@ -278,6 +325,9 @@ def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
         "failed": [],
         "write_seconds": 0.0,
     }
+    from .change_protocol import attach_run
+
+    attach_run(report)
     pending = []
     seen = set()
     failed_symbols = set()
@@ -359,7 +409,7 @@ def update_from_quotes(root, limit=None, now=None, async_mode=False, workers=1):
     )
     # Derive from every successful dated quote, not only changed parquet rows:
     # an existing raw row may still have no published or stale derived batch.
-    if quote_dates:
+    if quote_dates and not report["failed"]:
         try:
             from .limit_events import compute_limit_events, summarize_published_limit_quality
 
@@ -406,7 +456,10 @@ def _publish_quote_rows(root, pending):
     coverage, quality_rows, snapshots, failures, changed_dates = [], [], [], [], []
     success = changed_rows = unchanged = 0
     successful_dates = set()
+    from .change_observation import empty_cost
+
     for code, row, snapshot in pending:
+        metrics = empty_cost()
         try:
             if row["trade_date"] < last_dates.get(code, row["trade_date"]):
                 raise ValueError("stale_quote")
@@ -420,18 +473,27 @@ def _publish_quote_rows(root, pending):
                 "tdxman:quote",
                 coverage=coverage,
                 changed_dates=changed_dates,
-                quality_rows=quality_rows,
+                quality_rows=quality_rows, metrics=metrics,
             )
             snapshots.append(snapshot)
-            successful_dates.add(row["trade_date"])
+            if changed:
+                successful_dates.add(row["trade_date"])
             success += 1
-            changed_rows += changed
             unchanged += changed == 0
         except Exception as exc:
-            failures.append({"symbol": code, "error": str(exc)})
+            failures.append({"symbol": code, "error": str(exc),
+                             "changed_rows": metrics["changed_rows"]})
+        finally:
+            changed_rows += metrics["changed_rows"]
     record_coverages(root, coverage)
     _write(root, snapshots)
-    quote_dates = sorted(successful_dates)
+    # Retry stale/missing publications without republishing a healthy no-op.
+    from .enrichment import _recompute_dates
+
+    candidate = [row["trade_date"] for _, row, _ in pending]
+    quote_dates = (_recompute_dates(root, min(candidate), max(candidate),
+                   [{"change_start": str(min(successful_dates))}] if successful_dates else [])
+                   if candidate and not failures else [])
     return success, changed_rows, unchanged, failures, quality_rows, quote_dates
 
 
@@ -465,6 +527,7 @@ async def _refresh_async(root: Path, symbols: list[str]) -> tuple[int, int]:
     return len(symbols), len(rows)
 
 
+@maintenance
 def refresh_fundamentals(
     root: Path, *, async_mode: bool = False, limit: int | None = None
 ) -> tuple[int, int]:

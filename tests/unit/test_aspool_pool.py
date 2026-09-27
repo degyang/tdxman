@@ -10,7 +10,17 @@ from aspool.tdx_online import _daily_rows, _enrich_daily
 
 
 def put(root, code, rows):
-    _write_daily(root, "SZ", code, rows)
+    # Reader corruption fixtures deliberately bypass validated mutation paths.
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from aspool.store import daily_path
+
+    path = daily_path(root, "SZ", code)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    keys = dict.fromkeys(key for row in rows for key in row)
+    pq.write_table(pa.Table.from_pylist([{k:r.get(k) for k in keys} for r in rows]),
+                   path, compression="zstd")
 
 
 def bar(day, **extra):

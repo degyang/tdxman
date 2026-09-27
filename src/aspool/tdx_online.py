@@ -9,6 +9,7 @@ from uuid import uuid4
 
 import pyarrow.parquet as pq
 
+from .change_protocol import maintenance
 from .daily_storage import build_field_quality_report, is_missing_value, merge_daily
 from .fetch import client_factory, fetch_async, fetch_sync
 from .free_stockdb import _market, _normalize
@@ -30,7 +31,11 @@ def _fundamentals(root: Path) -> dict[str, dict[str, object]]:
     path = root / "lake/fundamentals/snapshots.parquet"
     if not path.exists():
         return {}
-    return {row["symbol"]: row for row in pq.read_table(path).to_pylist()}
+    table = pq.read_table(path)
+    from .change_protocol import note_range
+
+    note_range("snapshot_read", rows=len(table), path=path, bytes_proxy=path.stat().st_size)
+    return {row["symbol"]: row for row in table.to_pylist()}
 
 
 def _enrich_daily(rows: list[dict[str, object]], snapshot: dict[str, object] | None):
@@ -280,6 +285,7 @@ async def _stock_records_async(client, job):
     raise ValueError("股票分页超过上限")
 
 
+@maintenance
 async def _sync_daily_run(
     root, limit, asynchronous, workers, asset_type="stock", derive_limits=True,
 ):
@@ -319,11 +325,18 @@ async def _sync_daily_run(
             key: value if key != "added" else len(value) for key, value in universe.items()
         },
     }
+    from .change_protocol import attach_run
+
+    attach_run(report)
     jobs = []
     for symbol in symbols:
         try:
             path = bars_path(root, "daily", _market(symbol), symbol)
             days = pq.ParquetFile(path).read(columns=["trade_date"])["trade_date"].to_pylist()
+            from .change_protocol import note_range
+
+            note_range("planning_read", rows=len(days), path=path, bytes_proxy=path.stat().st_size,
+                       start=days[0] if days else None, end=days[-1] if days else None)
             if not days:
                 raise ValueError("已有标的缺少历史日线")
             jobs.append((symbol, days[max(0, len(days) - 5)], asset_type))
@@ -381,7 +394,7 @@ async def _sync_daily_run(
             for change in entry.get("changed_dates", [])
         }
     )
-    if asset_type == "stock" and touched_dates and derive_limits and not failures:
+    if asset_type == "stock" and touched_dates and derive_limits and not report["failed"]:
         touched = [d.isoformat() for d in touched_dates]
         try:
             from .limit_events import compute_limit_events
@@ -414,7 +427,7 @@ async def _sync_daily_run(
 
 @writer
 def _publish_stock_rows(root, pending, asset_type="stock"):
-    from .change_observation import empty_cost, save_changes
+    from .change_observation import ChangeSpool, empty_cost, save_changes
 
     coverage = []
     quality_rows = []
@@ -432,7 +445,7 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
             names = {}
     for symbol, rows in pending:
         changed_dates: list = []
-        changes, metrics = [], empty_cost()
+        changes, metrics = ChangeSpool(root), empty_cost()
         entry = {"symbol": symbol, "fetched": len(rows)}
         try:
             incoming = _normalize(
@@ -469,6 +482,7 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
         except Exception as exc:
             entry["observation_error"] = str(exc)
             entry.setdefault("error", f"Change observation failed: {exc}")
+        changes.close()
         (failures if "error" in entry else results).append(entry)
     record_coverages(root, coverage)
     return results, failures, quality_rows

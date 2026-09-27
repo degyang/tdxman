@@ -28,7 +28,8 @@ def digest(path):
 
 
 def inventory(root):
-    paths = [root / "catalog.duckdb", *sorted((root / "lake").rglob("*"))]
+    paths = [root / "catalog.duckdb", *sorted((root / "lake").rglob("*")),
+             *sorted((root / "change-state").rglob("*"))]
     if any(path.is_symlink() for path in paths):
         raise ValueError("Baseline verification does not follow symlinks")
     return {str(p.relative_to(root)): p for p in paths if p.is_file()}
@@ -99,7 +100,8 @@ def verify(root, manifest_path):
         index=dict(rows=len(index), start=str(index.date.min()), end=str(index.date.max())),
         elapsed_seconds=time.perf_counter() - started,
         dependencies={name: version(name) for name in ("duckdb", "pyarrow", "pandas")},
-        scope="catalog.duckdb + lake/**; reports excluded, no pool mutation or copy",
+        scope=("catalog.duckdb + lake/** + change-state/**; "
+               "reports excluded, no pool mutation or copy"),
         limitation="Public coverage/index probes follow the locked hash check; no PIT guarantee.",
     )
 

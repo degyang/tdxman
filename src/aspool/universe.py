@@ -99,7 +99,6 @@ def fetch_etf_universe():
 @writer
 def _publish_universe(root, entries):
     now = datetime.now()
-    current = {entry["symbol"]: entry for entry in entries}
     with catalog(root) as conn:
         conn.execute("""CREATE TABLE IF NOT EXISTS universe (
             symbol VARCHAR PRIMARY KEY, market VARCHAR NOT NULL, name VARCHAR,
@@ -120,38 +119,28 @@ def _publish_universe(root, entries):
                 "SELECT symbol, market, name, active, asset_type FROM universe"
             ).fetchall()
         }
-        conn.execute("BEGIN")
-        try:
-            for entry in entries:
-                conn.execute(
-                    """INSERT INTO universe VALUES (?, ?, ?, true, ?, ?, ?, ?)
-                    ON CONFLICT(symbol) DO UPDATE SET market=excluded.market, name=excluded.name,
-                    active=true, last_seen=excluded.last_seen, source=excluded.source,
-                    asset_type=excluded.asset_type""",
-                    [
-                        entry["symbol"],
-                        entry["market"],
-                        entry["name"],
-                        now,
-                        now,
-                        f"tdx:{entry.get('asset_type', 'stock')}-list",
-                        entry.get("asset_type", "stock"),
-                    ],
-                )
-            asset_types = {entry.get("asset_type", "stock") for entry in entries}
-            missing = sorted(
-                symbol
-                for symbol, prior in previous.items()
-                if prior["asset_type"] in asset_types and symbol not in current
-            )
-            if missing:
-                conn.execute(
-                    "UPDATE universe SET active=false WHERE symbol IN (SELECT unnest(?))", [missing]
-                )
-            conn.execute("COMMIT")
-        except Exception:
-            conn.execute("ROLLBACK")
-            raise
+        from .change_protocol import catalog_rows, observe
+
+        for entry in entries:
+            if entry.get("operation", "update") not in {"insert", "update"} or \
+                    entry.get("active", True) is False:
+                raise ValueError("Explicit universe deactivation/retraction is unsupported")
+        rows = []
+        for entry in entries:
+            old = previous.get(entry["symbol"])
+            rows.append(dict(
+                symbol=entry["symbol"], market=entry["market"], name=entry["name"], active=True,
+                **({"first_seen": now, "last_seen": now} if old is None else {}),
+                source=f"tdx:{entry.get('asset_type', 'stock')}-list",
+                asset_type=entry.get("asset_type", "stock"),
+            ))
+        catalog_rows(root, "universe", ["symbol"], rows, source="tdx:directory",
+                     reason="universe_scope", ignore=("first_seen", "last_seen"),
+                     stale_start=(datetime.min.date()
+                                  if any(r["asset_type"] == "stock" for r in rows) else None))
+        missing = []  # Source omissions never authorize deactivation.
+        for kind in {r["asset_type"] for r in rows}:
+            observe(conn, f"universe:{kind}")
         covered = {row[0] for row in conn.execute("SELECT symbol FROM coverage").fetchall()}
     added = [entry for entry in entries if entry["symbol"] not in covered]
     return {
@@ -203,6 +192,12 @@ def universe_is_stale(root: Path, days: int = 7, asset_type: str | None = None) 
                 query += " WHERE asset_type = ?"
                 params.append(asset_type)
             latest = conn.execute(query, params).fetchone()[0]
+            if "fetch_observations" in {r[0] for r in conn.execute("SHOW TABLES").fetchall()}:
+                observation = conn.execute(
+                    "SELECT max(observed_at) FROM fetch_observations WHERE "
+                    "object_key LIKE ? AND status='ok'", [f"universe:{asset_type or '%'}"]
+                ).fetchone()[0]
+                latest = max((d for d in (latest, observation) if d is not None), default=None)
         except Exception:
             return True
     return latest is None or (datetime.now() - latest).days >= days

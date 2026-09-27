@@ -4,12 +4,12 @@ import math
 from bisect import bisect_left
 from numbers import Real
 from time import perf_counter
-from uuid import uuid4
 
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from .change_protocol import maintenance
 from .store import bars_path, record_coverage
 
 
@@ -111,27 +111,34 @@ def _same_values(left, right):
     return True
 
 
+@maintenance
 def merge_daily(
     root, market, symbol, incoming, source, coverage=None, changed_dates=None, quality_rows=None,
     _path=None, changes=None, metrics=None,
 ):
-    from .change_observation import add_cost, daily_changes
-    from .store import daily_paths, daily_year_path, read_daily_table
+    from .change_observation import add_cost, iter_daily_changes
+    from .change_protocol import note_range, publish_file, recover
+    from .store import daily_paths, daily_year_path
     from .tdx_online import _fill_close_vol_ratio, _merge_rows
 
     dates = [row["trade_date"] for row in incoming]
+    note_range("candidate", rows=len(incoming), start=min(dates) if dates else None,
+               end=max(dates) if dates else None)
     if not incoming or len(dates) != len(set(dates)):
         raise ValueError(f"{symbol}: empty or duplicate incoming dates")
-    paths = daily_paths(root, market, symbol) if _path is None else []
-    yearly = bool(paths and paths[0].parent.name.startswith("year="))
     started = perf_counter()
     for row in incoming:
+        if row.get("operation", "update") not in {"insert", "update"}:
+            raise ValueError("Explicit deletions/retractions are unsupported")
         values = [row.get(k) for k in ("open", "high", "low", "close", "volume", "amount")]
         if (
             any(v is None or not math.isfinite(float(v)) or float(v) < 0 for v in values)
             or row["high"] < row["low"]
         ):
             raise ValueError(f"{symbol}: invalid incoming OHLCV")
+    recover(root)
+    paths = daily_paths(root, market, symbol) if _path is None else []
+    yearly = bool(paths and paths[0].parent.name.startswith("year="))
     path = _path or bars_path(root, "daily", market, symbol)
     # The rolling baseline and next-close dependencies cross year boundaries.
     # Keep the existing conservative full read until DG-02 supplies bounded access.
@@ -140,6 +147,10 @@ def merge_daily(
     for stored_path in read_paths:
         table_part = pq.ParquetFile(stored_path).read()
         tables.append(table_part)
+        note_range("read", rows=len(table_part), path=stored_path,
+                   start=table_part["trade_date"][0].as_py() if len(table_part) else None,
+                   end=table_part["trade_date"][-1].as_py() if len(table_part) else None,
+                   bytes_proxy=stored_path.stat().st_size)
         add_cost(metrics, files_read=1, file_bytes_read_proxy=stored_path.stat().st_size,
                  rows_read=len(table_part))
     table = pa.concat_tables(tables, promote_options="permissive") if tables else None
@@ -158,7 +169,7 @@ def merge_daily(
     invalid_fields: dict[object, set[str]] = {}
     sanitized = []
     for row in incoming:
-        clean = {**identity, **row}
+        clean = {**identity, **{k: v for k, v in row.items() if k != "operation"}}
         invalid = {
             field
             for field in ("pre_close", "is_st")
@@ -217,8 +228,6 @@ def merge_daily(
         if quality_rows is not None:
             quality_rows.extend(quality)
         return 0
-    delta = (daily_changes(before, merged, f"{symbol}.{market}", source, "daily_merge")
-             if changes is not None else [])
     columns = dict.fromkeys(
         [
             *(table.column_names if table is not None else []),
@@ -242,51 +251,48 @@ def merge_daily(
         ]
     else:
         outputs = [(path, result)]
-    committed = 0
     try:
         for target, output in outputs:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            temporary = target.with_suffix(f".{uuid4().hex}.part")
             file_days = set(output["trade_date"].to_pylist())
             file_touched = [day for day in touched if day in file_days]
+            file_rows = (row for row in merged if row["trade_date"] in file_days)
+            # Coverage for each atomic file commit describes the actual mixed file
+            # set. It is never deferred to a post-write report/batch update.
+            actual_days = sorted(set(days) | {day for day in file_touched})
+            entry = None if _path is not None else (
+                "coverage",
+                ["symbol", "market", "start_date", "end_date", "row_count", "source", "updated_at"],
+                [symbol, market, actual_days[0], actual_days[-1], len(actual_days), source,
+                 __import__("datetime").datetime.now()], ["symbol"])
             try:
-                pq.write_table(output, temporary, compression="zstd")
-                if source not in {"tdxman:etf", "tdxman:etf:offline"}:
-                    from .limit_events import _mark_stale, _published_dates_from
-                    from .store import existing_tables
-
-                    if "daily_limit_publication" in existing_tables(root):
-                        stale_dates = _published_dates_from(root, min(file_touched))
-                        _mark_stale(root, stale_dates, "日线字段变化，等待补齐和重算")
-                        add_cost(metrics, stale_date_marks=len(stale_dates))
-                written_bytes = temporary.stat().st_size
-                temporary.replace(target)
-            finally:
-                temporary.unlink(missing_ok=True)
-            committed += 1
+                publish_file(
+                    root, target, output,
+                    iter_daily_changes(
+                        before, file_rows, f"{symbol}.{market}", source, "daily_merge"),
+                    source=source, reason="daily_merge", coverage=entry,
+                    stale_start=min(file_touched)
+                    if source not in {"tdxman:etf", "tdxman:etf:offline"} else None,
+                    metrics=metrics,
+                )
+            except Exception as exc:
+                if getattr(exc, "committed_change", None):
+                    if changed_dates is not None:
+                        changed_dates.extend(file_touched)
+                    if changes is not None:
+                        touched_set = set(file_touched)
+                        changes.extend(iter_daily_changes(
+                            before, (r for r in merged if r["trade_date"] in touched_set),
+                            f"{symbol}.{market}", source, "daily_merge"))
+                raise
+            days = actual_days
             if changed_dates is not None:
                 changed_dates.extend(file_touched)
             if changes is not None:
-                changed_iso = {d.isoformat() for d in file_touched}
-                changes.extend(item for item in delta if item["trade_date"] in changed_iso)
-            add_cost(metrics, files_rewritten=1, file_bytes_rewritten=written_bytes,
-                     rows_rewritten=len(output), changed_rows=len(file_touched))
+                touched_set = set(file_touched)
+                changes.extend(iter_daily_changes(
+                    before, (r for r in merged if r["trade_date"] in touched_set),
+                    f"{symbol}.{market}", source, "daily_merge"))
     finally:
-        # A later partition failure must still publish truthful coverage for the
-        # already committed files. No-op retry must not leave old coverage behind.
-        if committed:
-            actual = result
-            if committed != len(outputs):
-                actual = read_daily_table(root, market, symbol)
-                all_paths = daily_paths(root, market, symbol)
-                add_cost(metrics, files_read=len(all_paths), rows_read=len(actual),
-                         file_bytes_read_proxy=sum(p.stat().st_size for p in all_paths))
-            entry = (symbol, market, actual["trade_date"][0].as_py(),
-                     actual["trade_date"][-1].as_py(), len(actual), source, "daily")
-            if coverage is None:
-                record_coverage(root, *entry)
-            else:
-                coverage.append(entry)
         add_cost(metrics, elapsed_seconds=perf_counter() - started)
     if quality_rows is not None:
         quality_rows.extend(quality)

@@ -1,7 +1,7 @@
 """JSON-safe daily field deltas and explicitly scoped maintenance counters.
 
 Row fingerprints describe logical row content, not file encodings or a public
-dataset revision. These observations do not provide a durable recovery journal.
+dataset revision. These compatibility observations are separate from change_protocol recovery state.
 """
 
 import hashlib
@@ -37,9 +37,8 @@ def row_version(row):
     return hashlib.sha256(data.encode()).hexdigest()
 
 
-def daily_changes(before, after, symbol, source, reason):
+def iter_daily_changes(before, after, symbol, source, reason):
     """Describe inserts/updates, including derived-field invalidations in the tail."""
-    changes = []
     for row in after:
         previous = before.get(row["trade_date"])
         if _same_values(previous, row):
@@ -50,21 +49,23 @@ def daily_changes(before, after, symbol, source, reason):
             for field in old.keys() | row.keys()
             if not _same_values({field: old.get(field)}, {field: row.get(field)})
         )
-        changes.append(
-            dict(
-                symbol=symbol,
-                trade_date=row["trade_date"].isoformat(),
-                operation="insert" if previous is None else "update",
-                fields=fields,
-                before={field: _value(old.get(field)) for field in fields},
-                after={field: _value(row.get(field)) for field in fields},
-                source=source,
-                reason=reason,
-                input_row_version=row_version(previous),
-                output_row_version=row_version(row),
-            )
+        yield dict(
+            symbol=symbol,
+            trade_date=row["trade_date"].isoformat(),
+            operation="insert" if previous is None else "update",
+            fields=fields,
+            before={field: _value(old.get(field)) for field in fields},
+            after={field: _value(row.get(field)) for field in fields},
+            source=source,
+            reason=reason,
+            input_row_version=row_version(previous),
+            output_row_version=row_version(row),
         )
-    return changes
+
+
+def daily_changes(before, after, symbol, source, reason):
+    """Compatibility helper; the durable protocol uses the streaming iterator."""
+    return list(iter_daily_changes(before, after, symbol, source, reason))
 
 
 def add_cost(metrics, **values):
@@ -97,8 +98,52 @@ def save_changes(root, changes, *, status="applied"):
     """
     if not changes:
         return None
-    from .index_lists import atomic_json
-
     path = Path(root) / "reports/changes" / f"{uuid4().hex}.json"
-    atomic_json(path, {"schema_version": 1, "status": status, "changes": changes})
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    with temporary.open("w") as stream:
+        stream.write(json.dumps({"schema_version": 1, "status": status})[:-1] + ', "changes": [')
+        for index, row in enumerate(changes):
+            if index:
+                stream.write(",")
+            stream.write(json.dumps(row, ensure_ascii=False, allow_nan=False))
+        stream.write("]}\n")
+    temporary.replace(path)
     return str(path)
+
+
+class ChangeSpool:
+    """Incremental compatibility report evidence; memory holds only one row."""
+
+    def __init__(self, root):
+        self.root = Path(root)
+        self.path = None
+        self.count = 0
+        self.start = self.end = None
+
+    def extend(self, rows):
+        for row in rows:
+            if self.path is None:
+                directory = self.root / "reports/changes"
+                directory.mkdir(parents=True, exist_ok=True)
+                self.path = directory / f".{uuid4().hex}.jsonl"
+            with self.path.open("a") as stream:
+                stream.write(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n")
+            self.count += 1
+            day = row.get("trade_date")
+            if day:
+                self.start = min(day, self.start) if self.start else day
+                self.end = max(day, self.end) if self.end else day
+
+    def __iter__(self):
+        if self.path is not None:
+            with self.path.open() as stream:
+                for line in stream:
+                    yield json.loads(line)
+
+    def __len__(self):
+        return self.count
+
+    def close(self):
+        if self.path:
+            self.path.unlink(missing_ok=True)

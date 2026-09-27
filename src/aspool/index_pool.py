@@ -17,6 +17,7 @@ from tdxman.exceptions import TdxError
 from tdxman.models.enums import KlineCategory, Market
 from tdxman.offline.daily_bar import find_daily_bar_file
 
+from .change_protocol import maintenance
 from .fetch import client_factory, fetch_async, fetch_sync
 from .index_lists import atomic_json, load_indices
 from .pool import writer
@@ -108,6 +109,10 @@ def overlap_start(root, item):
     if not path.exists():
         return None
     days = sorted(set(pq.ParquetFile(path).read(columns=["trade_date"])["trade_date"].to_pylist()))
+    from .change_protocol import note_range
+
+    note_range("planning_read", rows=len(days), path=path, bytes_proxy=path.stat().st_size,
+               start=days[0] if days else None, end=days[-1] if days else None)
     return days[max(0, len(days) - 5)] if days else None
 
 
@@ -178,10 +183,16 @@ async def online_records(client, item, asynchronous=False, since=None):
     raise ValueError("指数历史超过分页上限，未标为完整")
 
 
+@maintenance
 def save_index(root, item, records, mode, coverage=None):
+    from .change_observation import iter_daily_changes
+    from .change_protocol import note_range, publish_file, recover
+
     rejected = []
     accepted = []
     for record in records:
+        if record.get("operation", "update") not in {"insert", "update"}:
+            raise ValueError("Explicit index deletions/retractions are unsupported")
         try:
             accepted.extend(normalize([record], item))
         except (ValueError, TypeError, KeyError) as exc:
@@ -191,9 +202,15 @@ def save_index(root, item, records, mode, coverage=None):
     incoming = normalize(accepted, item)
     if not incoming:
         raise ValueError("数据源无日线记录")
+    recover(root)
     path = index_path(root, item)
     table = pq.ParquetFile(path).read() if path.exists() else None
     days = table["trade_date"].to_pylist() if table is not None else []
+    note_range("candidate", rows=len(incoming), start=min(r["trade_date"] for r in incoming),
+               end=max(r["trade_date"] for r in incoming))
+    if table is not None:
+        note_range("read", rows=len(table), path=path, bytes_proxy=path.stat().st_size,
+                   start=days[0], end=days[-1])
     if days != sorted(set(days)):
         raise ValueError("已存指数日期重复或无序")
     # Incremental requests overlap recent bars. Keep older history in Arrow,
@@ -202,6 +219,7 @@ def save_index(root, item, records, mode, coverage=None):
     offset = max(0, next((i for i, day in enumerate(days) if day >= start), len(days)))
     prior = table.slice(offset).to_pylist() if table is not None else []
     before = {row["trade_date"]: row for row in prior}
+    old = dict(before)
     added = changed = unchanged = 0
     for row in incoming:
         day = row["trade_date"]
@@ -221,31 +239,35 @@ def save_index(root, item, records, mode, coverage=None):
         if table is not None and offset
         else pa.Table.from_pylist(rows, schema=SCHEMA)
     )
-    if added or changed:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".tmp")
-        pq.write_table(result, tmp, compression="zstd")
-        tmp.replace(path)
     all_rows = len(result)
     start_day, end_day = result["trade_date"][0].as_py(), result["trade_date"][-1].as_py()
-    coverage_entry = (
-        item["market"],
-        item["code"],
-        item["name"],
-        start_day,
-        end_day,
-        all_rows,
-        mode,
-        datetime.now(),
-    )
-    if coverage is None:
-        with catalog(root) as conn:
-            conn.execute(
-                "INSERT OR REPLACE INTO index_coverage VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                coverage_entry,
-            )
+    values = [item["market"], item["code"], item["name"], start_day, end_day, all_rows,
+              mode, datetime.now()]
+    columns = ["market", "code", "name", "start_date", "end_date",
+               "row_count", "source", "updated_at"]
+    if added or changed:
+        publish_file(root, path, result,
+                     iter_daily_changes(old, rows, f"{item['code']}.{item['market']}",
+                                        mode, "index_daily"),
+                     source=mode, reason="index_daily",
+                     coverage=("index_coverage", columns, values, ["market", "code"]))
     else:
-        coverage.append(coverage_entry)
+        # Metadata-only repair is distinct from a business change and keeps a
+        # healthy no-op's coverage timestamps/source intact.
+        with catalog(root) as conn:
+            stored = conn.execute("SELECT name,start_date,end_date,row_count FROM index_coverage "
+                                  "WHERE market=? AND code=?", values[:2]).fetchone()
+            if stored != tuple(values[2:6]):
+                from .change_protocol import coverage_change
+
+                conn.execute("BEGIN")
+                try:
+                    coverage_change(conn, "index_coverage", columns, values, ["market", "code"],
+                                    reason="index_extent_repair")
+                    conn.execute("COMMIT")
+                except Exception:
+                    conn.execute("ROLLBACK")
+                    raise
     return {
         "market": item["market"],
         "code": item["code"],
@@ -285,21 +307,10 @@ def _publish_indices(root, pending, mode):
             results.append(result)
         except Exception as exc:
             failures.append({**item, "error": f"{type(exc).__name__}: {exc}"})
-    if coverage:
-        with catalog(root) as conn:
-            conn.execute("BEGIN")
-            try:
-                conn.executemany(
-                    "INSERT OR REPLACE INTO index_coverage VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    coverage,
-                )
-                conn.execute("COMMIT")
-            except Exception:
-                conn.execute("ROLLBACK")
-                raise
     return results, failures
 
 
+@maintenance
 def sync_indices(root, mode="online", asynchronous=False, limit=None, items=None, workers=1):
     started = perf_counter()
     root = Path(root)
@@ -314,6 +325,9 @@ def sync_indices(root, mode="online", asynchronous=False, limit=None, items=None
         "success": [],
         "failed": [],
     }
+    from .change_protocol import attach_run
+
+    attach_run(report)
 
     jobs = []
     for item in items:

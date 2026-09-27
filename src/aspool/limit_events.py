@@ -195,6 +195,10 @@ def _read_asset_types(root: Path, market: str, code: str) -> str | None:
         names = pq.ParquetFile(path).schema_arrow.names
         if "asset_type" in names:
             values = pq.ParquetFile(path).read(columns=["asset_type"])["asset_type"].to_pylist()
+            from .change_protocol import note_range
+
+            note_range("scope_read", rows=len(values), path=path,
+                       bytes_proxy=path.stat().st_size)
             for value in values:
                 if value:
                     return str(value)
@@ -297,8 +301,15 @@ def _read_symbol_bars(root: Path, market: str, code: str) -> list[dict]:
     for path in daily_paths(root, market, code):
         parquet = pq.ParquetFile(path)
         columns = sorted(required.intersection(parquet.schema_arrow.names))
+        from .change_protocol import note_range
+
+        note_range("compute_read_files", path=path, bytes_proxy=path.stat().st_size)
         for batch in parquet.iter_batches(columns=columns):
-            rows.extend(batch.to_pylist())
+            records = batch.to_pylist()
+            note_range("compute_read", rows=len(records),
+                       start=records[0]["trade_date"] if records else None,
+                       end=records[-1]["trade_date"] if records else None)
+            rows.extend(records)
     from .daily_storage import is_missing_value
     from .security_facts import daily_facts
 
@@ -962,6 +973,9 @@ def _mark_stale(root: Path, dates: list[date], reason: str) -> None:
             "insert or replace into daily_limit_staleness "
             "select unnest(?), ?, ?", [dates, reason, now],
         )
+        from .change_protocol import note_range
+
+        note_range("compute_stale_requested", rows=len(dates), start=min(dates), end=max(dates))
 
 
 def _published_dates_from(root: Path, start: date) -> list[date]:
@@ -1079,6 +1093,10 @@ def _publish_batch(root: Path, batch_id: str, result: DateResult, scope_id: str)
             )
             _clear_stale(conn, [result.trade_date])
             conn.execute("COMMIT")
+            from .change_protocol import note_range
+
+            note_range("recompute_published", rows=result.processed,
+                       start=result.trade_date, end=result.trade_date)
         except Exception:
             conn.execute("ROLLBACK")
             raise
@@ -1239,8 +1257,14 @@ def compute_limit_events(
     market_dates: set[date] = set()
     for entry in scope:
         for path in daily_paths(root, entry.market, entry.code):
+            from .change_protocol import note_range
+
+            note_range("axis_read_files", path=path, bytes_proxy=path.stat().st_size)
             for batch in pq.ParquetFile(path).iter_batches(columns=["trade_date"]):
-                market_dates.update(batch.column(0).to_pylist())
+                days = batch.column(0).to_pylist()
+                note_range("axis_read", rows=len(batch), start=min(days) if days else None,
+                           end=max(days) if days else None)
+                market_dates.update(days)
 
     from .security_facts import calendar_days
 

@@ -276,7 +276,7 @@ def test_coverage_batch_writes_all_entries_in_one_catalog(tmp_path):
         assert conn.execute("select count(*) from coverage").fetchone() == (2,)
 
 
-def test_universe_marks_missing_inactive_without_deleting_coverage(tmp_path):
+def test_universe_preserves_omitted_securities_and_coverage(tmp_path):
     initialize(tmp_path)
     record_coverage(tmp_path, "000001", "SZ", date(2026, 9, 16), date(2026, 9, 17), 2, "test")
     first = _publish_universe(
@@ -288,7 +288,10 @@ def test_universe_marks_missing_inactive_without_deleting_coverage(tmp_path):
     )
     assert [item["symbol"] for item in first["added"]] == ["600519"]
     second = _publish_universe(tmp_path, [{"symbol": "000001", "market": "SZ", "name": "甲"}])
-    assert second["inactive"] == ["600519"]
+    assert second["inactive"] == []
+    with catalog(tmp_path) as conn:
+        assert conn.execute("SELECT active FROM universe WHERE symbol='600519'").fetchone() == (
+            True,)
     with catalog(tmp_path) as conn:
         assert conn.execute("select count(*) from coverage").fetchone() == (1,)
 

@@ -64,6 +64,9 @@ def lifecycle_map(root):
         return {}
     with read_only_catalog(root) as conn:
         rows = conn.execute(f"SELECT * FROM {BASIC_TABLE}").fetchdf().to_dict("records")
+    from .change_protocol import note_range
+
+    note_range("catalog_read_lifecycle", rows=len(rows))
     # Use Python dates/None; pandas NaT is not a known life-cycle boundary.
     import pandas as pd
 
@@ -89,11 +92,22 @@ def daily_facts(root, symbol, start=None, end=None):
             f"SELECT * FROM {DAILY_TABLE} WHERE {' AND '.join(clauses)} ORDER BY trade_date", params
         )
         names = [column[0] for column in cursor.description]
-        return [dict(zip(names, row)) for row in cursor.fetchall()]
+        result = [dict(zip(names, row)) for row in cursor.fetchall()]
+        from .change_protocol import note_range
+
+        note_range("catalog_read_facts", rows=len(result),
+                   start=result[0]["trade_date"] if result else None,
+                   end=result[-1]["trade_date"] if result else None)
+        return result
 
 
 def calendar_days(root):
     if CALENDAR_TABLE not in existing_tables(root):
         return {}
     with read_only_catalog(root) as conn:
-        return dict(conn.execute(f"SELECT trade_date, is_open FROM {CALENDAR_TABLE}").fetchall())
+        result = dict(conn.execute(f"SELECT trade_date, is_open FROM {CALENDAR_TABLE}").fetchall())
+        from .change_protocol import note_range
+
+        note_range("catalog_read_calendar", rows=len(result), start=min(result) if result else None,
+                   end=max(result) if result else None)
+        return result

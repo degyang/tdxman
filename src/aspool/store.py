@@ -94,6 +94,9 @@ def read_only_catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
         yield active[1]
         return
     root = Path(root).expanduser().resolve()
+    from .change_protocol import assert_readable
+
+    assert_readable(root)
     path = root / "catalog.duckdb"
     if not path.is_file():
         raise FileNotFoundError(f"aspool catalog not found: {path}")
@@ -182,19 +185,8 @@ def record_coverage(
     source: str,
     period: str = "daily",
 ) -> None:
-    table = _coverage_table(period)
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    with catalog(root) as conn:
-        conn.execute(
-            f"""
-            insert into {table} values (?, ?, ?, ?, ?, ?, ?)
-            on conflict(symbol) do update set
-                market = excluded.market, start_date = excluded.start_date,
-                end_date = excluded.end_date, row_count = excluded.row_count,
-                source = excluded.source, updated_at = excluded.updated_at
-            """,
-            [symbol, market, start, end, rows, source, now],
-        )
+    _coverage_table(period)
+    record_coverages(root, [(symbol, market, start, end, rows, source, period)])
 
 
 def record_coverages(root: Path, entries: list[tuple]) -> None:
@@ -207,6 +199,15 @@ def record_coverages(root: Path, entries: list[tuple]) -> None:
         try:
             for symbol, market, start, end, rows, source, period in entries:
                 table = _coverage_table(period)
+                if table == "coverage":
+                    from .change_protocol import coverage_change
+
+                    coverage_change(conn, table,
+                                    ["symbol", "market", "start_date", "end_date", "row_count",
+                                     "source", "updated_at"],
+                                    [symbol, market, start, end, rows, source, now], ["symbol"],
+                                    reason="coverage_extent_refresh")
+                    continue
                 conn.execute(
                     f"""
                     insert into {table} values (?, ?, ?, ?, ?, ?, ?)
@@ -214,6 +215,11 @@ def record_coverages(root: Path, entries: list[tuple]) -> None:
                         market = excluded.market, start_date = excluded.start_date,
                         end_date = excluded.end_date, row_count = excluded.row_count,
                         source = excluded.source, updated_at = excluded.updated_at
+            WHERE {table}.market IS DISTINCT FROM excluded.market
+                OR {table}.start_date IS DISTINCT FROM excluded.start_date
+                OR {table}.end_date IS DISTINCT FROM excluded.end_date
+                OR {table}.row_count IS DISTINCT FROM excluded.row_count
+                OR {table}.source IS DISTINCT FROM excluded.source
                     """,
                     [symbol, market, start, end, rows, source, now],
                 )

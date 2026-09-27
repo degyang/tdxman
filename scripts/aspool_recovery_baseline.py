@@ -56,9 +56,13 @@ def main():
     snapshot, restored = destination / "snapshot", destination / "restored"
     entries = []
     with pool_lock(root, write=True):
+        from aspool.change_protocol import assert_readable
+
+        assert_readable(root)
         if (root / "catalog.duckdb.wal").exists():
             raise RuntimeError("Pending WAL: close the active writer before taking a baseline")
-        paths = [root / "catalog.duckdb", *sorted((root / "lake").rglob("*"))]
+        paths = [root / "catalog.duckdb", *sorted((root / "lake").rglob("*")),
+                 *sorted((root / "change-state").rglob("*"))]
         for path in paths:
             if path.is_symlink():
                 raise RuntimeError(f"Snapshot does not follow symlinks: {path}")
@@ -115,7 +119,7 @@ def main():
         coverage_end=str(coverage.trade_date.max()),
         catalog_rows=counts,
         verified_public_frames={k: len(v) for k, v in reference.items()},
-        included=["catalog.duckdb", "lake/**"],
+        included=["catalog.duckdb", "lake/**", "change-state/**"],
         excluded={
             "reports/**": "Retained in original pool; investigation evidence is not deleted."
         },
