@@ -1,0 +1,157 @@
+{
+  "plan_id": "13414aedffc0ad72e3e33e6cc0f1faea8e9b4fe24e818461505932a364819641",
+  "source": "244df2024ea64ba0ea2ad42bc18b6698d385b2189515ccd73f7d576ddbe9cd0d",
+  "final_source": "eff91eab10e43c3b1df52c78320f51c2e26653e99159d9320daca41a6e937bdd",
+  "steps": [
+    {
+      "symbol": "000016.SZ",
+      "changed_rows": 0,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "000723.SZ",
+      "changed_rows": 185,
+      "changed_facts": 180
+    },
+    {
+      "symbol": "000725.SZ",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "002310.SZ",
+      "changed_rows": 19,
+      "changed_facts": 14
+    },
+    {
+      "symbol": "002385.SZ",
+      "changed_rows": 363,
+      "changed_facts": 358
+    },
+    {
+      "symbol": "002576.SZ",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "002731.SZ",
+      "changed_rows": 0,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "002995.SZ",
+      "changed_rows": 16,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "300096.SZ",
+      "changed_rows": 0,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "300492.SZ",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "300787.SZ",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "300930.SZ",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "301078.SZ",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "301139.SZ",
+      "changed_rows": 0,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "301448.SZ",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "600000.SH",
+      "changed_rows": 11,
+      "changed_facts": 6
+    },
+    {
+      "symbol": "600079.SH",
+      "changed_rows": 11,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "600386.SH",
+      "changed_rows": 8,
+      "changed_facts": 2
+    },
+    {
+      "symbol": "600396.SH",
+      "changed_rows": 22,
+      "changed_facts": 7
+    },
+    {
+      "symbol": "601059.SH",
+      "changed_rows": 0,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "601198.SH",
+      "changed_rows": 0,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "603160.SH",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "603221.SH",
+      "changed_rows": 14,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "603230.SH",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "603767.SH",
+      "changed_rows": 18,
+      "changed_facts": 3
+    },
+    {
+      "symbol": "605080.SH",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "688265.SH",
+      "changed_rows": 6,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "688418.SH",
+      "changed_rows": 9,
+      "changed_facts": 2
+    },
+    {
+      "symbol": "688496.SH",
+      "changed_rows": 0,
+      "changed_facts": 1
+    },
+    {
+      "symbol": "688623.SH",
+      "changed_rows": 6,
+      "changed_facts": 1
+    }
+  ]
+}

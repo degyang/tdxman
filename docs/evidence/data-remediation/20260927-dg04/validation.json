@@ -1,0 +1,32 @@
+{
+  "base_commit": "be60d78fff940db173156beb095fd21224e69c92",
+  "source_files": {
+    "src/aspool/remediation.py": "0942f145a7f4f723d81847b3b52b5a26af243027c13140e07849c48e3be674e9",
+    "src/aspool/remediation_repair.py": "a39378ec3a9bb18fe836668981613427c4d359c14f01c20ab5f334a8195cdf87",
+    "scripts/repair_limit_publication.py": "db1a6157a15ad20419306e9ec5dea4306df1a796e46b02c87a4c8dd5f5603f7c",
+    "tests/unit/test_remediation_publication.py": "eac333bb9ec13e5ebd98b324871c497606871850bd124277fe25cd5b97df88ca",
+    "tests/unit/test_remediation_repair.py": "1db4ba0ce4a255ed1666d8f8b2a7c71398af9f05bad8a26ff06aa70f4ead1637"
+  },
+  "implementation": {
+    "files": {
+      "aspool/remediation.py": "0942f145a7f4f723d81847b3b52b5a26af243027c13140e07849c48e3be674e9",
+      "aspool/limit_events.py": "09876515573ac187800a785a9591b750d3edfd59e89f09d0763e46c33a77b380",
+      "aspool/security_facts.py": "3c0bfb466c4f4885d7292f7195fc7ac15a198d104cc17bace934f79a70ee8ec8",
+      "aspool/daily_access.py": "c986d9bb12c08164d9e36d1afd61dc11e43eecf40093610220be6eb74e958e60",
+      "tdxman/codec/price_rules.py": "0598ef85ea7ceca9fb96a1aa6d464139cfd936808dd9b02e846dd7a3683405fe"
+    },
+    "dependencies": {
+      "duckdb": "1.5.5",
+      "pyarrow": "25.0.1",
+      "pandas": "3.0.5"
+    }
+  },
+  "python_import_root": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg04-repair/src/aspool",
+  "test_command": ".venv/bin/pytest tests/unit/test_remediation_publication.py tests/unit/test_remediation_repair.py -q",
+  "tests": "13 passed in 12.67s",
+  "lint": "scoped Ruff check passed",
+  "lab_arithmetic_limit": "Three-session arithmetic used initial runner, later gates independently covered by new targeted tests; no arithmetic kernel changed",
+  "durable_lab": "/home/ubuntu/aspool-labs/dg04-20260927",
+  "production_state": "awaiting coordinator gate",
+  "raw_cases_external": true
+}
