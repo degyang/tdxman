@@ -1,0 +1,209 @@
+[
+  {
+    "factor": 1,
+    "rows": 17862387,
+    "initial_bytes": 2307346094,
+    "final_bytes": 16455670264,
+    "read_seconds": {
+      "day": 0.10743701899627922,
+      "60days": 0.8211940949986456,
+      "single": 1.2135484329992323
+    },
+    "fullmarket_seconds": 63.611622155003715,
+    "fullmarket_write_bytes": 989646848,
+    "correction_median_seconds": 1.6873545090020343,
+    "correction_write_bytes": 963690496.0,
+    "noop_median_seconds": 0.2971340295007394,
+    "noop_write_bytes": 0,
+    "delete_seconds": 2.1369808390008984,
+    "backfill_seconds": 1.0567846319972887,
+    "scans": [
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790512766.98899,
+        "factor": 1,
+        "workload": "day",
+        "files": 1,
+        "eligible_rows": 129979,
+        "file_bytes": 10273968,
+        "returned": 7266,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_1x_day_profile.json"
+      },
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790512767.1973703,
+        "factor": 1,
+        "workload": "60days",
+        "files": 3,
+        "eligible_rows": 444277,
+        "file_bytes": 31849135,
+        "returned": 316220,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_1x_60days_profile.json"
+      },
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790512770.517109,
+        "factor": 1,
+        "workload": "fiveyears",
+        "files": 61,
+        "eligible_rows": 7473288,
+        "file_bytes": 531419513,
+        "returned": 7395619,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_1x_fiveyears_profile.json"
+      }
+    ],
+    "single": {
+      "name": "monthly_single_scan_bound",
+      "time": 1790513787.7156968,
+      "factor": 1,
+      "fields": 42,
+      "rows": 6318,
+      "bound_files": 321,
+      "row_group_upper_bound": 9121361,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_1x_single_full_schema_profile.json",
+      "note": "one full-column physical scan, public validation uses additional scans"
+    },
+    "all_assertions_passed": true
+  },
+  {
+    "factor": 2,
+    "rows": 35724774,
+    "initial_bytes": 3481642169,
+    "final_bytes": 17629910433,
+    "read_seconds": {
+      "day": 0.09494643899961375,
+      "60days": 0.806615558998601,
+      "single": 2.1724252970016096
+    },
+    "fullmarket_seconds": 68.99571064100019,
+    "fullmarket_write_bytes": 993583104,
+    "correction_median_seconds": 1.9019222925016948,
+    "correction_write_bytes": 963166208.0,
+    "noop_median_seconds": 0.4965790094975091,
+    "noop_write_bytes": 0,
+    "delete_seconds": 2.7829868949993397,
+    "backfill_seconds": 1.2438543530006427,
+    "scans": [
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790513790.0935662,
+        "factor": 2,
+        "workload": "day",
+        "files": 1,
+        "eligible_rows": 129979,
+        "file_bytes": 10273968,
+        "returned": 7266,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_2x_day_profile.json"
+      },
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790513790.2771254,
+        "factor": 2,
+        "workload": "60days",
+        "files": 3,
+        "eligible_rows": 444277,
+        "file_bytes": 31849135,
+        "returned": 316220,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_2x_60days_profile.json"
+      },
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790513793.5273912,
+        "factor": 2,
+        "workload": "fiveyears",
+        "files": 61,
+        "eligible_rows": 7473288,
+        "file_bytes": 531419513,
+        "returned": 7395619,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_2x_fiveyears_profile.json"
+      }
+    ],
+    "single": {
+      "name": "monthly_single_scan_bound",
+      "time": 1790513796.8076353,
+      "factor": 2,
+      "fields": 42,
+      "rows": 12636,
+      "bound_files": 642,
+      "row_group_upper_bound": 18242722,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_2x_single_full_schema_profile.json",
+      "note": "one full-column physical scan, public validation uses additional scans"
+    },
+    "all_assertions_passed": true
+  },
+  {
+    "factor": 5,
+    "rows": 89311935,
+    "initial_bytes": 7004368719,
+    "final_bytes": 21152636983,
+    "read_seconds": {
+      "day": 0.09102527100185398,
+      "60days": 0.8654057919993647,
+      "single": 6.1337782940026955
+    },
+    "fullmarket_seconds": 68.14299879800092,
+    "fullmarket_write_bytes": 990175232,
+    "correction_median_seconds": 2.6007647659971553,
+    "correction_write_bytes": 963297280.0,
+    "noop_median_seconds": 1.0005170475014893,
+    "noop_write_bytes": 0,
+    "delete_seconds": 4.909374377995846,
+    "backfill_seconds": 1.8601265040051658,
+    "scans": [
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790513799.104809,
+        "factor": 5,
+        "workload": "day",
+        "files": 1,
+        "eligible_rows": 129979,
+        "file_bytes": 10273968,
+        "returned": 7266,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_5x_day_profile.json"
+      },
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790513799.2919197,
+        "factor": 5,
+        "workload": "60days",
+        "files": 3,
+        "eligible_rows": 444277,
+        "file_bytes": 31849135,
+        "returned": 316220,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_5x_60days_profile.json"
+      },
+      {
+        "name": "monthly_scan_bounds",
+        "time": 1790513802.8750517,
+        "factor": 5,
+        "workload": "fiveyears",
+        "files": 61,
+        "eligible_rows": 7473288,
+        "file_bytes": 531419513,
+        "returned": 7395619,
+        "fields": 42,
+        "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_5x_fiveyears_profile.json"
+      }
+    ],
+    "single": {
+      "name": "monthly_single_scan_bound",
+      "time": 1790513810.5876791,
+      "factor": 5,
+      "fields": 42,
+      "rows": 31590,
+      "bound_files": 1605,
+      "row_group_upper_bound": 45606805,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_5x_single_full_schema_profile.json",
+      "note": "one full-column physical scan, public validation uses additional scans"
+    },
+    "all_assertions_passed": true
+  }
+]

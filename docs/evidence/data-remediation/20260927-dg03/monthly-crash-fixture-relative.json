@@ -1,0 +1,17 @@
+{
+  "root": "/tmp/pytest-of-ubuntu/pytest-53/test_monthly_multipart_crash_a0/monthly",
+  "results": [
+    {
+      "point": "before_publish",
+      "returncode": -9,
+      "catalog_sha256": "c33f2995418176312165ee50e2d4abaddcfd148459711faa88c63dbadceb7bff"
+    },
+    {
+      "point": "after_publish",
+      "returncode": -9,
+      "catalog_sha256": "2f83fd4162107262acbe70b36ac1e1c03c4b2531bc65c123940c8ed4a177c24e"
+    }
+  ],
+  "multipart_atomic": true,
+  "six_domains_verified": true
+}

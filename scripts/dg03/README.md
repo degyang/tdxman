@@ -144,7 +144,9 @@ bidirectional EXCEPT ALL/type/date/key checks, and synthetic coverage is derived
 from actual raw rows. All original physical date/datetime/source extensions stay
 unchanged: only logical trade_date moves by 40 years, so synthetic histories are
 pressure data, not coherent new market observations. No scenario shares a writable
-catalog. Monthly operations run one thread / SQL1GB (public daily512MB) with a
+catalog. Monthly construction/writes run one thread / SQL1GB; public daily preserves
+its original two threads / 512MB, ETF and measured event batches explicitly use
+one thread. The main monthly harness has a
 3GiB sampled process RSS interrupt guard in the main monthly harness.
 
 The monthly write phase includes whole-market insert and exact42-column parity,

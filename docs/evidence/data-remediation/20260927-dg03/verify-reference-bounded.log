@@ -1,0 +1,27 @@
+{"name": "provenance", "time": 1790509870.000778, "git_head": "f170efa90a4cda2ac65f161527a3cb44a58d52ec", "imports": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/__init__.py", "python": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/.venv/bin/python", "source_hashes": {"src/aspool/dg03_candidate.py": "37b3dde6d717e854fc99c8a05363c58ce6d7acf28d440f44b1140bc2506aa931", "src/aspool/dg03_etf.py": "5549a56d203d0a7ce98e260baa8327c61074ab81091127598e0761e591963ffd", "scripts/dg03/bench.py": "91ccddcd42f95445dd5a0432c953eca79bc888d7032e327c48fa8823a39a7158"}, "snapshot": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot", "lab": "/home/ubuntu/aspool-labs/dg03-20260927", "candidate": "/home/ubuntu/aspool-labs/dg03-20260927/month-clustered", "manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b", "versions": {"duckdb": "1.5.5", "pandas": "3.0.5", "pyarrow": "25.0.1", "numpy": "2.2.6"}, "memory_limit": "1GB", "threads": 2, "nice": 0, "cache": "OS cache not evicted; raw repeats retained"}
+Traceback (most recent call last):
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/api_contract.py", line 20, in wrapped
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/dg03_candidate.py", line 547, in read_daily
+    duckdb.connect() as conn,
+    ^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/dg03_candidate.py", line 661, in read_daily
+    frame = _read_with_overlay(
+            ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/dg03_candidate.py", line 299, in _read_with_overlay
+    return conn.execute(
+           ^^^^^^^^^^^^^
+_duckdb.BinderException: Binder Error: Cannot mix values of type VARCHAR and INTEGER in COALESCE operator - an explicit cast is required
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/verify_reference.py", line 42, in <module>
+    run()
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/verify_reference.py", line 24, in run
+    actual = candidate.CandidatePool(LAB / "month-clustered").read_daily(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/api_contract.py", line 26, in wrapped
+    raise DataPoolError("DAILY_INVALID", str(exc)) from exc
+aspool.api_contract.DataPoolError: Binder Error: Cannot mix values of type VARCHAR and INTEGER in COALESCE operator - an explicit cast is required

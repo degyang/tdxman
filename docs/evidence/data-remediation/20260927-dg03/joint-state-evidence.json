@@ -1,0 +1,246 @@
+{
+  "fixture": "/tmp/pytest-of-ubuntu/pytest-41/test_joint_sigkill_atomicity_a0",
+  "source_commit": "f170efa",
+  "test_log": "tests-joint-protocol.log",
+  "states": {
+    "joint-base": {
+      "dg03_daily": [
+        [
+          "raw",
+          "2025-01-02",
+          10.0,
+          11.0,
+          9.0,
+          10.0,
+          100.0,
+          1000.0,
+          "SZ",
+          "000001"
+        ],
+        [
+          "raw",
+          "2025-01-03",
+          10.0,
+          11.0,
+          9.0,
+          10.0,
+          100.0,
+          1000.0,
+          "SZ",
+          "000001"
+        ]
+      ],
+      "security_daily_facts": [
+        [
+          "000001.SZ",
+          "2025-01-06",
+          9.0,
+          false,
+          "trading",
+          "baseline",
+          "2025-01-04 00:00:00"
+        ]
+      ],
+      "coverage": [
+        [
+          "000001",
+          "SZ",
+          "2025-01-02",
+          "2025-01-03",
+          2,
+          "baseline",
+          "2025-01-04 00:00:00"
+        ]
+      ],
+      "daily_limit_staleness": [
+        [
+          "2025-01-02",
+          "baseline",
+          "2025-01-04 00:00:00"
+        ]
+      ],
+      "dg03_revision": [
+        [
+          1,
+          0
+        ]
+      ],
+      "dg03_changes": []
+    },
+    "joint-before_commit": {
+      "dg03_daily": [
+        [
+          "raw",
+          "2025-01-02",
+          10.0,
+          11.0,
+          9.0,
+          10.0,
+          100.0,
+          1000.0,
+          "SZ",
+          "000001"
+        ],
+        [
+          "raw",
+          "2025-01-03",
+          10.0,
+          11.0,
+          9.0,
+          10.0,
+          100.0,
+          1000.0,
+          "SZ",
+          "000001"
+        ]
+      ],
+      "security_daily_facts": [
+        [
+          "000001.SZ",
+          "2025-01-06",
+          9.0,
+          false,
+          "trading",
+          "baseline",
+          "2025-01-04 00:00:00"
+        ]
+      ],
+      "coverage": [
+        [
+          "000001",
+          "SZ",
+          "2025-01-02",
+          "2025-01-03",
+          2,
+          "baseline",
+          "2025-01-04 00:00:00"
+        ]
+      ],
+      "daily_limit_staleness": [
+        [
+          "2025-01-02",
+          "baseline",
+          "2025-01-04 00:00:00"
+        ]
+      ],
+      "dg03_revision": [
+        [
+          1,
+          0
+        ]
+      ],
+      "dg03_changes": []
+    },
+    "joint-after_commit": {
+      "dg03_daily": [
+        [
+          "raw",
+          "2025-01-02",
+          10.0,
+          11.0,
+          9.0,
+          10.0,
+          100.0,
+          1000.0,
+          "SZ",
+          "000001"
+        ],
+        [
+          "raw",
+          "2025-01-03",
+          10.0,
+          11.0,
+          9.0,
+          10.0,
+          100.0,
+          1000.0,
+          "SZ",
+          "000001"
+        ],
+        [
+          null,
+          "2025-01-06",
+          10.0,
+          11.0,
+          9.0,
+          10.0,
+          100.0,
+          1000.0,
+          "SZ",
+          "000001"
+        ]
+      ],
+      "security_daily_facts": [
+        [
+          "000001.SZ",
+          "2025-01-06",
+          11.0,
+          true,
+          "trading",
+          "joint:new",
+          "2025-01-06 00:00:00"
+        ]
+      ],
+      "coverage": [
+        [
+          "000001",
+          "SZ",
+          "2025-01-02",
+          "2025-01-06",
+          3,
+          "dg03:joint",
+          "2026-09-27 19:44:43.933105"
+        ]
+      ],
+      "daily_limit_staleness": [
+        [
+          "2025-01-02",
+          "baseline",
+          "2025-01-04 00:00:00"
+        ],
+        [
+          "2025-01-06",
+          "joint crash",
+          "2026-09-27 19:44:43.933105"
+        ],
+        [
+          "2025-01-07",
+          "joint crash",
+          "2026-09-27 19:44:43.933105"
+        ]
+      ],
+      "dg03_revision": [
+        [
+          1,
+          1
+        ]
+      ],
+      "dg03_changes": [
+        [
+          1,
+          "SZ",
+          "000001",
+          "2025-01-06",
+          "facts:merge",
+          "dg03:joint",
+          "joint crash",
+          "{\"symbol\": \"000001.SZ\", \"trade_date\": \"2025-01-06\", \"pre_close\": 9.0, \"is_st\": false, \"trading_status\": \"trading\", \"source\": \"baseline\", \"fetched_at\": \"2025-01-04 00:00:00\"}",
+          "{\"symbol\": \"000001.SZ\", \"trade_date\": \"2025-01-06\", \"pre_close\": 11.0, \"is_st\": true, \"trading_status\": \"trading\", \"source\": \"joint:new\", \"fetched_at\": \"2025-01-06\"}"
+        ],
+        [
+          1,
+          "SZ",
+          "000001",
+          "2025-01-06",
+          "merge",
+          "dg03:joint",
+          "joint crash",
+          "null",
+          "{\"symbol\": null, \"trade_date\": \"2025-01-06\", \"open\": 10.0, \"high\": 11.0, \"low\": 9.0, \"close\": 10.0, \"volume\": 100.0, \"amount\": 1000.0, \"__market\": \"SZ\", \"__code\": \"000001\"}"
+        ]
+      ]
+    }
+  },
+  "source_sha256": "4615eaaa145b025b15cc0f665be075602503d1a585ecbeea8bf9e5d7523456b2",
+  "note": "Read existing successful fixture only; no repeated fault test. joint-base concurrency_probe excluded by state()."
+}
