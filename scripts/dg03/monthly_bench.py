@@ -135,10 +135,13 @@ def build_monthly(factor):
                 )
             c.execute("CHECKPOINT")
         if factor > 1:
+            c.execute("DELETE FROM coverage")
             c.execute(
-                "UPDATE coverage SET start_date=(start_date-INTERVAL '"
+                "INSERT INTO coverage SELECT __code,__market,(min(trade_date)-INTERVAL '"
                 + str(40 * (factor - 1))
-                + " years')::DATE,row_count=row_count*?",
+                + " years')::DATE,max(trade_date),count(*)*?,"
+                "'dg03:synthetic-growth',current_timestamp FROM origin.dg03_daily "
+                "GROUP BY __code,__market",
                 [factor],
             )
         # Original catalog parity before synthetic coverage changes is already checked
