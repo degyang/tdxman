@@ -21,15 +21,19 @@ reference pre-close, dated ST, and a finite-key atomic SQLite writer.
   its effective date and ends before the next factor, or at the caller's
   explicitly verified through date. No factor means no claim of coverage.
 - select_reference_pre_close(...) selects reliable dated reference,
-  action-adjusted previous close, then a raw fallback. Conflicting reliable
-  dated candidates fail explicitly.
+  action-adjusted previous close, then a raw fallback. Use actions_covered=True
+  only when the event source confirms the entire interval; an empty event list
+  alone does not prove that no action occurred. Conflicting reliable dated
+  candidates fail explicitly.
 - select_is_st(...) selects reliable dated ST, then a name whose
   name_as_of exactly matches the requested day, otherwise None. Historical
   names are never filled from a current snapshot. Migrated
   raw_fallback:* ST values do not count as dated evidence.
 - update_reference_factors(conn, *, symbol, dates, actions, anchors,
-  prior_closes, factor_through, dated_pre_close, dated_st) writes within a
-  SQLite savepoint. Pass the complete selected factor inputs for the affected
+  prior_closes, factor_through, dated_pre_close, dated_st,
+  actions_covered_dates) writes within a SQLite savepoint. List only those
+  target dates whose source confirms complete action coverage since the prior
+  effective close. Pass the complete selected factor inputs for the affected
   symbol and verified range. The caller controls the outer transaction. The
   writer updates only source candidate/effective reference and ST columns,
   action rows, and its selected factor cache. It preserves other daily feature
@@ -56,6 +60,7 @@ Example call:
             }],
             anchors=[],
             factor_through="2024-06-14",
+            actions_covered_dates=["2024-06-14"],
         )
         conn.commit()
 
@@ -111,8 +116,8 @@ acceptance were reused as instructed and not repeated.
 This execution is FW-03a only. It does not implement limit prices, streaks,
 MA20, daily market summaries, public APIs, Fundwise integration, production
 switching, or historical backfill. The writer requires a caller to supply
-complete selected factor inputs and an evidence-backed factor coverage end for
-the affected symbol. It does not establish source coverage from absence of
+complete selected factor inputs and evidence-backed factor and action coverage
+for the affected symbol. It does not establish source coverage from absence of
 rows. Legacy reference-price Parquet remains migration evidence and is not
 promoted to a permanent source fact.
 

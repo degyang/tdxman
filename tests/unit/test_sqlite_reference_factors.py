@@ -20,13 +20,13 @@ def test_cash_bonus_rights_and_same_day_combination():
             "rights_shares_per_share": 0.0,
         }
     ]
-    assert select_reference_pre_close(previous_close=10, actions=cash) == pytest.approx(
-        (9.0, "derived:previous_close+corporate_actions")
-    )
+    assert select_reference_pre_close(
+        previous_close=10, actions=cash, actions_covered=True
+    ) == pytest.approx((9.0, "derived:previous_close+corporate_actions"))
     bonus = [{"date": "2024-01-02", "category": 1, "fenhong": 0, "songzhuangu": 1, "peigu": 0}]
-    assert select_reference_pre_close(previous_close=10, actions=bonus)[0] == pytest.approx(
-        10 / 1.1
-    )
+    assert select_reference_pre_close(previous_close=10, actions=bonus, actions_covered=True)[
+        0
+    ] == pytest.approx(10 / 1.1)
     rights = [
         {
             "date": "2024-01-02",
@@ -37,9 +37,9 @@ def test_cash_bonus_rights_and_same_day_combination():
             "peigujia": 5,
         }
     ]
-    assert select_reference_pre_close(previous_close=10, actions=rights)[0] == pytest.approx(
-        10.5 / 1.1
-    )
+    assert select_reference_pre_close(previous_close=10, actions=rights, actions_covered=True)[
+        0
+    ] == pytest.approx(10.5 / 1.1)
 
     combined = [
         {"date": "2024-01-02", "category": 1, "fenhong": 1, "songzhuangu": 0, "peigu": 0},
@@ -66,8 +66,10 @@ def test_cash_bonus_rights_and_same_day_combination():
             "peigujia": 5,
         }
     ]
-    assert select_reference_pre_close(previous_close=10, actions=combined)[0] == pytest.approx(
-        select_reference_pre_close(previous_close=10, actions=one_row)[0]
+    assert select_reference_pre_close(previous_close=10, actions=combined, actions_covered=True)[
+        0
+    ] == pytest.approx(
+        select_reference_pre_close(previous_close=10, actions=one_row, actions_covered=True)[0]
     )
     two_dates = [
         {
@@ -85,7 +87,9 @@ def test_cash_bonus_rights_and_same_day_combination():
             "rights_shares_per_share": 0,
         },
     ]
-    assert select_reference_pre_close(previous_close=10, actions=two_dates)[0] == pytest.approx(8)
+    assert select_reference_pre_close(previous_close=10, actions=two_dates, actions_covered=True)[
+        0
+    ] == pytest.approx(8)
 
 
 def test_source_cumulative_anchors_are_not_cumprod_and_intervals_are_bounded():
@@ -128,11 +132,15 @@ def test_reference_precedence_and_unknown_source():
         dated=[(8.5, "baostock:dated")],
         previous_close=10,
         actions=action,
+        actions_covered=True,
         raw_candidate=(8.0, "raw_fallback:legacy"),
     ) == (8.5, "baostock:dated")
     assert (
         select_reference_pre_close(
-            previous_close=10, actions=action, raw_candidate=(8.0, "raw_fallback:legacy")
+            previous_close=10,
+            actions=action,
+            actions_covered=True,
+            raw_candidate=(8.0, "raw_fallback:legacy"),
         )[0]
         == 9
     )
@@ -140,6 +148,12 @@ def test_reference_precedence_and_unknown_source():
         8.0,
         "raw_fallback:legacy",
     )
+    assert select_reference_pre_close(
+        previous_close=10, raw_candidate=(8.0, "raw_fallback:legacy")
+    ) == (8.0, "raw_fallback:legacy")
+    assert select_reference_pre_close(
+        previous_close=10, actions_covered=True, raw_candidate=(8.0, "raw_fallback:legacy")
+    ) == (10, "derived:previous_close+corporate_actions")
     assert select_reference_pre_close() == (None, None)
     with pytest.raises(ValueError, match="Conflicting"):
         select_reference_pre_close(dated=[(8, "source:a"), (9, "source:b")])
@@ -216,6 +230,7 @@ def test_atomic_writer_preserves_other_fields_and_repeat_is_noop(tmp_path):
             dates=["2024-01-02"],
             actions=[action],
             factor_through="2024-01-02",
+            actions_covered_dates=["2024-01-02"],
         )
         assert result["actions"] == 1 and result["features"] == 1
         feature = conn.execute("""SELECT pre_close,pre_close_source,is_st,is_st_source,
@@ -238,6 +253,7 @@ def test_atomic_writer_preserves_other_fields_and_repeat_is_noop(tmp_path):
             dates=["2024-01-02"],
             actions=[action],
             factor_through="2024-01-02",
+            actions_covered_dates=["2024-01-02"],
         )
         assert conn.total_changes == changes
         assert repeated["factors"] == 0
@@ -262,6 +278,7 @@ def test_atomic_writer_preserves_other_fields_and_repeat_is_noop(tmp_path):
             factor_through="2024-01-02",
             dated_pre_close={"2024-01-02": [(8.5, "baostock:dated")]},
             dated_st={"2024-01-02": [(False, "baostock:dated")]},
+            actions_covered_dates=["2024-01-02"],
         )
         assert direct["features"] == 1
         stored = conn.execute(
@@ -278,6 +295,7 @@ def test_atomic_writer_preserves_other_fields_and_repeat_is_noop(tmp_path):
             factor_through="2024-01-02",
             dated_pre_close={"2024-01-02": [(8.5, "baostock:dated")]},
             dated_st={"2024-01-02": [(False, "baostock:dated")]},
+            actions_covered_dates=["2024-01-02"],
         )
         assert conn.total_changes == changes
         conn.commit()
@@ -314,5 +332,6 @@ def test_failure_rolls_back_action_and_factor_writes(tmp_path):
                 ],
                 factor_through="2024-01-02",
                 dated_st={"2024-01-02": [(True, "source:a"), (False, "source:b")]},
+                actions_covered_dates=["2024-01-02"],
             )
         assert conn.execute("SELECT count(*) FROM corporate_actions").fetchone()[0] == 0

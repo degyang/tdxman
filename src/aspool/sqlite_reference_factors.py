@@ -134,9 +134,10 @@ def select_reference_pre_close(
     dated: Sequence[tuple[float | None, str | None]] = (),
     previous_close: float | None = None,
     actions: Sequence[Mapping[str, Any]] = (),
+    actions_covered: bool = False,
     raw_candidate: tuple[float | None, str | None] = (None, None),
 ) -> tuple[float | None, str | None]:
-    """Choose dated source, prior close adjusted by actions, then raw fallback."""
+    """Choose dated source, covered prior close plus actions, then raw fallback."""
     reliable = []
     for value, source in dated:
         number = _positive(value, "dated pre_close")
@@ -147,7 +148,7 @@ def select_reference_pre_close(
     if reliable:
         return reliable[0]
     prior = _positive(previous_close, "previous close")
-    if prior is not None and actions:
+    if prior is not None and actions_covered:
         reference = prior
         for batch in normalize_actions(actions):
             reference /= _event_ratio(reference, batch["events"])
@@ -284,6 +285,7 @@ def update_reference_factors(
     factor_through: str,
     dated_pre_close: Mapping[str, Sequence[tuple[float | None, str | None]]] | None = None,
     dated_st: Mapping[str, Sequence[tuple[bool | None, str | None]]] | None = None,
+    actions_covered_dates: Iterable[str] = (),
 ) -> dict[str, int]:
     """Atomically update selected actions, selected factors, pre-close and ST fields.
 
@@ -326,6 +328,7 @@ def update_reference_factors(
         anchors=anchor_rows, events=action_rows, prior_closes=factor_closes, through=factor_through
     )
     dated_pre_close, dated_st = dated_pre_close or {}, dated_st or {}
+    covered_action_days = {_day(value) for value in actions_covered_dates}
     changed_actions = changed_features = changed_factors = 0
     savepoint = "fw03_reference_factors"
     conn.execute(f"SAVEPOINT {savepoint}")
@@ -426,6 +429,7 @@ def update_reference_factors(
                 dated=direct_pre_close,
                 previous_close=previous[1] if previous else None,
                 actions=action_inputs,
+                actions_covered=day in covered_action_days,
                 raw_candidate=(row[0], row[1]),
             )
             st_value, st_source, name_day = select_is_st(
