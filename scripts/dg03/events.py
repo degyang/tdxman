@@ -13,8 +13,8 @@ from bench import LAB, SNAPSHOT, connect, emit, measured, provenance
 from aspool.dg03_candidate import CandidatePool
 
 
-def run():
-    pool = CandidatePool(LAB / "candidate")
+def run(pool=None, threads=2):
+    pool = pool or CandidatePool(LAB / "candidate")
     parameters = dict(
         start="2021-09-24",
         end="2026-09-24",
@@ -22,7 +22,7 @@ def run():
         min_consecutive_up=1,
         batch_days=7,
         max_rows=25000,
-        threads=2,
+        threads=threads,
         memory_limit="512MB",
         temp_directory=str(LAB),
     )
