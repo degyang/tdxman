@@ -14,9 +14,11 @@ def main():
     groups = defaultdict(list)
     for row in rows:
         match = re.fullmatch(
-            r"((?:growth_\dx(?:_bounded)?|facts_\dx(?:_bounded)?|more_securities)_public_.+)_\d+", row["name"]
+            r"((?:growth_\dx(?:_bounded)?|facts_\dx(?:_bounded)?|monthly_\dx|more_securities)"
+            r"_public_.+)_\d+",
+            row["name"],
         )
-        if match:
+        if match and row.get("status") == "passed":
             groups[match.group(1)].append(row)
     summary = {
         "input_sha256": file_sha256(LAB / "samples.jsonl"),
@@ -37,7 +39,8 @@ def main():
         "process_and_recovery": [
             r
             for r in rows
-            if r["name"]
+            if r["name"].startswith(("controlled_", "monthly_", "joint_"))
+            or r["name"]
             in {
                 "crash_uncommitted",
                 "crash_committed",

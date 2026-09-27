@@ -2,7 +2,9 @@
 """Complete-schema immutable monthly alternative; fixed isolated roots only."""
 
 import argparse
+import json
 import os
+import shutil
 import signal
 import threading
 import time
@@ -71,8 +73,27 @@ def build_monthly(factor):
                 "SELECT DISTINCT strftime(trade_date,'%Y-%m') FROM origin.dg03_daily ORDER BY 1"
             ).fetchall()
         ]
-        total = 0
-        for copy in range(factor):
+        total, completed = 0, 0
+        if factor > 1:
+            prior_factor = 2 if factor == 5 else 1
+            prior_root = LAB / f"monthly-{prior_factor}x"
+            baseline = json.loads((prior_root / "build-manifest.json").read_text())
+            for record in baseline:
+                destination = part_path(root, record[1])
+                shutil.copy2(part_path(prior_root, record[1]), destination)
+                assert file_sha256(destination) == record[5]
+                c.execute("INSERT INTO dg03_monthly_parts VALUES (?,?,?,?,?,?)", record)
+                total += record[4]
+            completed = prior_factor
+            emit(
+                "monthly_reused_exact_prefix",
+                factor=factor,
+                prefix_factor=prior_factor,
+                files=len(baseline),
+                rows=total,
+                sha256_exact=True,
+            )
+        for copy in range(completed, factor):
             for key in months:
                 lo, hi = month_bounds(key)
                 target_key = f"{lo.year - 40 * copy:04d}-{lo.month:02d}"
@@ -139,6 +160,11 @@ def build_monthly(factor):
                     == 0
                 )
         c.execute("CHECKPOINT")
+        (root / "build-manifest.json").write_text(
+            json.dumps(
+                c.execute("SELECT * FROM dg03_monthly_parts ORDER BY month").fetchall(), default=str
+            )
+        )
         count = c.execute(
             "SELECT sum(row_count),count(*),min(first_day),max(last_day) FROM dg03_monthly_parts"
         ).fetchone()
