@@ -332,8 +332,9 @@
       "findings": {
         "P1": 2,
         "P2": 2,
-        "owner_closure": "pending"
-      }
+        "owner_closure": "Closed by owner changes and affected-path evidence; architecture/growth admission remains pending"
+      },
+      "owner_fix_status": "../20260927-dg03-monthly-review/owner-fix-status.json"
     }
   ],
   "dg04_followup_review": {
