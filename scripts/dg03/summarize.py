@@ -58,7 +58,17 @@ def main():
         "process_and_recovery": [
             r
             for r in rows
-            if r["name"].startswith(("controlled_", "monthly_", "joint_"))
+            if r["name"].startswith(
+                (
+                    "controlled_",
+                    "joint_",
+                    "monthly_actual_",
+                    "monthly_restore_",
+                    "monthly_nonempty_",
+                    "monthly_portable_",
+                    "native_one_thread_failure_",
+                )
+            )
             or r["name"]
             in {
                 "crash_uncommitted",
@@ -74,7 +84,8 @@ def main():
         "growth_sizes": [
             r
             for r in rows
-            if r["name"] in {"growth_size", "more_securities", "facts_growth_population"}
+            if r["name"]
+            in {"growth_size", "more_securities", "facts_growth_population", "monthly_built"}
         ],
     }
     (LAB / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
