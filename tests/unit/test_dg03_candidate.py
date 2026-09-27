@@ -393,3 +393,36 @@ def test_split_growth_preparation_preserves_full_rows_and_resume(candidate, monk
             12,
         )
         assert c.execute("SELECT count(*) FROM coverage").fetchone()[0] == 4
+
+
+def test_synthetic_securities_retain_global_coverage_key(candidate, monkeypatch):
+    import importlib.util
+    from pathlib import Path
+
+    _, target, _ = candidate
+    script = Path(__file__).resolve().parents[2] / "scripts/dg03/bench.py"
+    spec = importlib.util.spec_from_file_location("dg03_bench_codes", script)
+    bench = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bench)
+    monkeypatch.setattr(bench, "LAB", target.parent)
+    monkeypatch.setenv("DG03_CANDIDATE", target.name)
+    with duckdb.connect(str(target / "catalog.duckdb")) as c:
+        c.execute(
+            "INSERT INTO dg03_daily SELECT * REPLACE ('SZ' AS __market,'000002' AS __code) "
+            "FROM dg03_daily WHERE __code='000001'"
+        )
+        c.execute(
+            "CREATE TABLE coverage AS SELECT __code symbol,__market market,"
+            "min(trade_date) start_date,max(trade_date) end_date,count(*) row_count,"
+            "'fixture' AS source,current_timestamp updated_at FROM dg03_daily GROUP BY ALL"
+        )
+        c.execute("ALTER TABLE coverage ADD PRIMARY KEY(symbol)")
+    bench.prepare_securities()
+    with duckdb.connect(
+        str(target.parent / "prepared-securities/catalog.duckdb"), read_only=True
+    ) as c:
+        assert c.execute("SELECT count(DISTINCT __code),count(*) FROM dg03_daily").fetchone() == (
+            6,
+            18,
+        )
+        assert c.execute("SELECT count(*) FROM coverage").fetchone()[0] == 6

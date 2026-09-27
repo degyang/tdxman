@@ -463,11 +463,17 @@ class CandidatePool(DataPool):
                                 )
                             else:
                                 # Boundary deletion or missing coverage is an explicit repair path.
+                                c.execute(
+                                    "CREATE TEMP TABLE _dg03_extent AS SELECT __market,trade_date "
+                                    "FROM dg03_daily WHERE __code=?",
+                                    [code],
+                                )
                                 extent = c.execute(
-                                    """SELECT min(trade_date),max(trade_date),count(*)
-                                    FROM dg03_daily WHERE __market=? AND __code=?""",
-                                    [market, code],
+                                    "SELECT min(trade_date),max(trade_date),count(*) "
+                                    "FROM _dg03_extent WHERE __market=?",
+                                    [market],
                                 ).fetchone()
+                                c.execute("DROP TABLE _dg03_extent")
                             if extent[2]:
                                 c.execute(
                                     """INSERT INTO coverage VALUES (?,?,?,?,?,?,current_timestamp)

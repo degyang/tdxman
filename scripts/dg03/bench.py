@@ -517,6 +517,10 @@ def prepare_growth(factor, resume=False):
         assert state["factor"] == factor and state["base"] == str(candidate_root())
     with connect(candidate_root(), True) as base:
         base_rows = base.execute("SELECT count(*) FROM dg03_daily").fetchone()[0]
+        codes = [
+            r[0]
+            for r in base.execute("SELECT DISTINCT __code FROM dg03_daily ORDER BY 1").fetchall()
+        ]
         years = [
             r[0]
             for r in base.execute(
@@ -537,14 +541,24 @@ def prepare_growth(factor, resume=False):
             "copy INTEGER,source_year INTEGER,PRIMARY KEY(copy,source_year))"
         )
         completed = set(c.execute("SELECT * FROM dg03_growth_build").fetchall())
+    with connect(root) as c:
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS dg03_growth_security_chunks("
+            "copy INTEGER,chunk INTEGER,PRIMARY KEY(copy,chunk))"
+        )
+        chunks_done = set(c.execute("SELECT * FROM dg03_growth_security_chunks").fetchall())
     for i in range(initial_copies, factor):
-        for year in years:
-            if (i, year) in completed:
+        missing_years = [year for year in years if (i, year) not in completed]
+        if not missing_years:
+            continue
+        for chunk, offset in enumerate(range(0, len(codes), 128)):
+            if (i, chunk) in chunks_done:
                 continue
+            selected_codes = codes[offset : offset + 128]
 
-            def append_year(i=i, year=year):
-                # Close after each bounded transaction to release cached ART nodes.
-                # The progress key commits atomically with its complete year rows.
+            def append_securities(i=i, chunk=chunk, selected_codes=selected_codes):
+                # Bound the ART key population, not merely the date span.
+                # Existing complete-year prefixes are excluded from this retry.
                 with connect(root) as c, preparation_guard(c):
                     c.execute(
                         f"ATTACH {literal(candidate_root() / 'catalog.duckdb')} AS base (READ_ONLY)"
@@ -553,15 +567,29 @@ def prepare_growth(factor, resume=False):
                     n = c.execute(
                         "INSERT INTO dg03_daily SELECT * REPLACE "
                         f"((trade_date - INTERVAL '{40 * i} years')::DATE AS trade_date) "
-                        "FROM base.dg03_daily WHERE trade_date >= make_date(?,1,1) "
-                        "AND trade_date < make_date(?,1,1)",
-                        [year, year + 1],
+                        "FROM base.dg03_daily WHERE __code IN ("
+                        + ",".join(literal(code) for code in selected_codes)
+                        + ") AND year(trade_date) IN ("
+                        + ",".join(map(str, missing_years))
+                        + ")"
                     ).fetchone()[0]
-                    c.execute("INSERT INTO dg03_growth_build VALUES (?,?)", [i, year])
+                    c.execute("INSERT INTO dg03_growth_security_chunks VALUES (?,?)", [i, chunk])
                     c.execute("COMMIT")
-                    return {"copy": i, "source_year": year, "rows": n}
+                    return {
+                        "copy": i,
+                        "chunk": chunk,
+                        "codes": len(selected_codes),
+                        "first_code": selected_codes[0],
+                        "last_code": selected_codes[-1],
+                        "source_years": missing_years,
+                        "rows": n,
+                    }
 
-            measured(f"prepare_{factor}x_add_{i}_year_{year}", append_year, root)
+            measured(f"prepare_{factor}x_add_{i}_codes_{chunk}", append_securities, root)
+        with connect(root) as c:
+            c.executemany(
+                "INSERT INTO dg03_growth_build VALUES (?,?)", [(i, y) for y in missing_years]
+            )
         (root / "prepare-progress.json").write_text(json.dumps({"copies_committed": i + 1}))
     with connect(root) as c, preparation_guard(c):
         refresh_synthetic_coverage(c)
@@ -707,7 +735,7 @@ def prepare_securities():
     with connect(root) as c, preparation_guard(c):
         c.execute("""CREATE TEMP TABLE ids AS SELECT __market,__code,
             lpad(cast(800000+row_number() OVER(
-                PARTITION BY __market ORDER BY __code) AS VARCHAR),6,'0') new_code
+                ORDER BY __market,__code) AS VARCHAR),6,'0') new_code
             FROM (SELECT DISTINCT __market,__code FROM dg03_daily)""")
         assert (
             c.execute(
