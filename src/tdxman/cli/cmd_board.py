@@ -56,8 +56,9 @@ def board_list(
     from .parsers import parse_board_type
 
     fmt = output_fmt
+    bt = None if board_type.upper() == "ZS" else parse_board_type(board_type)
     with get_mac_client() as client:
-        if board_type.upper() == "ZS":
+        if bt is None:
             from ..mac.enums import Category, SortOrder, SortType
 
             df = client.get_stock_quotes_list(
@@ -67,7 +68,6 @@ def board_list(
                 sort_order=SortOrder.ASC,
             )
         else:
-            bt = parse_board_type(board_type)
             df = client.get_board_list(board_type=bt, count=count)
     print_output(df, fmt, output_path, filename=f"board-{board_type.lower()}")
 

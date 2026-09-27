@@ -25,7 +25,9 @@ def test_board_list_zs_returns_standard_index_directory():
 
 
 def test_board_list_rejects_unknown_type_without_traceback():
-    result = CliRunner().invoke(cli, ["board-list", "--type", "not-a-type"])
+    with patch("tdxman.cli.conn.get_mac_client") as factory:
+        result = CliRunner().invoke(cli, ["board-list", "--type", "not-a-type"])
+    factory.assert_not_called()
     assert result.exit_code == 2
     assert "Traceback" not in result.output
     assert "ZS" in result.output
