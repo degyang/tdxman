@@ -28,6 +28,9 @@ def main():
                 "seconds": [v["seconds"] for v in values],
                 "median_seconds": statistics.median(v["seconds"] for v in values),
                 "api_seconds": [v.get("result", {}).get("api_seconds") for v in values],
+                "median_api_seconds": statistics.median(
+                    v.get("result", {}).get("api_seconds", v["seconds"]) for v in values
+                ),
                 "peak_sampled_rss": max(v.get("peak_sampled_rss", 0) for v in values),
                 "maxrss_process_highwater": max(v["maxrss_bytes"] for v in values),
                 "rows": [v.get("result", {}).get("rows") for v in values],
@@ -36,6 +39,22 @@ def main():
         },
         "failures": [r for r in rows if r.get("status") == "failed"],
         "physical_bounds": [r for r in rows if "physical_" in r["name"]],
+        "complete_schema_scan_bounds": [
+            r
+            for r in rows
+            if r["name"]
+            in {"full_schema_scan_bound", "monthly_scan_bounds", "history_bounded_full_api"}
+        ],
+        "monthly_rewrite_bounds": [
+            r
+            for r in rows
+            if r["name"]
+            in {
+                "monthly_rewrite_bound",
+                "monthly_cold_files_unchanged",
+                "monthly_fullmarket_insert_parity",
+            }
+        ],
         "process_and_recovery": [
             r
             for r in rows

@@ -79,8 +79,8 @@ Interpretation limits:
 See `docs/architecture-decision.md` for the measured decision and integration gates.
 
 The monthly sort clusters securities inside calendar months. Recent date bounds
-therefore prune most historical groups; the code-only ART population is materialized
-once before exact market/asset predicates for unbounded single-security reads.
+therefore prune most historical groups; actual decades are resolved through the code-only ART index, then complete rows
+are materialized per decade before exact market/asset predicates for unbounded reads.
 DuckDB 1.5.5 otherwise chooses a full sequential scan when market and code predicates
 reach the same scan. Complete dated overlays run in SQL before one pandas conversion;
 an all-NULL string compatibility fallback retains the original observable dtype.
@@ -94,3 +94,78 @@ three complete recent-window reads must remain exactly equal to the real candida
 60-day and five-year windows at each factor, retaining plans and zonemap upper bounds.
 A process-local diagnostic wrapper records the actual final overlay plan separately
 from ordinary public-call timings. This does not claim derived recursion scales.
+
+## Rejected global-table gate and completed monthly alternative
+
+The tested 5x global table cannot commit a normal whole-market 7,266-row append
+atomically under SQL 1GB. Do not split that production-shaped transaction into
+partial commits or raise the budget. `native_remaining.py` continues only the
+previously unexecuted point-update/no-op/checkpoint work after that failure;
+`growth-5x-writes.log` and `failed-5x-write-state.json` retain its rollback evidence.
+
+The final unbounded native single-security path first resolves actual decades
+through a narrow ART date projection, then materializes complete requested rows
+inside those date bounds. `history_profile.py` records the actual statements:
+its 66.1M scan-counter sum at 5x demonstrates that passing memory limits does not
+mean constant single-security physical I/O. `read_samples.py --factor 1|2|5
+--workload single_history` can verify only that changed path.
+
+`MonthlyPool(root)` in `dg03_monthly.py` is an independent alternative. Its
+immutable full-schema monthly files and relative-path catalog manifest preserve
+all original raw fields and catalog constraints. Publication copies the complete
+catalog and atomically replaces it under `pool_lock`; this is deliberately costly
+and is not a production integration. Per-month uniqueness and nonoverlapping dates
+replace the global raw table constraint; the original catalog constraints remain.
+The public reader, ETF error handling, amount batches and revision checks remain.
+Symbol predicates are pushed onto physical keys; a concat-key public filter alone
+was measured to cause severe single-history regression.
+
+```sh
+export DG03_CANDIDATE=month-clustered
+export DG03_THREADS=1
+export DG03_MEMORY_LIMIT=1GB
+# Execute sequentially after obtaining the shared heavy-work slot.
+.venv/bin/python scripts/dg03/monthly_bench.py build --factor 1
+.venv/bin/python scripts/dg03/monthly_bench.py build --factor 2
+.venv/bin/python scripts/dg03/monthly_bench.py build --factor 5
+# Repeat the following per factor, before writes mutate that root.
+.venv/bin/python scripts/dg03/monthly_bench.py reads --factor 1
+.venv/bin/python scripts/dg03/monthly_bench.py bounds --factor 1
+.venv/bin/python scripts/dg03/monthly_bench.py events --factor 1
+.venv/bin/python scripts/dg03/monthly_recovery.py
+.venv/bin/python scripts/dg03/monthly_bench.py writes --factor 1
+.venv/bin/python scripts/dg03/summarize.py
+```
+
+Monthly construction keeps immutable `build-manifest.json` metadata. 2x reuses
+independent copies of the verified 1x prefix; 5x reuses the verified 2x prefix.
+Every copied file SHA is checked, newly shifted cold months receive full-column
+bidirectional EXCEPT ALL/type/date/key checks, and synthetic coverage is derived
+from actual raw rows. All original physical date/datetime/source extensions stay
+unchanged: only logical trade_date moves by 40 years, so synthetic histories are
+pressure data, not coherent new market observations. No scenario shares a writable
+catalog. Monthly operations run one thread / SQL1GB (public daily512MB) with a
+3GiB sampled process RSS interrupt guard in the main monthly harness.
+
+The monthly write phase includes whole-market insert and exact42-column parity,
+whole-market no-op, 12 corrections plus no-ops, boundary deletion, two-month
+backfill/no-op and checkpoint. It records changed manifest months, rewritten rows,
+new file bytes, complete-catalog copy bytes, and unchanged cold-file fingerprints.
+A no-op still reads the touched month but never publishes files or revisions.
+Catalog copy/checkpoint and old-version retention are real physical costs in the
+reported kernel write bytes and directory sizes; monthly pruning does not remove
+these costs.
+
+Monthly tests include SIGKILL before/after a two-month+facts publication, all six
+state domains, boundary coverage repair, untouched/no-op month identity, facts-only
+mixed no-op, stable ETF errors, symbol pushdown and portable relative manifests.
+`monthly_recovery.py` copies and hashes every active real part into a new root,
+then controls an actual publishing writer and waiting reader with pipes. A
+nonempty event iterator must reject the changed revision. This does not implement
+orphan GC, remote recovery, power-loss simulation or live monotonic rollback.
+
+Both prototypes remain **not admitted for production migration**. See the ADR for
+all measured regressions and missing integration gates. These commands document
+reproduction, not permission to repeat already passed runs in this lab: root
+creation fails when it already exists, and write phases expect their initial
+unmodified dataset. Reuse archived evidence unless a changed path needs validation.

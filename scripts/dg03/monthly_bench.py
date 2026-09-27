@@ -14,6 +14,7 @@ from pathlib import Path
 
 import duckdb
 import pandas as pd
+import pyarrow.parquet as pq
 from bench import (
     LAB,
     SNAPSHOT,
@@ -390,7 +391,7 @@ def writes(factor):
         )
 
 
-def bounds(factor):
+def bounds(factor, only=None):
     root = LAB / f"monthly-{factor}x"
     with connection(root, True) as c:
         for name, lo, hi in [
@@ -398,6 +399,8 @@ def bounds(factor):
             ("60days", "2026-07-27", "2026-09-24"),
             ("fiveyears", "2021-09-25", "2026-09-24"),
         ]:
+            if only and name != only:
+                continue
             records = c.execute(
                 "SELECT month,path,row_count FROM dg03_monthly_parts "
                 "WHERE last_day>=? AND first_day<=? ORDER BY month",
@@ -425,6 +428,45 @@ def bounds(factor):
                 fields=42,
                 profile=str(profile),
             )
+        if only and only != "single":
+            return
+        records = c.execute(
+            "SELECT path,row_count FROM dg03_monthly_parts ORDER BY month"
+        ).fetchall()
+        files = [str(part_path(root, r[0])) for r in records]
+        eligible = 0
+        for path in files:
+            metadata = pq.ParquetFile(path).metadata
+            names = metadata.schema.names
+            for group in range(metadata.num_row_groups):
+                row_group = metadata.row_group(group)
+                code = row_group.column(names.index("__code")).statistics
+                market = row_group.column(names.index("__market")).statistics
+                if (code is None or code.min <= "000001" <= code.max) and (
+                    market is None or market.min <= "SZ" <= market.max
+                ):
+                    eligible += row_group.num_rows
+        rel = c.read_parquet(files, hive_partitioning=False)
+        path = LAB / f"monthly_{factor}x_single_full_schema_profile.json"
+        c.execute("PRAGMA enable_profiling='json'")
+        c.execute(f"PRAGMA profiling_output={literal(path)}")
+        reader = c.execute(
+            "SELECT * FROM (" + rel.sql_query() + ") WHERE __market='SZ' AND __code='000001'"
+        ).fetch_record_batch(65536)
+        assert len(reader.schema) == 42
+        count = sum(batch.num_rows for batch in reader)
+        c.execute("PRAGMA disable_profiling")
+        assert count == 6318 * factor
+        emit(
+            "monthly_single_scan_bound",
+            factor=factor,
+            fields=42,
+            rows=count,
+            bound_files=len(files),
+            row_group_upper_bound=eligible,
+            profile=str(path),
+            note="one full-column physical scan, public validation uses additional scans",
+        )
 
 
 if __name__ == "__main__":
@@ -446,7 +488,7 @@ if __name__ == "__main__":
                 "build": lambda: build_monthly(args.factor),
                 "reads": lambda: read_samples(args.factor, args.workload),
                 "writes": lambda: writes(args.factor),
-                "bounds": lambda: bounds(args.factor),
+                "bounds": lambda: bounds(args.factor, args.workload),
                 "events": lambda: __import__("events").run(
                     MonthlyPool(LAB / f"monthly-{args.factor}x"), threads=1
                 ),
