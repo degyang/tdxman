@@ -1,5 +1,7 @@
 # DG-00：消费者、写入入口与锁清单
 
+2026-09-28 迁移更新：下文保留旧入口事实，后续改造以[四表迁移/API 评估](sqlite_migration_api_assessment.md)第 6–7 节为准；新增核对 tick_stock_panel local provider、Fundwise cycle/runner 的批次依赖及多模型公共特征消费。旧锁/发布恢复方式不直接复制进 SQLite 股票路径。
+
 日期：2026-09-27。检查边界：本仓库 `src/aspool`、CLI/维护脚本，以及 Fundwise `fundwise/`（`1b25658`）。不声称已发现机器上所有外部脚本；切换前需复核部署入口。
 
 ## 已识别消费者

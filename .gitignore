@@ -14,3 +14,6 @@ venv/
 # Local Codex configuration and session state
 /.codex/
 uv.lock
+
+# Local market data, migration staging, backups, and runtime reports
+/data/

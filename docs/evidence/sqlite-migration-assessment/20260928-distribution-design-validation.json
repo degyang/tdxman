@@ -1,0 +1,241 @@
+{
+  "checked_at_utc": "2026-09-27T17:08:05.920422+00:00",
+  "status": "design_only_not_production_implementation",
+  "scope": "incremental checks after user clarified exclusive limit buckets and two-percentage-point lower-inclusive ordinary intervals",
+  "sqlite_version": "3.53.1",
+  "business_tables": 4,
+  "interval_width_percentage_points": 2,
+  "daily_bucket_count": 15,
+  "native_week_month_bucket_count": 13,
+  "price_boundary_and_limit_priority_cases": [
+    {
+      "return_pct": "-1.999999999",
+      "bucket": "neg_00_02"
+    },
+    {
+      "return_pct": "-2",
+      "bucket": "neg_02_04"
+    },
+    {
+      "return_pct": "-2.000000001",
+      "bucket": "neg_02_04"
+    },
+    {
+      "return_pct": "-3.999999999",
+      "bucket": "neg_02_04"
+    },
+    {
+      "return_pct": "-4",
+      "bucket": "neg_04_06"
+    },
+    {
+      "return_pct": "-4.000000001",
+      "bucket": "neg_04_06"
+    },
+    {
+      "return_pct": "-5.999999999",
+      "bucket": "neg_04_06"
+    },
+    {
+      "return_pct": "-6",
+      "bucket": "neg_06_08"
+    },
+    {
+      "return_pct": "-6.000000001",
+      "bucket": "neg_06_08"
+    },
+    {
+      "return_pct": "-7.999999999",
+      "bucket": "neg_06_08"
+    },
+    {
+      "return_pct": "-8",
+      "bucket": "neg_08_10"
+    },
+    {
+      "return_pct": "-8.000000001",
+      "bucket": "neg_08_10"
+    },
+    {
+      "return_pct": "-9.999999999",
+      "bucket": "neg_08_10"
+    },
+    {
+      "return_pct": "-10",
+      "bucket": "neg_le_10"
+    },
+    {
+      "return_pct": "-10.000000001",
+      "bucket": "neg_le_10"
+    },
+    {
+      "return_pct": "1.999999999",
+      "bucket": "pos_00_02"
+    },
+    {
+      "return_pct": "2",
+      "bucket": "pos_02_04"
+    },
+    {
+      "return_pct": "2.000000001",
+      "bucket": "pos_02_04"
+    },
+    {
+      "return_pct": "3.999999999",
+      "bucket": "pos_02_04"
+    },
+    {
+      "return_pct": "4",
+      "bucket": "pos_04_06"
+    },
+    {
+      "return_pct": "4.000000001",
+      "bucket": "pos_04_06"
+    },
+    {
+      "return_pct": "5.999999999",
+      "bucket": "pos_04_06"
+    },
+    {
+      "return_pct": "6",
+      "bucket": "pos_06_08"
+    },
+    {
+      "return_pct": "6.000000001",
+      "bucket": "pos_06_08"
+    },
+    {
+      "return_pct": "7.999999999",
+      "bucket": "pos_06_08"
+    },
+    {
+      "return_pct": "8",
+      "bucket": "pos_08_10"
+    },
+    {
+      "return_pct": "8.000000001",
+      "bucket": "pos_08_10"
+    },
+    {
+      "return_pct": "9.999999999",
+      "bucket": "pos_08_10"
+    },
+    {
+      "return_pct": "10",
+      "bucket": "pos_ge_10"
+    },
+    {
+      "return_pct": "10.000000001",
+      "bucket": "pos_ge_10"
+    },
+    {
+      "close": "100",
+      "pre_close": "100",
+      "limit_up": false,
+      "limit_down": false,
+      "bucket": "flat"
+    },
+    {
+      "close": "109.96",
+      "pre_close": "100",
+      "limit_up": true,
+      "limit_down": false,
+      "bucket": "limit_up"
+    },
+    {
+      "close": "90.01",
+      "pre_close": "100",
+      "limit_up": false,
+      "limit_down": true,
+      "bucket": "limit_down"
+    },
+    {
+      "close": "105",
+      "pre_close": "100",
+      "limit_up": true,
+      "limit_down": false,
+      "bucket": "limit_up"
+    },
+    {
+      "close": "115",
+      "pre_close": "100",
+      "limit_up": false,
+      "limit_down": false,
+      "bucket": "pos_ge_10"
+    },
+    {
+      "close": "85",
+      "pre_close": "100",
+      "limit_up": false,
+      "limit_down": false,
+      "bucket": "neg_le_10"
+    },
+    {
+      "close": "10.989",
+      "pre_close": "9.99",
+      "limit_up": false,
+      "limit_down": false,
+      "bucket": "pos_ge_10"
+    }
+  ],
+  "partition_conservation_checked": true,
+  "dual_limit_flags_rejected": true,
+  "missing_reference_excluded": true,
+  "daily_observations_vs_period_return_checked": true,
+  "sql_json_shape_checks": [
+    {
+      "column": "return_distribution_json",
+      "kind": "object",
+      "passed": true
+    },
+    {
+      "column": "return_distribution_json",
+      "kind": "reject_nonobject_or_malformed",
+      "passed": true
+    },
+    {
+      "column": "return_distribution_json",
+      "kind": "reject_nonobject_or_malformed",
+      "passed": true
+    },
+    {
+      "column": "daily_return_distribution_json",
+      "kind": "object",
+      "passed": true
+    },
+    {
+      "column": "daily_return_distribution_json",
+      "kind": "reject_nonobject_or_malformed",
+      "passed": true
+    },
+    {
+      "column": "daily_return_distribution_json",
+      "kind": "reject_nonobject_or_malformed",
+      "passed": true
+    },
+    {
+      "column": "period_return_distribution_json",
+      "kind": "object",
+      "passed": true
+    },
+    {
+      "column": "period_return_distribution_json",
+      "kind": "reject_nonobject_or_malformed",
+      "passed": true
+    },
+    {
+      "column": "period_return_distribution_json",
+      "kind": "reject_nonobject_or_malformed",
+      "passed": true
+    }
+  ],
+  "ddl_sha256": "c8203c00442be1a069c6acef3522b2b014356ac20b79fcc3b23163e6af876636",
+  "existing_formula_template_unchanged": true,
+  "prior_evidence": "20260928-design-validation.json belongs to the preceding DDL; its score formula checks remain applicable. This record binds the updated DDL.",
+  "limitations": [
+    "SQL validates object shape only; planned writer must validate bucket keys/count types/conservation.",
+    "Boundary checks use a design reference function, not a production aggregation implementation.",
+    "Full data, local update and memory acceptance remain pending."
+  ],
+  "production_data_written": false
+}

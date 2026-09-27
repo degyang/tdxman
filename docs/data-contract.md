@@ -1,5 +1,7 @@
 # DG-00：现行数据契约与未决项
 
+2026-09-28：本文是旧后端的兼容性基线，不是新统计目标。用户已指定缺数据与停牌同统计、取消业务批次；新四表与日周月模型契约见[迁移/API 评估](sqlite_migration_api_assessment.md)和[模板设计](regime_model_template_design.md)。迁移需区分保留的原始数据语义与明确改变的统计口径。
+
 日期：2026-09-27。依据 tdxman 基线 `5083dbb` 与 Fundwise `1b25658` 的代码；这是兼容性基线，不是全市场数据完整性证明。整改状态以 [推进方案](data_remediation_execution_plan.md) 为准。
 
 ## 键、范围与单位

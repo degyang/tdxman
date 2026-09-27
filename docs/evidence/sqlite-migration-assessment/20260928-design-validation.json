@@ -1,0 +1,116 @@
+{
+  "checked_at_utc": "2026-09-27T16:58:35.261885+00:00",
+  "scope": "design_artifacts_only_not_backend_acceptance",
+  "sqlite_version": "3.53.1",
+  "tables": [
+    "corporate_actions",
+    "daily_bars",
+    "daily_features",
+    "market_daily_summary"
+  ],
+  "column_counts": {
+    "corporate_actions": 14,
+    "daily_bars": 32,
+    "daily_features": 28,
+    "market_daily_summary": 77
+  },
+  "schema_constraint_checks": [
+    {
+      "name": "bar_with_nullable_source_fields",
+      "passed": true
+    },
+    {
+      "name": "strict_rejects_text_price",
+      "passed": true
+    },
+    {
+      "name": "dated_fact_without_bar",
+      "passed": true
+    },
+    {
+      "name": "no_trade_cannot_create_event",
+      "passed": true
+    },
+    {
+      "name": "nullable_st_is_not_false",
+      "passed": true
+    },
+    {
+      "name": "invalid_boolean_rejected",
+      "passed": true
+    },
+    {
+      "name": "known_limit_requires_prices_and_flags",
+      "passed": true
+    },
+    {
+      "name": "ma20_and_flag_are_paired",
+      "passed": true
+    },
+    {
+      "name": "raw_event_payload_preserved",
+      "passed": true
+    },
+    {
+      "name": "invalid_event_json_rejected",
+      "passed": true
+    },
+    {
+      "name": "source_cumulative_anchor_is_not_event_factor",
+      "passed": true
+    },
+    {
+      "name": "second_selected_factor_same_date_rejected",
+      "passed": true
+    },
+    {
+      "name": "iso_week_can_cross_year",
+      "passed": true
+    },
+    {
+      "name": "as_of_outside_period_rejected",
+      "passed": true
+    },
+    {
+      "name": "invalid_frequency_rejected",
+      "passed": true
+    }
+  ],
+  "old_physical_field_targets_checked": 43,
+  "public_daily_fields_checked": 35,
+  "template_summary_fields_checked": true,
+  "template_weight_sums_checked": true,
+  "daily_template_formula_vectors_equal_to_current_fundwise": 231,
+  "formula_scope": "score_market arithmetic and missing/range rules; not end-to-end feature aggregation, gating, period calibration or production loader",
+  "query_plans_empty_database_only": {
+    "single_symbol_history": [
+      "SEARCH daily_bars USING PRIMARY KEY (symbol=? AND trade_date>? AND trade_date<?)"
+    ],
+    "market_date": [
+      "SEARCH daily_bars USING INDEX daily_bars_by_date (trade_date=?)"
+    ],
+    "event_amount_join": [
+      "SEARCH f USING INDEX daily_features_events (trade_date>? AND trade_date<?)",
+      "SEARCH b USING PRIMARY KEY (symbol=? AND trade_date=?)"
+    ],
+    "model_features": [
+      "SEARCH market_daily_summary USING INDEX market_summary_by_range (frequency=? AND scope=? AND period_start>? AND period_start<?)"
+    ]
+  },
+  "sha256": {
+    "docs/design/stocks_schema.sql": "200fe276b814caa2dc8a4d2fbde364299c524d84ec236249ca47b2801d84cf37",
+    "docs/design/market_four_dimensions.v1.json": "2d163003cfa8571f7448ec26c8effd482dfa1153d714a7660c6e32923124094f",
+    "/mnt/d/workstation/projects/fundwise/fundwise/regime/market_environment.py": "92db54c6787512b5b93cc744c528f3f47d9cd3690be79d1b30218a15f582b354"
+  },
+  "not_verified": [
+    "production_migration",
+    "full_data_equivalence",
+    "incremental_backend",
+    "five_year_RSS",
+    "database_capacity",
+    "weekly_monthly_calibration",
+    "WAL_concurrency",
+    "backup_and_rollback"
+  ],
+  "production_data_written": false
+}

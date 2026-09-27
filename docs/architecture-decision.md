@@ -1,5 +1,9 @@
 # DG-03：日线事实候选与架构决策
 
+2026-09-28 更新：后续设计遵循[日线与派生数据精简决策](daily_data_simplification.md)，合并覆盖/异常状态，收敛版本信息，目标取消独立发布批次结构。下文保留既有实验结论，不再将按月 Parquet 补做视为默认下一步；生产存储尚未迁移。
+
+当前执行入口：[四表 SQLite 实施计划](sqlite_four_table_implementation_plan.md)。字段/接口/消费者依据见[迁移评估](sqlite_migration_api_assessment.md)，多模型和日周月计算见[Regime 模板设计](regime_model_template_design.md)。以新文档为后续目标；旧实验数字不作为 SQLite 已验收证据。
+
 日期：2026-09-27。基线 `be60d78`。这是独立工作区的候选实验，生产入口与 `/home/ubuntu/.aspool` 均未修改；本轮完成实现和可审查实验，两个原型均不批准生产迁移；继续使用现有已验证后端。
 
 ## 决策
