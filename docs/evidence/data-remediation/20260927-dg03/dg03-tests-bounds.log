@@ -1,0 +1,16 @@
+.                                                                        [100%]
+=============================== warnings summary ===============================
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+tests/unit/test_dg03_harness.py::test_streamed_full_schema_profiles_keep_date_windows_bounded
+  /home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/growth_bounds.py:43: DeprecationWarning: fetch_record_batch() is deprecated, use to_arrow_reader() instead.
+    ).fetch_record_batch(65536)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1 passed, 9 warnings in 0.42s

@@ -1,0 +1,36 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+______________________ test_monthly_contract_and_changes _______________________
+
+monthly = (PosixPath('/tmp/pytest-of-ubuntu/pytest-51/test_monthly_contract_and_chan0/monthly'), <aspool.dg03_monthly.MonthlyPool object at 0x7f900d283020>, <aspool.dg03_candidate.CandidatePool object at 0x7f901b5707a0>)
+
+    def test_monthly_contract_and_changes(monthly):
+        root, pool, expected = monthly
+        pd.testing.assert_frame_equal(pool.read_daily(), expected.read_daily())
+        pd.testing.assert_frame_equal(pool.read_etf_daily(), expected.read_etf_daily())
+        row = dict(market="SH", code="000001", trade_date="2025-01-02", values={"amount": 1000.0})
+        old = digest(root / "catalog.duckdb")
+        assert pool.apply([row], source="test", reason="retry")["changed"] == 0
+        assert digest(root / "catalog.duckdb") == old
+        row["values"] = {"amount": 1111.0}
+        assert pool.apply([row], source="test", reason="correct")["changed"] == 1
+        assert pool.read_daily(symbols="000001.SH").iloc[0].amount == 1111.0
+        # Explicit NULL preserves original merge/clear distinction.
+        row["values"] = {"pre_close": None}
+        assert pool.apply([row], source="test", reason="merge null")["changed"] == 0
+        assert pool.apply([dict(row, operation="clear")], source="test", reason="clear")["changed"] == 1
+        assert pd.isna(pool.read_daily(symbols="000001.SH").iloc[0].pre_close)
+        assert (
+            pool.apply([dict(row, operation="delete")], source="test", reason="delete")["changed"] == 1
+        )
+        assert len(pool.read_daily(symbols="000001.SH")) == 2
+>       with pytest.raises(ValueError, match="duplicate"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'duplicate'
+E         Actual message: 'invalid OHLCV/amount'
+
+tests/unit/test_dg03_monthly.py:51: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_dg03_monthly.py::test_monthly_contract_and_changes - A...
+1 failed, 1 passed in 2.52s
