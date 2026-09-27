@@ -43,6 +43,7 @@ def state(root):
 def run():
     root = LAB / "growth-5x"
     before = state(root)
+    emit("native_5x_one_thread_before", state=before)
     assert before["new_date_count"] == 0
     changes = changes_for_day()
     try:
@@ -53,7 +54,9 @@ def run():
             ),
             root,
         )
-    except duckdb.OutOfMemoryException as exc:
+    except (duckdb.OutOfMemoryException, duckdb.TransactionException) as exc:
+        if "failed to pin" not in str(exc) and "Out of Memory" not in str(exc):
+            raise
         after = state(root)
         assert before == after
         emit(
