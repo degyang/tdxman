@@ -142,6 +142,7 @@ def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, obje
 def import_daily(
     root: Path, source_root: Path, incremental: bool, limit: int | None = None
 ) -> ImportStats:
+    from .change_observation import empty_cost
     from .daily_storage import merge_daily
 
     initialize(root)
@@ -178,8 +179,12 @@ def import_daily(
                 market = _market(symbol)
                 deduplicated = {row["trade_date"]: row for row in rows}
                 rows = [deduplicated[key] for key in sorted(deduplicated)]
-                changed = merge_daily(root, market, symbol, rows, source_name)
-                stats = ImportStats(stats.symbols + 1, stats.rows + changed)
+                cost = empty_cost()
+                try:
+                    merge_daily(root, market, symbol, rows, source_name, metrics=cost)
+                finally:
+                    stats = ImportStats(stats.symbols, stats.rows + cost["changed_rows"])
+                stats = ImportStats(stats.symbols + 1, stats.rows)
         with catalog(root) as conn:
             conn.execute(
                 "update sync_runs set finished_at=current_timestamp, symbols=?, "
@@ -190,8 +195,8 @@ def import_daily(
         with catalog(root) as conn:
             conn.execute(
                 "update sync_runs set finished_at=current_timestamp, status='failed', "
-                "error=? where run_id=?",
-                [str(exc), run_id],
+                "error=?, symbols=?, rows_written=? where run_id=?",
+                [str(exc), stats.symbols, stats.rows, run_id],
             )
         raise
     return stats

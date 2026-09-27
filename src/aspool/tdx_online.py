@@ -381,7 +381,7 @@ async def _sync_daily_run(
             for change in entry.get("changed_dates", [])
         }
     )
-    if asset_type == "stock" and touched_dates and derive_limits:
+    if asset_type == "stock" and touched_dates and derive_limits and not failures:
         touched = [d.isoformat() for d in touched_dates]
         try:
             from .limit_events import compute_limit_events
@@ -431,6 +431,9 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
         except Exception:
             names = {}
     for symbol, rows in pending:
+        changed_dates: list = []
+        changes, metrics = [], empty_cost()
+        entry = {"symbol": symbol, "fetched": len(rows)}
         try:
             incoming = _normalize(
                 _enrich_daily(rows, fundamentals.get(symbol) if asset_type == "stock" else None),
@@ -440,9 +443,7 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
                 incoming = [
                     {**row, "name": names.get(symbol), "asset_type": "etf"} for row in incoming
                 ]
-            changed_dates: list = []
-            changes, metrics = [], empty_cost()
-            changed = merge_daily(
+            merge_daily(
                 root,
                 _market(symbol),
                 symbol,
@@ -454,19 +455,21 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
                 changes=changes,
                 metrics=metrics,
             )
-            results.append(
-                {
-                    "symbol": symbol,
-                    "fetched": len(rows),
-                    "changed_rows": changed,
-                    # ISO 字符串：直接进入 JSON 报告。
-                    "changed_dates": [d.isoformat() for d in changed_dates],
-                    "change_report": save_changes(root, changes),
-                    "cost": metrics,
-                }
+        except Exception as exc:
+            entry["error"] = str(exc)
+        entry.update(
+            changed_rows=metrics["changed_rows"],
+            changed_dates=[d.isoformat() for d in changed_dates],
+            change_report=None, cost=metrics,
+        )
+        try:
+            entry["change_report"] = save_changes(
+                root, changes, status="partial" if "error" in entry else "applied"
             )
         except Exception as exc:
-            failures.append({"symbol": symbol, "error": str(exc)})
+            entry["observation_error"] = str(exc)
+            entry.setdefault("error", f"Change observation failed: {exc}")
+        (failures if "error" in entry else results).append(entry)
     record_coverages(root, coverage)
     return results, failures, quality_rows
 

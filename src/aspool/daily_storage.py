@@ -123,34 +123,7 @@ def merge_daily(
     if not incoming or len(dates) != len(set(dates)):
         raise ValueError(f"{symbol}: empty or duplicate incoming dates")
     paths = daily_paths(root, market, symbol) if _path is None else []
-    if paths and paths[0].parent.name.startswith("year="):
-        # Historical supplements may cross years; never put old dates in the
-        # most recent year partition or duplicate rows in an older partition.
-        total = 0
-        for year in sorted({row["trade_date"].year for row in incoming}):
-            total += merge_daily(
-                root, market, symbol,
-                [row for row in incoming if row["trade_date"].year == year], source,
-                coverage=[], changed_dates=changed_dates, quality_rows=quality_rows,
-                _path=daily_year_path(root, market, symbol, year),
-                changes=changes, metrics=metrics,
-            )
-        if total:
-            coverage_started = perf_counter()
-            full = read_daily_table(root, market, symbol)
-            if metrics is not None:
-                all_paths = daily_paths(root, market, symbol)
-                add_cost(metrics, files_read=len(all_paths), rows_read=len(full),
-                         file_bytes_read_proxy=sum(p.stat().st_size for p in all_paths))
-            entry = (symbol, market, full["trade_date"][0].as_py(),
-                     full["trade_date"][-1].as_py(), len(full), source, "daily")
-            if coverage is None:
-                record_coverage(root, *entry)
-            else:
-                coverage.append(entry)
-            add_cost(metrics, elapsed_seconds=perf_counter() - coverage_started)
-        return total
-
+    yearly = bool(paths and paths[0].parent.name.startswith("year="))
     started = perf_counter()
     for row in incoming:
         values = [row.get(k) for k in ("open", "high", "low", "close", "volume", "amount")]
@@ -160,10 +133,16 @@ def merge_daily(
         ):
             raise ValueError(f"{symbol}: invalid incoming OHLCV")
     path = _path or bars_path(root, "daily", market, symbol)
-    table = pq.ParquetFile(path).read() if path.exists() else None
-    add_cost(metrics, files_read=int(table is not None),
-             file_bytes_read_proxy=path.stat().st_size if table is not None else 0,
-             rows_read=len(table) if table is not None else 0)
+    # The rolling baseline and next-close dependencies cross year boundaries.
+    # Keep the existing conservative full read until DG-02 supplies bounded access.
+    read_paths = paths if yearly else ([path] if path.exists() else [])
+    tables = []
+    for stored_path in read_paths:
+        table_part = pq.ParquetFile(stored_path).read()
+        tables.append(table_part)
+        add_cost(metrics, files_read=1, file_bytes_read_proxy=stored_path.stat().st_size,
+                 rows_read=len(table_part))
+    table = pa.concat_tables(tables, promote_options="permissive") if tables else None
     days = table["trade_date"].to_pylist() if table is not None else []
     if days != sorted(set(days)):
         raise ValueError(f"{symbol}: duplicate or unordered stored dates")
@@ -216,6 +195,24 @@ def merge_daily(
     touched = [r["trade_date"] for r in merged if not _same_values(before.get(r["trade_date"]), r)]
     changed = len(touched)
     if not changed:
+        # Retry may follow a committed file replacement whose coverage write
+        # failed. Repair only a mismatched extent/count; true no-ops keep timestamps.
+        if _path is None:
+            from .store import catalog
+
+            extent = (table["trade_date"][0].as_py(), table["trade_date"][-1].as_py(), len(table))
+            with catalog(root) as conn:
+                stored_extent = conn.execute(
+                    "SELECT CAST(start_date AS DATE), CAST(end_date AS DATE), row_count "
+                    "FROM coverage WHERE symbol=?", [symbol],
+                ).fetchone()
+            if stored_extent != extent:
+                entry = (symbol, market, *extent, source, "daily")
+                if coverage is None:
+                    record_coverage(root, *entry)
+                else:
+                    coverage.append(entry)
+                add_cost(metrics, coverage_repairs=1)
         add_cost(metrics, elapsed_seconds=perf_counter() - started)
         if quality_rows is not None:
             quality_rows.extend(quality)
@@ -234,45 +231,63 @@ def merge_daily(
         if table is not None and offset
         else tail
     )
-    target = path
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_suffix(f".{uuid4().hex}.part")
-    # A historical source update invalidates all subsequent streaks, including
-    # when sync deliberately defers recomputation until enrichment has finished.
-    try:
-        pq.write_table(result, temporary, compression="zstd")
-        if source not in {"tdxman:etf", "tdxman:etf:offline"}:
-            from .limit_events import _mark_stale, _published_dates_from
-            from .store import existing_tables
+    if yearly:
+        import pyarrow.compute as pc
 
-            if "daily_limit_publication" in existing_tables(root):
-                stale_dates = _published_dates_from(root, min(touched))
-                _mark_stale(root, stale_dates, "日线字段变化，等待补齐和重算")
-                add_cost(metrics, stale_date_marks=len(stale_dates))
-        written_bytes = temporary.stat().st_size
-        temporary.replace(target)
-    finally:
-        temporary.unlink(missing_ok=True)
-    if changed_dates is not None:
-        changed_dates.extend(touched)
-    if changes is not None:
-        changes.extend(delta)
-    add_cost(metrics, files_rewritten=1, file_bytes_rewritten=written_bytes,
-             rows_rewritten=len(result), changed_rows=changed)
-    entry = (
-        symbol,
-        market,
-        result["trade_date"][0].as_py(),
-        result["trade_date"][-1].as_py(),
-        len(result),
-        source,
-        "daily",
-    )
-    if coverage is None:
-        record_coverage(root, *entry)
+        years = result["trade_date"].cast(pa.date32())
+        outputs = [
+            (daily_year_path(root, market, symbol, year),
+             result.filter(pc.equal(pc.year(years), year)))
+            for year in sorted({day.year for day in touched})
+        ]
     else:
-        coverage.append(entry)
+        outputs = [(path, result)]
+    committed = 0
+    try:
+        for target, output in outputs:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            temporary = target.with_suffix(f".{uuid4().hex}.part")
+            file_days = set(output["trade_date"].to_pylist())
+            file_touched = [day for day in touched if day in file_days]
+            try:
+                pq.write_table(output, temporary, compression="zstd")
+                if source not in {"tdxman:etf", "tdxman:etf:offline"}:
+                    from .limit_events import _mark_stale, _published_dates_from
+                    from .store import existing_tables
+
+                    if "daily_limit_publication" in existing_tables(root):
+                        stale_dates = _published_dates_from(root, min(file_touched))
+                        _mark_stale(root, stale_dates, "日线字段变化，等待补齐和重算")
+                        add_cost(metrics, stale_date_marks=len(stale_dates))
+                written_bytes = temporary.stat().st_size
+                temporary.replace(target)
+            finally:
+                temporary.unlink(missing_ok=True)
+            committed += 1
+            if changed_dates is not None:
+                changed_dates.extend(file_touched)
+            if changes is not None:
+                changed_iso = {d.isoformat() for d in file_touched}
+                changes.extend(item for item in delta if item["trade_date"] in changed_iso)
+            add_cost(metrics, files_rewritten=1, file_bytes_rewritten=written_bytes,
+                     rows_rewritten=len(output), changed_rows=len(file_touched))
+    finally:
+        # A later partition failure must still publish truthful coverage for the
+        # already committed files. No-op retry must not leave old coverage behind.
+        if committed:
+            actual = result
+            if committed != len(outputs):
+                actual = read_daily_table(root, market, symbol)
+                all_paths = daily_paths(root, market, symbol)
+                add_cost(metrics, files_read=len(all_paths), rows_read=len(actual),
+                         file_bytes_read_proxy=sum(p.stat().st_size for p in all_paths))
+            entry = (symbol, market, actual["trade_date"][0].as_py(),
+                     actual["trade_date"][-1].as_py(), len(actual), source, "daily")
+            if coverage is None:
+                record_coverage(root, *entry)
+            else:
+                coverage.append(entry)
+        add_cost(metrics, elapsed_seconds=perf_counter() - started)
     if quality_rows is not None:
         quality_rows.extend(quality)
-    add_cost(metrics, elapsed_seconds=perf_counter() - started)
     return changed

@@ -40,6 +40,7 @@ def compute_price_limits_wrapper(
     is_st: bool,
     name: str = "",
     listed_days: int | None = None,
+    trade_date: date | None = None,
 ) -> dict:
     """计算涨跌停价格和状态（包装 tdxman 的实现）。"""
     # 根据 board_type 构造 market 和 code
@@ -65,7 +66,7 @@ def compute_price_limits_wrapper(
         # 无前收盘价，检查是否在无涨跌幅窗口期
         if listed_days is not None:
             window = tdxman_compute_price_limits(
-                market, code, name, 1.0, listed_days=listed_days
+                market, code, name, 1.0, listed_days=listed_days, trade_date=trade_date
             )
             if window == (None, None):
                 return {
@@ -82,7 +83,7 @@ def compute_price_limits_wrapper(
         }
 
     limit_up, limit_down = tdxman_compute_price_limits(
-        market, code, name, pre_close, listed_days=listed_days
+        market, code, name, pre_close, listed_days=listed_days, trade_date=trade_date
     )
 
     if limit_up is None or limit_down is None:
@@ -282,11 +283,22 @@ class TestComputePriceLimits(unittest.TestCase):
 
     def test_main_board_st(self):
         """主板ST股票 ±5%。"""
-        result = compute_price_limits_wrapper(22.53, "MAIN", True, "ST益丰")
+        result = compute_price_limits_wrapper(
+            22.53, "MAIN", True, "ST益丰", trade_date=date(2026, 7, 5)
+        )
         self.assertEqual(result["price_limit_status"], "KNOWN")
         self.assertAlmostEqual(result["limit_pct"], 0.05, places=2)
         self.assertEqual(result["limit_up"], 23.66)
         self.assertEqual(result["limit_down"], 21.40)
+
+    def test_main_board_st_current(self):
+        result = compute_price_limits_wrapper(
+            22.53, "MAIN", True, "ST益丰", trade_date=date(2026, 7, 6)
+        )
+        self.assertEqual(result["price_limit_status"], "KNOWN")
+        self.assertAlmostEqual(result["limit_pct"], 0.10, places=2)
+        self.assertEqual(result["limit_up"], 24.78)
+        self.assertEqual(result["limit_down"], 20.28)
 
     def test_gem_board(self):
         """创业板 ±20%。"""
@@ -798,6 +810,7 @@ class TestSampleData(unittest.TestCase):
                     is_st,
                     name,
                     listed_days,
+                    trade_date=date.fromisoformat(sample["trade_date"]),
                 )
 
                 # 验证涨跌停价格

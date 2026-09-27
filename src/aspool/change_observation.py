@@ -83,6 +83,7 @@ def empty_cost():
         file_bytes_rewritten=0,
         rows_rewritten=0,
         changed_rows=0,
+        coverage_repairs=0,
         stale_date_marks=0,
         elapsed_seconds=0.0,
     )

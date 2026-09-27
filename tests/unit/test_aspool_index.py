@@ -200,11 +200,23 @@ def test_stock_default_still_uses_existing_pipeline(tmp_path):
     with (
         patch("aspool.cli.update_online", return_value=(1, 30)) as stock,
         patch("aspool.index_pool.sync_indices") as index,
+        patch("aspool.baostock_source.enabled", return_value=False),
+        patch("aspool.enrichment.enrich_daily", return_value=(
+            {"processed": 1, "requested": 1, "changed_rows": 0, "status": "ok"},
+            tmp_path / "mock-report.json",
+        )) as enrich,
     ):
         result = CliRunner().invoke(cli, ["sync", "--root", str(tmp_path)])
     assert result.exit_code == 0, result.output
-    stock.assert_called_once_with(tmp_path, "daily", False, None, workers=4)
+    stock.assert_called_once_with(
+        tmp_path, "daily", False, None, workers=4, derive_limits=False
+    )
     index.assert_not_called()
+
+    enrich.assert_called_once_with(
+        tmp_path, start=None, end=None, lookback=30, limit=None, workers=4,
+        compare_baostock=False,
+    )
 
 
 @pytest.mark.parametrize(

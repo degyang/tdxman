@@ -282,8 +282,11 @@ def _publish(root, jobs, sessions, start, end):
         started = perf_counter()
         metrics, applied_changes = empty_cost(), []
         lifecycle_changed = False
+        lifecycle_start = None
+        result_entry = {}
+        source = source if usable_source(source, code) else None
         try:
-            if source:
+            if usable_source(source, code):
                 raw_ipo = str(source["finance"].get("ipo_date", ""))
                 if len(raw_ipo) == 8:
                     ipo = datetime.strptime(raw_ipo, "%Y%m%d").date()
@@ -293,7 +296,9 @@ def _publish(root, jobs, sessions, start, end):
                             [f"{code}.{market}"],
                         ).fetchone()
                         if prior_lifecycle is None or prior_lifecycle[0] is None:
-                            stale = _published_dates_from(root, ipo)
+                            # Establishing a listing date also changes the treatment of
+                            # previously published sessions before that date.
+                            stale = _published_dates_from(root, date.min)
                             _mark_stale(root, stale, "新增上市日期事实，等待重算")
                             add_cost(metrics, stale_date_marks=len(stale))
                             conn.execute(
@@ -305,6 +310,7 @@ def _publish(root, jobs, sessions, start, end):
                                 [f"{code}.{market}", ipo, "tdx:finance"],
                             )
                             lifecycle_changed = True
+                            lifecycle_start = min(stale).isoformat() if stale else ipo.isoformat()
             paths = daily_paths(root, market, code)
             tables = []
             rows = []
@@ -333,7 +339,8 @@ def _publish(root, jobs, sessions, start, end):
             for path, table, offset, tail in tables:
                 if not any(d in replacements for d in tail["trade_date"].to_pylist()):
                     continue
-                output = [replacements.get(r["trade_date"], r) for r in tail.to_pylist()]
+                output = [replacements.get(day, before[day])
+                          for day in tail["trade_date"].to_pylist()]
                 columns = dict.fromkeys([*table.column_names, *(k for r in output for k in r)])
                 result = pa.Table.from_pylist([{k: r.get(k) for k in columns} for r in output])
                 for field in ("trade_date", "open", "high", "low", "close", "volume", "amount"):
@@ -359,31 +366,26 @@ def _publish(root, jobs, sessions, start, end):
                 applied_changes.extend(delta)
                 add_cost(metrics, files_rewritten=1, file_bytes_rewritten=written_bytes,
                          rows_rewritten=len(result), changed_rows=len(delta))
-            metrics["elapsed_seconds"] = perf_counter() - started
-            results.append(
-                dict(
-                    symbol=f"{code}.{market}",
-                    changed_rows=len(updates),
-                    fields=dict(counts),
-                    missing=dict(missing),
-                    conflicts=conflicts,
-                    change_report=save_changes(root, applied_changes),
-                    change_start=min(replacements).isoformat() if replacements else None,
-                    change_end=max(replacements).isoformat() if replacements else None,
-                    cost=metrics,
-                    lifecycle_changed=lifecycle_changed,
-                )
+            result_entry.update(fields=dict(counts), missing=dict(missing), conflicts=conflicts)
+        except Exception as exc:
+            result_entry["error"] = str(exc)
+        # Observation failures must not hide committed writes or abort later jobs.
+        # Attempt the evidence write once, outside the business-write exception path.
+        result_entry["change_report"] = None
+        try:
+            result_entry["change_report"] = save_changes(
+                root, applied_changes, status="partial" if "error" in result_entry else "applied"
             )
         except Exception as exc:
-            metrics["elapsed_seconds"] = perf_counter() - started
-            results.append(dict(symbol=f"{code}.{market}", error=str(exc),
-                                changed_rows=len(applied_changes),
-                                change_report=save_changes(root, applied_changes, status="partial"),
-                                change_start=min((r["trade_date"] for r in applied_changes),
-                                                 default=None),
-                                change_end=max((r["trade_date"] for r in applied_changes),
-                                               default=None),
-                                cost=metrics, lifecycle_changed=lifecycle_changed))
+            result_entry["observation_error"] = str(exc)
+            result_entry.setdefault("error", f"Change observation failed: {exc}")
+        metrics["elapsed_seconds"] = perf_counter() - started
+        results.append(dict(
+            result_entry, symbol=f"{code}.{market}", changed_rows=len(applied_changes),
+            change_start=min((r["trade_date"] for r in applied_changes), default=None),
+            change_end=max((r["trade_date"] for r in applied_changes), default=None),
+            cost=metrics, lifecycle_changed=lifecycle_changed, lifecycle_start=lifecycle_start,
+        ))
     return results
 
 
@@ -401,7 +403,7 @@ def _recompute_dates(root, start, end, results):
             [start, end],
         ).fetchall())
     pending.update(date.fromisoformat(result[key]) for result in results
-                   for key in ("change_start", "change_end") if result.get(key))
+                   for key in ("change_start", "change_end", "lifecycle_start") if result.get(key))
     return sorted(pending)
 
 
@@ -529,7 +531,7 @@ def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers
         if compare_baostock:
             report["algorithm_check"] = audit_conflicts(root, report["results"])
             atomic_json(path, report)
-        if recompute:
+        if recompute and not any("error" in r for r in report["results"]):
             from .limit_events import compute_limit_events
 
             dates = _recompute_dates(root, start, end, report["results"])
