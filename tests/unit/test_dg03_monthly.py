@@ -239,3 +239,16 @@ def test_monthly_symbol_pushdown_preserves_selection(monthly):
         MonthlyStorage(root).bind(c, "bars", symbols=["SH.000001"])
         plan = c.execute("EXPLAIN SELECT amount FROM bars").fetchone()[1]
         assert "__code=" in plan
+
+
+def test_monthly_bind_preserves_caller_threads(monthly):
+    import duckdb
+
+    from aspool.dg03_monthly import MonthlyStorage
+
+    root, _, _ = monthly
+    for threads in [1, 2]:
+        with duckdb.connect() as c:
+            c.execute("SET threads=?", [threads])
+            MonthlyStorage(root).bind(c, "bars", symbols=["SH.000001"])
+            assert c.execute("SELECT current_setting('threads')").fetchone() == (threads,)

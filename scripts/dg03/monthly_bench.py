@@ -187,7 +187,7 @@ def build_monthly(factor):
     sync(root, directory=True)
 
 
-def read_samples(factor, workload=None):
+def read_samples(factor, workload=None, label=None):
     root = LAB / f"monthly-{factor}x"
     pool, expected = MonthlyPool(root), CandidatePool(LAB / f"prepared-{factor}x")
     cases = [
@@ -207,10 +207,19 @@ def read_samples(factor, workload=None):
                 elapsed = time.perf_counter() - t
                 pd.testing.assert_frame_equal(reference, frame)
                 assert reference.attrs == frame.attrs and len(frame.columns) == 35
-                return dict(rows=len(frame), fields=35, api_seconds=elapsed, exact=True)
+                return dict(
+                    rows=len(frame),
+                    fields=35,
+                    api_seconds=elapsed,
+                    exact=True,
+                    threads=2,
+                    memory_limit="512MB",
+                )
 
             measured(
-                f"monthly_{factor}x_public_{name}{'_bounded' if workload else ''}_{repeat}",
+                f"monthly_{factor}x_public_{name}"
+                + (f"_{label}" if label else ("_bounded" if workload else ""))
+                + f"_{repeat}",
                 read,
                 root,
             )
@@ -474,6 +483,7 @@ if __name__ == "__main__":
     parser.add_argument("phase", choices=["build", "reads", "writes", "bounds", "events"])
     parser.add_argument("--factor", type=int, choices=[1, 2, 5], required=True)
     parser.add_argument("--workload", choices=["day", "60days", "single"])
+    parser.add_argument("--label")
     args = parser.parse_args()
     provenance()
     emit(
@@ -486,7 +496,7 @@ if __name__ == "__main__":
             f"phase_monthly_{args.phase}_{args.factor}x",
             lambda: {
                 "build": lambda: build_monthly(args.factor),
-                "reads": lambda: read_samples(args.factor, args.workload),
+                "reads": lambda: read_samples(args.factor, args.workload, args.label),
                 "writes": lambda: writes(args.factor),
                 "bounds": lambda: bounds(args.factor, args.workload),
                 "events": lambda: __import__("events").run(

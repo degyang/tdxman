@@ -128,7 +128,8 @@ class MonthlyStorage:
         self.root = Path(root)
 
     def bind(self, conn, name, *, symbols=None, start=None, end=None, fields=None):
-        conn.execute("SET threads=1")
+        # The public daily reader configures two threads; event batches keep
+        # their explicit caller budget. Binding must not override either.
         conn.execute(f"ATTACH {literal(self.root / 'catalog.duckdb')} AS candidate (READ_ONLY)")
         conditions, args = [], []
         if start:

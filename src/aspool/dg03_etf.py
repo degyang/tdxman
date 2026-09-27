@@ -84,6 +84,9 @@ def _read(
     with pool_lock(root):
         storage = (storage_type or DailyStorage)(root)
         with duckdb.connect() as conn:
+            if storage_type is not None:
+                # Keep the explicit experimental adapter's existing ETF budget.
+                conn.execute("SET threads=1")
             try:
                 files = storage.bind(conn, "bars", symbols=requested, start=start, end=end)
             except ValueError as exc:
