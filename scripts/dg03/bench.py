@@ -363,11 +363,13 @@ def sparse():
         # Sparse keys from all five years, no narrow contiguous proxy.
         events = events.iloc[::50].copy()
         c.register("events", events)
+        tick = time.perf_counter()
         actual = c.execute(
             "SELECT e.symbol,e.trade_date,d.amount FROM events e LEFT JOIN dg03_daily d "
             "ON e.symbol=d.__code||'.'||d.__market AND e.trade_date=d.trade_date "
             "ORDER BY e.symbol,e.trade_date"
         ).fetchdf()
+        candidate_seconds = time.perf_counter() - tick
         files = [
             str(p) for p in (SNAPSHOT / "lake/bars/daily").glob("market=*/symbol=*/bars.parquet")
         ]
@@ -381,7 +383,13 @@ def sparse():
         ).fetchdf()
         old_seconds = time.perf_counter() - tick
         pd.testing.assert_frame_equal(expected, actual)
-        emit("sparse_event_amount", keys=len(events), exact=True, old_seconds=old_seconds)
+        emit(
+            "sparse_event_amount",
+            keys=len(events),
+            exact=True,
+            old_seconds=old_seconds,
+            candidate_seconds=candidate_seconds,
+        )
 
 
 def profile(c, sql, name, params=None):
@@ -585,8 +593,14 @@ def sample_growth(factor):
     ]:
         for repeat in range(3):
 
-            def read_sample(kwargs=kwargs):
+            def read_sample(kwargs=kwargs, workload=workload):
                 frame = pool.read_daily(**kwargs)
+                expected_rows = {
+                    "day": 5570,
+                    "60_natural_days": 243936,
+                    "single_history": 6318 * factor,
+                }[workload]
+                assert len(frame) == expected_rows and len(frame.columns) == 35
                 return {"rows": len(frame), "fields": len(frame.columns), "attrs": frame.attrs}
 
             measured(f"growth_{factor}x_public_{workload}_{repeat}", read_sample, root)
@@ -641,6 +655,16 @@ def sample_growth(factor):
             "SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'",
             f"growth_{factor}x_after_updates",
         )
+        c.execute("BEGIN")
+        try:
+            profile(
+                c,
+                "UPDATE dg03_daily SET amount=amount+1 WHERE __market='SZ' "
+                "AND __code='000001' AND trade_date=DATE '2026-09-24'",
+                f"growth_{factor}x_correction_plan_rolled_back",
+            )
+        finally:
+            c.execute("ROLLBACK")
 
 
 def prepare_securities():
@@ -694,10 +718,16 @@ def sample_securities():
             disk=tree_bytes(root),
         )
     pool = CandidatePool(root)
+
+    def read_double():
+        frame = pool.read_daily(start="2026-07-27", end="2026-09-24")
+        assert len(frame) == 2 * 243936 and len(frame.columns) == 35
+        return {"rows": len(frame), "fields": len(frame.columns)}
+
     for repeat in range(3):
         measured(
             f"more_securities_public_60days_{repeat}",
-            lambda: {"rows": len(pool.read_daily(start="2026-07-27", end="2026-09-24"))},
+            read_double,
             root,
         )
 
