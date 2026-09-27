@@ -205,7 +205,11 @@ def read_samples(factor, workload=None):
                 assert reference.attrs == frame.attrs and len(frame.columns) == 35
                 return dict(rows=len(frame), fields=35, api_seconds=elapsed, exact=True)
 
-            measured(f"monthly_{factor}x_public_{name}_{repeat}", read, root)
+            measured(
+                f"monthly_{factor}x_public_{name}{'_bounded' if workload else ''}_{repeat}",
+                read,
+                root,
+            )
     if factor == 1 and not workload:
         reference = expected.read_etf_daily(start="2026-07-27", end="2026-09-24")
 

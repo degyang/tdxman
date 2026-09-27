@@ -152,12 +152,28 @@ class MonthlyStorage:
             if n not in {"symbol", "market", "__market", "__code"}
         ]
         columns += ["__market AS market", "__code AS symbol"]
+        predicates = []
+        if symbols is not None:
+            predicates = [
+                "("
+                + (
+                    " OR ".join(
+                        f"(__market={literal(s.split('.')[0])} "
+                        f"AND __code={literal(s.split('.')[1])})"
+                        for s in symbols
+                    )
+                    or "false"
+                )
+                + ")"
+            ]
+        where = " WHERE " + " AND ".join(predicates) if predicates else ""
         conn.execute(
             f"CREATE TEMP VIEW {ident(name)} AS SELECT "
             + ",".join(columns)
             + " FROM ("
             + relation.sql_query()
             + ")"
+            + where
         )
         return [Path(p) for p in files]
 

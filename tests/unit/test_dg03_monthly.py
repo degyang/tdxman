@@ -220,3 +220,22 @@ def test_monthly_facts_only_plus_noop_preserves_parts(monthly):
     with connection(root, True) as c:
         assert c.execute("SELECT * FROM dg03_monthly_parts ORDER BY month").fetchall() == before
         assert c.execute("SELECT pre_close FROM security_daily_facts").fetchone() == (9.0,)
+
+
+def test_monthly_symbol_pushdown_preserves_selection(monthly):
+    import duckdb
+
+    from aspool.dg03_monthly import MonthlyStorage
+
+    root, pool, expected = monthly
+    for symbols in ["000001.SH", "999999.SH", [], ["000001.SH", "510300.SH"]]:
+        pd.testing.assert_frame_equal(
+            pool.read_daily(symbols=symbols), expected.read_daily(symbols=symbols)
+        )
+    pd.testing.assert_frame_equal(
+        pool.read_etf_daily(symbols="510300.SH"), expected.read_etf_daily(symbols="510300.SH")
+    )
+    with duckdb.connect() as c:
+        MonthlyStorage(root).bind(c, "bars", symbols=["SH.000001"])
+        plan = c.execute("EXPLAIN SELECT amount FROM bars").fetchone()[1]
+        assert "__code=" in plan
