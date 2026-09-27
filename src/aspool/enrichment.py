@@ -477,6 +477,11 @@ def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers
     path = root / "reports/maintenance" / f"enrichment-{uuid4().hex}.json"
     cache = root / "lake/fundamentals/dated_inputs"
     cache.mkdir(parents=True, exist_ok=True)
+    # A retry must roll forward before its planning read can reject pending state.
+    from .change_protocol import recover
+
+    with pool_lock(root, write=True):
+        recover(root)
     with pool_lock(root), read_only_catalog(root) as conn:
         universe = conn.execute(
             "select count(*) from information_schema.tables where table_name='universe'"
@@ -538,10 +543,12 @@ def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers
             if len(pending) >= 40:
                 flush()
         for (code, market), source, error, _ in fetch_sync(fetch, factory, _fetch, workers, retry):
-            if error:
-                report["source_failures"].append(dict(symbol=f"{code}.{market}", error=str(error)))
-            else:
-                atomic_json(cache / f"{code}.{market}.json", source)
+            if error or not usable_source(source, code):
+                report["source_failures"].append(dict(
+                    symbol=f"{code}.{market}",
+                    error=str(error or "Empty or mismatched enrichment source")))
+                continue
+            atomic_json(cache / f"{code}.{market}.json", source)
             pending.append((code, market, source))
             if len(pending) >= 40:
                 flush()
@@ -549,7 +556,8 @@ def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers
         if compare_baostock:
             report["algorithm_check"] = audit_conflicts(root, report["results"])
             atomic_json(path, report)
-        if recompute and not any("error" in r for r in report["results"]):
+        if (recompute and not report["source_failures"]
+                and not any("error" in r for r in report["results"])):
             from .limit_events import compute_limit_events
 
             dates = _recompute_dates(root, start, end, report["results"])

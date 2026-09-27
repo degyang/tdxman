@@ -74,7 +74,9 @@ def pool_lock(root: Path, *, write: bool = False):
         yield
         return
     if write:
-        root.mkdir(parents=True, exist_ok=True)
+        from .change_protocol import _mkdir_durable
+
+        _mkdir_durable(root)
     # Directory locks allow a reader to remain strictly read-only.
     import os
 

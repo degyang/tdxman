@@ -60,11 +60,22 @@ def _durable_json(path, value):
     _sync_directory(path.parent)
 
 
+def _manifest_digest(manifest):
+    payload = {k: v for k, v in manifest.items() if k != "manifest_sha256"}
+    return hashlib.sha256(_json(payload).encode()).hexdigest()
+
+
+def _write_manifest(directory, manifest):
+    manifest["manifest_sha256"] = _manifest_digest(manifest)
+    _durable_json(directory / "manifest.json", manifest)
+
+
 def _digest(path):
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
+    note_range("integrity_read", path=path, bytes_proxy=path.stat().st_size)
     return digest.hexdigest()
 
 
@@ -104,7 +115,9 @@ def _revision(conn, key):
 def observe(conn, key, status="ok"):
     _initialize(conn)
     conn.execute(
-        "INSERT OR REPLACE INTO fetch_observations VALUES (?, current_timestamp, ?)", [key, status]
+        "INSERT OR REPLACE INTO fetch_observations "
+        "VALUES (?, current_timestamp AT TIME ZONE 'UTC', ?)",
+        [key, status],
     )
 
 
@@ -272,6 +285,8 @@ def assert_readable(root):
 
 
 def _apply(root, directory, manifest, *, recovery=False):
+    if manifest.get("manifest_sha256") != _manifest_digest(manifest):
+        raise RuntimeError("Recovery manifest missing checksum or corrupt")
     relative = Path(manifest["target"])
     if (
         relative.is_absolute()
@@ -280,6 +295,8 @@ def _apply(root, directory, manifest, *, recovery=False):
         or manifest["schema_version"] != 1
         or manifest["output_revision"] != manifest["input_revision"] + 1
         or manifest["changed_rows"] < 1
+        or manifest["operation_id"] != directory.name
+        or manifest["evidence"] != f"change-state/applied/{directory.name}/rows.jsonl"
     ):
         raise RuntimeError("Invalid prepared change manifest")
     target = Path(root) / manifest["target"]
@@ -289,9 +306,29 @@ def _apply(root, directory, manifest, *, recovery=False):
         raise RuntimeError(f"Recovery evidence missing/corrupt: {directory}")
     with catalog(root) as conn:
         _initialize(conn)
+        recorded_fields = (
+            "object_key",
+            "input_revision",
+            "output_revision",
+            "source",
+            "reason",
+            "changed_rows",
+            "changed_fields",
+            "evidence",
+            "run_id",
+        )
         applied = conn.execute(
-            "SELECT state FROM business_changes WHERE operation_id=?", [manifest["operation_id"]]
+            "SELECT " + ",".join(recorded_fields) + ",state FROM business_changes "
+            "WHERE operation_id=?",
+            [manifest["operation_id"]],
         ).fetchone()
+        expected_revision = manifest["output_revision"] if applied else manifest["input_revision"]
+        if _revision(conn, manifest["object_key"]) != expected_revision:
+            raise RuntimeError(
+                "Logical revision changed before recovery; preserve pending evidence"
+            )
+        if applied and applied != (*[manifest.get(k) for k in recorded_fields], "applied"):
+            raise RuntimeError("Applied catalog record differs from recovery manifest")
         if new.exists() and _digest(new) != manifest["physical_sha256"]:
             raise RuntimeError(f"Recovery object corrupt: {directory}")
         if not applied and not new.is_file():
@@ -318,7 +355,7 @@ def _apply(root, directory, manifest, *, recovery=False):
                         bytes_proxy=manifest["bytes_rewritten"],
                     )
                 manifest["state"] = "file_replaced"
-                _durable_json(directory / "manifest.json", manifest)
+                _write_manifest(directory, manifest)
                 _fault("after_replace")
             finally:
                 temporary.unlink(missing_ok=True)
@@ -337,7 +374,7 @@ def _apply(root, directory, manifest, *, recovery=False):
             note_range("stale_suffix", rows=marks, start=manifest.get("stale_start"))
             _fault("after_catalog_commit")
     manifest.update(state="applied", error=None)
-    _durable_json(directory / "manifest.json", manifest)
+    _write_manifest(directory, manifest)
     _fault("after_applied")
     # Only active preparations keep a complete redo file. Row deltas retain
     # recoverable old/new values after a durable commit; no cold generations.
@@ -512,7 +549,7 @@ def publish_file(
     evidence_bytes = evidence.stat().st_size
     note_temporary(manifest["bytes_rewritten"] + evidence_bytes)
     _fault("before_prepare_manifest")
-    _durable_json(directory / "manifest.json", manifest)
+    _write_manifest(directory, manifest)
     evidence_bytes = evidence.stat().st_size
     _fault("before_pending")
     pending_folder = root / "change-state/pending"
@@ -538,7 +575,7 @@ def publish_file(
         # A failed report must not replace the original error or imply rollback.
         try:
             manifest.update(state="recovery_required", error=f"{type(exc).__name__}: {exc}")
-            _durable_json(directory / "manifest.json", manifest)
+            _write_manifest(directory, manifest)
         except Exception:
             pass
         raise
@@ -585,6 +622,7 @@ def catalog_rows(root, table, keys, rows, *, source, reason, ignore=(), stale_st
         raise ValueError("Unsupported catalog mutation dataset")
     operation = uuid4().hex
     changed = fields = candidates = 0
+    changed_stale_start = None
     with catalog(root) as conn:
         _initialize(conn)
         conn.execute("""CREATE TABLE IF NOT EXISTS catalog_change_rows (
@@ -631,6 +669,11 @@ def catalog_rows(root, table, keys, rows, *, source, reason, ignore=(), stale_st
                 business_new = {k: v for k, v in merged.items() if k not in ignore}
                 if old is not None and _same_values(business_old, business_new):
                     continue
+                boundary = stale_start(old, merged) if callable(stale_start) else stale_start
+                if boundary is not None:
+                    changed_stale_start = (
+                        min(changed_stale_start, boundary) if changed_stale_start else boundary
+                    )
                 touched = sorted(
                     k
                     for k in business_old.keys() | business_new.keys()
@@ -655,7 +698,7 @@ def catalog_rows(root, table, keys, rows, *, source, reason, ignore=(), stale_st
                     [operation, changed, _json(delta)],
                 )
             if changed:
-                marks = _stale(conn, stale_start, reason)
+                marks = _stale(conn, changed_stale_start, reason)
                 manifest = dict(
                     operation_id=operation,
                     run_id=(_current_run.get() or {}).get("run_id"),
@@ -675,7 +718,7 @@ def catalog_rows(root, table, keys, rows, *, source, reason, ignore=(), stale_st
             conn.execute("ROLLBACK")
             raise
         if changed:
-            note_range("stale_suffix", rows=marks, start=stale_start)
+            note_range("stale_suffix", rows=marks, start=changed_stale_start)
         try:
             observe(conn, table, "ok" if candidates else "empty")
         except Exception as exc:
@@ -854,6 +897,8 @@ def _note_outcome(value):
             if isinstance(item, dict) and (
                 item.get("error")
                 or item.get("observation_error")
+                or item.get("failed")
+                or item.get("source_failures")
                 or item.get("status") in {"partial", "failed"}
             ):
                 run["observed_failure"] = True

@@ -443,7 +443,11 @@ def test_failed_enrichment_does_not_publish_mixed_inputs(pool, monkeypatch):
     root, days = pool
     monkeypatch.setattr(
         "aspool.enrichment.fetch_sync",
-        lambda *args: [(("000001", "SZ"), None, RuntimeError("offline source"), 0)],
+        # Isolate a post-commit observation failure from a source outage.
+        lambda *args: [(("000001", "SZ"), {
+            "finance": {"code": "000001"}, "events": [],
+            "fetched_date": days[-1].isoformat(),
+        }, None, 0)],
     )
 
     def fail_observation(*args, **kwargs):

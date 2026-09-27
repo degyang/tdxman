@@ -32,9 +32,11 @@ def _coverage_table(period: str) -> str:
 
 
 def initialize(root: Path) -> None:
+    from .change_protocol import _mkdir_durable
+
     for period in ("daily", "minutes"):
-        (root / "lake" / "bars" / period).mkdir(parents=True, exist_ok=True)
-    (root / "lake" / "fundamentals").mkdir(parents=True, exist_ok=True)
+        _mkdir_durable(root / "lake" / "bars" / period)
+    _mkdir_durable(root / "lake" / "fundamentals")
     with catalog(root) as conn:
         for table in ("coverage", "coverage_minutes"):
             conn.execute(
@@ -74,7 +76,9 @@ def catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
     if active is not None and active[0] == Path(root).resolve():
         yield active[1]
         return
-    root.mkdir(parents=True, exist_ok=True)
+    from .change_protocol import _mkdir_durable
+
+    _mkdir_durable(root)
     conn = duckdb.connect(root / "catalog.duckdb")
     try:
         yield conn

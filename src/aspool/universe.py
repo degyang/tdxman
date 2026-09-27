@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .pool import writer
@@ -136,8 +136,10 @@ def _publish_universe(root, entries):
             ))
         catalog_rows(root, "universe", ["symbol"], rows, source="tdx:directory",
                      reason="universe_scope", ignore=("first_seen", "last_seen"),
-                     stale_start=(datetime.min.date()
-                                  if any(r["asset_type"] == "stock" for r in rows) else None))
+                     stale_start=lambda old, new: (
+                         datetime.min.date() if any(
+                             r and r.get("asset_type", "stock") == "stock" for r in (old, new)
+                         ) else None))
         missing = []  # Source omissions never authorize deactivation.
         for kind in {r["asset_type"] for r in rows}:
             observe(conn, f"universe:{kind}")
@@ -197,7 +199,10 @@ def universe_is_stale(root: Path, days: int = 7, asset_type: str | None = None) 
                     "SELECT max(observed_at) FROM fetch_observations WHERE "
                     "object_key LIKE ? AND status='ok'", [f"universe:{asset_type or '%'}"]
                 ).fetchone()[0]
-                latest = max((d for d in (latest, observation) if d is not None), default=None)
+                if observation is not None:
+                    # Observation timestamps are UTC; legacy last_seen is local time.
+                    now = datetime.now(timezone.utc).replace(tzinfo=None)
+                    return (now - observation).days >= days
         except Exception:
             return True
     return latest is None or (datetime.now() - latest).days >= days

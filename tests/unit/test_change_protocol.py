@@ -388,9 +388,7 @@ def test_each_entry_fault_is_detectable_and_retry_matches_clean_reference(
     assert not pending(pool)
 
 
-@pytest.mark.parametrize(
-    "phase", ["after_prepared", "after_replace", "after_catalog_commit", "after_redo_release"]
-)
+@pytest.mark.parametrize("phase", PHASES)
 def test_real_process_exit_and_next_writer_recovery(pool, monkeypatch, phase):
     code = """
 import os
