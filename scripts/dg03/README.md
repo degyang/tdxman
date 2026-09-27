@@ -28,6 +28,7 @@ nice -n 19 ionice -c 3 env DG03_THREADS=1 DG03_MEMORY_LIMIT=1GB \
   DG03_PREP_RSS_LIMIT=3221225472 .venv/bin/python scripts/dg03/bench.py prepare-growth --factor 1
 # Repeat preparation sequentially with --factor 2 and --factor 5.
 # 5x reuses the committed 2x prefix, preserving all 42 raw/key columns.
+# Additional copies commit source years separately; progress keys are transactional.
 # An interrupted preparation supports --resume after diagnosis, never overwrite.
 nice -n 19 ionice -c 3 env DG03_THREADS=1 DG03_MEMORY_LIMIT=1GB \
   DG03_PREP_RSS_LIMIT=3221225472 .venv/bin/python scripts/dg03/bench.py prepare-securities
@@ -39,6 +40,7 @@ nice -n 19 ionice -c 3 env DG03_THREADS=1 DG03_MEMORY_LIMIT=1GB \
 .venv/bin/python scripts/dg03/bench.py mutations
 .venv/bin/python scripts/dg03/bench.py recovery
 .venv/bin/python scripts/dg03/bench.py sparse
+.venv/bin/python scripts/dg03/facts_growth.py
 ```
 
 Phases creating roots fail if those roots already exist. Retain failed directories
@@ -81,3 +83,10 @@ DuckDB 1.5.5 otherwise chooses a full sequential scan when market and code predi
 reach the same scan. Complete dated overlays run in SQL before one pandas conversion;
 an all-NULL string compatibility fallback retains the original observable dtype.
 These paths are measured separately from baseline Parquet and initial DuckDB layouts.
+
+`facts_growth.py` holds the 17.86M raw rows and derived snapshots constant while
+expanding only `security_daily_facts` from 410,467 to 820,934 / 2,052,335 rows.
+Cold synthetic facts move 40 years per copy and carry an explicit synthetic source;
+three complete recent-window reads must remain exactly equal to the real candidate.
+A process-local diagnostic wrapper records the actual final overlay plan separately
+from ordinary public-call timings. This does not claim derived recursion scales.
