@@ -334,3 +334,49 @@ def test_all_null_string_dtype_compatibility(candidate):
     actual = pool.read_daily(fields=["name", "pre_close"])
     pd.testing.assert_frame_equal(expected, actual)
     assert str(actual.name.dtype) == "Int32"
+
+
+def test_split_growth_preparation_preserves_full_rows_and_resume(candidate, monkeypatch):
+    import importlib.util
+    from pathlib import Path
+
+    _, target, _ = candidate
+    script = Path(__file__).resolve().parents[2] / "scripts/dg03/bench.py"
+    spec = importlib.util.spec_from_file_location("dg03_bench", script)
+    bench = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bench)
+    monkeypatch.setattr(bench, "LAB", target.parent)
+    monkeypatch.setenv("DG03_CANDIDATE", target.name)
+    with duckdb.connect(str(target / "catalog.duckdb")) as c:
+        c.execute(
+            "CREATE TABLE coverage AS SELECT __code symbol,__market market,"
+            "min(trade_date) start_date,max(trade_date) end_date,count(*) row_count,"
+            "'fixture' AS source,current_timestamp updated_at FROM dg03_daily GROUP BY ALL"
+        )
+    bench.prepare_growth(2)
+    root = target.parent / "prepared-2x"
+    fingerprint = bench.file_sha256(root / "catalog.duckdb")
+    bench.prepare_growth(2, resume=True)
+    with duckdb.connect(str(root / "catalog.duckdb"), read_only=True) as c:
+        assert c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0] == 12
+        assert c.execute("SELECT min(trade_date),max(trade_date) FROM dg03_daily").fetchone() == (
+            date(1985, 1, 2),
+            date(2025, 1, 6),
+        )
+        assert c.execute("SELECT DISTINCT row_count FROM coverage").fetchall() == [(6,)]
+        assert (
+            c.execute(
+                "SELECT count(*) FROM dg03_daily WHERE extension='source-extension'"
+            ).fetchone()[0]
+            == 12
+        )
+    assert len(fingerprint) == 64
+    bench.prepare_securities()
+    with duckdb.connect(
+        str(target.parent / "prepared-securities/catalog.duckdb"), read_only=True
+    ) as c:
+        assert c.execute("SELECT count(DISTINCT __code),count(*) FROM dg03_daily").fetchone() == (
+            4,
+            12,
+        )
+        assert c.execute("SELECT count(*) FROM coverage").fetchone()[0] == 4

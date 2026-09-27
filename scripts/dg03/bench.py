@@ -19,6 +19,7 @@ import subprocess
 import sys
 import threading
 import time
+from contextlib import contextmanager
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -42,6 +43,14 @@ def candidate_root():
     if Path(name).name != name or name in {".", ".."}:
         raise ValueError("candidate must name a directory inside the fixed experiment lab")
     return LAB / name
+
+
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def io():
@@ -123,7 +132,8 @@ def measured(name, fn, root=None):
 
 def connect(root, read_only=False):
     c = duckdb.connect(str(root / "catalog.duckdb"), read_only=read_only)
-    c.execute("SET threads=2; SET memory_limit='1GB'")
+    c.execute("SET threads = ?", [int(os.environ.get("DG03_THREADS", "2"))])
+    c.execute("SET memory_limit = ?", [os.environ.get("DG03_MEMORY_LIMIT", "1GB")])
     return c
 
 
@@ -158,8 +168,9 @@ def provenance():
         versions={
             n: importlib.metadata.version(n) for n in ["duckdb", "pandas", "pyarrow", "numpy"]
         },
-        memory_limit="1GB",
-        threads=2,
+        memory_limit=os.environ.get("DG03_MEMORY_LIMIT", "1GB"),
+        threads=int(os.environ.get("DG03_THREADS", "2")),
+        nice=os.getpriority(os.PRIO_PROCESS, 0),
         cache="OS cache not evicted; raw repeats retained",
     )
 
@@ -439,143 +450,241 @@ def physical_bounds(c, name):
     (LAB / (name + ".json")).write_text(json.dumps(bounds, default=str))
 
 
-def growth(factors=(1, 2, 5), more_securities=True):
-    # 1x/2x/5x is the entire 17.86M-row complete-schema population, shifted by 40 years.
-    for factor in factors:
-        root = LAB / f"growth-{factor}x"
+@contextmanager
+def preparation_guard(conn):
+    """Interrupt private SQL if sampled RSS crosses the agreed preparation guard."""
+    limit = int(os.environ.get("DG03_PREP_RSS_LIMIT", str(3 * 1024**3)))
+    done = threading.Event()
+    exceeded = []
+
+    def watch():
+        while not done.wait(0.05):
+            rss = current_rss()
+            if rss > limit:
+                exceeded.append(rss)
+                conn.interrupt()
+                return
+
+    thread = threading.Thread(target=watch, daemon=True)
+    thread.start()
+    try:
+        yield
+        if exceeded:
+            raise MemoryError(f"preparation RSS guard crossed: {exceeded[0]} > {limit}")
+    finally:
+        done.set()
+        thread.join()
+        if exceeded:
+            emit("preparation_rss_guard", observed=exceeded[0], limit=limit)
+
+
+def refresh_synthetic_coverage(c):
+    # Initialization work, never part of a hot update. Keep growth coverage truthful.
+    c.execute("""UPDATE coverage c SET start_date=s.first_day,end_date=s.last_day,row_count=s.n,
+        source='dg03:synthetic-growth',updated_at=current_timestamp FROM (
+          SELECT __market,__code,min(trade_date) AS first_day,max(trade_date) AS last_day,count(*) n
+          FROM dg03_daily GROUP BY __market,__code) s
+        WHERE c.market=s.__market AND c.symbol=s.__code""")
+
+
+def prepare_growth(factor, resume=False):
+    root = LAB / f"prepared-{factor}x"
+    if not resume:
         root.mkdir()
-        clone(candidate_root(), root)
-        with connect(root) as c:
-            c.execute(f"ATTACH {literal(candidate_root() / 'catalog.duckdb')} AS base (READ_ONLY)")
-            for i in range(1, factor):
-                measured(
-                    f"growth_{factor}x_add_{i}",
-                    lambda i=i: c.execute(
-                        "INSERT INTO dg03_daily SELECT * REPLACE "
-                        f"((trade_date - INTERVAL '{40 * i} years')::DATE "
-                        f"AS trade_date) FROM base.dg03_daily"
-                    ).fetchone(),
-                    root,
-                )
-            c.execute("CHECKPOINT")
-            emit(
-                "growth_size",
-                factor=factor,
-                rows=c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0],
-                securities=c.execute(
-                    "SELECT count(DISTINCT (__market,__code)) FROM dg03_daily"
-                ).fetchone()[0],
-                disk=tree_bytes(root),
+        prefix = LAB / "prepared-2x"
+        source = prefix if factor == 5 and (prefix / "prepared.json").exists() else candidate_root()
+        measured(f"prepare_{factor}x_copy", lambda: clone(source, root), root)
+        (root / "prepare-source.json").write_text(
+            json.dumps(
+                {
+                    "source": str(source),
+                    "base": str(candidate_root()),
+                    "factor": factor,
+                    "years_per_copy": 40,
+                }
             )
-            physical_bounds(c, f"growth_{factor}x_physical_before")
-            for repeat in range(3):
-                profile(
-                    c,
-                    "SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'",
-                    f"growth_{factor}x_day_{repeat}",
-                )
-                profile(
-                    c,
-                    "SELECT * FROM dg03_daily WHERE __code='000001'",
-                    f"growth_{factor}x_code_index_population_{repeat}",
-                )
-            seed = (
-                c.execute(
-                    "SELECT * FROM dg03_daily WHERE __code='000001' AND __market='SZ' "
-                    "ORDER BY trade_date DESC LIMIT 1"
-                )
-                .fetchdf()
-                .iloc[0]
-                .to_dict()
-            )
-        pool = CandidatePool(root)
-        for workload, kwargs in [
-            ("day", dict(start="2026-09-24", end="2026-09-24")),
-            ("60_natural_days", dict(start="2026-07-27", end="2026-09-24")),
-            ("single_history", dict(symbols="000001.SZ")),
-        ]:
-            for repeat in range(3):
-
-                def read_sample(kwargs=kwargs):
-                    frame = pool.read_daily(**kwargs)
-                    return {"rows": len(frame), "fields": len(frame.columns), "attrs": frame.attrs}
-
-                measured(f"growth_{factor}x_public_{workload}_{repeat}", read_sample, root)
-        with connect(root, True) as c:
-            names = [r[0] for r in c.execute("DESCRIBE dg03_daily").fetchall()]
-            seeds = c.execute(
-                "SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'"
-            ).fetchall()
-        market_changes = []
-        for item in seeds:
-            values = dict(zip(names, item))
-            market_changes.append(
-                dict(
-                    market=values.pop("__market"),
-                    code=values.pop("__code"),
-                    trade_date="2026-09-25",
-                    values={k: v for k, v in values.items() if k != "trade_date"},
-                )
-            )
-        measured(
-            f"growth_{factor}x_full_market_insert",
-            lambda: pool.apply(market_changes, source="synthetic", reason="whole market next day"),
-            root,
         )
-        measured(
-            f"growth_{factor}x_full_market_noop",
-            lambda: pool.apply(market_changes, source="synthetic", reason="whole market retry"),
-            root,
-        )
-        for cycle in range(12):
-            changes = [
-                dict(
-                    market="SZ",
-                    code="000001",
-                    trade_date="2026-09-24",
-                    values={"amount": float(seed["amount"]) + cycle + 1},
-                )
-            ]
+    else:
+        state = json.loads((root / "prepare-source.json").read_text())
+        assert state["factor"] == factor and state["base"] == str(candidate_root())
+    with connect(root) as c, preparation_guard(c):
+        c.execute(f"ATTACH {literal(candidate_root() / 'catalog.duckdb')} AS base (READ_ONLY)")
+        base_rows = c.execute("SELECT count(*) FROM base.dg03_daily").fetchone()[0]
+        rows = c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0]
+        assert rows % base_rows == 0 and 1 <= rows // base_rows <= factor
+        for i in range(rows // base_rows, factor):
             measured(
-                f"growth_{factor}x_update_{cycle}",
-                lambda: pool.apply(changes, source="synthetic", reason="repeated correction"),
+                f"prepare_{factor}x_add_{i}",
+                lambda i=i: c.execute(
+                    "INSERT INTO dg03_daily SELECT * REPLACE "
+                    f"((trade_date - INTERVAL '{40 * i} years')::DATE AS trade_date) "
+                    "FROM base.dg03_daily"
+                ).fetchone(),
                 root,
             )
-            measured(
-                f"growth_{factor}x_noop_{cycle}",
-                lambda: pool.apply(changes, source="synthetic", reason="no-op replay"),
-                root,
-            )
-        with connect(root) as c:
-            physical_bounds(c, f"growth_{factor}x_physical_after")
-            measured(
-                f"growth_{factor}x_checkpoint", lambda: c.execute("CHECKPOINT").fetchall(), root
-            )
+            (root / "prepare-progress.json").write_text(json.dumps({"copies_committed": i + 1}))
+        refresh_synthetic_coverage(c)
+        c.execute("CHECKPOINT")
+        rows = c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0]
+        assert rows == factor * base_rows
+    state = {
+        "factor": factor,
+        "rows": rows,
+        "root": str(root),
+        "input": str(candidate_root()),
+        "status": "ready",
+        "content": "complete raw schema; logical dates shifted 40 years per copy",
+    }
+    (root / "prepared.json").write_text(json.dumps(state, indent=2))
+    emit("growth_prepared", **state, disk=tree_bytes(root))
+
+
+def sample_growth(factor):
+    source = LAB / f"prepared-{factor}x"
+    state = json.loads((source / "prepared.json").read_text())
+    assert state["status"] == "ready" and state["factor"] == factor
+    root = LAB / f"growth-{factor}x"
+    root.mkdir()
+    measured(f"growth_{factor}x_sample_copy", lambda: clone(source, root), root)
+    with connect(root) as c:
+        emit(
+            "growth_size",
+            factor=factor,
+            rows=c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0],
+            securities=c.execute(
+                "SELECT count(DISTINCT (__market,__code)) FROM dg03_daily"
+            ).fetchone()[0],
+            disk=tree_bytes(root),
+        )
+        physical_bounds(c, f"growth_{factor}x_physical_before")
+        for repeat in range(3):
             profile(
                 c,
                 "SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'",
-                f"growth_{factor}x_after_updates",
+                f"growth_{factor}x_day_{repeat}",
             )
-    if not more_securities:
-        return
-    # Independent more-securities scenario: duplicate identities, keep full history and all fields.
-    root = LAB / "growth-securities"
-    root.mkdir()
-    clone(candidate_root(), root)
-    with connect(root) as c:
+            profile(
+                c,
+                "SELECT * FROM dg03_daily WHERE __code='000001'",
+                f"growth_{factor}x_code_index_population_{repeat}",
+            )
+        seed = (
+            c.execute(
+                "SELECT * FROM dg03_daily WHERE __code='000001' AND __market='SZ' "
+                "ORDER BY trade_date DESC LIMIT 1"
+            )
+            .fetchdf()
+            .iloc[0]
+            .to_dict()
+        )
+    pool = CandidatePool(root)
+    for workload, kwargs in [
+        ("day", dict(start="2026-09-24", end="2026-09-24")),
+        ("60_natural_days", dict(start="2026-07-27", end="2026-09-24")),
+        ("single_history", dict(symbols="000001.SZ")),
+    ]:
+        for repeat in range(3):
+
+            def read_sample(kwargs=kwargs):
+                frame = pool.read_daily(**kwargs)
+                return {"rows": len(frame), "fields": len(frame.columns), "attrs": frame.attrs}
+
+            measured(f"growth_{factor}x_public_{workload}_{repeat}", read_sample, root)
+    with connect(root, True) as c:
+        names = [r[0] for r in c.execute("DESCRIBE dg03_daily").fetchall()]
+        seeds = c.execute("SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'").fetchall()
+    market_changes = []
+    for item in seeds:
+        values = dict(zip(names, item))
+        market_changes.append(
+            dict(
+                market=values.pop("__market"),
+                code=values.pop("__code"),
+                trade_date="2026-09-25",
+                values={k: v for k, v in values.items() if k != "trade_date"},
+            )
+        )
+    measured(
+        f"growth_{factor}x_full_market_insert",
+        lambda: pool.apply(market_changes, source="synthetic", reason="whole market next day"),
+        root,
+    )
+    measured(
+        f"growth_{factor}x_full_market_noop",
+        lambda: pool.apply(market_changes, source="synthetic", reason="whole market retry"),
+        root,
+    )
+    for cycle in range(12):
+        changes = [
+            dict(
+                market="SZ",
+                code="000001",
+                trade_date="2026-09-24",
+                values={"amount": float(seed["amount"]) + cycle + 1},
+            )
+        ]
         measured(
-            "growth_double_securities",
-            lambda: c.execute(
-                "INSERT INTO dg03_daily SELECT * REPLACE ('X'||__code AS __code) FROM dg03_daily"
-            ).fetchone(),
+            f"growth_{factor}x_update_{cycle}",
+            lambda: pool.apply(changes, source="synthetic", reason="repeated correction"),
             root,
         )
+        measured(
+            f"growth_{factor}x_noop_{cycle}",
+            lambda: pool.apply(changes, source="synthetic", reason="no-op replay"),
+            root,
+        )
+    with connect(root) as c:
+        physical_bounds(c, f"growth_{factor}x_physical_after")
+        measured(f"growth_{factor}x_checkpoint", lambda: c.execute("CHECKPOINT").fetchall(), root)
+        profile(
+            c,
+            "SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'",
+            f"growth_{factor}x_after_updates",
+        )
+
+
+def prepare_securities():
+    root = LAB / "prepared-securities"
+    root.mkdir()
+    measured("prepare_securities_copy", lambda: clone(candidate_root(), root), root)
+    with connect(root) as c, preparation_guard(c):
+        c.execute("""CREATE TEMP TABLE ids AS SELECT __market,__code,
+            lpad(cast(800000+row_number() OVER(
+                PARTITION BY __market ORDER BY __code) AS VARCHAR),6,'0') new_code
+            FROM (SELECT DISTINCT __market,__code FROM dg03_daily)""")
+        assert (
+            c.execute(
+                "SELECT count(*) FROM ids i JOIN dg03_daily d "
+                "ON i.__market=d.__market AND i.new_code=d.__code"
+            ).fetchone()[0]
+            == 0
+        )
+        measured(
+            "prepare_more_securities",
+            lambda: c.execute("""INSERT INTO dg03_daily
+            SELECT d.* REPLACE (i.new_code AS __code) FROM dg03_daily d
+            JOIN ids i USING(__market,__code)""").fetchone(),
+            root,
+        )
+        c.execute("""INSERT INTO coverage SELECT __code,__market,min(trade_date),max(trade_date),
+            count(*),'dg03:synthetic-growth',current_timestamp FROM dg03_daily
+            WHERE __code IN (SELECT new_code FROM ids) GROUP BY __code,__market""")
         c.execute("CHECKPOINT")
+        rows = c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0]
+    (root / "prepared.json").write_text(json.dumps({"rows": rows, "status": "ready"}))
+
+
+def sample_securities():
+    root = LAB / "growth-securities"
+    root.mkdir()
+    measured("securities_sample_copy", lambda: clone(LAB / "prepared-securities", root), root)
+    with connect(root) as c:
         profile(
             c,
             "SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'",
             "double_securities_day",
         )
+        physical_bounds(c, "double_securities_bounds")
         emit(
             "more_securities",
             rows=c.execute("SELECT count(*) FROM dg03_daily").fetchone()[0],
@@ -584,6 +693,22 @@ def growth(factors=(1, 2, 5), more_securities=True):
             ).fetchone()[0],
             disk=tree_bytes(root),
         )
+    pool = CandidatePool(root)
+    for repeat in range(3):
+        measured(
+            f"more_securities_public_60days_{repeat}",
+            lambda: {"rows": len(pool.read_daily(start="2026-07-27", end="2026-09-24"))},
+            root,
+        )
+
+
+def growth(factors=(1, 2, 5), more_securities=True):
+    for factor in factors:
+        prepare_growth(factor)
+        sample_growth(factor)
+    if more_securities:
+        prepare_securities()
+        sample_securities()
 
 
 def mutations():
@@ -772,10 +897,7 @@ def recovery():
     tick = time.perf_counter()
     with pool_lock(root):
         clone(root, target)
-    assert (
-        hashlib.sha256((root / "catalog.duckdb").read_bytes()).digest()
-        == hashlib.sha256((target / "catalog.duckdb").read_bytes()).digest()
-    )
+    assert file_sha256(root / "catalog.duckdb") == file_sha256(target / "catalog.duckdb")
     pd.testing.assert_frame_equal(
         CandidatePool(root).read_daily(start="2026-09-24"),
         CandidatePool(target).read_daily(start="2026-09-24"),
@@ -789,12 +911,28 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "phase",
-        choices=["build", "parity", "reads", "mutations", "growth", "recovery", "sparse", "child"],
+        choices=[
+            "build",
+            "parity",
+            "reads",
+            "mutations",
+            "growth",
+            "recovery",
+            "sparse",
+            "prepare-growth",
+            "growth-samples",
+            "prepare-securities",
+            "securities-samples",
+            "child",
+        ],
     )
     parser.add_argument("--mode")
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--factor", type=int, choices=[1, 2, 5])
     parser.add_argument("--root", type=Path)
     args = parser.parse_args()
+    if args.phase in {"prepare-growth", "growth-samples"} and args.factor is None:
+        parser.error("this phase requires --factor")
     if args.phase == "child":
         process_child(args.mode, args.root)
         return
@@ -807,6 +945,10 @@ def main():
             "parity": parity,
             "reads": reads,
             "sparse": sparse,
+            "prepare-growth": lambda: prepare_growth(args.factor, args.resume),
+            "growth-samples": lambda: sample_growth(args.factor),
+            "prepare-securities": prepare_securities,
+            "securities-samples": sample_securities,
             "mutations": mutations,
             "growth": lambda: growth(
                 [args.factor] if args.factor else [1, 2, 5],
