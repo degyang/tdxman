@@ -11,4 +11,6 @@ build/
 .venv/
 venv/
 .omc/
+# Local Codex configuration and session state
+/.codex/
 uv.lock
