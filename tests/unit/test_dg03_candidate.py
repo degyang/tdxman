@@ -443,3 +443,16 @@ def test_synthetic_securities_retain_global_coverage_key(candidate, monkeypatch)
             18,
         )
         assert c.execute("SELECT count(*) FROM coverage").fetchone()[0] == 6
+
+
+def test_large_symbol_population_keeps_public_row_guard(candidate):
+    _, target, pool = candidate
+    with duckdb.connect(str(target / "catalog.duckdb")) as c:
+        c.execute(
+            "INSERT INTO dg03_daily SELECT seed.* REPLACE ("
+            "'SZ' AS __market,'999999' AS __code,(DATE '2000-01-01'+i::INTEGER) AS trade_date) "
+            "FROM (SELECT * FROM dg03_daily LIMIT 1) seed CROSS JOIN range(500001) n(i)"
+        )
+    with pytest.raises(DataPoolError) as error:
+        pool.read_daily(symbols="999999.SZ")
+    assert error.value.code == "DAILY_TOO_LARGE"

@@ -61,15 +61,37 @@ class CandidateStorage:
             wanted = set(names if fields is None else fields) | required
             names = [n for n in names if n in wanted]
             codes = sorted({value.split(".")[1] for value in symbols})
-            conn.execute(
-                "CREATE TEMP TABLE _dg03_requested AS SELECT "
-                + ",".join(ident(n) for n in names)
-                + " FROM candidate.dg03_daily "
-                + "WHERE __code IN ("
-                + ",".join(literal(code) for code in codes)
-                + ")"
-            )
-            relation = "_dg03_requested"
+            code_filter = "__code IN (" + ",".join(literal(code) for code in codes) + ")"
+            population = conn.execute(
+                "SELECT count(*) FROM candidate.dg03_daily WHERE " + code_filter
+            ).fetchone()[0]
+            if population <= 500_000:
+                # Wide ART fetch pins too many column blocks at 5x/512MB.
+                # Resolve actual decades through a narrow indexed date projection,
+                # then stream complete rows inside those explicit date bounds.
+                decades = conn.execute(
+                    "SELECT DISTINCT (year(trade_date)//10)*10 FROM candidate.dg03_daily WHERE "
+                    + code_filter
+                    + " ORDER BY 1"
+                ).fetchall()
+                projection = ",".join(ident(n) for n in names)
+                conn.execute(
+                    "CREATE TEMP TABLE _dg03_requested AS SELECT "
+                    + projection
+                    + " FROM candidate.dg03_daily WHERE false"
+                )
+                for (year,) in decades:
+                    conn.execute(
+                        "INSERT INTO _dg03_requested SELECT "
+                        + projection
+                        + " FROM candidate.dg03_daily WHERE "
+                        + code_filter
+                        + " AND trade_date >= make_date(?,1,1) AND trade_date < make_date(?,1,1)",
+                        [year, year + 10],
+                    )
+                relation = "_dg03_requested"
+            # Large requests remain lazy so the unchanged public row guard can
+            # reject them before wide materialization; lookback keeps its checks.
         columns = [ident(n) for n in names if n not in {"symbol", "market", "__market", "__code"}]
         columns += ["__market AS market", "__code AS symbol"]
         clauses = []

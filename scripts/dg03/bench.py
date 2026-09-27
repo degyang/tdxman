@@ -637,15 +637,6 @@ def sample_growth(factor):
                 "SELECT * FROM dg03_daily WHERE __code='000001'",
                 f"growth_{factor}x_code_index_population_{repeat}",
             )
-        seed = (
-            c.execute(
-                "SELECT * FROM dg03_daily WHERE __code='000001' AND __market='SZ' "
-                "ORDER BY trade_date DESC LIMIT 1"
-            )
-            .fetchdf()
-            .iloc[0]
-            .to_dict()
-        )
     pool = CandidatePool(root)
     for workload, kwargs in [
         ("day", dict(start="2026-09-24", end="2026-09-24")),
@@ -665,6 +656,19 @@ def sample_growth(factor):
                 return {"rows": len(frame), "fields": len(frame.columns), "attrs": frame.attrs}
 
             measured(f"growth_{factor}x_public_{workload}_{repeat}", read_sample, root)
+    growth_writes(factor)
+
+
+def growth_writes(factor):
+    root = LAB / f"growth-{factor}x"
+    pool = CandidatePool(root)
+    with connect(root, True) as c:
+        assert c.execute("SELECT revision FROM dg03_revision").fetchone()[0] == 0
+        seed = c.execute(
+            "SELECT amount FROM dg03_daily WHERE __market='SZ' AND __code='000001' "
+            "AND trade_date=DATE '2026-09-24'"
+        ).fetchone()
+        seed = {"amount": seed[0]}
     with connect(root, True) as c:
         names = [r[0] for r in c.execute("DESCRIBE dg03_daily").fetchall()]
         seeds = c.execute("SELECT * FROM dg03_daily WHERE trade_date=DATE '2026-09-24'").fetchall()
@@ -986,6 +990,7 @@ def main():
             "sparse",
             "prepare-growth",
             "growth-samples",
+            "growth-writes",
             "prepare-securities",
             "securities-samples",
             "child",
@@ -996,7 +1001,7 @@ def main():
     parser.add_argument("--factor", type=int, choices=[1, 2, 5])
     parser.add_argument("--root", type=Path)
     args = parser.parse_args()
-    if args.phase in {"prepare-growth", "growth-samples"} and args.factor is None:
+    if args.phase in {"prepare-growth", "growth-samples", "growth-writes"} and args.factor is None:
         parser.error("this phase requires --factor")
     if args.phase == "child":
         process_child(args.mode, args.root)
@@ -1012,6 +1017,7 @@ def main():
             "sparse": sparse,
             "prepare-growth": lambda: prepare_growth(args.factor, args.resume),
             "growth-samples": lambda: sample_growth(args.factor),
+            "growth-writes": lambda: growth_writes(args.factor),
             "prepare-securities": prepare_securities,
             "securities-samples": sample_securities,
             "mutations": mutations,
