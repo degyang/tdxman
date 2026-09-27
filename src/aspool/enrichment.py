@@ -16,15 +16,15 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import pyarrow as pa
-import pyarrow.parquet as pq
 
 from .change_protocol import maintenance
+from .daily_access import DailyStorage
 from .daily_storage import _same_values
 from .fetch import client_factory, fetch_sync
 from .index_lists import atomic_json
 from .pool import pool_lock, writer
 from .security_facts import calendar_days, daily_facts
-from .store import daily_paths, read_only_catalog
+from .store import read_only_catalog
 
 LOG = logging.getLogger(__name__)
 VERSION = "daily-enrichment-v2"
@@ -278,7 +278,7 @@ def _publish(root, jobs, sessions, start, end):
         iter_daily_changes,
         save_changes,
     )
-    from .change_protocol import catalog_rows, note_range, publish_file
+    from .change_protocol import catalog_rows, note_range
     from .limit_events import _published_dates_from, initialize_limits
     from .security_facts import initialize_facts
     from .store import catalog
@@ -317,14 +317,14 @@ def _publish(root, jobs, sessions, start, end):
                             add_cost(metrics, stale_date_marks=len(stale))
                             lifecycle_changed = True
                             lifecycle_start = min(stale).isoformat() if stale else ipo.isoformat()
-            paths = daily_paths(root, market, code)
+            storage = DailyStorage(root)
+            warmup = start - timedelta(days=30)
+            # Include five actual earlier bars even across sparse partition boundaries.
+            paths = storage.merge_paths(market, code, warmup, end=end)
             tables = []
             rows = []
             for p in paths:
-                table = pq.ParquetFile(p).read()
-                note_range("read", rows=len(table), path=p, bytes_proxy=p.stat().st_size,
-                           start=table["trade_date"][0].as_py(),
-                           end=table["trade_date"][-1].as_py())
+                table = storage.read_file(p)
                 add_cost(metrics, files_read=1, rows_read=len(table),
                          file_bytes_read_proxy=p.stat().st_size)
                 dates = table["trade_date"].to_pylist()
@@ -365,7 +365,7 @@ def _publish(root, jobs, sessions, start, end):
                     return iter_daily_changes(before, file_updates, f"{code}.{market}",
                                               VERSION, "optional_field_enrichment")
                 try:
-                    publish_file(root, path, result, deltas(), source=VERSION,
+                    storage.publish(path, result, deltas(), source=VERSION,
                                  reason="optional_field_enrichment",
                                  stale_start=min(r["trade_date"] for r in file_updates),
                                  metrics=metrics)
@@ -440,11 +440,9 @@ def audit_conflicts(root, results):
                 remote = client.get_daily(Market[market], code, start=min(days),
                                           end=max(days), count=None)
             with pool_lock(root):
-                from .store import read_daily_table
-
-                stored = {r["trade_date"]: r for r in
-                          read_daily_table(root, market, code).to_pylist()
-                          if r["trade_date"] in days}
+                table = DailyStorage(root).read(market, code, min(days), max(days))
+                stored = {r["trade_date"]: r for r in table.to_pylist()
+                          if r["trade_date"] in days} if table is not None else {}
             for row in remote.to_dict("records"):
                 day = row["date"]
                 if day not in days:

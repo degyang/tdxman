@@ -138,33 +138,27 @@ def daily_path(root: Path, market: str, symbol: str) -> Path:
 
 
 def daily_directory(root: Path, market: str, symbol: str) -> Path:
-    return Path(root) / "lake" / "bars" / "daily" / f"market={market}" / f"symbol={symbol}"
+    from .daily_access import DailyStorage
+
+    return DailyStorage(root).directory(market, symbol)
 
 
 def daily_year_path(root: Path, market: str, symbol: str, year: int) -> Path:
-    return daily_directory(root, market, symbol) / f"year={year}" / "bars.parquet"
+    from .daily_access import DailyStorage
+
+    return DailyStorage(root).target(market, symbol, year)
 
 
 def daily_paths(root: Path, market: str, symbol: str) -> list[Path]:
-    directory = daily_directory(root, market, symbol)
-    legacy = directory / "bars.parquet"
-    yearly = sorted(directory.glob("year=*/bars.parquet"))
-    # A migration must not leave both layouts behind: they would produce
-    # duplicate daily keys for public readers.
-    if legacy.exists() and yearly:
-        raise ValueError(f"{symbol}: mixed legacy and yearly daily storage")
-    return yearly if yearly else ([legacy] if legacy.exists() else [])
+    from .daily_access import DailyStorage
+
+    return DailyStorage(root).paths(market, symbol)
 
 
 def read_daily_table(root: Path, market: str, symbol: str):
-    import pyarrow as pa
-    import pyarrow.parquet as pq
+    from .daily_access import DailyStorage
 
-    paths = daily_paths(root, market, symbol)
-    if not paths:
-        return None
-    tables = [pq.ParquetFile(path).read() for path in paths]
-    return pa.concat_tables(tables, promote_options="permissive") if len(tables) > 1 else tables[0]
+    return DailyStorage(root).read(market, symbol)
 
 
 def last_marker(root: Path, symbol: str, period: str = "daily") -> date | datetime | None:

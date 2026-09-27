@@ -503,28 +503,47 @@ def query(
 
     target = _root(root)
     key = "trade_date" if period == "daily" else "timestamp"
-    bars_root = target / "lake" / "bars" / period
-    matches = list(bars_root.glob(f"market=*/symbol={symbol}/bars.parquet"))
-    if not matches:
-        raise click.ClickException(f"本地数据池未找到 {symbol} 的 {period} 数据")
+    from .daily_access import DailyStorage
+    from .pool import pool_lock
 
     conn = duckdb.connect()
     try:
-        sql = f"select * exclude (symbol) from read_parquet('{matches[0]}')"
-        params: list[object] = []
-        clauses: list[str] = []
-        if start:
-            clauses.append(f"{key} >= ?")
-            params.append(start.date() if period == "daily" else start)
-        if end:
-            clauses.append(f"{key} <= ?")
-            params.append(end.date() if period == "daily" else end)
-        if clauses:
-            sql += " where " + " and ".join(clauses)
-        try:
-            table = conn.execute(sql + f" order by {key}", params).fetch_arrow_table()
-        except duckdb.Error as exc:
-            raise click.ClickException(f"读取本地数据失败：{exc}") from exc
+        with pool_lock(target):
+            if period == "daily":
+                from .change_protocol import assert_readable
+
+                assert_readable(target)
+                files = DailyStorage(target).bind(
+                    conn, "query_bars", symbols=[f"{symbol[:2]}.{symbol[2:]}"]
+                )
+                if not files:
+                    raise click.ClickException(f"本地数据池未找到 {symbol} 的 {period} 数据")
+                columns = set(conn.sql("SELECT * FROM query_bars LIMIT 0").columns)
+                excluded = "symbol, year" if "year" in columns else "symbol"
+                sql = f"select * exclude ({excluded}) from query_bars"
+            else:
+                bars_root = target / "lake" / "bars" / period
+                matches = list(bars_root.glob(f"market=*/symbol={symbol}/bars.parquet"))
+                if not matches:
+                    raise click.ClickException(f"本地数据池未找到 {symbol} 的 {period} 数据")
+                conn.read_parquet([str(matches[0])]).create_view("query_bars")
+                sql = "select * exclude (symbol) from query_bars"
+            params: list[object] = []
+            clauses: list[str] = []
+            if start:
+                clauses.append(f"{key} >= ?")
+                params.append(start.date() if period == "daily" else start)
+            if end:
+                clauses.append(f"{key} <= ?")
+                params.append(end.date() if period == "daily" else end)
+            if clauses:
+                sql += " where " + " and ".join(clauses)
+            try:
+                if period == "daily":
+                    assert_readable(target)
+                table = conn.execute(sql + f" order by {key}", params).fetch_arrow_table()
+            except duckdb.Error as exc:
+                raise click.ClickException(f"读取本地数据失败：{exc}") from exc
         if fmt == "json":
             rows = [
                 {

@@ -7,9 +7,9 @@ from time import perf_counter
 
 import pandas as pd
 import pyarrow as pa
-import pyarrow.parquet as pq
 
 from .change_protocol import maintenance
+from .daily_access import DailyStorage
 from .store import bars_path, record_coverage
 
 
@@ -117,8 +117,7 @@ def merge_daily(
     _path=None, changes=None, metrics=None,
 ):
     from .change_observation import add_cost, iter_daily_changes
-    from .change_protocol import note_range, publish_file, recover
-    from .store import daily_paths, daily_year_path
+    from .change_protocol import note_range, recover
     from .tdx_online import _fill_close_vol_ratio, _merge_rows
 
     dates = [row["trade_date"] for row in incoming]
@@ -137,20 +136,17 @@ def merge_daily(
         ):
             raise ValueError(f"{symbol}: invalid incoming OHLCV")
     recover(root)
-    paths = daily_paths(root, market, symbol) if _path is None else []
-    yearly = bool(paths and paths[0].parent.name.startswith("year="))
+    storage = DailyStorage(root)
+    yearly = storage.yearly(market, symbol) if _path is None else False
     path = _path or bars_path(root, "daily", market, symbol)
-    # The rolling baseline and next-close dependencies cross year boundaries.
-    # Keep the existing conservative full read until DG-02 supplies bounded access.
-    read_paths = paths if yearly else ([path] if path.exists() else [])
+    # Read the full dependency suffix and five actual prior bars across sparse years.
+    read_paths = storage.merge_paths(market, symbol, min(dates)) if yearly else (
+        [path] if path.exists() else [])
+    extent = storage.extent(market, symbol) if _path is None else None
     tables = []
     for stored_path in read_paths:
-        table_part = pq.ParquetFile(stored_path).read()
+        table_part = storage.read_file(stored_path)
         tables.append(table_part)
-        note_range("read", rows=len(table_part), path=stored_path,
-                   start=table_part["trade_date"][0].as_py() if len(table_part) else None,
-                   end=table_part["trade_date"][-1].as_py() if len(table_part) else None,
-                   bytes_proxy=stored_path.stat().st_size)
         add_cost(metrics, files_read=1, file_bytes_read_proxy=stored_path.stat().st_size,
                  rows_read=len(table_part))
     table = pa.concat_tables(tables, promote_options="permissive") if tables else None
@@ -209,14 +205,7 @@ def merge_daily(
         # Retry may follow a committed file replacement whose coverage write
         # failed. Repair only a mismatched extent/count; true no-ops keep timestamps.
         if _path is None:
-            from .store import catalog
-
-            extent = (table["trade_date"][0].as_py(), table["trade_date"][-1].as_py(), len(table))
-            with catalog(root) as conn:
-                stored_extent = conn.execute(
-                    "SELECT CAST(start_date AS DATE), CAST(end_date AS DATE), row_count "
-                    "FROM coverage WHERE symbol=?", [symbol],
-                ).fetchone()
+            stored_extent = storage.coverage(symbol)
             if stored_extent != extent:
                 entry = (symbol, market, *extent, source, "daily")
                 if coverage is None:
@@ -240,17 +229,7 @@ def merge_daily(
         if table is not None and offset
         else tail
     )
-    if yearly:
-        import pyarrow.compute as pc
-
-        years = result["trade_date"].cast(pa.date32())
-        outputs = [
-            (daily_year_path(root, market, symbol, year),
-             result.filter(pc.equal(pc.year(years), year)))
-            for year in sorted({day.year for day in touched})
-        ]
-    else:
-        outputs = [(path, result)]
+    outputs = storage.outputs(market, symbol, result, touched, target=_path)
     try:
         for target, output in outputs:
             file_days = set(output["trade_date"].to_pylist())
@@ -259,14 +238,19 @@ def merge_daily(
             # Coverage for each atomic file commit describes the actual mixed file
             # set. It is never deferred to a post-write report/batch update.
             actual_days = sorted(set(days) | {day for day in file_touched})
+            inserted = set(file_touched) - set(days)
+            if extent is not None:
+                extent = (min(extent[0], min(file_touched)) if extent[0] else min(file_touched),
+                          max(extent[1], max(file_touched)) if extent[1] else max(file_touched),
+                          extent[2] + len(inserted))
             entry = None if _path is not None else (
                 "coverage",
                 ["symbol", "market", "start_date", "end_date", "row_count", "source", "updated_at"],
-                [symbol, market, actual_days[0], actual_days[-1], len(actual_days), source,
+                [symbol, market, *extent, source,
                  __import__("datetime").datetime.now()], ["symbol"])
             try:
-                publish_file(
-                    root, target, output,
+                storage.publish(
+                    target, output,
                     iter_daily_changes(
                         before, file_rows, f"{symbol}.{market}", source, "daily_merge"),
                     source=source, reason="daily_merge", coverage=entry,

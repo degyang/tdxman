@@ -331,12 +331,9 @@ async def _sync_daily_run(
     jobs = []
     for symbol in symbols:
         try:
-            path = bars_path(root, "daily", _market(symbol), symbol)
-            days = pq.ParquetFile(path).read(columns=["trade_date"])["trade_date"].to_pylist()
-            from .change_protocol import note_range
+            from .daily_access import DailyStorage
 
-            note_range("planning_read", rows=len(days), path=path, bytes_proxy=path.stat().st_size,
-                       start=days[0] if days else None, end=days[-1] if days else None)
+            days = DailyStorage(root).tail_dates(_market(symbol), symbol)
             if not days:
                 raise ValueError("已有标的缺少历史日线")
             jobs.append((symbol, days[max(0, len(days) - 5)], asset_type))

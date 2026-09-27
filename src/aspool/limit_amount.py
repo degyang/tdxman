@@ -7,13 +7,13 @@ from datetime import timedelta
 from pathlib import Path
 
 import duckdb
-import numpy as np
 import pandas as pd
 
 from .api_contract import DataPoolError
+from .daily_access import DailyStorage
 from .limit_api import _bounds, _normalize_requested_symbols, _require_ready
 from .pool import pool_lock
-from .store import daily_paths, read_only_catalog
+from .store import read_only_catalog
 
 EVENT_AMOUNT_FIELDS = (
     "trade_date", "symbol", "close_limit_up", "close_limit_down",
@@ -156,60 +156,14 @@ class EventAmountBatches:
             raise DataPoolError("LIMIT_INVALID", "Duplicate published event keys")
         return frame
 
-    def _bar_paths(self, frame, lo, hi):
-        paths = []
-        for symbol in frame.symbol.unique():
-            code, market = symbol.split(".", 1)
-            try:
-                candidates = daily_paths(self.root, market, code)
-            except ValueError as exc:
-                raise DataPoolError("DAILY_INVALID", str(exc)) from exc
-            for path in candidates:
-                if path.parent.name.startswith("year="):
-                    year = int(path.parent.name[5:])
-                    if not lo.year <= year <= hi.year:
-                        continue
-                paths.append(str(path))
-        return paths
-
     def _attach_amount(self, frame, lo, hi):
         with pool_lock(self.root), read_only_catalog(self.root) as conn:
             self._configure(conn)
-            paths = self._bar_paths(frame, lo, hi)
-            if not paths:
-                frame["amount"] = pd.Series(float("nan"), index=frame.index)
-                return frame
-            names = set(conn.read_parquet(
-                paths, union_by_name=True, hive_partitioning=True,
-            ).columns)
-            amount_column = "d.amount" if "amount" in names else "cast(null as double)"
-            conn.register("_event_keys", frame[["trade_date", "symbol"]])
-            try:
-                # The date and event-key predicates keep the parquet scan bounded.
-                base = """
-                    from read_parquet(?, union_by_name=true, hive_partitioning=true) d
-                    join _event_keys e
-                      on d.symbol || '.' || d.market=e.symbol
-                     and d.trade_date=e.trade_date
-                    where d.trade_date between ? and ?
-                """
-                params = [paths, lo, hi]
-                duplicate = conn.execute(
-                    "select e.trade_date, e.symbol " + base +
-                    " group by e.trade_date, e.symbol having count(*) > 1 limit 1", params,
-                ).fetchone()
-                if duplicate:
-                    raise DataPoolError("DAILY_INVALID", f"Duplicate daily key: {duplicate}")
-                amount = conn.execute(
-                    f"select e.trade_date, e.symbol, {amount_column} AS amount " + base, params
-                ).fetchdf()
-            finally:
-                conn.unregister("_event_keys")
-        finite_amount = amount.amount.dropna().to_numpy(dtype=float)
-        if not np.isfinite(finite_amount).all() or (finite_amount < 0).any():
-            raise DataPoolError("DAILY_INVALID", "Invalid daily amount")
-        result = frame.merge(amount, on=["trade_date", "symbol"], how="left", validate="one_to_one")
-        return result
+            amount = DailyStorage(self.root).event_amount(conn, frame, lo, hi)
+        if amount.empty:
+            frame["amount"] = pd.Series(float("nan"), index=frame.index)
+            return frame
+        return frame.merge(amount, on=["trade_date", "symbol"], how="left", validate="one_to_one")
 
     def __iter__(self):
         return self

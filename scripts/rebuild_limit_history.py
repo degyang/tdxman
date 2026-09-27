@@ -18,6 +18,7 @@ from pathlib import Path
 import pyarrow.parquet as pq
 
 from aspool import DataPool
+from aspool.daily_access import DailyStorage
 from aspool.limit_events import RULE_VERSION
 from aspool.pool import pool_lock
 from aspool.store import read_only_catalog
@@ -25,7 +26,7 @@ from aspool.store import read_only_catalog
 
 def bar_manifest(root: Path) -> str:
     digest = hashlib.sha256()
-    for path in sorted((root / "lake" / "bars" / "daily").rglob("*.parquet")):
+    for path in DailyStorage(root).files():
         stat = path.stat()
         digest.update(f"{path.relative_to(root)}:{stat.st_size}:{stat.st_mtime_ns}\n".encode())
     return digest.hexdigest()

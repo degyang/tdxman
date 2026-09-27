@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from .api_contract import DAILY_FIELDS, OPTIONAL_FIELDS, DataPoolError
+from .daily_access import DailyStorage
 from .pool import pool_lock
 
 # 支持的符号格式: 000001.SH (规范) 或 SH.000001 (兼容)
@@ -73,17 +74,20 @@ def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, 
             normalized.append(_normalize_symbol(v))
         requested = normalized
     with pool_lock(root):
-        files = sorted((root / "lake/bars/daily").glob("market=*/symbol=*/bars.parquet"))
-        if not files:
-            raise DataPoolError("ETF_NOT_FOUND", "No ETF daily bars in aspool")
+        storage = DailyStorage(root)
         with duckdb.connect() as conn:
-            conn.read_parquet(
-                [str(path) for path in files], union_by_name=True, hive_partitioning=True
-            ).create_view("bars")
+            try:
+                files = storage.bind(conn, "bars", symbols=requested, start=start, end=end)
+            except ValueError as exc:
+                raise DataPoolError("ETF_INVALID", str(exc)) from exc
+            if (not files and not storage.files(requested) and not storage.has_data()):
+                raise DataPoolError("ETF_NOT_FOUND", "No ETF daily bars in aspool")
             names = {row[0] for row in conn.execute("describe bars").fetchall()}
-            if "asset_type" not in names:
-                raise DataPoolError("ETF_NOT_FOUND", "ETF bars have not been synchronized")
-            clauses = ["asset_type = 'etf'", "trade_date >= ?"]
+            if not files or "asset_type" not in names:
+                if not storage.has_field("asset_type"):
+                    raise DataPoolError("ETF_NOT_FOUND", "ETF bars have not been synchronized")
+            asset_clause = "asset_type = 'etf'" if "asset_type" in names else "false"
+            clauses = [asset_clause, "trade_date >= ?"]
             params: list[object] = [start]
             if end:
                 clauses.append("trade_date <= ?")

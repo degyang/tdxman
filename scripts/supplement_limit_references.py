@@ -11,11 +11,11 @@ from pathlib import Path
 
 import pandas as pd
 import pyarrow as pa
-import pyarrow.parquet as pq
 
+from aspool.daily_access import DailyStorage
 from aspool.pool import writer
 from aspool.security_facts import initialize_facts
-from aspool.store import catalog, daily_paths
+from aspool.store import catalog
 from tdxman.baostock import BaostockClient
 from tdxman.models.enums import Market
 
@@ -79,14 +79,14 @@ def publish(root, results, basics, calendar):
                     report["source_errors"].append({"symbol": f"{code}.{market}", "error": error})
                     continue
                 stored = {}
-                for bar_path in daily_paths(root, market, code):
-                    parquet = pq.ParquetFile(bar_path)
-                    fields = [x for x in ("trade_date", "open", "high", "low", "close")
-                              if x in parquet.schema_arrow.names]
-                    stored.update({r["trade_date"]: r
-                                   for r in parquet.read(columns=fields).to_pylist()})
+                source_frame = pd.read_parquet(path)
+                table = DailyStorage(root).read(market, code, source_frame.date.min(),
+                                               source_frame.date.max(),
+                                               ["trade_date", "open", "high", "low", "close"])
+                if table is not None:
+                    stored.update({r["trade_date"]: r for r in table.to_pylist()})
                 facts = []
-                for row in pd.read_parquet(path).to_dict("records"):
+                for row in source_frame.to_dict("records"):
                     prior = stored.get(row["date"])
                     matched = prior is not None and all(
                         pd.notna(row.get(k)) and pd.notna(prior.get(k))

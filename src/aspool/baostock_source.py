@@ -8,13 +8,12 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-import pyarrow.parquet as pq
-
 from tdxman.baostock import BaostockClient
 from tdxman.models.enums import Market
 
 from .change_protocol import maintenance
 from .config import read_config
+from .daily_access import DailyStorage
 from .daily_storage import daily_field_quality, is_missing_value, merge_daily
 from .index_lists import atomic_json
 from .pool import pool_lock, writer
@@ -26,7 +25,7 @@ from .security_facts import (
     initialize_facts,
     lifecycle_map,
 )
-from .store import catalog, daily_paths, initialize, read_only_catalog, record_coverages
+from .store import catalog, initialize, read_only_catalog, record_coverages
 
 _OHLCV = ("open", "high", "low", "close", "volume", "amount")
 
@@ -56,29 +55,11 @@ def _valid_bar(row):
 
 def _rows(root, market, code, start, end, *, planning=False):
     result = {}
-    for path in daily_paths(root, market, code):
-        parquet = pq.ParquetFile(path)
-        columns = (
-            [
-                key
-                for key in ("trade_date", *_OHLCV, "pre_close", "is_st",
-                            "turnover_rate", "turnover")
-                if key in parquet.schema_arrow.names
-            ]
-            if planning
-            else None
-        )
-        table = parquet.read(columns=columns)
-        from .change_protocol import note_range
-
-        note_range("read", rows=len(table), path=path, bytes_proxy=path.stat().st_size,
-                   start=table["trade_date"][0].as_py() if len(table) else None,
-                   end=table["trade_date"][-1].as_py() if len(table) else None)
+    fields = ("trade_date", *_OHLCV, "pre_close", "is_st", "turnover_rate", "turnover")
+    table = DailyStorage(root).read(market, code, start, end, fields if planning else None)
+    if table is not None:
         for row in table.to_pylist():
-            if start <= row["trade_date"] <= end:
-                if row["trade_date"] in result:
-                    raise ValueError(f"{code}.{market}: 重复日线日期")
-                result[row["trade_date"]] = row
+            result[row["trade_date"]] = row
     return result
 
 

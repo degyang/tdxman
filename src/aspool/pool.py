@@ -14,6 +14,7 @@ import duckdb
 import pandas as pd
 
 from .api_contract import DAILY_FIELDS, OPTIONAL_FIELDS, DataPoolError, public_read
+from .daily_access import DailyStorage
 
 _pool_locks = ContextVar("aspool_pool_locks", default=())
 
@@ -257,21 +258,7 @@ class DataPool:
             raise DataPoolError("INVALID_ARGUMENT", "start must not be after end")
         normalized = _normalize_symbols(symbols)
         with pool_lock(self.root):
-            daily_root = self.root / "lake/bars/daily"
-            files = sorted(
-                daily_root.glob("market=*/symbol=*/**/bars.parquet")
-            )
-            if not files:
-                raise DataPoolError("DAILY_NOT_FOUND", "No daily bars in aspool")
-            if normalized:
-                wanted = set(normalized)
-                narrowed = [
-                    path for path in files
-                    if ".".join(part.split("=", 1)[1] for part in
-                                path.relative_to(daily_root).parts[:2]) in wanted
-                ]
-                if narrowed:
-                    files = narrowed
+            storage = DailyStorage(self.root)
             with (
                 tempfile.TemporaryDirectory(prefix="aspool-daily-") as temp,
                 duckdb.connect() as conn,
@@ -279,9 +266,14 @@ class DataPool:
                 conn.execute("SET memory_limit = '512MB'")
                 conn.execute("SET threads = 2")
                 conn.execute("SET temp_directory = ?", [temp])
-                conn.read_parquet(
-                    [str(p) for p in files], union_by_name=True, hive_partitioning=True
-                ).create_view("bars")
+                try:
+                    files = storage.bind(conn, "bars", symbols=normalized if symbols is not None
+                                         else None, start=start, end=end)
+                except ValueError as exc:
+                    raise DataPoolError("DAILY_INVALID", str(exc)) from exc
+                if (not files and not storage.files(normalized if symbols is not None else None)
+                        and not storage.has_data()):
+                    raise DataPoolError("DAILY_NOT_FOUND", "No daily bars in aspool")
                 names = {row[0] for row in conn.execute("describe bars").fetchall()}
                 market, code = "market", "symbol"
                 asset_filter = '"asset_type" IS NULL OR "asset_type" <> \'etf\''
@@ -387,13 +379,14 @@ class DataPool:
     @public_read
     def status(self):
         with pool_lock(self.root):
-            files = sorted((self.root / "lake/bars/daily").glob("market=*/symbol=*/bars.parquet"))
-            if not files:
-                return {"backend": "aspool", "status": "empty", "root": str(self.root)}
+            storage = DailyStorage(self.root)
             with duckdb.connect() as conn:
-                conn.read_parquet(
-                    [str(p) for p in files], union_by_name=True, hive_partitioning=True
-                ).create_view("bars")
+                try:
+                    files = storage.bind(conn, "bars")
+                except ValueError as exc:
+                    raise DataPoolError("DAILY_INVALID", str(exc)) from exc
+                if not files:
+                    return {"backend": "aspool", "status": "empty", "root": str(self.root)}
                 names = {row[0] for row in conn.execute("describe bars").fetchall()}
                 asset_clause = (
                     "WHERE asset_type IS NULL OR asset_type <> 'etf'"

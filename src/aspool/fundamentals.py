@@ -21,7 +21,7 @@ from .fetch import client_factory, fetch_async, fetch_sync
 from .free_stockdb import _market
 from .index_lists import atomic_json
 from .pool import writer
-from .store import bars_path, catalog, initialize, record_coverages
+from .store import catalog, initialize, record_coverages
 
 # Like adjustment factors, this is an independent, single-file dataset rather
 # than columns periodically copied into every daily bar.
@@ -463,7 +463,9 @@ def _publish_quote_rows(root, pending):
         try:
             if row["trade_date"] < last_dates.get(code, row["trade_date"]):
                 raise ValueError("stale_quote")
-            if not bars_path(root, "daily", _market(code), code).exists():
+            from .daily_access import DailyStorage
+
+            if not DailyStorage(root).paths(_market(code), code):
                 raise ValueError("missing daily file")
             changed = merge_daily(
                 root,

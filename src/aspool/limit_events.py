@@ -187,19 +187,11 @@ class ScopeEntry:
 
 def _read_asset_types(root: Path, market: str, code: str) -> str | None:
     """读取该证券日线的 asset_type；无该列返回 None。"""
-    import pyarrow.parquet as pq
+    from .daily_access import DailyStorage
 
-    from .store import daily_paths
-
-    for path in daily_paths(root, market, code):
-        names = pq.ParquetFile(path).schema_arrow.names
-        if "asset_type" in names:
-            values = pq.ParquetFile(path).read(columns=["asset_type"])["asset_type"].to_pylist()
-            from .change_protocol import note_range
-
-            note_range("scope_read", rows=len(values), path=path,
-                       bytes_proxy=path.stat().st_size)
-            for value in values:
+    for batch in DailyStorage(root).batches(market, code, ["asset_type"], category="scope_read"):
+        if "asset_type" in batch.schema.names:
+            for value in batch.column(0).to_pylist():
                 if value:
                     return str(value)
     return None
@@ -211,7 +203,7 @@ def load_scope(root: Path, asset_type: str = "stock") -> list[ScopeEntry]:
     范围以池内日线目录为准；用日线自身的 asset_type 列过滤，不依赖 universe，
     也不靠捕获异常退化。
     """
-    from .store import daily_paths
+    from .daily_access import DailyStorage
 
     if asset_type not in SUPPORTED_SCOPES:
         raise DataPoolError("SCOPE_UNSUPPORTED", f"unsupported scope: {asset_type}")
@@ -242,30 +234,17 @@ def load_scope(root: Path, asset_type: str = "stock") -> list[ScopeEntry]:
     from .security_facts import lifecycle_map
 
     lifecycle = lifecycle_map(root)
-    base = root / "lake" / "bars" / "daily"
-    if not base.is_dir():
-        return out
-    for market_dir in sorted(base.glob("market=*")):
-        market = market_dir.name.split("=", 1)[1]
-        for symbol_dir in sorted(market_dir.glob("symbol=*")):
-            code = symbol_dir.name.split("=", 1)[1]
-            if not daily_paths(root, market, code):
-                continue
-            row_asset = _read_asset_types(root, market, code)
-            if (row_asset or "stock") != asset_type:
-                continue
-            basic = lifecycle.get(f"{code}.{market}", {})
-            out.append(
-                ScopeEntry(
-                    f"{code}.{market}",
-                    market,
-                    code,
-                    names.get(code),
-                    row_asset,
-                    basic.get("listing_date") or listings.get(code),
-                    basic.get("delisting_date"),
-                )
+    for market, code in DailyStorage(root).identities():
+        row_asset = _read_asset_types(root, market, code)
+        if (row_asset or "stock") != asset_type:
+            continue
+        basic = lifecycle.get(f"{code}.{market}", {})
+        out.append(
+            ScopeEntry(
+                f"{code}.{market}", market, code, names.get(code), row_asset,
+                basic.get("listing_date") or listings.get(code), basic.get("delisting_date"),
             )
+        )
     return out
 
 
@@ -291,25 +270,14 @@ def _listed_days(
 
 
 def _read_symbol_bars(root: Path, market: str, code: str) -> list[dict]:
-    import pyarrow.parquet as pq
-
-    from .store import daily_paths
+    from .daily_access import DailyStorage
 
     required = {"trade_date", "open", "high", "low", "close", "pre_close", "pre_close_source",
                 "pct_chg", "is_st", "trading_status"}
     rows = []
-    for path in daily_paths(root, market, code):
-        parquet = pq.ParquetFile(path)
-        columns = sorted(required.intersection(parquet.schema_arrow.names))
-        from .change_protocol import note_range
-
-        note_range("compute_read_files", path=path, bytes_proxy=path.stat().st_size)
-        for batch in parquet.iter_batches(columns=columns):
-            records = batch.to_pylist()
-            note_range("compute_read", rows=len(records),
-                       start=records[0]["trade_date"] if records else None,
-                       end=records[-1]["trade_date"] if records else None)
-            rows.extend(records)
+    for batch in DailyStorage(root).batches(market, code, sorted(required),
+                                           category="compute_read"):
+        rows.extend(batch.to_pylist())
     from .daily_storage import is_missing_value
     from .security_facts import daily_facts
 
@@ -1250,21 +1218,14 @@ def compute_limit_events(
 
     # Keep only the market calendar globally. Full Python histories for all
     # securities can exceed RAM even when requesting a single session.
-    import pyarrow.parquet as pq
-
-    from .store import daily_paths
+    from .daily_access import DailyStorage
 
     market_dates: set[date] = set()
+    storage = DailyStorage(root)
     for entry in scope:
-        for path in daily_paths(root, entry.market, entry.code):
-            from .change_protocol import note_range
-
-            note_range("axis_read_files", path=path, bytes_proxy=path.stat().st_size)
-            for batch in pq.ParquetFile(path).iter_batches(columns=["trade_date"]):
-                days = batch.column(0).to_pylist()
-                note_range("axis_read", rows=len(batch), start=min(days) if days else None,
-                           end=max(days) if days else None)
-                market_dates.update(days)
+        for batch in storage.batches(entry.market, entry.code, ["trade_date"],
+                                     category="axis_read"):
+            market_dates.update(batch.column(0).to_pylist())
 
     from .security_facts import calendar_days
 
