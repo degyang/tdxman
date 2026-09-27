@@ -1,5 +1,7 @@
 # 数据整治第一批实施记录
 
+独立审查更新：本记录描述 `61559e1` 的首次交付状态；后续修复、四项失败结案及最终 556 passed / 4 skipped / 18 subtests passed 以 [第一批审查报告](data_remediation_first_batch_review.md) 为准，首批代码可合并，DG-01 仍部分完成。
+
 日期：2026-09-27。工作区：`/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract`；分支 `degyang/aspool-dg00-contract`，基点 `5083dbb`。由 Orca CLI 创建、当前会话顺序实施，没有启动新的 Codex worker 或多 agent，没有更改模型/effort。工作区独立 venv 的 DuckDB/PyArrow/Pandas 与原基线固定为 1.5.5/25.0.1/3.0.5。
 
 ## 已落地
@@ -30,7 +32,7 @@ with pool_lock(lab_root, write=True):
     )
 ```
 
-这是内部维护入口，不替代 DataPool 的只读公共接口。`file_bytes_read_proxy` 是读取文件逻辑大小之和，`file_bytes_rewritten` 是生成文件大小；不是块设备实际 I/O。`stale_date_marks` 可以重复计数，不等于新增 stale 的唯一日期数；`elapsed_seconds` 不包含外部锁等待/网络/报告写入。全局缓存失效、计算量、锁等待和事务级修订仍待补。
+这是内部维护入口，不替代 DataPool 的只读公共接口。`file_bytes_read_proxy` 是读取文件逻辑大小之和，`file_bytes_rewritten` 是生成文件大小；不是块设备实际 I/O。`stale_date_marks` 可以重复计数，不等于新增 stale 的唯一日期数；`elapsed_seconds` 不包含外部锁等待/网络；审查后 enrichment 单证券值包含观测报告保存，在线 merge 值不含报告保存和最终批量 coverage 提交。`coverage_repairs` 单列失败重试中的元数据修复。全局缓存失效、计算量、锁等待和事务级修订仍待补。
 
 ## 验证与证据
 

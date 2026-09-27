@@ -1,0 +1,35 @@
+{
+  "task_id": "task_e156082ba705",
+  "dispatch_id": "ctx_3b811a14e5d6",
+  "session_id": "01a0e183-1f0f-7353-9759-5bba402542d6",
+  "requested": {
+    "model": "gpt-6-astra",
+    "effort": "high"
+  },
+  "actual": {
+    "model": "gpt-6-astra",
+    "effort": "high"
+  },
+  "verification": "Live Codex JSONL turn_context; coordinator independently confirmed requested/effective worker-start receipt",
+  "role": "critical independent first-batch review",
+  "worktree": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract",
+  "branch": "degyang/aspool-dg00-contract",
+  "baseline": "5083dbbd843711772be2fec4128f5a68fda35293",
+  "reviewed": [
+    "6cc4fd9",
+    "61559e1"
+  ],
+  "interpreter": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/.venv/bin/python",
+  "aspool_import": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract/src/aspool/__init__.py",
+  "dependencies": {
+    "duckdb": "1.5.5",
+    "pyarrow": "25.0.1",
+    "pandas": "3.0.5",
+    "pytest": "9.1.1",
+    "ruff": "0.16.7"
+  },
+  "isolated_root": "/home/ubuntu/aspool-labs/20260927-orca-review/task_e156082ba705",
+  "subagents": 0,
+  "production_mutations": false,
+  "network_market_fetch": false
+}

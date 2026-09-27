@@ -1,0 +1,91 @@
+{
+  "reviewed_base": "5083dbb",
+  "reviewed_commits": [
+    "6cc4fd9",
+    "61559e1"
+  ],
+  "fix_commits": [
+    "f949dbc",
+    "30870a59638ed5ce0bfdd798e8d21059eb8f33f9"
+  ],
+  "safe_to_merge": true,
+  "unresolved_merge_blockers": [],
+  "full_offline": {
+    "command": ".venv/bin/python docs/evidence/data-remediation/20260927-orca-review/run_offline.py tests/ -q -rs --basetemp=/home/ubuntu/aspool-labs/20260927-orca-review/task_e156082ba705/full-final-2",
+    "passed": 556,
+    "failed": 0,
+    "skipped": 4,
+    "subtests_passed": 18,
+    "elapsed_seconds": 38.49,
+    "log": "full-offline-final.txt"
+  },
+  "regression": {
+    "passed": 21,
+    "log": "regression-3.txt"
+  },
+  "baseline_audit": {
+    "base": "5083dbb",
+    "method": "git archive src/tests; PYTHONPATH points to exported src; worktree .venv and offline guard",
+    "recorded_failures_reproduced": 4,
+    "additional_offline_defect": "board-list validates only after connection",
+    "log": "baseline-audit.txt"
+  },
+  "lint": {
+    "result": "passed",
+    "log": "lint.txt"
+  },
+  "format": {
+    "result": "passed",
+    "scope": [
+      "src/aspool/change_observation.py",
+      "scripts/aspool_delta_probe.py",
+      "scripts/aspool_verify_baseline.py",
+      "tests/unit/test_daily_remediation.py"
+    ],
+    "log": "format.txt"
+  },
+  "changed_code_files": [
+    "src/aspool/change_observation.py",
+    "src/aspool/daily_storage.py",
+    "src/aspool/enrichment.py",
+    "src/aspool/free_stockdb.py",
+    "src/aspool/tdx_online.py",
+    "src/tdxman/cli/cmd_board.py",
+    "tests/fixtures/daily_derived_samples.json",
+    "tests/unit/test_aspool_index.py",
+    "tests/unit/test_cli_board.py",
+    "tests/unit/test_daily_derived.py",
+    "tests/unit/test_daily_remediation.py",
+    "tests/unit/test_protocol_fixes.py"
+  ],
+  "sha256": {
+    "src/aspool/change_observation.py": "ca323c7a3e7c0918fffb987ca19a292d536295eb1c0e111a220262d18d0a3ebe",
+    "src/aspool/daily_storage.py": "f3e7f0549705976ab7c5fc5b473ff58e1329897a932e39dfa08cb8106ec7aa82",
+    "src/aspool/enrichment.py": "19f171cce4e635a0055fa9f741ee97e03248421b21d01f4d263528714ba983fa",
+    "src/aspool/free_stockdb.py": "f26c9f6c9a46f60c0e07b6897e643049dd9513a9b51aa0deea89d74c45cd49a1",
+    "src/aspool/tdx_online.py": "eca32bf8244b821febca73e161790c20bb13766cc97179f53ccda01140157ca0",
+    "src/tdxman/cli/cmd_board.py": "78336eb87ef97d672daab0d25b62fdf0b8dd67ef98cab76c929339ad210ca856",
+    "tests/fixtures/daily_derived_samples.json": "06719a7e6d71441d9aa8313b2344c741e271f607e47f424cc2283417b66d8617",
+    "tests/unit/test_aspool_index.py": "ab8394f9aee0306bae54bd521dab2f53021bce12f680ea3b75a9fa8500d43660",
+    "tests/unit/test_cli_board.py": "58b5cb94223cb4b47f049608ca930fef8497c46aa5bdff93bac4159677e26d11",
+    "tests/unit/test_daily_derived.py": "e2d1ea96aee9acf315e242f12cbae52f3b7b2889a88515c59dbe1186b0054e8f",
+    "tests/unit/test_daily_remediation.py": "4d73cb260c3fa6f078715a1aa97146529550f4786a6bf7ccb5c5cf8bc9e14e63",
+    "tests/unit/test_protocol_fixes.py": "56bfcc903fb39c1db049105a33ac43ae47b506d39ca3eeef08b4fb9d67f60960"
+  },
+  "not_validated": [
+    "five-year RSS",
+    "new production/recovery snapshot verification",
+    "native/subprocess OS sandbox",
+    "live network integration",
+    "external tick-stock-panel host contract",
+    "transactional recovery journal",
+    "complete DG-01 and DG-02"
+  ],
+  "run_id": "20260927-orca-review",
+  "observed_at": "2026-09-27T06:31:33.869896+00:00",
+  "inputs": "Synthetic test fixtures plus git archive 5083dbb; no production data reads required for this review",
+  "rule_sources_sha256": {
+    "src/tdxman/codec/price_rules.py": "0598ef85ea7ceca9fb96a1aa6d464139cfd936808dd9b02e846dd7a3683405fe",
+    "src/aspool/limit_events.py": "0bba1cc5ed3300edcaa9cf934434df09f1a96f23953afcbc9f1a1a16188971ae"
+  }
+}

@@ -1,0 +1,15 @@
+ss................................................................ [ 11%]
+........................................................................ [ 24%]
+........................................................................ [ 37%]
+............................................................ [ 48%]
+........................................................................ [ 61%]
+........................................................................ [ 73%]
+........................................................................ [ 86%]
+....................................ss.................................. [ 99%]
+..                                                                       [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/integration/test_live_client.py:24: set XMTDX_LIVE=1 to run live integration tests
+SKIPPED [1] tests/integration/test_live_client.py:30: set XMTDX_LIVE=1 to run live integration tests
+SKIPPED [1] tests/unit/test_tick_stock_panel_host_contract.py:26: Set TICK_STOCK_PANEL_ROOT for read-only host contract tests
+SKIPPED [1] tests/unit/test_tick_stock_panel_host_contract.py:60: Set TICK_STOCK_PANEL_ROOT for read-only host contract tests
+556 passed, 4 skipped, 18 subtests passed in 38.49s
