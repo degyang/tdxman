@@ -2,7 +2,9 @@
 
 日期：2026-09-27。适用范围：Windows Orca + Ubuntu-24.04 WSL 中的 tdxman 开发与隔离验证。整改依赖及验收以 [推进方案](data_remediation_execution_plan.md) 为准。
 
-## 1. 已验证的工具链
+当前执行更新：本轮已实际完成四个受监督 Orca worker 任务，并将 DG-01/DG-02 集成 main；模型/effort 均核验且不高于 high。任务、证据复用、终端保留原因和下一工作包见 [集成记录](data_remediation_integration_20260927.md)。下文工具链准备阶段的“尚未启动”描述保留为历史验证边界，不代表当前运行状态。
+
+## 1. 已验证的工具链（准备阶段记录）
 
 - Windows Orca 1.4.212；WSL 入口为 `/home/ubuntu/.local/bin/orca-ide`，通过托管桥接连接桌面运行时。
 - `orca-cli`、`computer-use`、`orchestration` 已通过 `npx skills` 安装到 WSL 用户的 `~/.agents/skills/`，目标 agent 为 Codex。新一轮对话可发现；不另装 Linux Orca 桌面应用。
@@ -79,7 +81,7 @@ python3 -m venv .venv
 
 安装时记录依赖版本；性能对比须与基线使用一致版本或明确记录差异。当前仓库没有因本次工具链准备新增依赖锁文件。按工作包选择必要测试，不为验证 Orca 重跑全部行情数据。
 
-查看终端使用 `terminal list/read`。发送命令后检查退出码、输出和产物；agent 启动还须确认 TUI 就绪和实际开始处理，不能只看输入回执。需要多 agent 时，先读取 `skills get orchestration` 及其中相关 placement / recovery 引用，使用真实 Run/Task/Dispatch 追踪；本轮没有启动此流程。
+查看终端使用 `terminal list/read`。发送命令后检查退出码、输出和产物；agent 启动还须确认 TUI 就绪和实际开始处理，不能只看输入回执。需要多 agent 时，先读取 `skills get orchestration` 及其中相关 placement / recovery 引用，使用真实 Run/Task/Dispatch 追踪；准备阶段未启动，本轮实际任务见顶部集成记录。
 
 ## 5. 收尾与证据
 
@@ -91,7 +93,7 @@ python3 -m venv .venv
 - 数据副本单独按恢复/引用规则退役，保留恢复点不能因为代码工作区结束就删除。
 - CLI 输出先筛选字段再保存；不将原始 `repo list`、凭据、运行时认证字段或完整其他会话内容写入证据。
 
-工具链可用于下一步开发；DG-00 尚未验收，生产修复、存储切换和多 agent 调度仍未执行。
+当前 DG-00 工程基线、DG-01/DG-02 与实际受监督协作均已有证据；生产修复、存储切换与退役仍未执行。
 
 ## 6. Codex 模型与 effort 约定
 
@@ -150,4 +152,4 @@ orca-ide orchestration worker-start \
 3. 一个任务阶段内保持配置稳定；变更时注明原因和发生位置。模型不可用时先报告事实，不静默回退到全局默认。任务复杂、失败重试或切换模型不构成提高 effort 上限的授权；高于 `high` 必须记录用户事先明确确认的任务范围与级别。不得为绕过此上限自动加开 worker。
 4. 当前选择不替代资源预算、数据隔离或测试验收。明确的用户指定优先于此默认，并同步更新任务记录。
 
-本次只验证 TOML、已安装 CLI 参数和本地模型目录所列支持项；没有启动新的 Codex 会话或进行模型调用。模型/effort 的运行时生效核验将在正式任务启动时完成。
+准备阶段只验证 TOML、CLI 参数与模型目录；本轮已对实际 worker 的 requested/effective model 与 effort、turnStart 和会话身份进行核验，记录见顶部集成记录。

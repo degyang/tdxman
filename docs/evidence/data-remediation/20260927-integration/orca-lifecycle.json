@@ -1,0 +1,47 @@
+{
+  "run": "run_9d4b546218b4",
+  "workers": [
+    {
+      "task": "task_813d030661c0",
+      "dispatch": "ctx_fef135ce8756",
+      "outcome": "succeeded",
+      "terminal_state": "released",
+      "resource_state": "released",
+      "release_state": "released",
+      "retained_reason": null
+    },
+    {
+      "task": "task_e72b8369e2bb",
+      "dispatch": "ctx_a6a121f168bf",
+      "outcome": "succeeded",
+      "terminal_state": "retained",
+      "resource_state": "user_owned",
+      "release_state": "retained",
+      "retained_reason": "user_takeover"
+    },
+    {
+      "task": "task_c544312049ac",
+      "dispatch": "ctx_85e33bd51354",
+      "outcome": "succeeded",
+      "terminal_state": "retained",
+      "resource_state": "user_owned",
+      "release_state": "retained",
+      "retained_reason": "user_takeover"
+    },
+    {
+      "task": "task_e156082ba705",
+      "dispatch": "ctx_3b811a14e5d6",
+      "outcome": "succeeded",
+      "terminal_state": "retained",
+      "resource_state": "user_owned",
+      "release_state": "retained",
+      "retained_reason": "user_takeover"
+    }
+  ],
+  "page": {
+    "limit": 100,
+    "total": 4,
+    "hasMore": false,
+    "nextCursor": null
+  }
+}

@@ -1,6 +1,6 @@
 # Aspool 数据整治与日线存储重构推进方案
 
-日期：2026-09-27。状态：DG-00 工程基线补齐；DG-01 经独立关键恢复审查、修复与隔离验收通过，`5b42c52` 已集成 main；DG-02 feature `6c85113` 实现与离线验收通过，待协调者集成 main。修复提交 `bbb50b0`，最终离线 640 项及 18 个子测试通过、4 项明确原因跳过，23 个相关 Python 文件 scoped lint 通过；原真实 12 行样本证据核验后复用。见 [独立恢复审查](data_remediation_dg01_review.md) 及 [完整实施记录](data_remediation_dg01_implementation.md)，首批四个基线失败结案保留 [第一批审查报告](data_remediation_first_batch_review.md)。
+日期：2026-09-27。当前状态：DG-00 工程基线就绪；DG-01 实现、独立恢复审查及修复已合并 main（`5b42c52`）；DG-02 统一访问入口及验收已合并 main（`6c85113` / `3bfc857`）。DG-02 最终 666 单元测试及 18 个子测试通过、2 项明确跳过；五年 82,772 条事件精确比对通过，峰值 RSS 284.68 MiB。协调者复用 agent 验证，没有因交接或快进合并重跑测试。四个实际 Orca 任务及工作区收尾见 [本轮集成记录与下一包](data_remediation_integration_20260927.md)。生产修复、候选后端、切换和退役尚未实施。
 
 ## 1. 目标、范围与权威入口
 
@@ -45,7 +45,7 @@
 |---|---|---|---|---|---|
 | DG-00 | P0 | 当前数据基线、字段契约、修复前恢复点 | 无 | aspool + 消费方验收 | 工程基线就绪：契约/清单/恢复计划及复核齐备；业务恢复目标未知项显式保留，生产切换前确定 |
 | DG-01 | P0 | 实际变更清单、幂等性、操作成本观测 | DG-00 | aspool 写入/补齐 | feature 实现/独立恢复审查通过：入口、真实变化、持久前滚、业务/覆盖元数据日志及有界任务成本；640+18 通过、4 明确跳过；`bbb50b0` + `5b42c52` 已由协调者集成 main |
-| DG-02 | P1 | 统一日线存储访问边界，旧后端兼容 | DG-00 | aspool 存储/公开 API | feature `6c85113` 实现/离线验收通过：666+18 通过、2 明确跳过；五年 82,772 事件比对、RSS 285 MiB；协调者审阅证据后集成 main |
+| DG-02 | P1 | 统一日线存储访问边界，旧后端兼容 | DG-00 | aspool 存储/公开 API | 已验收并合并 main（`6c85113` / `3bfc857`）：666+18 通过、2 明确跳过；五年 82,772 事件比对、RSS 284.68 MiB；协调者审阅并复用证据 |
 | DG-03 | P1 | 完整候选后端及增长/并发验证，形成选型结论 | DG-02；修订重放使用 DG-01 | aspool 存储 | 待实施 |
 | DG-04 | P0 | 存量字段/缺口/冲突闭环及限价重新发布 | DG-00；生产变更追踪使用 DG-01 | aspool 数据维护 | 待实施 |
 | DG-05 | P1 | 字段依赖失效、有界读取、递归状态收敛 | DG-01、DG-02 | aspool 派生计算 | 待实施 |
@@ -97,7 +97,7 @@
 
 验收：公开日线、ETF、事件成交额、状态、导入与修复入口通过原契约检查；模拟分年布局不漏读、不重复；消费者不自行选择物理文件或拼接新旧后端。
 
-DG-02 feature `6c85113` 已实现具体 Parquet 日线入口；公开 daily/research/ETF/status、稀疏事件 amount、限价 scope/轴、merge/enrichment、BaoStock、在线/离线/free-stockdb、quote、CLI 及实际维护读取已接入。完整单位/字段/NULL/日期 overlay 与校验、批次/版本/锁保持；跨稀疏年份预热与依赖后缀等值，混存/错误分区拒绝，coverage 正常仅读冷年 footer。666 单元测试 +18 子测试通过，2 个外部 TickStockPanel host 环境测试显式跳过；五年 P0 比对 82,772 事件、抽查 30 金额，峰值 RSS 298,508,288 字节、71.178 秒通过。见 [实现/入口/限制报告](data_remediation_dg02_implementation.md) 和 [精确源码/命令/结果摘要](evidence/data-remediation/20260927-dg02/validation.json)。协调者复用此证据，main 集成由其负责。
+DG-02 feature `6c85113` 已实现具体 Parquet 日线入口；公开 daily/research/ETF/status、稀疏事件 amount、限价 scope/轴、merge/enrichment、BaoStock、在线/离线/free-stockdb、quote、CLI 及实际维护读取已接入。完整单位/字段/NULL/日期 overlay 与校验、批次/版本/锁保持；跨稀疏年份预热与依赖后缀等值，混存/错误分区拒绝，coverage 正常仅读冷年 footer。666 单元测试 +18 子测试通过，2 个外部 TickStockPanel host 环境测试显式跳过；五年 P0 比对 82,772 事件、抽查 30 金额，峰值 RSS 298,508,288 字节、71.178 秒通过。见 [实现/入口/限制报告](data_remediation_dg02_implementation.md) 和 [精确源码/命令/结果摘要](evidence/data-remediation/20260927-dg02/validation.json)。协调者已审阅并复用此证据，快进集成 `3bfc857`；未重复执行已通过验证。
 
 兼容性例外明确保留：不存在证券/年份的存在性探测、旧池全局 `asset_type` 缺失的 metadata-only schema 探测（证明不存在可能遍历全部 footer，协调者明确接受）、无 min/max 统计的日期列回退、旧式单文件整读/重写及完整替换/递归计算保守历史。没有删除重复键/非法值检查，也没有普通调用自动拆分或生产写入。DG-03 评估 schema metadata index 与完整增长后端；DG-05/06 继续处理字段依赖、递归收敛及公开逻辑版本，而非把这次入口收敛记作这些任务已完成。
 
