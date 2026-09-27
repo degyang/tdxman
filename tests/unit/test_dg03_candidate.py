@@ -345,6 +345,12 @@ def test_all_null_string_dtype_compatibility(candidate):
     )
     pd.testing.assert_frame_equal(expected, actual)
     assert str(actual.name.dtype) == "Int32"
+    for fields in [None, ["name", "pre_close", "trading_status"]]:
+        kwargs = dict(symbols="000001.SH", start="2020-01-01", end="2020-01-02", fields=fields)
+        expected_empty = DataPool(source).read_daily(**kwargs)
+        actual_empty = pool.read_daily(**kwargs)
+        pd.testing.assert_frame_equal(expected_empty, actual_empty)
+        assert actual_empty.empty and actual_empty.attrs == expected_empty.attrs
 
 
 def test_split_growth_preparation_preserves_full_rows_and_resume(candidate, monkeypatch):

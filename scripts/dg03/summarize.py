@@ -14,7 +14,7 @@ def main():
     groups = defaultdict(list)
     for row in rows:
         match = re.fullmatch(
-            r"((?:growth_\dx|facts_\dx|more_securities)_public_.+)_\d+", row["name"]
+            r"((?:growth_\dx(?:_bounded)?|facts_\dx(?:_bounded)?|more_securities)_public_.+)_\d+", row["name"]
         )
         if match:
             groups[match.group(1)].append(row)
@@ -25,6 +25,7 @@ def main():
                 "n": len(values),
                 "seconds": [v["seconds"] for v in values],
                 "median_seconds": statistics.median(v["seconds"] for v in values),
+                "api_seconds": [v.get("result", {}).get("api_seconds") for v in values],
                 "peak_sampled_rss": max(v.get("peak_sampled_rss", 0) for v in values),
                 "maxrss_process_highwater": max(v["maxrss_bytes"] for v in values),
                 "rows": [v.get("result", {}).get("rows") for v in values],
