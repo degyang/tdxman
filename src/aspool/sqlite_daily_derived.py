@@ -276,10 +276,6 @@ def recompute_symbol_features(
         try:
             for row in counted(rows):
                 day = row["trade_date"]
-                if propagate and processed >= max_affected_dates:
-                    raise DataPoolError(
-                        "LOCAL_UPDATE_BUDGET_EXCEEDED", "Propagation date budget exceeded"
-                    )
                 factor = _factor_at(conn, symbol, day)
                 status = classify_trading(row)
                 if status == "TRADED":
@@ -299,6 +295,10 @@ def recompute_symbol_features(
                     successors += day > end
                 different = any(values[field] != row[field] for field in DERIVED_COLUMNS)
                 if different:
+                    if propagate and len(changed_dates) >= max_affected_dates:
+                        raise DataPoolError(
+                            "LOCAL_UPDATE_BUDGET_EXCEEDED", "Propagation date budget exceeded"
+                        )
                     stamp = max(time.time_ns() // 1000, row["updated_at"] + 1)
                     conn.execute(
                         "UPDATE daily_features SET "

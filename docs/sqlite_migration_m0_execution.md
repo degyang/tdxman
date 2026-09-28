@@ -61,3 +61,7 @@
 当前股票读取入口是 `stock_connection(root)` 中的只读 SQL；指数、ETF 和公共目录使用现有 DataPool 接口。[开发说明](vps_development_data.md)提供样例。旧股票 `DataPool.read_daily` 尚未接入 SQLite。
 
 接下来按依赖推进：FW-03 先完成因子/参考价/ST、限价/连板/MA20、日汇总和局部 writer，再完成 FW-04 公开接口与 FW-05 Fundwise 适配。市场汇总空表、派生列未就绪均是当前明确边界，不计作 Fundwise 已可运行。首次封闭工件复制也不计作 FW-09 活库增量同步已通过。
+
+## 2026-09-28 派生成品更新
+
+上述哈希和空汇总状态属于初始 M0 工件。随后本机同一路径已完成 FW-03 历史派生，最终为 9,218,285,568 字节，SHA-256 `6eb13bafe07ce0fcc1a24047761dd91b26ba31302dedcc6369276993487b2808`；原始日线和迁入事实数量保持不变。见 [派生验收](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 当前仍是已验收的初始 M0 副本，不能套用本机的新哈希。新工件使用 `verify_stock_derivation.py` 验收，不再使用要求初始空汇总状态的旧校验入口。

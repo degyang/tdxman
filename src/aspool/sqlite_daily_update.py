@@ -136,6 +136,7 @@ def apply_daily_changes(
     *,
     bars=(),
     dated_facts=(),
+    factor_extensions=(),
     market_sessions,
     listed_days=None,
 ) -> dict:
@@ -144,6 +145,7 @@ def apply_daily_changes(
     Source adapters provide canonical units and dated provenance. This function
     owns BEGIN/COMMIT; an active caller transaction is rejected. No batch IDs,
     deletes, factor replacement or automatic full-history repair are accepted.
+    Verified factor extensions advance only the existing coverage tail.
     A missing required bootstrap or an excessive suffix fails without writes.
     """
     if conn.in_transaction:
@@ -151,6 +153,9 @@ def apply_daily_changes(
     columns = {row[1] for row in conn.execute("PRAGMA table_info(daily_bars)")}
     incoming_bars = _inputs(bars, columns - {"symbol", "trade_date", "updated_at"})
     incoming_facts = _inputs(dated_facts, FACT_FIELDS)
+    extensions = list(factor_extensions)
+    if len(extensions) > 500 or len({item["symbol"] for item in extensions}) != len(extensions):
+        raise ValueError("Expected at most one factor extension per symbol, up to 500 symbols")
     keys = incoming_bars.keys() | incoming_facts.keys()
     sessions = {_day(day) for day in market_sessions}
     input_dates = {day for _, day in keys}
@@ -158,16 +163,17 @@ def apply_daily_changes(
         raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Source range outside session budget")
     result = dict(
         changed_rows=0,
+        changed_factor_rows=0,
         affected_sessions=[],
         recomputed_feature_rows=0,
         changed_feature_rows=0,
         summary_rows=0,
         read_rows=0,
     )
-    if not keys:
+    if not keys and not extensions:
         return dict(result, elapsed_ms=0)
     # Import only when used so pure window selection remains independent.
-    from .sqlite_reference_factors import update_reference_factors
+    from .sqlite_reference_factors import advance_factor_coverage, update_reference_factors
 
     started = time.monotonic()
     deadline = started + 30
@@ -268,7 +274,7 @@ def apply_daily_changes(
                     derived[symbol].add(next_row[0])
                     if conn.execute(
                         "SELECT 1 FROM corporate_actions WHERE symbol=? AND record_kind='factor' "
-                        "AND source='derived:event_chain' AND effective_date>? "
+                        "AND source LIKE 'derived:%' AND effective_date>? "
                         "AND effective_date<=? LIMIT 1",
                         (symbol, day, next_row[0]),
                     ).fetchone():
@@ -276,6 +282,30 @@ def apply_daily_changes(
                             "FACTOR_REBUILD_REQUIRED",
                             "Changed event reference needs the explicit factor maintenance writer",
                         )
+        # The source adapter has already fetched and verified event coverage.
+        # Extend factors after raw writes so new ex-dates can use prior new bars,
+        # but before references/MA calculations; every dependency commits together.
+        for extension in extensions:
+            stats = advance_factor_coverage(conn, **extension)
+            result["changed_factor_rows"] += stats["changed_rows"]
+            if not stats["changed_rows"]:
+                continue
+            symbol = extension["symbol"]
+            rows = conn.execute(
+                "SELECT trade_date FROM daily_features WHERE symbol=? "
+                "AND trade_date BETWEEN ? AND ? ORDER BY trade_date LIMIT 62",
+                (symbol, stats["affected_from"], stats["affected_through"]),
+            ).fetchall()
+            if len(rows) > 60:
+                raise DataPoolError(
+                    "LOCAL_UPDATE_BUDGET_EXCEEDED", "Factor extension affects too many dates"
+                )
+            if not rows:
+                continue
+            derived[symbol].update(row[0] for row in rows)
+            affected.update(row[0] for row in rows)
+            ma_dependencies.add(symbol)
+
         for symbol, days in derived.items():
             # Reference withdrawal must not transiently violate KNOWN's
             # constraints. Dependents are restored before commit or rolled back.

@@ -1,12 +1,14 @@
 {
   "root_tests": {
-    "daily_derived": 8,
+    "daily_derived": 9,
     "daily_summary": 11,
-    "daily_update_and_sync": 13
+    "daily_update_and_sync": 20
   },
   "auxiliary_tests_reused": {
-    "reference_factors": 11,
-    "commit": "42c778204c9ef7b6e5cc9ea2ec043c0e5982466f"
+    "reference_factors": 17,
+    "commit": "42c778204c9ef7b6e5cc9ea2ec043c0e5982466f",
+    "advance_commit": "61d7c40e9444031197418faa432f129e56043e4c",
+    "advance_new_tests": 6
   },
   "real_sample": {
     "symbols": [
@@ -77,7 +79,7 @@
     "symbol": "300822.SZ",
     "repaired_date": "2026-09-23"
   },
-  "full_derivation_status": "running; see data/_reports/fw03-main/full-derived.jsonl",
+  "full_derivation_status": "complete and verified; see 20260928-derived-result.json",
   "production_switched": false,
   "limits": [
     "Historical dated ST gaps remain UNKNOWN.",
@@ -124,6 +126,27 @@
       "read_rows": 0,
       "elapsed_ms": 71
     },
-    "max_rss_kib": 418304
-  }
+    "max_rss_kib": 418304,
+    "disposable_target_removed": true
+  },
+  "daily_factor_tail_integration": "passed: empty interval, ex-date, rollback, source gating and TDX units",
+  "calendar_refresh": "passed: bounded, no-op, contradictory history rollback",
+  "live_new_session_probe": {
+    "requested_sessions": [
+      "2026-09-28"
+    ],
+    "success": [],
+    "empty": [
+      "000001.SZ"
+    ],
+    "failed": [],
+    "unsupported": [],
+    "factor_unavailable": [],
+    "calendar": {
+      "changed_dates": 3,
+      "start": "2026-09-25",
+      "end": "2026-09-28"
+    }
+  },
+  "live_new_session_note": "2026-09-25 confirmed closed; 2026-09-28 confirmed open but BaoStock returned empty. No new bar or factor written. New-day calculation proven by deterministic integration tests, not this empty live response."
 }

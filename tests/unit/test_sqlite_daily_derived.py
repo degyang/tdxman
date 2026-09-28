@@ -243,3 +243,53 @@ def test_streak_suffix_continues_beyond_ma20_and_budget_failure_rolls_back(tmp_p
             ]
             == 0
         )
+
+
+def test_unchanged_suspension_dates_do_not_consume_the_changed_date_budget(tmp_path):
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        days = [(date(2024, 1, 1) + timedelta(days=i)).isoformat() for i in range(150)]
+        for day in days[:25] + days[125:]:
+            seed(conn, day)
+        conn.executemany(
+            "INSERT INTO daily_features(symbol,trade_date,calc_status,trading_status,updated_at) "
+            "VALUES ('000001.SZ',?,'NO_TRADE','SUSPENDED',1)",
+            [(day,) for day in days[25:125]],
+        )
+        conn.execute(
+            "INSERT INTO corporate_actions(symbol,effective_date,record_kind,source,source_key,"
+            "cumulative_factor,valid_from,valid_through,factor_basis,updated_at) "
+            "VALUES ('000001.SZ',?,'factor','verified','base',1,?,?,'confirmed',1)",
+            (days[0], days[0], days[-1]),
+        )
+        recompute_symbol_features(conn, symbol="000001.SZ", start=days[0], end=days[-1])
+        conn.execute(
+            "UPDATE daily_bars SET open=11,high=11,low=11,close=11 WHERE trade_date=?", (days[24],)
+        )
+        result = recompute_symbol_features(
+            conn,
+            symbol="000001.SZ",
+            start=days[24],
+            end=days[24],
+            propagate=True,
+            max_affected_dates=25,
+        )
+        assert result["changed_rows"] == 20
+        assert result["processed_rows"] == 121
+        assert (
+            conn.execute(
+                "SELECT max(updated_at) FROM daily_features WHERE calc_status='NO_TRADE'"
+            ).fetchone()[0]
+            == 1
+        )
+        assert (
+            conn.execute(
+                "SELECT ma20 FROM daily_features WHERE trade_date=?", (days[143],)
+            ).fetchone()[0]
+            == 10.05
+        )
+        assert (
+            conn.execute(
+                "SELECT ma20 FROM daily_features WHERE trade_date=?", (days[144],)
+            ).fetchone()[0]
+            == 10
+        )

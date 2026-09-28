@@ -100,3 +100,7 @@ tmux attach-session -t tdxman-task
 5. 源快照、代码提交和迁移结果一起记录，确保其他 VPS 可复现。后续日常活库增量复制仍属 FW-09 的 sqlite3_rsync 专项，不用首次文件传输冒充其验收。
 
 本机 WSL SSH 使用已有加密私钥 `~/.ssh/id_ed25519_vps_wsler`，通过本地 SSH agent 解锁后传输；不将口令固化到脚本或项目，也不回显口令。Orca 的远端访问通道与 WSL 文件传输通道分别验证，不将前者连通误报为后者已可用。
+
+## 派生成品进度（2026-09-28）
+
+本机 `data/_staging/fw02/stocks.sqlite` 已完成全历史派生并通过完整校验，约 8.59 GiB；[证据](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 的相同相对路径仍是初始 M0 工件。新成品同步等待 WSL wsler 私钥重新加载 SSH agent；不要将远端原始迁移副本误认作已更新的派生成品。传输应在 tmux 下执行，副本必须与成品 SHA-256 完全一致，才可复用其完整性校验。

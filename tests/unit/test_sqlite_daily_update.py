@@ -439,3 +439,281 @@ def test_old_suspension_turnover_conflict_can_be_repaired_by_its_source(tmp_path
         assert conn.execute(
             "SELECT calc_status,limit_status FROM daily_features WHERE trade_date=?", (DAYS[25],)
         ).fetchone() == ("TRADED", "KNOWN")
+
+
+def test_provider_empty_cells_do_not_withdraw_existing_facts_or_optional_fields(tmp_path):
+    from types import SimpleNamespace
+
+    import pandas as pd
+
+    from aspool.sqlite_daily_sync import sync_baostock_daily
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        conn.execute(
+            "UPDATE daily_bars SET pe_ttm=42,turnover_rate_source='old:finance',"
+            "pct_chg_source='old:raw' WHERE trade_date=?",
+            (DAYS[59],),
+        )
+        conn.execute(
+            "UPDATE daily_features SET source_pre_close=10,"
+            "source_pre_close_source='baostock' WHERE trade_date=?",
+            (DAYS[59],),
+        )
+        conn.commit()
+    item = row(DAYS[59])
+    item.pop("trade_date")
+    frame = pd.DataFrame(
+        [
+            dict(
+                item,
+                date=date.fromisoformat(DAYS[59]),
+                pre_close=None,
+                is_st=None,
+                trading_status="TRADING",
+                turnover_rate=None,
+                pct_chg=None,
+                pe_ttm=float("nan"),
+                pb=None,
+            )
+        ]
+    )
+    sync_baostock_daily(
+        tmp_path,
+        client=SimpleNamespace(get_daily=lambda *a, **kw: frame),
+        symbols=[SYMBOL],
+        market_sessions=DAYS,
+        as_of=DAYS[59],
+        listed_days=AGES,
+    )
+    with stock_connection(tmp_path) as conn:
+        assert conn.execute(
+            "SELECT b.pe_ttm,f.source_pre_close,f.source_is_st,"
+            "b.turnover_rate_source,b.pct_chg_source "
+            "FROM daily_bars b JOIN daily_features f USING(symbol,trade_date) "
+            "WHERE trade_date=?",
+            (DAYS[59],),
+        ).fetchone() == (42, 10, 0, "old:finance", "old:raw")
+
+
+def test_factor_tail_and_new_bar_commit_together_and_replay_is_noop(tmp_path):
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        conn.execute(
+            "UPDATE corporate_actions SET valid_through=?, "
+            "factor_basis='source_cumulative_factor:source_anchor:test'",
+            (DAYS[59],),
+        )
+        conn.commit()
+        extension = dict(symbol=SYMBOL, verified_start=DAYS[60], verified_end=DAYS[60], events=[])
+        inputs = dict(
+            bars=[row(DAYS[60])],
+            dated_facts=[
+                dict(
+                    symbol=SYMBOL,
+                    trade_date=DAYS[60],
+                    source_is_st=0,
+                    source_is_st_source="baostock",
+                )
+            ],
+            factor_extensions=[extension],
+        )
+        result = apply(conn, **inputs)
+        assert result["changed_factor_rows"] == 1
+        assert result["affected_sessions"] == [DAYS[60]]
+        assert (
+            conn.execute(
+                "SELECT ma20 FROM daily_features WHERE trade_date=?", (DAYS[60],)
+            ).fetchone()[0]
+            == 10
+        )
+        before = dump(conn)
+        repeated = apply(conn, **inputs)
+        assert (
+            repeated["changed_rows"]
+            == repeated["changed_factor_rows"]
+            == repeated["summary_rows"]
+            == 0
+        )
+        assert dump(conn) == before
+
+
+def test_new_ex_date_preserves_adjusted_ma_and_reference(tmp_path):
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        conn.execute(
+            "UPDATE corporate_actions SET valid_through=?, "
+            "factor_basis='source_cumulative_factor:source_anchor:test'",
+            (DAYS[59],),
+        )
+        conn.commit()
+        event = dict(
+            effective_date=DAYS[60],
+            category=1,
+            cash_dividend_per_share=1,
+            bonus_shares_per_share=0,
+            rights_shares_per_share=0,
+            rights_price=0,
+        )
+        result = apply(
+            conn,
+            bars=[row(DAYS[60], close=9)],
+            dated_facts=[
+                dict(
+                    symbol=SYMBOL,
+                    trade_date=DAYS[60],
+                    source_is_st=0,
+                    source_is_st_source="baostock",
+                )
+            ],
+            factor_extensions=[
+                dict(symbol=SYMBOL, verified_start=DAYS[60], verified_end=DAYS[60], events=[event])
+            ],
+        )
+        actual = conn.execute(
+            "SELECT pre_close,ma20,close_limit_up,close_limit_down "
+            "FROM daily_features WHERE trade_date=?",
+            (DAYS[60],),
+        ).fetchone()
+        assert actual[:2] == pytest.approx((9, 9))
+        assert actual[2:] == (0, 0)
+        assert result["affected_sessions"] == [DAYS[60]]
+
+
+def test_failed_factor_extension_rolls_back_new_sources(tmp_path):
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        conn.execute(
+            "UPDATE corporate_actions SET valid_through=?, "
+            "factor_basis='source_cumulative_factor:source_anchor:test'",
+            (DAYS[58],),
+        )
+        conn.commit()
+        before = dump(conn)
+        with pytest.raises(ValueError):
+            apply(
+                conn,
+                bars=[row(DAYS[60])],
+                factor_extensions=[
+                    dict(symbol=SYMBOL, verified_start=DAYS[60], verified_end=DAYS[60], events=[])
+                ],
+            )
+        assert dump(conn) == before
+
+
+def test_tdx_fetch_keeps_already_normalized_per_share_units(monkeypatch):
+    from aspool import enrichment
+    from aspool.sqlite_daily_sync import fetch_tdx_action_interval
+
+    monkeypatch.setattr(
+        enrichment,
+        "_fetch",
+        lambda *_: dict(
+            fetched_date=DAYS[61],
+            events=[
+                dict(date=DAYS[60], category=1, fenhong=1.0, songzhuangu=0.2, peigu=0, peigujia=0)
+            ],
+        ),
+    )
+    events = fetch_tdx_action_interval(object(), SYMBOL, DAYS[60], DAYS[60])
+    assert events[0]["cash_dividend_per_share"] == 1
+    assert events[0]["bonus_shares_per_share"] == 0.2
+    assert fetch_tdx_action_interval(object(), SYMBOL, DAYS[61], DAYS[61]) == []
+
+
+def test_source_sync_verifies_action_tail_before_writing_new_day(tmp_path):
+    import pandas as pd
+
+    from aspool.sqlite_daily_sync import sync_baostock_daily
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        conn.execute(
+            "UPDATE corporate_actions SET valid_through=?, "
+            "factor_basis='source_cumulative_factor:source_anchor:test'",
+            (DAYS[59],),
+        )
+        conn.commit()
+
+    class Client:
+        def get_daily(self, *args, **kwargs):
+            value = row(DAYS[60])
+            value.pop("trade_date")
+            return pd.DataFrame(
+                [
+                    dict(
+                        value,
+                        date=date.fromisoformat(DAYS[60]),
+                        pre_close=10,
+                        is_st=False,
+                        trading_status="TRADING",
+                        turnover_rate=0.5,
+                        pct_chg=0,
+                        pe_ttm=None,
+                        pb=None,
+                    )
+                ]
+            )
+
+    options = dict(
+        root=tmp_path,
+        client=Client(),
+        symbols=[SYMBOL],
+        market_sessions=DAYS,
+        as_of=DAYS[-1],
+        listed_days=AGES,
+    )
+    refused = sync_baostock_daily(**options)
+    assert refused["failed"] and not refused["success"]
+    calls = []
+
+    def fetcher(symbol, start, end):
+        calls.append((symbol, start, end))
+        return []
+
+    accepted = sync_baostock_daily(**options, action_fetcher=fetcher)
+    assert accepted["success"][0]["changed_factor_rows"] == 1
+    assert calls == [(SYMBOL, DAYS[60], DAYS[60])]
+    assert sync_baostock_daily(**options)["success"][0]["changed_rows"] == 0
+    with stock_connection(tmp_path, read_only=True) as conn:
+        assert (
+            conn.execute(
+                "SELECT ma20 FROM daily_features WHERE trade_date=?", (DAYS[60],)
+            ).fetchone()[0]
+            == 10
+        )
+
+
+def test_calendar_refresh_is_finite_noop_and_rejects_conflicting_history(tmp_path):
+    import duckdb
+    import pandas as pd
+
+    from aspool.sqlite_daily_sync import refresh_source_calendar
+
+    with duckdb.connect(str(tmp_path / "catalog.duckdb")) as conn:
+        conn.execute(
+            "CREATE TABLE security_calendar(trade_date DATE PRIMARY KEY, "
+            "is_open BOOLEAN, source VARCHAR)"
+        )
+        conn.execute("INSERT INTO security_calendar VALUES (?,true,'baostock')", [DAYS[59]])
+
+    class Client:
+        flag = True
+
+        def get_trade_calendar(self, start, end):
+            assert (start, end) == (date.fromisoformat(DAYS[59]), date.fromisoformat(DAYS[60]))
+            return pd.DataFrame([dict(date=start, is_open=self.flag), dict(date=end, is_open=True)])
+
+    client = Client()
+    options = dict(root=tmp_path, client=client, start=DAYS[59], end=DAYS[60])
+    assert refresh_source_calendar(**options)["changed_dates"] == 1
+    assert refresh_source_calendar(**options)["changed_dates"] == 0
+    client.flag = False
+    with pytest.raises(ValueError, match="explicit maintenance"):
+        refresh_source_calendar(**options)
+    with duckdb.connect(str(tmp_path / "catalog.duckdb")) as conn:
+        assert conn.execute(
+            "SELECT bool_and(is_open),count(*) FROM security_calendar"
+        ).fetchone() == (True, 2)
+    with pytest.raises(ValueError, match="natural days"):
+        refresh_source_calendar(tmp_path, client=client, start=DAYS[0], end=DAYS[60])
