@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tdxman"
-version = "1.1.1"
+version = "1.1.2"
 description = "通达信 TCP 协议行情数据客户端，支持在线行情与离线本地数据读取"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,6 +22,9 @@ tick-stock-panel = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tdxman", "src/aspool"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"settings/ex_assets.json" = "aspool/resources/ex_assets.json"
 
 [tool.mypy]
 strict = true

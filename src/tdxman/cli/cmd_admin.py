@@ -47,4 +47,6 @@ def ping(timeout: float, output_fmt: str, output_path: Path | None) -> None:
 @click.command(cls=StandardHelpCommand)
 def version() -> None:
     """显示版本号。"""
-    click.echo("tdxman 1.1.1")
+    from .. import __version__
+
+    click.echo(f"tdxman {__version__}")
