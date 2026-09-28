@@ -2,7 +2,7 @@
   "root_tests": {
     "daily_derived": 8,
     "daily_summary": 11,
-    "daily_update_and_sync": 8
+    "daily_update_and_sync": 10
   },
   "auxiliary_tests_reused": {
     "reference_factors": 11,
@@ -83,6 +83,7 @@
     "Historical dated ST gaps remain UNKNOWN.",
     "Source factor coverage is not extended without new evidence.",
     "New writer currently handles D summaries; existing intersecting W/M results cause atomic rejection.",
-    "BaoStock fetch supports SH/SZ; BJ reported unsupported."
+    "BaoStock fetch supports SH/SZ; BJ reported unsupported.",
+    "An edited close that feeds an event-derived factor requires explicit factor maintenance; the daily writer rejects and rolls back."
   ]
 }

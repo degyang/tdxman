@@ -252,12 +252,24 @@ def apply_daily_changes(
                 ).fetchone()
                 if next_row:
                     derived[symbol].add(next_row[0])
+                    if conn.execute(
+                        "SELECT 1 FROM corporate_actions WHERE symbol=? AND record_kind='factor' "
+                        "AND source='derived:event_chain' AND effective_date>? "
+                        "AND effective_date<=? LIMIT 1",
+                        (symbol, day, next_row[0]),
+                    ).fetchone():
+                        raise DataPoolError(
+                            "FACTOR_REBUILD_REQUIRED",
+                            "Changed event reference needs the explicit factor maintenance writer",
+                        )
         for symbol, days in derived.items():
             # Reference withdrawal must not transiently violate KNOWN's
             # constraints. Dependents are restored before commit or rolled back.
+            stamp_floors = {}
             for day in days:
                 row = _read(conn, "daily_bars", (symbol, day))
                 row.update(_read(conn, "daily_features", (symbol, day)))
+                stamp_floors[day] = row["updated_at"]
                 row["bar_date"] = day if "close" in row else None
                 status = classify_trading(row)
                 empty = dict.fromkeys(DERIVED_COLUMNS)
@@ -274,6 +286,11 @@ def apply_daily_changes(
             # An established selected factor interval is sufficient to adjust
             # the previous trading close; sparse absence of events alone is not.
             for day in sorted(days):
+                conn.execute(
+                    "UPDATE daily_features SET updated_at=? WHERE symbol=? AND trade_date=? "
+                    "AND updated_at<?",
+                    (stamp_floors[day], symbol, day, stamp_floors[day]),
+                )
                 fact = _read(conn, "daily_features", (symbol, day))
                 source = fact.get("source_pre_close_source") or ""
                 if (

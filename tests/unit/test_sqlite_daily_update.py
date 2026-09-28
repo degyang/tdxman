@@ -294,3 +294,52 @@ def test_conflicting_duplicate_provenance_cannot_be_hidden_by_keep_last(tmp_path
             )
         assert conn.execute("SELECT count(*) FROM daily_features").fetchone()[0] == 0
         assert not conn.in_transaction
+
+
+def test_reference_recalculation_preserves_future_timestamp_floor(tmp_path):
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        future = 8_000_000_000_000_000
+        conn.execute(
+            "UPDATE daily_features SET updated_at=? WHERE trade_date=?", (future, DAYS[25])
+        )
+        conn.commit()
+        apply(
+            conn,
+            dated_facts=[
+                dict(
+                    symbol=SYMBOL,
+                    trade_date=DAYS[25],
+                    source_pre_close=9,
+                    source_pre_close_source="baostock",
+                )
+            ],
+        )
+        assert (
+            conn.execute(
+                "SELECT updated_at FROM daily_features WHERE trade_date=?", (DAYS[25],)
+            ).fetchone()[0]
+            > future
+        )
+        assert (
+            conn.execute(
+                "SELECT min(updated_at) FROM market_daily_summary WHERE period_key=?", (DAYS[25],)
+            ).fetchone()[0]
+            > future
+        )
+
+
+def test_event_based_factor_dependency_cannot_be_committed_stale(tmp_path):
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        conn.execute(
+            "INSERT INTO corporate_actions(symbol,effective_date,record_kind,source,source_key,"
+            "cumulative_factor,valid_from,valid_through,factor_basis,updated_at) "
+            "VALUES (?,?,'factor','derived:event_chain','selected',1.1,?,?,'event',1)",
+            (SYMBOL, DAYS[26], DAYS[26], DAYS[-1]),
+        )
+        conn.commit()
+        before = dump(conn)
+        with pytest.raises(DataPoolError, match="event reference"):
+            apply(conn, bars=[row(DAYS[25], close=11)])
+        assert dump(conn) == before
