@@ -1,8 +1,9 @@
 # asPool 数据域分层设计
 
-日期：2026-09-29。状态：目标设计，尚未实施。需求基线见
+日期：2026-09-29。状态：实施中。需求基线见
 [数据域分层需求](data_platform_v2_requirements.md)。本文说明物理结构、表职责、一致性和迁移方案；
-当前生产库不能按本文路径或表名直接推断为已迁移。
+实际完成范围见 [实施记录](data_platform_v2_execution.md)，当前生产库不能只按文件存在就推断为
+已激活。
 
 ## 1. 设计决策
 
@@ -180,8 +181,19 @@ ma20_adjusted, above_ma20
 raw_revision, factor_revision, algorithm_version, updated_at
 ```
 
+对外的股票 Enriched 逻辑视图还包含原始 OHLCV 和前复权 OHLCV。原始值从 `stocks.daily_bars`
+按键联结，避免在 `features.sqlite` 复制 1,600 万行原始价格；前复权值由日期因子投影，只有性能
+验收证明读取时投影仍是主要瓶颈时才物化。无论是否物化，查询都必须在同一 snapshot 中核对
+`raw_revision` 和 `factor_revision`。停牌、缺失和无效日期保留状态事实，但从单证券技术指标窗口排除。
+
 `index_daily_features` 包括收益、均线、趋势、波动率和来源广度比例；`etf_daily_features` 包括收益、
 换手/量比和复权滚动指标。资产特有指标只进入对应表。
+
+大部分技术指标不进入上述稳定宽表。`snapshots.sqlite` 的按需计算器按 `symbol` 分组，提供
+MA/EMA、MACD、多周期动量、60 日高低点、BOLL、ATR14、年化波动率、KDJ、RSI、多周期均量、
+量比和对应信号；需要板块相对强弱时再联结板块指数，计算 3/10/30 日偏离。股票、ETF 和指数使用
+不同的 feature set 与计算入口。首次构建遍历各自原始库的全部标的，日常新增只处理新交易日；
+普通修订传播到受影响窗口后缀，因子修订只使对应标的的复权字段及依赖快照失效。
 
 `market_regime_features` 延续现有 `(frequency, period_key, scope)` 主键，迁入现有日汇总字段并明确
 质量分母。D writer 优先迁移；W/M 在独立验收前保持未就绪。该表不增加模型标识、权重或评分。
@@ -325,15 +337,14 @@ iter_limit_events_with_amount
 
 ## 7. 当前实现差异
 
-截至 2026-09-29：
+截至 2026-09-29，影子迁移和布局切换机制、独立基本面、`sync --count`、股票/ETF 读取时复权、
+跨库 revision 检查及 Fundwise 兼容投影已经实现。首次激活前，`stocks.sqlite` 仍保留旧派生表，
+公开读取继续走布局 1；激活后走 `features.sqlite` 和 `adjustments.sqlite`。旧表在稳定运行和回滚期
+结束前不删除。
 
-- `stocks.sqlite` 仍同时保存日线、事件/因子、逐股派生和市场汇总。
-- `etfs.sqlite` 仍保存 ETF 因子；指数尚无独立稳定 Enriched 表。
-- 基本面仍在 `catalog.duckdb:fundamental_snapshots`，没有报告期和股东人数历史。
-- `update/sync --type all` 仍自动刷新基本面。
-- `sync --count`、独立 derive、按需 snapshot 和跨库过期检查尚未实现。
-
-文档落地不改变这些运行事实。
+指数/ETF 稳定 Enriched、独立 derive 命令、W/M writer 和按需 snapshot 命令尚未实现；
+`snapshots.sqlite` 当前只建立了 schema。跨设备增量同步仍不在本轮范围。精确执行证据和测试前提见
+[实施记录](data_platform_v2_execution.md)。
 
 ## 8. 跨设备同步备忘（非当前计划）
 

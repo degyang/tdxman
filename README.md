@@ -571,12 +571,15 @@ commands 层不依赖 transport，可独立单测。
 `offline.vipdoc` 是通达信本地行情目录，都不是数据池输出路径。
 
 Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](docs/aspool_api.md)。
-下一阶段的数据域分层需求与物理设计见
+数据域分层需求与物理设计见
 [数据域分层需求](docs/data_platform_v2_requirements.md)和
-[数据域分层设计](docs/data_platform_v2_design.md)。两份文档是尚未实施的目标，当前运行方式仍以
+[数据域分层设计](docs/data_platform_v2_design.md)。当前已提供可恢复的影子迁移、核验和显式激活，
+执行状态见 [数据域分层实施记录](docs/data_platform_v2_execution.md)；生产运行方式仍以
 [生产数据流契约](docs/production_data_flow_contract.md)为准。
 新版项目数据统一位于 `data/`：股票使用 `stocks.sqlite`，指数使用独立的
-`indices.sqlite`，ETF 使用 `etfs.sqlite`，公共目录与基本面快照保留在 `catalog.duckdb`。
+`indices.sqlite`，ETF 使用 `etfs.sqlite`；分层布局另使用 `fundamentals.sqlite`、
+`adjustments.sqlite`、`features.sqlite` 和 `snapshots.sqlite`。公开读取只通过 `DataPool`，
+由 `catalog.duckdb:pool_metadata.layout_version` 选择完整布局。
 当前项目生产池已全部退役 `lake/` 分区，见 [ETF 与辅助数据迁移验收](docs/etf_reference_sqlite_migration.md)。
 指数保留 `aspool update|sync --type index` 和 `read_index_daily` /
 `list_indices` 接口；迁移步骤、增量边界与验收见 [指数 SQLite 迁移](docs/index_sqlite_migration.md)。
@@ -628,7 +631,9 @@ aspool status
 2. 指数 `update` 使用 MAC 日 K 线增量补齐，并从上证指数实际日期维护交易日历；广度用 `breadth_status` 区分可用和不可用，不用 `0/0` 冒充。
 3. 股票 `update` 使用 quote 保存当日量比、换手率，原子计算涨跌停、连板和日级市场汇总；只对昨收变化的疑似除权股票查询事件。周/月 schema 与接口已预留，writer 尚未投产。
 4. ETF 增量同步到独立 `etfs.sqlite`；K 线为空时用带日期报价确认无交易，不制造零值日线。
-5. 刷新最新基本面快照并输出统一报告。BaoStock 仅由 `--source baostock` 显式选择，不自动切源。详见 [完整数据与 CLI 契约](docs/production_data_flow_contract.md)。
+5. 输出统一报告。基本面已从每日 `all` 流程移除，只由 `aspool fundamentals update` 手动维护；
+   BaoStock 仅由 `--source baostock` 显式选择，不自动切源。详见
+   [完整数据与 CLI 契约](docs/production_data_flow_contract.md)。
 
 股票漏更或需要修补时，再先执行：
 
@@ -637,7 +642,26 @@ aspool sync --root data --type all --source tdx
 aspool update
 ```
 
-不传日期时，各数据块按自己的末端增量补齐；股票默认重叠最近十个交易日。显式窗口仍限制在 31 个自然日、至多十个实际交易日，补算缺失量比和换手率，再更新同一套逐股派生与日汇总。
+不传日期时缺省检查最近 10 个已完成交易日；可用 `--count 30` 扩大到最多 60 个交易日，
+也可继续使用互斥的 `--start/--end` 明确窗口。股票 sync 补算缺失量比和换手率，再更新同一套
+逐股派生与日汇总。
+
+基本面和分层布局使用独立入口：
+
+```bash
+aspool fundamentals update --root data
+aspool fundamentals status --root data
+
+# prepare 只建立影子库；verify 通过后才允许显式 activate
+aspool platform prepare --root data
+aspool platform verify --root data
+aspool platform activate --root data
+# 激活后发现兼容问题时立即恢复旧读取，影子文件保留
+aspool platform rollback --root data
+```
+
+`DataPool.read_daily(..., adjust="qfq"|"hfq")` 和 ETF 同名读取的复权参数是新增可选能力；
+不传 `adjust` 时继续返回未复权价格。
 
 股票日线 `sync` 同时补齐日期股本、参考价、收盘量比、换手率和市值，再重算涨跌停和连板。
 BaoStock 用于冲突样本的只读算法校对；详见 [日线字段补齐](docs/daily_enrichment.md)。

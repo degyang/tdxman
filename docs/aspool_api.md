@@ -327,3 +327,66 @@ DuckDB spill 目录；`temp_directory` 指定其父目录，调用方负责提�
 `daily_limit_streak_boundaries`，与当日发布批次同事务更新。
 分日同步读取已发布边界，因此与连续全量重算使用相同计数起点。
 规则版本为 `cn-a-share-limit-v8`；全量重算报告另导出 `streak_boundaries.csv`。
+
+## 11. SQLite 分层布局兼容接口（contract v3）
+
+项目 `data/stocks.sqlite` 存在时，`DataPool` 使用 contract v3。物理布局由
+`catalog.duckdb:pool_metadata.layout_version` 选择；调用方不能根据某个 SQLite 文件是否存在来
+自行路由。布局 2 激活后，稳定逐股派生和市场 Regime 公共特征来自 `features.sqlite`，复权因子
+来自 `adjustments.sqlite`，但 Fundwise 现有方法和缺省参数不变：
+
+```python
+DataPool(root)
+pool.describe()
+pool.status()
+pool.describe_limits()
+pool.read_research_daily(...)
+pool.read_index_daily(...)
+pool.read_trading_calendar(...)
+pool.read_market_daily(...)
+pool.stock_snapshot()
+pool.read_limit_summary(...)
+pool.read_limit_events(...)
+pool.read_limit_coverage(...)
+pool.read_limit_exceptions(...)
+pool.iter_limit_events_with_amount(...)
+```
+
+`read_limit_coverage()` 和 `read_limit_exceptions()` 在 v3 是兼容投影。它们不依赖旧 publication、
+revision、coverage 或 exceptions 物理表；`batch_id/rule_version/computed_at` 等旧批次字段返回
+NULL，`stale=False`，未知和无效记录从当前逐股状态投影。
+
+新增的可选读取签名为：
+
+```python
+pool.read_daily(
+    *, symbols=None, start=None, end=None, lookback=None, fields=None,
+    adjust="none", adjustment_base=None,
+)
+pool.read_etf_daily(
+    *, symbols=None, start=None, end=None, lookback=None, fields=None,
+    adjust="none", adjustment_base=None,
+)
+pool.read_fundamental_reports(*, symbols=None, start=None, end=None)
+pool.read_shareholder_counts(*, symbols=None, start=None, end=None)
+```
+
+`adjust="none"` 保持未复权；`qfq` 缺省以查询结果末日因子归一，`hfq` 缺省以该证券查询历史的
+首个因子归一；`adjustment_base` 可显式指定基准日期。仅 OHLC 和 `pre_close` 乘因子，成交量、
+成交额、换手率及证券身份不调整。返回 `attrs` 追加 `adjustment`、`adjustment_base` 和实际使用的
+因子基准。因子缺失或覆盖不完整时报 `ADJUSTMENT_NOT_READY`；布局 2 的原始、因子与派生 revision
+不一致时报 `DERIVED_NOT_READY`。
+
+基本面读取按来源报告日期返回，股东人数按 `as_of_date` 返回。公告日期未知时
+`published_at=NULL`，不能把这些行当作严格 point-in-time 财务数据。单次读取上限 500,000 行，
+超限时报 `FUNDAMENTALS_TOO_LARGE`。
+
+```python
+pool = DataPool("/mnt/d/workstation/services/tdxman/data")
+raw = pool.read_daily(symbols="000001.SZ", start="2020-01-01", end="2026-09-29")
+qfq = pool.read_daily(
+    symbols="000001.SZ", start="2020-01-01", end="2026-09-29",
+    fields=["date", "open", "high", "low", "close"], adjust="qfq",
+)
+holders = pool.read_shareholder_counts(symbols="000001.SZ")
+```
