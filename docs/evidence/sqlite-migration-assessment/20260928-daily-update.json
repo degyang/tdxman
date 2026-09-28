@@ -1,0 +1,88 @@
+{
+  "root_tests": {
+    "daily_derived": 8,
+    "daily_summary": 11,
+    "daily_update_and_sync": 8
+  },
+  "auxiliary_tests_reused": {
+    "reference_factors": 11,
+    "commit": "42c778204c9ef7b6e5cc9ea2ec043c0e5982466f"
+  },
+  "real_sample": {
+    "symbols": [
+      "000001.SZ",
+      "300822.SZ",
+      "600519.SH"
+    ],
+    "feature_rows": 13918,
+    "latest_date": "2026-09-24"
+  },
+  "live_update": {
+    "requested_sessions": [
+      "2026-09-23",
+      "2026-09-24"
+    ],
+    "success": [
+      {
+        "symbol": "000001.SZ",
+        "changed_rows": 2,
+        "affected_sessions": [
+          "2026-09-23",
+          "2026-09-24"
+        ],
+        "recomputed_feature_rows": 2,
+        "changed_feature_rows": 2,
+        "summary_rows": 4,
+        "read_rows": 27,
+        "elapsed_ms": 15
+      }
+    ],
+    "empty": [],
+    "failed": [],
+    "unsupported": []
+  },
+  "live_noop": {
+    "requested_sessions": [
+      "2026-09-23",
+      "2026-09-24"
+    ],
+    "success": [
+      {
+        "symbol": "000001.SZ",
+        "changed_rows": 0,
+        "affected_sessions": [],
+        "recomputed_feature_rows": 0,
+        "changed_feature_rows": 0,
+        "summary_rows": 0,
+        "read_rows": 0,
+        "elapsed_ms": 4
+      }
+    ],
+    "empty": [],
+    "failed": [],
+    "unsupported": []
+  },
+  "real_backfill": {
+    "changed_rows": 1,
+    "affected_sessions": [
+      "2026-09-23",
+      "2026-09-24"
+    ],
+    "recomputed_feature_rows": 2,
+    "changed_feature_rows": 2,
+    "summary_rows": 4,
+    "read_rows": 27,
+    "elapsed_ms": 6,
+    "restored_all_feature_values": true,
+    "symbol": "300822.SZ",
+    "repaired_date": "2026-09-23"
+  },
+  "full_derivation_status": "running; see data/_reports/fw03-main/full-derived.jsonl",
+  "production_switched": false,
+  "limits": [
+    "Historical dated ST gaps remain UNKNOWN.",
+    "Source factor coverage is not extended without new evidence.",
+    "New writer currently handles D summaries; existing intersecting W/M results cause atomic rejection.",
+    "BaoStock fetch supports SH/SZ; BJ reported unsupported."
+  ]
+}
