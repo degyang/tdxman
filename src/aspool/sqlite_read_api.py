@@ -257,7 +257,9 @@ class StockSnapshot:
             raise DataPoolError("FREQUENCY_NOT_READY", "Only daily summaries are implemented")
         if scope not in {"all_stocks", "exclude_known_st"} or not isinstance(closed_only, bool):
             raise DataPoolError("INVALID_ARGUMENT", "Invalid scope or closed_only")
-        allowed = [row[1] for row in self.conn.execute("PRAGMA table_info(market_daily_summary)")]
+        from .sqlite_market_metadata import describe_fields
+
+        allowed = describe_fields(self.conn, scope=scope)
         chosen = _fields(fields, allowed)
         rows = self.conn.execute(
             "SELECT "
@@ -436,6 +438,9 @@ class EventAmountBatches:
 
 def describe(root):
     with StockSnapshot(root) as reader:
+        from .sqlite_market_metadata import describe_fields
+
+        market_fields = describe_fields(reader.conn)
         first, last, days = reader.conn.execute(
             "SELECT min(period_key),max(period_key),count(*) FROM market_daily_summary "
             "WHERE frequency='D' AND scope='all_stocks'"
@@ -449,6 +454,7 @@ def describe(root):
         market_frequencies=["D"],
         scopes=["all_stocks", "exclude_known_st"],
         event_fields=list(EVENT_FIELDS),
+        market_fields=market_fields,
         point_in_time=False,
         capabilities=dict(
             daily_limit_summary=True,

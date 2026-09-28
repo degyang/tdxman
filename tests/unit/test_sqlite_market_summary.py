@@ -108,7 +108,7 @@ def test_summary_scopes_unknowns_denominators_and_noop_stamps(tmp_path):
         observation(conn, 6, status="NO_TRADE", amount=0)
         observation(conn, 7, status="INVALID", close=0)
         result = recompute_daily_summary(conn, trade_date="2024-01-02")
-        assert result == dict(read_rows=7, changed_rows=2)
+        assert result == dict(read_rows=14, changed_rows=2)
         all_stocks, ex_st = summary(conn), summary(conn, "exclude_known_st")
         assert all_stocks["trading_count"] == 5 and ex_st["trading_count"] == 4
         assert all_stocks["valid_return_count"] == 4 and all_stocks["invalid_return_count"] == 1
@@ -186,7 +186,7 @@ def test_window_atomicity_when_another_symbol_is_not_prepared(tmp_path):
         result = recompute_market_window(
             conn, symbols=["000001.SZ", "000002.SZ"], market_sessions=["2024-01-02"]
         )
-        assert result == dict(feature_rows=2, summary_rows=2, read_rows=4)
+        assert result == dict(feature_rows=2, summary_rows=2, read_rows=6)
         before = conn.total_changes
         result = recompute_market_window(
             conn, symbols=["000001.SZ", "000002.SZ"], market_sessions=["2024-01-02"]

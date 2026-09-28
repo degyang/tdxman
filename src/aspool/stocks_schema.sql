@@ -139,6 +139,11 @@ CREATE TABLE market_daily_summary (
     third_plus_count INTEGER, fifth_plus_count INTEGER,
     ladder_json TEXT CHECK(ladder_json IS NULL OR json_valid(ladder_json)),
     promotion_eligible_count INTEGER, promotion_success_count INTEGER,
+    -- NULL means this optional quality extension has not been calculated.
+    limit_reason_counts_json TEXT CHECK(limit_reason_counts_json IS NULL OR
+        (json_valid(limit_reason_counts_json) AND json_type(limit_reason_counts_json)='object')),
+    promotion_quality_json TEXT CHECK(promotion_quality_json IS NULL OR
+        (json_valid(promotion_quality_json) AND json_type(promotion_quality_json)='object')),
     -- Common fields: D values or W/M aggregates, with named valid denominators.
     amount_sum REAL, amount_valid_count INTEGER,
     avg_turnover REAL, turnover_valid_count INTEGER,

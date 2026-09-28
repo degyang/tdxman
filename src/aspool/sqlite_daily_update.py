@@ -180,6 +180,9 @@ def apply_daily_changes(
     old_timeout = conn.execute("PRAGMA busy_timeout").fetchone()[0]
     conn.execute("PRAGMA busy_timeout=30000")
     conn.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)
+    from .sqlite_summary_quality import QUALITY_FIELDS, quality_columns
+
+    with_quality = set(QUALITY_FIELDS) <= quality_columns(conn)
     affected = set()
     derived = defaultdict(set)
     close_dependencies = defaultdict(set)
@@ -379,6 +382,23 @@ def apply_daily_changes(
             result["changed_feature_rows"] += stats["changed_rows"]
             result["read_rows"] += stats["read_rows"]
             affected.update(stats["changed_dates"])
+            if with_quality:
+                # A changed candidate also affects sessions with no row for this stock.
+                for changed_day in stats["promotion_changed_dates"]:
+                    following = conn.execute(
+                        "SELECT trade_date FROM daily_features WHERE symbol=? AND trade_date>? "
+                        "AND calc_status<>'NO_TRADE' ORDER BY trade_date LIMIT 1",
+                        (symbol, changed_day),
+                    ).fetchone()
+                    affected.update(
+                        row[0]
+                        for row in conn.execute(
+                            "SELECT DISTINCT period_key FROM market_daily_summary "
+                            "WHERE frequency='D' "
+                            "AND period_key>? AND period_key<=? ORDER BY period_key LIMIT 61",
+                            (changed_day, following[0] if following else "9999-12-31"),
+                        )
+                    )
         if len(affected) > 60 or not affected <= sessions:
             raise DataPoolError(
                 "LOCAL_UPDATE_BUDGET_EXCEEDED", "Affected dates exceed supplied calendar"

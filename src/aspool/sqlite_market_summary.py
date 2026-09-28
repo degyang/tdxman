@@ -12,6 +12,7 @@ from decimal import Decimal
 
 from .api_contract import DataPoolError
 from .sqlite_daily_derived import finite, recompute_symbol_features
+from .sqlite_summary_quality import QUALITY_FIELDS, encode, promotion_quality, quality_columns
 
 BUCKETS = (
     "limit_up",
@@ -94,6 +95,10 @@ class _Summary:
                 )
             }
         )
+        self.reasons = {
+            "UNKNOWN": Counter({"missing_st": 0, "missing_reference": 0}),
+            "INVALID": Counter(),
+        }
         self.distribution = dict.fromkeys(BUCKETS, 0)
         self.ladder = Counter()
         self.returns, self.amounts, self.turnovers = [], [], []
@@ -104,12 +109,15 @@ class _Summary:
         if status == "NO_TRADE":
             return
         if status == "INVALID":
+            self.reasons["INVALID"][row["limit_reason"] or "unclassified"] += 1
             counts["limit_invalid_count"] += 1
             return
         if status != "TRADED" or row["limit_status"] not in ("KNOWN", "NO_LIMIT", "UNKNOWN"):
             raise DataPoolError("FEATURE_NOT_READY", "Daily limits have not been computed")
         if not finite(row["close"], positive=True):
             raise DataPoolError("DAILY_INVALID", "Traded feature has no valid close")
+        if row["limit_status"] == "UNKNOWN":
+            self.reasons["UNKNOWN"][row["limit_reason"] or "unclassified"] += 1
         counts["trading_count"] += 1
         counts["st_unknown_count"] += row["is_st"] is None
         counts[
@@ -210,8 +218,10 @@ def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_
     if max_rows <= 0:
         raise ValueError("Invalid row budget")
     summaries = {scope: _Summary() for scope in SCOPES}
+    with_quality = set(QUALITY_FIELDS) <= quality_columns(conn)
+    current = {}
     cursor = conn.execute(
-        "SELECT f.calc_status,f.limit_status,f.is_st,f.pre_close,"
+        "SELECT f.symbol,f.limit_reason,f.calc_status,f.limit_status,f.is_st,f.pre_close,"
         "f.close_limit_up,f.touch_limit_up,f.close_limit_down,f.touch_limit_down,"
         "f.consecutive_up,f.prior_consecutive_up,f.streak_known,f.ma20,f.above_ma20,"
         "b.close,b.amount,b.turnover_rate,f.updated_at AS feature_stamp,"
@@ -228,12 +238,19 @@ def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_
             if read_rows > max_rows:
                 raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Summary row budget exceeded")
             row = dict(zip(fields, raw))
+            if with_quality:
+                current[row["symbol"]] = row
             input_stamp = max(input_stamp, row["feature_stamp"], row["bar_stamp"] or 0)
             summaries["all_stocks"].add(row)
             if row["is_st"] != 1:
                 summaries["exclude_known_st"].add(row)
     finally:
         cursor.close()
+    if with_quality:
+        promotion, visited = promotion_quality(
+            conn, trade_date, current, max_rows=max_rows - read_rows
+        )
+        read_rows += visited
     conn.execute("SAVEPOINT daily_summary_recompute")
     changed = 0
     try:
@@ -248,6 +265,17 @@ def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_
                 session_count=1,
                 **summary.result(),
             )
+            if with_quality:
+                reasons = summary.reasons
+                assert sum(reasons["UNKNOWN"].values()) == values["limit_unknown_count"]
+                assert sum(reasons["INVALID"].values()) == values["limit_invalid_count"]
+                quality = promotion[scope]
+                assert quality["candidate_count"] == values["promotion_eligible_count"] + sum(
+                    count for key, count in quality.items() if key.startswith("excluded_")
+                )
+                values.update(
+                    limit_reason_counts_json=encode(reasons), promotion_quality_json=encode(quality)
+                )
             columns = list(values)
             old = conn.execute(
                 "SELECT " + ",".join(columns) + ",updated_at FROM market_daily_summary "

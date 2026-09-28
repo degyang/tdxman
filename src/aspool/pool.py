@@ -218,6 +218,13 @@ class DataPool:
         return StockSnapshot(self.root)
 
     @public_read
+    def describe_market_fields(self, *, fields=None, frequency="D", scope="all_stocks"):
+        """Describe available fields without reading or maintaining historical data."""
+        from .sqlite_market_metadata import describe_fields
+        with self.stock_snapshot() as reader:
+            return describe_fields(reader.conn, fields=fields, frequency=frequency, scope=scope)
+
+    @public_read
     def read_market_summary(
         self, *, start, end, frequency="D", scope="all_stocks", fields=None, closed_only=True
     ):

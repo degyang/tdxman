@@ -261,6 +261,7 @@ def recompute_symbol_features(
         # IPO window. A smaller number is never promoted to an exact listing age.
         observed = min(len(history), 6)
         changed_dates = []
+        promotion_changed_dates = []
         processed = 0
         successors = 0
         predicate = "f.trade_date>=?" if propagate else "f.trade_date BETWEEN ? AND ?"
@@ -307,6 +308,16 @@ def recompute_symbol_features(
                         (*(values[field] for field in DERIVED_COLUMNS), stamp, symbol, day),
                     )
                     changed_dates.append(day)
+                    if any(
+                        values[key] != row[key]
+                        for key in (
+                            "calc_status",
+                            "close_limit_up",
+                            "consecutive_up",
+                            "streak_known",
+                        )
+                    ):
+                        promotion_changed_dates.append(day)
                 if (
                     propagate
                     and day > end
@@ -328,4 +339,5 @@ def recompute_symbol_features(
         "read_rows": visited,
         "changed_rows": len(changed_dates),
         "changed_dates": changed_dates,
+        "promotion_changed_dates": promotion_changed_dates,
     }

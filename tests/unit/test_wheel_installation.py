@@ -1,7 +1,7 @@
 """Dedicated installed-wheel acceptance; run with the fresh venv's python -I.
 
 Uses unittest only and synthetic temporary SQLite databases. No source checkout
-imports, configured pool roots, network calls, migration or derived calculation.
+imports, configured pool roots, network calls or real-data maintenance.
 """
 
 import json
@@ -126,6 +126,30 @@ class WheelInstallationTests(unittest.TestCase):
         self.assertEqual(len(set(keys)), 6)
         self.assertEqual(keys, sorted(keys))
         self.assertTrue(all((frame.amount == 1000).all() for frame in frames))
+
+    def test_integrated_quality_metadata_and_calculation(self):
+        from aspool.sqlite_market_summary import recompute_daily_summary
+
+        self.assertTrue(Path(aspool.__file__).resolve().is_relative_to(Path(sys.prefix)))
+        self.assertEqual(self.pool.describe()["contract_version"], 3)
+        metadata = self.pool.describe_market_fields(fields=["promotion_quality_json"])
+        self.assertEqual(metadata["promotion_quality_json"]["null_meaning"], "not_computed")
+        before = self.pool.read_market_daily(start="2026-09-24", end="2026-09-24")
+        self.assertIsNone(before.promotion_quality_json.iloc[0])
+        with stock_connection(self.root, read_only=False) as writer:
+            writer.execute(
+                "UPDATE daily_features SET prior_consecutive_up=1,consecutive_up=2 "
+                "WHERE trade_date='2026-09-24'"
+            )
+            recompute_daily_summary(writer, trade_date="2026-09-24")
+            writer.commit()
+        with self.pool.stock_snapshot() as reader:
+            after = reader.read_market_daily(start="2026-09-24", end="2026-09-24")
+        quality = json.loads(after.promotion_quality_json.iloc[0])
+        self.assertEqual(quality["candidate_count"], 3)
+        self.assertEqual(after.promotion_eligible_count.iloc[0], 3)
+        self.assertEqual(after.promotion_ratio.iloc[0], 1)
+        self.assertIn("UNKNOWN", json.loads(after.limit_reason_counts_json.iloc[0]))
 
     def test_installed_console_entrypoints(self):
         for args in (["--version"], ["version"]):
