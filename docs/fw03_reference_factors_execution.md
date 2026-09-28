@@ -12,14 +12,16 @@ reference pre-close, dated ST, and a finite-key atomic SQLite writer.
   fenhong, songzhuangu, peigu, and peigujia fields to per-share
   cash_dividend_per_share, bonus_shares_per_share,
   rights_shares_per_share, and rights_price, and groups same-day payloads.
-  It retains the original source fields. Unknown required amounts are errors.
+  Stable event keys are deduplicated across every calculation path; differing
+  values under one key are rejected. Unknown required amounts are errors.
 - build_selected_factors(anchors=..., events=..., prior_closes=...,
-  through=...) chooses the cumulative-anchor route whenever anchors are
-  present. It copies source cumulative values directly; it never cumprods them.
-  Without anchors, it builds an event route from known prior closes. Same-day
-  events are combined before calculating a factor. A factor interval starts at
-  its effective date and ends before the next factor, or at the caller's
-  explicitly verified through date. No factor means no claim of coverage.
+  through=...) chooses one route. Cumulative anchors must use one explicit,
+  known source and their values are copied directly, never cumprodded. Event
+  chains also require one explicit, known source. Same-day events are combined
+  after stable-key deduplication. A verified no-event interval can create a
+  factor 1 baseline at its explicit start and is bounded by its verified end.
+  Other factor intervals end before the next factor or at the verified through
+  date. No factor means no claim of coverage.
 - select_reference_pre_close(...) selects reliable dated reference,
   action-adjusted previous close, then a raw fallback. Use actions_covered=True
   only when the event source confirms the entire interval; an empty event list
@@ -29,15 +31,32 @@ reference pre-close, dated ST, and a finite-key atomic SQLite writer.
   name_as_of exactly matches the requested day, otherwise None. Historical
   names are never filled from a current snapshot. Migrated
   raw_fallback:* ST values do not count as dated evidence.
-- update_reference_factors(conn, *, symbol, dates, actions, anchors,
-  prior_closes, factor_through, dated_pre_close, dated_st,
-  actions_covered_dates) writes within a SQLite savepoint. List only those
-  target dates whose source confirms complete action coverage since the prior
-  effective close. Pass the complete selected factor inputs for the affected
-  symbol and verified range. The caller controls the outer transaction. The
-  writer updates only source candidate/effective reference and ST columns,
-  action rows, and its selected factor cache. It preserves other daily feature
-  fields. An identical call does not update timestamps or write factor rows.
+- update_reference_factors(conn, *, symbol, dates, actions=None,
+  anchors=None, factor_through=None, dated_pre_close, dated_st,
+  actions_covered_dates, verified_no_event_range, *_complete_range) writes
+  within a SQLite savepoint; its reads and writes share that transaction
+  snapshot. Omitted actions/anchors mean no source update. Supplied rows are
+  finite upserts, while `actions_complete_range=(source,start,end)` and
+  `anchors_complete_range=(source,start,end)` explicitly authorize replacement
+  only inside that source/date range. `factors_complete_range=(start,end)` is
+  the explicit factor-cache replacement boundary. This supports partial
+  incremental updates without requiring a full symbol history. The writer
+  diffs factor rows by effective date, leaves unaffected rows and timestamps
+  alone, and counts anchor changes as well as action, factor, and feature
+  changes. The caller controls the outer transaction.
+
+The minimal reference-only integration call remains
+`update_reference_factors(conn, symbol=..., dates=[...])`; it does not rebuild
+or delete selected factor rows. If a caller revokes an existing KNOWN
+`pre_close`, that caller must first clear dependent fields according to its
+daily-feature contract before invoking this writer.
+
+Reliable stored dated pre-close and ST candidates are included in precedence
+selection, and conflicting reliable dated values fail. The previous close is
+read only from a valid OHLC bar whose feature status is `TRADED`; NO_TRADE and
+INVALID placeholders are skipped. An action-based reference needs an explicit
+known action source and evidence of action coverage for the date. Raw fallback
+values are not treated as reliable dated evidence.
 
 Example call:
 
@@ -58,7 +77,6 @@ Example call:
                 "peigujia": 0,
                 "source_key": "tdx:000001:2024-06-14:1",
             }],
-            anchors=[],
             factor_through="2024-06-14",
             actions_covered_dates=["2024-06-14"],
         )
@@ -67,8 +85,9 @@ Example call:
 For same-day same-category duplicate actions, supply a stable source_key,
 event_id, or event_slot; otherwise the writer rejects the input to avoid
 silently replacing one event with another. Unsupported event categories and
-conflicting reliable source values also fail. No deletion or full-source-set
-replacement protocol is added.
+conflicting reliable source values also fail. Range replacement is opt-in and
+bounded by the corresponding explicit complete-range argument. An omitted
+action or anchor collection is not interpreted as a complete empty history.
 
 ## Evidence
 
@@ -83,7 +102,8 @@ values remained those exact cumulative levels, with an interval from
 sample boundary. This is a rule sample only, not a historical rewrite or
 full-range factor acceptance.
 
-Targeted verification used the main project environment and confirmed the
+Original implementation evidence above was not repeated. This repair round's
+targeted verification used the main project environment and confirmed the
 module import resolves to this worktree:
 
     PYTHONPATH=/home/ubuntu/Services/tdxman-fw03-reference-factors/src \
@@ -94,7 +114,7 @@ module import resolves to this worktree:
     PYTHONPATH=/home/ubuntu/Services/tdxman-fw03-reference-factors/src \
       /home/ubuntu/Services/tdxman/.venv/bin/python -m pytest -q \
       tests/unit/test_sqlite_reference_factors.py
-    6 passed
+    11 passed
 
     /home/ubuntu/Services/tdxman/.venv/bin/ruff check \
       src/aspool/sqlite_reference_factors.py tests/unit/test_sqlite_reference_factors.py
@@ -103,23 +123,25 @@ module import resolves to this worktree:
     git diff --check
     passed
 
-The six new tests cover cash dividends, bonus shares, rights issues, merged
-same-day actions, multiple event dates, non-cumprod source anchors, valid
-intervals, unknown/conflicting sources, dated ST/name/unknown precedence,
-SQLite rollback, preserved unrelated fields, and repeat-call no-op. The
-previously completed M0 migration reconciliation, 10 existing migration cases,
-full value reconciliation, integrity checks, and remote hash/structure/read
-acceptance were reused as instructed and not repeated.
+The 11 module tests cover the original cash dividend, bonus, rights, interval,
+ST, rollback and no-op behavior, plus the repair cases: stored dated reference
+precedence/conflict, unknown-source rejection, stable event deduplication and
+conflicting duplicate rejection, cross-source cumulative-anchor rejection,
+explicit factor-1 no-event baseline, finite versus complete-range updates,
+incremental anchor counts and preservation of unaffected keys, and skipping
+NO_TRADE/INVALID prior bars. Ruff and `git diff --check` passed. The previously
+completed M0 migration reconciliation, 10 existing migration cases, full value
+reconciliation, integrity checks, and remote hash/structure/read acceptance
+were reused as instructed and not repeated.
 
 ## Remaining FW-03 work
 
 This execution is FW-03a only. It does not implement limit prices, streaks,
 MA20, daily market summaries, public APIs, Fundwise integration, production
-switching, or historical backfill. The writer requires a caller to supply
-complete selected factor inputs and evidence-backed factor and action coverage
-for the affected symbol. It does not establish source coverage from absence of
-rows. Legacy reference-price Parquet remains migration evidence and is not
-promoted to a permanent source fact.
+switching, or historical backfill. The caller still supplies explicit evidence
+for any claimed complete range and for action coverage; absence of rows does not
+establish source completeness. Legacy reference-price Parquet remains
+migration evidence and is not promoted to a permanent source fact.
 
 An Orca workspace comment could not be updated: /home/ubuntu/.orca-relay/bin/orca
 reported that no owning Orca client is connected to the relay.
