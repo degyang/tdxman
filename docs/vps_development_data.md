@@ -4,13 +4,15 @@
 
 2026-09-28 M0 已交付：本机及 JakartaVPS 均有经验证的 `data/_staging/fw02/`，详情见[M0 执行记录](sqlite_migration_m0_execution.md)。
 
-## 当前交付边界
+当前：本机已完成日派生并安装到 `data/`，仅 stocks.sqlite、catalog.duckdb、lake；报告和恢复源移到 `.local/`。Jakarta 尚为旧 M0 副本，待新版全量复制。当前操作与验收见 [FW-04](fw04_sqlite_public_api_execution.md)，以下保留 M0 原始操作记录。
+
+## M0 历史交付边界
 
 第一步迁入原始股票日线、来源日期事实、原始公司行为和来源累计因子。四表 schema 已创建；`daily_features` 只完成来源字段和基础有效性分类，计算字段未就绪，`market_daily_summary` 保持空表。不能因为 SQLite 可以打开就切换 Fundwise 或声称日频链路验收通过。
 
 `source_pre_close` 不承接旧本地推导值；旧已发布参考价仍在冻结源中，待 FW-03 核对依赖并重建。当前名称不倒灌历史 ST。股息事件与来源累计因子分开保留，不进行重复累乘。
 
-## 目录与复现
+## M0 历史目录与复现（不要用于当前运行目录）
 
 ```text
 tdxman/data/

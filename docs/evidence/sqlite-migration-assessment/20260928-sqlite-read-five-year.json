@@ -1,0 +1,13 @@
+{
+  "root": "/mnt/d/Workstation/Services/tdxman/data",
+  "start": "2021-09-24",
+  "end": "2026-09-24",
+  "rows": 24608,
+  "pages": 259,
+  "max_rows": 1000,
+  "amount_sum": 27666435250523.75,
+  "seconds": 52.154,
+  "peak_rss_kib": 411104,
+  "rss_limit_gib": 2,
+  "passed": true
+}

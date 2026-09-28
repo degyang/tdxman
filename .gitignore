@@ -17,3 +17,6 @@ uv.lock
 
 # Local market data, migration staging, backups, and runtime reports
 /data/
+
+# Local operation evidence and migration recovery, outside runtime data
+/.local/

@@ -34,7 +34,7 @@ METRICS = {
 }
 
 
-def verify(root, reuse_source_integrity=False):
+def verify(root, reuse_source_integrity=False, evidence_root=None):
     root = Path(root).resolve()
     started = time.monotonic()
     path = root / "stocks.sqlite"
@@ -43,8 +43,9 @@ def verify(root, reuse_source_integrity=False):
         raise ValueError("Checkpoint and close the writer first")
     before = (path.stat().st_size, path.stat().st_mtime_ns)
     sha = digest(path)
-    baseline = json.loads((root / "_reports/facts-result.json").read_text())
-    prior_path = root / "_reports/derived-result.json"
+    evidence_root = Path(evidence_root) if evidence_root else root / "_reports"
+    baseline = json.loads((evidence_root / "facts-result.json").read_text())
+    prior_path = evidence_root / "derived-result.json"
     if reuse_source_integrity:
         prior = json.loads(prior_path.read_text())
         if (
@@ -174,10 +175,11 @@ def verify(root, reuse_source_integrity=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--evidence-root", type=Path)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--reuse-source-integrity", action="store_true")
     args = parser.parse_args()
-    result = verify(args.root, args.reuse_source_integrity)
+    result = verify(args.root, args.reuse_source_integrity, args.evidence_root)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps(result, ensure_ascii=False))

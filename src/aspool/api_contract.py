@@ -1,5 +1,6 @@
 """Public daily field and error contract, independent of storage engines."""
 
+import sqlite3
 from functools import wraps
 
 import duckdb
@@ -22,7 +23,7 @@ def public_read(function):
             raise
         except FileNotFoundError as exc:
             raise DataPoolError("POOL_NOT_FOUND", str(exc)) from exc
-        except duckdb.Error as exc:
+        except (duckdb.Error, sqlite3.Error) as exc:
             raise DataPoolError("DAILY_INVALID", str(exc)) from exc
 
     return wrapped

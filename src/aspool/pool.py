@@ -210,8 +210,29 @@ class DataPool:
     def __init__(self, root: str | Path = "~/.aspool"):
         self.root = Path(root).expanduser().resolve()
 
+    def stock_snapshot(self):
+        """Read SQLite daily/features/events in one caller-owned snapshot."""
+        if not (self.root / "stocks.sqlite").is_file():
+            raise DataPoolError("CAPABILITY_UNAVAILABLE", "SQLite stock snapshot is unavailable")
+        from .sqlite_read_api import StockSnapshot
+        return StockSnapshot(self.root)
+
+    @public_read
+    def read_market_summary(
+        self, *, start, end, frequency="D", scope="all_stocks", fields=None, closed_only=True
+    ):
+        with self.stock_snapshot() as reader:
+            return reader.read_market_summary(start=start, end=end, frequency=frequency,
+                                             scope=scope, fields=fields, closed_only=closed_only)
+
+    def read_market_daily(self, *, start, end, scope="all_stocks", fields=None):
+        return self.read_market_summary(start=start, end=end, scope=scope, fields=fields)
+
     def read_security_daily(self, *, symbols=None, start=None, end=None):
         """Read dated status/ST/reference-price facts, including suspended sessions."""
+        if (self.root / "stocks.sqlite").is_file():
+            with self.stock_snapshot() as reader:
+                return reader.read_daily_features(symbols=symbols, start=start, end=end)
         from .security_facts import DAILY_TABLE, read_facts
 
         return read_facts(self.root, DAILY_TABLE, symbols=symbols, start=start, end=end)
@@ -230,6 +251,11 @@ class DataPool:
 
     @public_read
     def read_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
+        if (self.root / "stocks.sqlite").is_file():
+            with self.stock_snapshot() as reader:
+                return reader.read_daily(
+                    symbols=symbols, start=start, end=end, lookback=lookback, fields=fields
+                )
         selected = (
             list(DAILY_FIELDS)
             if fields is None
@@ -378,6 +404,10 @@ class DataPool:
 
     @public_read
     def status(self):
+        if (self.root / "stocks.sqlite").is_file():
+            derived = self.describe_limits()
+            return dict(backend="aspool", storage_backend="sqlite", root=str(self.root),
+                        status="ready" if derived["ready"] else "empty", derived=derived)
         with pool_lock(self.root):
             storage = DailyStorage(self.root)
             with duckdb.connect() as conn:
@@ -495,6 +525,9 @@ class DataPool:
     @public_read
     def read_limit_summary(self, *, start=None, end=None):
         """已发布的日级涨跌停汇总。"""
+        if (self.root / "stocks.sqlite").is_file():
+            from .sqlite_read_api import read_limit_summary
+            return read_limit_summary(self.root, start=start, end=end)
         from .limit_api import read_limit_summary
 
         return read_limit_summary(self.root, start=start, end=end)
@@ -502,6 +535,11 @@ class DataPool:
     @public_read
     def read_limit_events(self, *, trade_date=None, start=None, end=None, symbols=None):
         """已发布的逐股涨跌停事件；输出规范 symbol。"""
+        if (self.root / "stocks.sqlite").is_file():
+            with self.stock_snapshot() as reader:
+                return reader.read_limit_events(
+                    trade_date=trade_date, start=start, end=end, symbols=symbols
+                )
         from .limit_api import read_limit_events
 
         return read_limit_events(
@@ -513,12 +551,15 @@ class DataPool:
         min_consecutive_up=None, batch_days=7, max_rows=25_000,
         memory_limit="512MB", threads=2, temp_directory=None,
     ):
-        """Read published events and same-day CNY amount in bounded date batches.
+        """Read events and same-day CNY amount in bounded date windows.
 
-        Use as a context manager. A changed publication/stale state raises
-        LIMIT_REVISION_CHANGED, so callers must discard their staging output.
+        Use as a context manager. SQLite pins one read snapshot and splits
+        oversized dates into pages. Legacy pools check publication revisions.
         """
-        from .limit_amount import EventAmountBatches
+        if (self.root / "stocks.sqlite").is_file():
+            from .sqlite_read_api import EventAmountBatches
+        else:
+            from .limit_amount import EventAmountBatches
 
         return EventAmountBatches(
             self.root, start=start, end=end, symbols=symbols, fields=fields,
@@ -530,6 +571,11 @@ class DataPool:
     @public_read
     def read_limit_exceptions(self, *, trade_date=None, start=None, end=None, symbols=None):
         """已发布的异常/未知/无约束记录。"""
+        if (self.root / "stocks.sqlite").is_file():
+            raise DataPoolError(
+                "API_REMOVED", "read_limit_exceptions was removed in v3; "
+                "use market summaries or daily features"
+            )
         from .limit_api import read_limit_exceptions
 
         return read_limit_exceptions(
@@ -539,6 +585,11 @@ class DataPool:
     @public_read
     def read_limit_references(self, *, start=None, end=None, symbols=None):
         """Published reference-price evidence, including unresolved conflicts."""
+        if (self.root / "stocks.sqlite").is_file():
+            raise DataPoolError(
+                "API_REMOVED", "read_limit_references was removed in v3; "
+                "use market summaries or daily features"
+            )
         from .limit_api import read_limit_references
 
         return read_limit_references(self.root, start=start, end=end, symbols=symbols)
@@ -546,6 +597,11 @@ class DataPool:
     @public_read
     def read_limit_coverage(self, *, start=None, end=None):
         """已发布批次的范围与完成状态；含 stale 标记。"""
+        if (self.root / "stocks.sqlite").is_file():
+            raise DataPoolError(
+                "API_REMOVED", "read_limit_coverage was removed in v3; "
+                "use market summaries or daily features"
+            )
         from .limit_api import read_limit_coverage
 
         return read_limit_coverage(self.root, start=start, end=end)
@@ -556,6 +612,11 @@ class DataPool:
 
         在名单内、无事件且无异常 => 确定无涨跌停事件。
         """
+        if (self.root / "stocks.sqlite").is_file():
+            raise DataPoolError(
+                "API_REMOVED", "read_limit_scope was removed in v3; "
+                "use market summaries or daily features"
+            )
         from .limit_api import read_limit_scope
 
         return read_limit_scope(self.root, trade_date=trade_date, start=start, end=end)
@@ -563,6 +624,11 @@ class DataPool:
     @public_read
     def read_limit_staleness(self, *, start=None, end=None):
         """被标记为陈旧/失败的日期，供消费者拒绝或降级使用。"""
+        if (self.root / "stocks.sqlite").is_file():
+            raise DataPoolError(
+                "API_REMOVED", "read_limit_staleness was removed in v3; "
+                "use market summaries or daily features"
+            )
         from .limit_api import read_limit_staleness
 
         return read_limit_staleness(self.root, start=start, end=end)
@@ -570,6 +636,9 @@ class DataPool:
     @public_read
     def describe_limits(self):
         """声明已实现的涨跌停派生能力与字段单位；只读。"""
+        if (self.root / "stocks.sqlite").is_file():
+            from .sqlite_read_api import describe
+            return describe(self.root)
         from .limit_api import describe_limits
 
         return describe_limits(self.root)
@@ -581,6 +650,8 @@ class DataPool:
 
         会自修改日向前传播至连板/事件不再变化；失败则标记 stale。
         """
+        if (self.root / "stocks.sqlite").is_file():
+            raise DataPoolError("API_REMOVED", "Use atomic daily changes or explicit maintenance")
         from .limit_events import compute_limit_events
 
         return compute_limit_events(
@@ -597,7 +668,7 @@ class DataPool:
         from .ex_domain import load_ex_categories
         from .index_api import INDEX_FIELDS
 
-        return {
+        result = {
             "contract_version": 2,
             "primary_key": ["symbol", "date"],
             "price_adjustment": "raw",
@@ -642,6 +713,11 @@ class DataPool:
                 "minute_bars": False,
             },
         }
+
+        if (self.root / "stocks.sqlite").is_file():
+            result.update(contract_version=3, backend="sqlite", market_frequencies=["D"])
+            result["capabilities"].update(market_summary=True, read_snapshot=True)
+        return result
 
     def read_research_daily(
         self, *, symbols=None, start=None, end=None, lookback=None, fields=None

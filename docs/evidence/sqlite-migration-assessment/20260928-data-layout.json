@@ -1,0 +1,12 @@
+{
+  "installed_root": "/mnt/d/workstation/services/tdxman/data",
+  "top_level": [
+    "catalog.duckdb",
+    "lake",
+    "stocks.sqlite"
+  ],
+  "moved_recovery": ".local/recovery/legacy-source",
+  "moved_evidence": ".local/reports",
+  "removed_disposable_sample_bytes": 18124997,
+  "replica_status": "pending SSH unlock; remote retains original M0"
+}

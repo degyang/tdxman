@@ -1,6 +1,6 @@
 # 股票四表：详细需求与设计
 
-日期：2026-09-28。状态：完成本轮交叉审核，可进入隔离实现；DDL/模板仍为设计工件，尚未实现后端、迁移或上线。审核结论见[审核记录](sqlite_design_review.md)。
+日期：2026-09-28。状态：四表迁移、日派生及显式新根公开接口已实现；尚未生产切换。周/月和多模型执行待实现。进展见[FW-04](fw04_sqlite_public_api_execution.md)。审核结论见[审核记录](sqlite_design_review.md)。
 
 这是[实施计划](sqlite_four_table_implementation_plan.md)的详细规格。范围为 tdxman/aspool 股票域及 Fundwise 消费接口；不改 ETF、指数、分钟的现有存储。此前评估中未确定的字段和算法，以本文及 [DDL](design/stocks_schema.sql)为本轮细化结果。业务库只有四表，不增加批次、发布、覆盖、异常、任务或模型结果表。
 
@@ -12,17 +12,18 @@
 tdxman/data/
 ├── stocks.sqlite          新版股票四表主库；运行时可能伴随-wal/-shm
 ├── catalog.duckdb         沿用格式的公共资料/其他域目录（已核对store.py的既有文件名）
-├── lake/                  ETF、指数等既有域，保持各自格式与相对布局
-├── _staging/fw02/          隔离迁移目标根，内含待验收stocks.sqlite与必要公共域
-├── _backups/              受控恢复材料，不随每次日更整库复制
-└── _reports/              迁移差异、基准测量、同步日志
+└── lake/                  ETF、指数等既有域，保持各自格式与相对布局
+tdxman/.local/
+├── recovery/              受控恢复材料
+├── receive/               异机复制接收暂存
+└── reports/               迁移差异、基准测量、同步日志
 ```
 
-上图是路径契约，不表示已经搬迁或创建这些数据库。其他域迁到统一根时只改变位置、保持格式/接口；不能直接把旧股票publication全套复制成新股票权威。股票主库、其他域及外部运行日志与Fundwise自己的模型结果存储分开，后者仍在应用目录。
+上图为清理后的路径契约，本机已安装运行文件；不表示已完成生产配置切换。其他域迁到统一根时只改变位置、保持格式/接口；不能直接把旧股票publication全套复制成新股票权威。股票主库、其他域及外部运行日志与Fundwise自己的模型结果存储分开，后者仍在应用目录。
 
 项目内入口将默认根解析为绑定的主项目data绝对路径，不能按shell当前目录猜测，也不能在site-packages或各个worktree旁悄悄新建data。DataPool显式root和既有Fundwise `aspool.root` 用于隔离/部署配置；迁移/修复脚本仍必须显式给 source-root、target-root，检查解析后的路径不同并禁止覆盖已有目标。VPS及其他设备各自部署路径可以不同，但均配置为各自tdxman项目的data。
 
-FW-02先写data/_staging/fw02，FW-06让Fundwise显式指向该完整目标根验收；FW-07停写关闭连接后安装已验证文件到data根并更新Fundwise配置，绝不把含_staging的整个data递归复制到自身。生产数据和暂存/备份/报告由根级 `/data/` gitignore 排除；小型审查证据仍在docs/evidence供版本管理。
+FW-02 原隔离目标现已安装到 data 根。后续接收暂存、备份、日志均位于 `.local/`，不递归复制整个项目或旧恢复源。复制只按已封闭数据清单执行；源/目标不能相同。`/data/` 与 `/.local/` 均忽略 Git，小型审查证据进入 docs/evidence。
 
 当前项目位于WSL的 `/mnt/d`，本轮只读检查显示挂载类型9p。遵循用户指定路径，不擅自改成指向家目录的软链接；FW-01/FW-06必须在这个实际文件系统验证锁、WAL、同步落盘、进程中断恢复及I/O成本，不能拿Linux临时目录结果替代。避免Windows与WSL两套writer同时访问同一个库；如果实测不满足约束，再报告具体证据处理，不预先改动用户的目录决定。
 
@@ -279,7 +280,7 @@ class DataPool:
 
 ```python
 from aspool import DataPool
-pool = DataPool(root="/mnt/d/Workstation/Services/tdxman/data/_staging/fw02")
+pool = DataPool(root="/mnt/d/Workstation/Services/tdxman/data")
 k = pool.read_daily(symbols=["000001.SZ"], start="2006-01-01",
                     end="2025-12-31", fields=["symbol", "date", "close", "pre_close"])
 weekly = pool.read_market_summary(start="2025-01-01", end="2025-12-31",
