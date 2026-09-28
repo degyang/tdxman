@@ -30,7 +30,7 @@ PY
 ssh -o BatchMode=yes "$remote_host" "test -d '$remote_project' && mkdir -p '$remote_project/.local/receive/data' '$remote_project/.local/reports' && df -h '$remote_project'"
 # --whole-file intentionally transfers complete files, not a live database delta.
 # The receiver directory is isolated; do not point a consumer at it before verification.
-rsync -a --whole-file --partial --info=progress2 \
+rsync -a --whole-file --partial --compress --compress-choice=zstd --compress-level=3 --info=progress2 \
     --files-from="$repo_root/.local/reports/full-copy-files.txt" \
     -e 'ssh -o BatchMode=yes' "$repo_root/data/" \
     "$remote_host:$remote_project/.local/receive/data/"
