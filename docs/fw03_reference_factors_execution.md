@@ -145,3 +145,114 @@ migration evidence and is not promoted to a permanent source fact.
 
 An Orca workspace comment could not be updated: /home/ubuntu/.orca-relay/bin/orca
 reported that no owning Orca client is connected to the relay.
+
+## Incremental factor coverage extension (new auxiliary slice)
+
+`advance_factor_coverage(conn, *, symbol, verified_start, verified_end, events,
+source="tdx:xdxr")` advances an already selected, continuous sparse factor
+cache. The caller must open an outer transaction (`BEGIN IMMEDIATE` is the
+recommended entry). The function takes a writer snapshot inside its own
+savepoint, rolls back only its work on failure, and never commits the caller.
+It neither constructs missing history nor guesses a factor-one baseline.
+
+Example, after the caller has selected factors through 2024-01-02:
+
+```python
+conn.execute("BEGIN IMMEDIATE")
+result = advance_factor_coverage(
+    conn,
+    symbol="000001.SZ",
+    verified_start="2024-01-03",
+    verified_end="2024-01-06",
+    events=[{
+        "effective_date": "2024-01-04",
+        "category": 1,
+        "source_key": "cash-2024-01-04",
+        "cash_dividend_per_share": 1.0,
+        "bonus_shares_per_share": 0.0,
+        "rights_shares_per_share": 0.0,
+    }],
+)
+# Recompute downstream fields from result["affected_from"] through
+# result["affected_through"] in this same transaction, then commit here.
+```
+
+`events` is the explicitly verified complete event set for the inclusive
+interval, not an incremental list of newly discovered events. Canonical
+per-share fields take precedence over legacy per-ten-share TDX fields. The
+main source adapter owns that unit conversion and source completeness proof.
+Categories 1, 2 and 5 retain the existing pure-rule policy; unsupported
+categories, source disagreements, out-of-range events, conflicting stable
+keys and unidentifiable multiple same-category events are rejected.
+
+Empty verified intervals extend only the terminal factor interval (plus its
+receipt metadata and timestamp). Event days create sparse continuation rows
+with `source=derived:anchor_continuation:<event source>` and an
+`anchor_continuation:` factor basis identifying the original selected scale.
+They are never written as `factor_anchor` source cumulative observations.
+Unchanged historical prefix rows keep their original values and timestamps.
+New factor anchors inside the requested extension require explicit maintenance.
+
+Prior closes use actual valid OHLC and source trading status/positive turnover,
+without reading derived `calc_status`. Suspended placeholders are excluded;
+unknown status with no positive turnover does not establish a traded close.
+The prior traded day must itself have known factor coverage. Its raw close is
+converted into the preceding event segment's scale as
+`raw_close * factor_at_close_day / factor_before_event`. Thus two separate
+one-yuan dividends while suspended change a ten-yuan reference to eight yuan:
+the cumulative multiplier is `10/8`, rather than `(10/9)**2`, even across
+separate calls. A new traded close already uses its own segment's scale.
+
+The terminal factor's existing `payload_json` carries `fw03_advance` metadata:
+verified source/range, original selected-scale identity, and signatures of
+verified event keys and values. No table or daily factor expansion is added.
+Repeat and overlapping messages are accepted only within a prior recorded
+verified interval and with identical original event evidence, including when
+an external source writer has already changed the current event payload.
+An initial overlap with older cache coverage lacking such evidence is refused;
+start the first extension at old `valid_through + 1`, or use explicit
+maintenance. Historical insertion, omission, revision, or changed root anchor
+also requires explicit maintenance.
+
+Return fields:
+
+- `changed_factor_dates`: keys of factor rows actually inserted or extended;
+  these may include an older terminal row and are not the recomputation start.
+- `changed_event_rows`: number of newly inserted source event rows.
+- `changed_rows`: changed factor rows plus newly inserted event rows.
+- `affected_from`: old `valid_through + 1` for real additional coverage.
+- `affected_through`: new verified coverage end.
+- `valid_through`: resulting coverage end, including on a no-op.
+
+An identical replay returns empty changed dates, zero counts and
+`affected_from=affected_through=None`. Changed timestamps exceed previous
+corporate-action timestamps even if those timestamps are ahead of wall time.
+The existing `update_reference_factors` remains available for its prior scope;
+callers should use explicit maintenance for rebuilding or replacing an
+advanced continuation route.
+
+New evidence for this slice only:
+
+```text
+PYTHONPATH=/home/ubuntu/Services/tdxman-fw03-reference-factors/src \
+  /home/ubuntu/Services/tdxman/.venv/bin/python -m pytest -q \
+  tests/unit/test_sqlite_reference_factors.py -k test_advance_
+6 passed, 11 deselected
+
+/home/ubuntu/Services/tdxman/.venv/bin/ruff check \
+  src/aspool/sqlite_reference_factors.py tests/unit/test_sqlite_reference_factors.py
+All checks passed!
+
+git diff --check
+passed
+```
+
+The six new independent SQLite tests exercise empty extension, outer
+transaction ownership and monotonic timestamps; per-share cash/bonus scale
+continuation with stale derived statuses; duplicate/overlap zero writes;
+missing coverage, gaps and bounds rejection; historical event revision and
+injected write-failure savepoint rollback; and two dividends while suspended.
+The existing 11 tests were excluded. All test writes used in-memory databases;
+the verified full database was not accessed or modified in this slice. Main
+updater integration, source fetching, downstream recalculation and final
+acceptance remain the main developer's responsibility.
