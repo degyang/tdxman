@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from .. import __version__
 from .cmd_admin import ping, version
 from .cmd_auction import auction
 from .cmd_board import belong_board, board_list, board_members
@@ -80,7 +81,7 @@ class TdxmanGroup(click.Group):
 
 
 @click.group(cls=TdxmanGroup)
-@click.version_option(version="1.1.1", prog_name="tdxman")
+@click.version_option(version=__version__, prog_name="tdxman")
 def cli() -> None:
     """通达信行情数据命令行工具。"""
     pass
