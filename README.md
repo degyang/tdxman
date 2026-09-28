@@ -571,6 +571,10 @@ commands 层不依赖 transport，可独立单测。
 `offline.vipdoc` 是通达信本地行情目录，都不是数据池输出路径。
 
 Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](docs/aspool_api.md)。
+下一阶段的数据域分层需求与物理设计见
+[数据域分层需求](docs/data_platform_v2_requirements.md)和
+[数据域分层设计](docs/data_platform_v2_design.md)。两份文档是尚未实施的目标，当前运行方式仍以
+[生产数据流契约](docs/production_data_flow_contract.md)为准。
 新版项目数据统一位于 `data/`：股票使用 `stocks.sqlite`，指数使用独立的
 `indices.sqlite`，ETF 使用 `etfs.sqlite`，公共目录与基本面快照保留在 `catalog.duckdb`。
 当前项目生产池已全部退役 `lake/` 分区，见 [ETF 与辅助数据迁移验收](docs/etf_reference_sqlite_migration.md)。
