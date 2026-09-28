@@ -1,14 +1,14 @@
 # FW-04：SQLite 公开接口与 Fundwise 日频接入
 
-2026-09-28。实现日频接口及消费者接入；全历史日派生已算完。**尚未生产切换；新版成品尚未全量复制到 Jakarta，不能把旧 M0 副本视为同步完成。** 周/月和多模型执行仍属 FW-08。
+2026-09-28。实现日频接口及消费者接入；全历史日派生已算完。**新版成品已全量复制并安装到 Jakarta，Fundwise SDK/HTTP 消费验收通过；默认生产配置尚未切换。** 见[异机验收](fw04_jakarta_full_copy_acceptance.md)。 周/月和多模型执行仍属 FW-08。
 
 ## 运行数据与同步
 
 本机 `tdxman/data/` 仅保留 `stocks.sqlite`、`catalog.duckdb`、`lake/`；连接期间允许 SQLite WAL/SHM。恢复源移到 `.local/recovery/legacy-source/`，迁移报告、日志、复制清单放 `.local/reports/`，小型验收证据在 `docs/evidence/`。已删除可重建样本数据库 18,124,997 字节，未删除唯一恢复源。
 
-全量复制清单共 8,158 文件、9,483,547,533 字节。股票库 SHA-256：`6eb13bafe07ce0fcc1a24047761dd91b26ba31302dedcc6369276993487b2808`。没有新增写入，复用已完成的源端完整性与数据计数验收。
+全量复制清单共 8,157 个唯一文件、9,480,127,373 字节（已剔除原清单重复 catalog 条目）。股票库 SHA-256：`6eb13bafe07ce0fcc1a24047761dd91b26ba31302dedcc6369276993487b2808`。没有新增写入，复用已完成的源端完整性与数据计数验收。
 
-接下来停止源端所有读写，在 tmux 中执行 `bash scripts/ops/copy_full_data.sh`。该脚本完整传输到 Jakarta `.local/receive/data/`，不做活库增量同步。远端 `verify_data_replica.py` 检查完整清单、实际字节哈希、额外文件、路径、侧车文件和只读样本；只在股票库哈希等于已验收源库时复用完整性结果。通过后停远端数据库使用者，将旧 data 移至恢复区，再安装接收目录。当前 SSH agent 未加载 wsler 密钥，实际传输未开始；Orca 命令通道可用不等于 rsync SSH 已认证。
+本次停止源端所有读写，在 tmux 中执行 `bash scripts/ops/copy_full_data.sh`。该脚本完整传输到 Jakarta `.local/receive/data/`，不做活库增量同步。远端 `verify_data_replica.py` 检查完整清单、实际字节哈希、额外文件、路径、侧车文件和只读样本；只在股票库哈希等于已验收源库时复用完整性结果。通过后停远端数据库使用者，将旧 data 移至恢复区，再安装接收目录。用户加载 wsler SSH agent 后已完成传输、哈希校验及目录安装。旧 M0 位于 `.local/recovery/m0-before-fw04-20260928`，不参与当前运行。
 
 ## 公开调用
 
@@ -65,8 +65,8 @@ memory_limit 为 SQLite 缓存配置提示：一半用于页缓存，并非整�
 - 真实主线计算通过：614 个板块成分，遍历 321 个历史月，21,617 条排名覆盖 1,216 日（概念 19,081、行业 2,536）。状态 partial，基于已知涨停及连板样本和当前板块成分，并非历史成分回测。最终运行 111.01 秒、RSS 418,544 KiB；复用前次中断形成的 19 个月缓存和成分缓存。证据：[主线结果](evidence/sqlite-migration-assessment/20260928-regime-mainline-result.json)。
 - Fundwise 新增 5 项与受影响的有界读取/旧 CLI 定向验证通过；CLI 保持严格评分，页面允许明确标注的已知子集评分。
 
-公共市场特征落四表库；模型分数、周期/主线结果仍由 Fundwise 保存。索引缺日不能把跨交易日收益当作当日收益。ETF、指数读取保留公共域接口，已抽查实际两日日线。不能据上述工程验收宣称历史输入完整、主线输入完整、生产已切换或 Jakarta 已同步。
+公共市场特征落四表库；模型分数、周期/主线结果仍由 Fundwise 保存。索引缺日不能把跨交易日收益当作当日收益。ETF、指数读取保留公共域接口，已抽查实际两日日线。不能据上述工程验收宣称历史输入完整、主线输入完整、生产已切换；当前 Jakarta 同步状态以本次异机哈希验收为准。
 
 ## 本轮收尾与续接
 
-已推送 tdxman `77f4f86`（含辅助校验器 `bb78832`）、Fundwise `3d68000`。Jakarta 主仓库已拉取代码，Python 3.11 SQLite v3 导入检查通过；辅助 worktree 标记 completed，未重复其 40 项测试。运行数据仍是旧 M0，剩余顺序为：加载 WSL wsler SSH agent → tmux 全量复制 → 接收端哈希验收 → 安装新 data → 再做生产配置切换。增量同步后置。
+已推送 tdxman `77f4f86`（含辅助校验器 `bb78832`）、Fundwise `3d68000`。Jakarta 主仓库已拉取代码，Python 3.11 SQLite v3 导入检查通过；辅助 worktree 标记 completed，未重复其 40 项测试。新版 data 已安装，Jakarta Fundwise 18 日评分、578 条主线排名及三个 HTTP 端点验收通过。历史输入缺口和默认生产配置切换仍未关闭；增量同步后置。见[实际结果](fw04_jakarta_full_copy_acceptance.md)。

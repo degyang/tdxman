@@ -20,11 +20,17 @@ import json, sys
 from pathlib import PurePosixPath, Path
 value=json.loads(Path(sys.argv[1]).read_text())
 paths=[]
+seen=set()
 for item in value['files']:
     path=PurePosixPath(item['path'])
     if path.is_absolute() or '..' in path.parts or '\n' in str(path):
         raise ValueError('Unsafe manifest path')
+    if str(path) in seen:
+        raise ValueError(f'Duplicate manifest path: {path}')
+    seen.add(str(path))
     paths.append(str(path))
+if sum(item['bytes'] for item in value['files']) != value['bytes']:
+    raise ValueError('Manifest total bytes do not match file sizes')
 Path(sys.argv[2]).write_text('\n'.join(paths)+'\n')
 PY
 ssh -o BatchMode=yes "$remote_host" "test -d '$remote_project' && mkdir -p '$remote_project/.local/receive/data' '$remote_project/.local/reports' && df -h '$remote_project'"

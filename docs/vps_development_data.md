@@ -4,7 +4,7 @@
 
 2026-09-28 M0 已交付：本机及 JakartaVPS 均有经验证的 `data/_staging/fw02/`，详情见[M0 执行记录](sqlite_migration_m0_execution.md)。
 
-当前：本机已完成日派生并安装到 `data/`，仅 stocks.sqlite、catalog.duckdb、lake；报告和恢复源移到 `.local/`。Jakarta 尚为旧 M0 副本，待新版全量复制。当前操作与验收见 [FW-04](fw04_sqlite_public_api_execution.md)，以下保留 M0 原始操作记录。
+当前：本机已完成日派生并安装到 `data/`，仅 stocks.sqlite、catalog.duckdb、lake；报告和恢复源移到 `.local/`。Jakarta 已全量复制并安装同一派生成品，Fundwise 消费验收通过，见[异机结果](fw04_jakarta_full_copy_acceptance.md)。当前操作与验收见 [FW-04](fw04_sqlite_public_api_execution.md)，以下保留 M0 原始操作记录。
 
 ## M0 历史交付边界
 
@@ -105,4 +105,4 @@ tmux attach-session -t tdxman-task
 
 ## 派生成品进度（2026-09-28）
 
-本机 `data/_staging/fw02/stocks.sqlite` 已完成全历史派生并通过完整校验，约 8.59 GiB；[证据](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 的相同相对路径仍是初始 M0 工件。新成品同步等待 WSL wsler 私钥重新加载 SSH agent；不要将远端原始迁移副本误认作已更新的派生成品。传输应在 tmux 下执行，副本必须与成品 SHA-256 完全一致，才可复用其完整性校验。
+本机 `data/stocks.sqlite` 已完成全历史派生并通过完整校验，约 8.59 GiB；[证据](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 已安装到主项目 `data/`，全量文件 SHA-256 与源成品一致，并通过 Fundwise 近期 SDK/HTTP 验收。旧 M0 移至 `.local/recovery/`。执行证据见[完整复制与消费验收](fw04_jakarta_full_copy_acceptance.md)。

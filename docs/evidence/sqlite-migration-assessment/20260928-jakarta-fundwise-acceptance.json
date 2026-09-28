@@ -1,0 +1,51 @@
+{
+  "status": "passed",
+  "checked_at": "2026-09-28T05:12:35.705531+00:00",
+  "root": "/home/ubuntu/Services/tdxman/data",
+  "contract_version": 3,
+  "daily_rows": 2,
+  "index_rows": 2,
+  "market": {
+    "ok": true,
+    "computed": 18,
+    "phase_days": 0,
+    "mainline_rows": 0,
+    "mainline": {
+      "status": "not_computed"
+    }
+  },
+  "latest_matches_source": true,
+  "compared_latest": {
+    "profit_score": 0.0,
+    "speculation_score": 54.7,
+    "resilience_score": 0.0,
+    "trend_score": 29.0,
+    "score": 19,
+    "score_input_quality": "known_subset",
+    "phase": null,
+    "period_start": "2026-09-24T00:00:00.000",
+    "period_end": "2026-09-24T00:00:00.000",
+    "as_of": "2026-09-24T00:00:00.000",
+    "close_limit_up_count": 53,
+    "close_limit_down_count": 12
+  },
+  "mainline": {
+    "ok": true,
+    "rows": 578,
+    "availability": {
+      "status": "partial",
+      "reason": "按已发布且连板数已知的涨停事件排名；结果代表已知样本。",
+      "complete_days": 0,
+      "requested_days": 18,
+      "source": "tdxman.MacClient.get_board_list/get_board_members",
+      "snapshot_at": "2026-09-28T04:25:24.072905+00:00",
+      "boards": 614,
+      "classification": "通达信概念及二级行业；与目标同花顺成分分类存在差异"
+    }
+  },
+  "http": {
+    "latest": "passed",
+    "coverage": "passed",
+    "mainline": "passed"
+  }
+}

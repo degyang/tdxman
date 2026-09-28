@@ -8,5 +8,5 @@
   "moved_recovery": ".local/recovery/legacy-source",
   "moved_evidence": ".local/reports",
   "removed_disposable_sample_bytes": 18124997,
-  "replica_status": "pending SSH unlock; remote retains original M0"
+  "replica_status": "verified and installed on Jakarta; Fundwise SDK and HTTP acceptance passed"
 }

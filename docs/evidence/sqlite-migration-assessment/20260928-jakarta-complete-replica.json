@@ -1,0 +1,182 @@
+{
+  "status": "verified",
+  "verification_scope": "complete_file_replica_and_stock_read_samples",
+  "root": "/home/ubuntu/Services/tdxman/.local/receive/data",
+  "files": 8157,
+  "bytes": 9480127373,
+  "manifest_path": "/home/ubuntu/Services/tdxman/.local/reports/full-copy-manifest.json",
+  "integrity_evidence_path": "/home/ubuntu/Services/tdxman/.local/reports/20260928-derived-result.json",
+  "database_sha256": "6eb13bafe07ce0fcc1a24047761dd91b26ba31302dedcc6369276993487b2808",
+  "database_bytes": 9218285568,
+  "integrity_check": "ok",
+  "integrity_check_origin": "source_reused_after_sha256_match",
+  "daily_calculation_complete": true,
+  "rows": {
+    "daily_bars": 16350085,
+    "daily_features": 16350599,
+    "market_daily_summary": 12958,
+    "corporate_actions": 301404
+  },
+  "rows_origin": "source_reused_after_sha256_match",
+  "local_row_counts_run": false,
+  "local_full_integrity_run": false,
+  "sqlite_mode": "mode=ro&immutable=1",
+  "sqlite_version": "3.50.4",
+  "samples": {
+    "daily_bars": [
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-04",
+        "open": 17.5,
+        "high": 18.55,
+        "low": 17.2,
+        "close": 18.29,
+        "amount": 147324992.0
+      },
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-05",
+        "open": 18.35,
+        "high": 18.85,
+        "low": 18.0,
+        "close": 18.06,
+        "amount": 173475008.0
+      },
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-06",
+        "open": 18.02,
+        "high": 19.05,
+        "low": 17.75,
+        "close": 18.78,
+        "amount": 221192000.0
+      },
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-07",
+        "open": 19.0,
+        "high": 19.77,
+        "low": 18.9,
+        "close": 19.54,
+        "amount": 443592000.0
+      },
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-10",
+        "open": 19.79,
+        "high": 20.48,
+        "low": 19.77,
+        "close": 20.14,
+        "amount": 372294016.0
+      }
+    ],
+    "daily_features": [
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-04",
+        "pre_close": 2.992,
+        "is_st": null,
+        "calc_status": "TRADED",
+        "limit_status": "UNKNOWN",
+        "ma20": null
+      },
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-05",
+        "pre_close": 18.29,
+        "is_st": null,
+        "calc_status": "TRADED",
+        "limit_status": "UNKNOWN",
+        "ma20": null
+      },
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-06",
+        "pre_close": 18.06,
+        "is_st": null,
+        "calc_status": "TRADED",
+        "limit_status": "UNKNOWN",
+        "ma20": null
+      },
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-07",
+        "pre_close": 18.78,
+        "is_st": null,
+        "calc_status": "TRADED",
+        "limit_status": "UNKNOWN",
+        "ma20": null
+      },
+      {
+        "symbol": "000001.SZ",
+        "trade_date": "2000-01-10",
+        "pre_close": 19.54,
+        "is_st": null,
+        "calc_status": "TRADED",
+        "limit_status": "UNKNOWN",
+        "ma20": null
+      }
+    ],
+    "market_daily_summary": [
+      {
+        "frequency": "D",
+        "period_key": "2000-01-04",
+        "scope": "all_stocks",
+        "as_of": "2000-01-04",
+        "session_count": 1,
+        "trading_count": 751
+      },
+      {
+        "frequency": "D",
+        "period_key": "2000-01-04",
+        "scope": "exclude_known_st",
+        "as_of": "2000-01-04",
+        "session_count": 1,
+        "trading_count": 751
+      },
+      {
+        "frequency": "D",
+        "period_key": "2000-01-05",
+        "scope": "all_stocks",
+        "as_of": "2000-01-05",
+        "session_count": 1,
+        "trading_count": 754
+      },
+      {
+        "frequency": "D",
+        "period_key": "2000-01-05",
+        "scope": "exclude_known_st",
+        "as_of": "2000-01-05",
+        "session_count": 1,
+        "trading_count": 754
+      },
+      {
+        "frequency": "D",
+        "period_key": "2000-01-06",
+        "scope": "all_stocks",
+        "as_of": "2000-01-06",
+        "session_count": 1,
+        "trading_count": 756
+      }
+    ]
+  },
+  "elapsed_seconds": 91.53,
+  "manifest_sha256": "ef40238daba04b2c02286dbd9b0ca761ac1c5506a74d5dbeac437518066f13aa",
+  "installed": {
+    "status": "installed",
+    "installed_at": "2026-09-28T05:12:21.509911+00:00",
+    "root": "/home/ubuntu/Services/tdxman/data",
+    "previous_m0": "/home/ubuntu/Services/tdxman/.local/recovery/m0-before-fw04-20260928",
+    "verified_files": 8157,
+    "bytes": 9480127373,
+    "database_sha256": "6eb13bafe07ce0fcc1a24047761dd91b26ba31302dedcc6369276993487b2808",
+    "verification_report": "/home/ubuntu/Services/tdxman/.local/reports/full-copy-verification.json",
+    "runtime_entries": [
+      "catalog.duckdb",
+      "lake",
+      "stocks.sqlite"
+    ],
+    "stock_replica_read_only": true
+  },
+  "manifest_correction": "Removed one identical duplicate catalog.duckdb entry before verification; file bytes were not retransferred."
+}

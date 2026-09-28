@@ -1,6 +1,6 @@
 # 四表 SQLite 落地计划
 
-日期：2026-09-28。当前进展见[FW-04 执行记录](fw04_sqlite_public_api_execution.md)；Jakarta 旧 M0 验收不代表新派生成品已同步。已开始实施隔离 SQLite 核心及事实迁移，生产数据未改动。用户最新优先级：**数据迁移与其他 VPS 开发数据准备 → 核心派生 → 同步更新接口 → 先跑通 Fundwise 日频工作流**。迁移/异机执行入口见[数据先行开发说明](vps_development_data.md)。此文件替代旧 DG-03 月文件补做和 DG-06 发布代次扩建。详细依据见[数据迁移与接口评估](sqlite_migration_api_assessment.md)。执行规格见[详细需求与设计](sqlite_stock_requirements_design.md)，附[四表 DDL](design/stocks_schema.sql)和[完整模型模板](design/market_four_dimensions.v1.json)。
+日期：2026-09-28。当前进展见[FW-04 执行记录](fw04_sqlite_public_api_execution.md)；Jakarta 新派生成品已全量同步安装并经 Fundwise 验收，见[异机结果](fw04_jakarta_full_copy_acceptance.md)。已开始实施隔离 SQLite 核心及事实迁移，生产数据未改动。用户最新优先级：**数据迁移与其他 VPS 开发数据准备 → 核心派生 → 同步更新接口 → 先跑通 Fundwise 日频工作流**。迁移/异机执行入口见[数据先行开发说明](vps_development_data.md)。此文件替代旧 DG-03 月文件补做和 DG-06 发布代次扩建。详细依据见[数据迁移与接口评估](sqlite_migration_api_assessment.md)。执行规格见[详细需求与设计](sqlite_stock_requirements_design.md)，附[四表 DDL](design/stocks_schema.sql)和[完整模型模板](design/market_four_dimensions.v1.json)。
 
 新版权威根固定为本主项目 `data/`，股票主库 `data/stocks.sqlite`；迁移暂存与恢复材料现统一在 `.local/`，不放入运行 data。旧 `~/.aspool` 只作为源/恢复材料。所有工作包遵循[路径契约](sqlite_stock_requirements_design.md#0-新版数据根tdxmandata)。
 
@@ -21,8 +21,8 @@
 | S1 | 四表存储核心、规范化、兼容日线读取 | FW-01；仅显式隔离目标 | schema/连接及显式新根公开读路由已实现 |
 | **S3a 提前** | **完整历史原始事实迁移** | FW-02；先样本后全量，原始日线/日期事实/全部来源事件因子逐字段对账 | 已完成全部5,586只股票事实迁移、逐值比较和完整性校验；见[M0执行记录](sqlite_migration_m0_execution.md) |
 | **M0 开发数据** | **其他 VPS 可获取迁入事实与必要公共域** | 封闭工件同步、远端完整性与基础读取；tmux保护任务 | 已完成JakartaVPS数据复制与哈希/结构/计数/读取验收；完整性复用源端结果；见[M0执行记录](sqlite_migration_m0_execution.md) |
-| **S2-D** | **逐股派生 + 日频市场汇总** | FW-03；从已迁入事实重建 daily_features、D汇总，局部更新等价参考重建 | 已实现局部writer与日派生，真实在线/缺补闭环通过；全库历史派生与完整校验通过；新日因子/日历衔接集成通过，Jakarta成品待同步，见[执行记录](fw03_daily_update_execution.md) |
-| **S4-D** | **对外接口 + Fundwise日频接入** | FW-04/FW-05；环境评分、周期/梯队、主线一并闭环 | 日频公开接口及 Fundwise 汇总消费已实现，全历史日评分已算；周期输入不足；真实主线已计算 21,617 条，明确为已知样本 partial。见[FW-04](fw04_sqlite_public_api_execution.md) |
+| **S2-D** | **逐股派生 + 日频市场汇总** | FW-03；从已迁入事实重建 daily_features、D汇总，局部更新等价参考重建 | 已实现局部writer与日派生，真实在线/缺补闭环通过；全库历史派生与完整校验通过；新日因子/日历衔接集成通过，Jakarta成品已全量同步并安装，见[执行记录](fw03_daily_update_execution.md) |
+| **S4-D** | **对外接口 + Fundwise日频接入** | FW-04/FW-05；环境评分、周期/梯队、主线一并闭环 | 日频公开接口及 Fundwise 汇总消费已实现，全历史日评分已算；周期输入不足；真实主线已计算 21,617 条，明确为已知样本 partial。Jakarta SDK/HTTP 消费验收通过。见[FW-04](fw04_sqlite_public_api_execution.md) |
 | S5-D | 首个可交付工作流和生产前核心验收 | FW-06；实际日更/历史回算/补数、五年RSS、故障/恢复/回退 | 待实施 |
 | S6-D | 日频能力维护窗口切换 | FW-07；核心验收通过，不等待周月/复制，但明确能力边界 | 待实施，不是当前已获验收 |
 | S2-WM / S4-Models | 周/月公共特征、多模型模板扩展 | FW-08；复用已完成D与存储，不重迁原始历史 | 后续必交，不阻塞首个日频里程碑 |
