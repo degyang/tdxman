@@ -1,0 +1,90 @@
+{
+  "status": "passed",
+  "source_root": "/mnt/d/Workstation/Services/tdxman/data",
+  "sample_root": "/mnt/d/Workstation/Services/tdxman/.local/up-rg-feature/sample",
+  "source_read_rows": 33196,
+  "results": [
+    {
+      "day": "2026-07-03",
+      "cost": {
+        "read_rows": 14267,
+        "changed_rows": 2
+      },
+      "checks": {
+        "all_stocks": {
+          "reason_counts_match_independent_sql": true,
+          "reason_counts": {
+            "INVALID": {},
+            "UNKNOWN": {
+              "missing_reference": 95,
+              "missing_st": 3097
+            }
+          }
+        },
+        "exclude_known_st": {
+          "reason_counts_match_independent_sql": true,
+          "reason_counts": {
+            "INVALID": {},
+            "UNKNOWN": {
+              "missing_reference": 95,
+              "missing_st": 3097
+            }
+          }
+        }
+      }
+    },
+    {
+      "day": "2026-07-06",
+      "cost": {
+        "read_rows": 14271,
+        "changed_rows": 2
+      },
+      "checks": {
+        "all_stocks": {
+          "reason_counts_match_independent_sql": true,
+          "reason_counts": {
+            "INVALID": {},
+            "UNKNOWN": {
+              "missing_reference": 106,
+              "missing_st": 0
+            }
+          }
+        },
+        "exclude_known_st": {
+          "reason_counts_match_independent_sql": true,
+          "reason_counts": {
+            "INVALID": {},
+            "UNKNOWN": {
+              "missing_reference": 106,
+              "missing_st": 0
+            }
+          }
+        }
+      }
+    }
+  ],
+  "seconds": 9.574,
+  "peak_rss_kib": 200720,
+  "public_rows": [
+    {
+      "period_key": "2026-07-03",
+      "limit_unknown_count": 3192,
+      "limit_invalid_count": 0,
+      "limit_reason_counts_json": "{\"INVALID\":{},\"UNKNOWN\":{\"missing_reference\":95,\"missing_st\":3097}}",
+      "promotion_eligible_count": 9,
+      "promotion_success_count": 1,
+      "promotion_ratio": 0.1111111111,
+      "promotion_quality_json": "{\"candidate_count\":9,\"excluded_invalid_count\":0,\"excluded_limit_unknown_count\":0,\"excluded_no_trade_count\":0,\"excluded_predecessor_unknown_count\":0,\"unresolved_predecessor_count\":3190}"
+    },
+    {
+      "period_key": "2026-07-06",
+      "limit_unknown_count": 106,
+      "limit_invalid_count": 0,
+      "limit_reason_counts_json": "{\"INVALID\":{},\"UNKNOWN\":{\"missing_reference\":106,\"missing_st\":0}}",
+      "promotion_eligible_count": 20,
+      "promotion_success_count": 0,
+      "promotion_ratio": 0.0,
+      "promotion_quality_json": "{\"candidate_count\":20,\"excluded_invalid_count\":0,\"excluded_limit_unknown_count\":0,\"excluded_no_trade_count\":0,\"excluded_predecessor_unknown_count\":0,\"unresolved_predecessor_count\":3193}"
+    }
+  ]
+}

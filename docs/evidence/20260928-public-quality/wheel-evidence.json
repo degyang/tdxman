@@ -1,0 +1,12 @@
+{
+  "version": "1.1.2",
+  "wheel": "/mnt/d/workstation/services/tdxman/.local/up-rg-feature/dist/tdxman-1.1.2-py3-none-any.whl",
+  "bytes": 390193,
+  "sha256": "b34d1709a852eafb6be21af8cde320b081602130772cabf0e67df317686afe1c",
+  "baseline_install_tests": 8,
+  "integrated_quality_install_tests": 1,
+  "production_install": false,
+  "real_database_upgraded": false,
+  "implementation_commit": "021442b",
+  "packaging_commit": "16ad826"
+}
