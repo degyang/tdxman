@@ -1,0 +1,97 @@
+{
+  "status": "verified",
+  "date": "2026-09-28",
+  "contract": "docs/production_data_flow_contract.md",
+  "catalog_migration": {
+    "table": "securities",
+    "rows": 7642,
+    "active": 7305,
+    "canonical_identity_mismatches": 0,
+    "backup": ".local/recovery/catalog-before-securities-20260928T144827Z.duckdb"
+  },
+  "current_catalog": {
+    "rows": 7647,
+    "active": 7310,
+    "as_of": "2026-09-28 after online directory refresh"
+  },
+  "full_update": {
+    "status": "ok",
+    "report": ".local/reports/all-update-20260928T145907Z.json",
+    "stock": {
+      "directory": 5578,
+      "traded": 5557,
+      "no_trade": 21,
+      "missing": 0,
+      "invalid": 0,
+      "failed": 0,
+      "unclassified": 0,
+      "optional_listing_date_warnings": 9,
+      "factor_anchor_unavailable": 161
+    },
+    "index": {
+      "requested": 865,
+      "success": 865,
+      "failed": 0,
+      "stale": 0,
+      "last": "2026-09-28",
+      "breadth_schema_version": 2,
+      "breadth_available_rows": 1382887,
+      "breadth_unavailable_rows": 1189012
+    },
+    "etf": {
+      "directory": 1732,
+      "traded": 1691,
+      "no_trade": 41,
+      "failed": 0,
+      "stale": 0,
+      "last": "2026-09-28"
+    },
+    "fundamentals": {
+      "requested": 5578,
+      "rows": 5578
+    }
+  },
+  "today_market_summary": {
+    "bj_rule_recompute": {
+      "symbols": 351,
+      "changed_features": 347,
+      "summary_rows": 2,
+      "scope": "2026-09-28 only; historical rule migration intentionally not run"
+    },
+    "trading_count": 5557,
+    "valid_return_count": 5557,
+    "limit_known_count": 5209,
+    "no_limit_count": 348,
+    "limit_unknown_count": 0,
+    "limit_invalid_count": 0,
+    "close_limit_up_count": 35,
+    "close_limit_down_count": 60,
+    "max_consecutive_up": 5,
+    "first_board_count": 28,
+    "second_plus_count": 7,
+    "promotion_eligible_count": 52,
+    "promotion_success_count": 7,
+    "promotion_ratio": 0.1346153846153846,
+    "ma20_valid_count": 5110
+  },
+  "cli": [
+    "aspool directory --type stock|etf",
+    "aspool update --type stock|index|etf|all",
+    "aspool sync --type stock|index|etf|all",
+    "aspool sync --type stock --source baostock --status missing",
+    "aspool query --dataset securities|calendar|fundamentals|stock-bars|corporate-actions|stock-features|limit-events|market-summary|index-bars|etf-bars|etf-factors",
+    "aspool status --dataset DATASET --format table|json",
+    "aspool contract --format table|json"
+  ],
+  "validation": {
+    "focused_tests": "107 passed",
+    "ruff": "passed",
+    "git_diff_check": "passed",
+    "real_query_smoke": [
+      "securities 000001.SZ",
+      "stock-bars 000001.SZ at 2026-09-28",
+      "stock-features status=missing at 2026-09-28",
+      "market-summary at 2026-09-28"
+    ]
+  }
+}

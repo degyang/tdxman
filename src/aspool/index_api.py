@@ -1,6 +1,7 @@
 """Read-only index API for consumers; does not depend on the working-tree universe."""
 
 import re
+import sqlite3
 
 import duckdb
 import numpy as np
@@ -23,6 +24,7 @@ INDEX_FIELDS = {
     "amount": ("DOUBLE", "CNY"),
     "up_count": ("BIGINT", "count"),
     "down_count": ("BIGINT", "count"),
+    "breadth_status": ("VARCHAR", None),
 }
 
 
@@ -89,6 +91,16 @@ def _read(root, symbols, start=None, end=None, lookback=None, fields=None, listi
     except (ValueError, TypeError) as exc:
         raise DataPoolError("INVALID_ARGUMENT", "Invalid date bounds") from exc
     with pool_lock(root):
+        if (root / "indices.sqlite").is_file():
+            from .sqlite_index_store import read_indices
+
+            try:
+                return read_indices(root, symbols=symbols, start=start, end=end,
+                                    lookback=lookback, selected=selected, listing=listing)
+            except DataPoolError:
+                raise
+            except (sqlite3.Error, ValueError) as exc:
+                raise DataPoolError("INDEX_INVALID", str(exc)) from exc
         files = sorted((root / "lake/indices/daily").glob("market=*/symbol=*/bars.parquet"))
         if not files:
             raise DataPoolError("INDEX_NOT_FOUND", "No index daily bars in pool")
@@ -124,7 +136,9 @@ def _read(root, symbols, start=None, end=None, lookback=None, fields=None, listi
                 # 输出规范格式: code.market (如 000300.SH)
                 sql = (
                     "SELECT code || '.' || market AS symbol, market,code,name,trade_date AS date,"
-                    f"open,high,low,close,volume,amount,up_count,down_count FROM b{where}"
+                    "open,high,low,close,volume,amount,up_count,down_count,"
+                    "CASE WHEN up_count+down_count>0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END "
+                    f"AS breadth_status FROM b{where}"
                 )
                 if lookback:
                     sql += (
@@ -149,7 +163,8 @@ def _read(root, symbols, start=None, end=None, lookback=None, fields=None, listi
         price_unit="point",
         volume_unit="tdx_index_volume",
         amount_unit="CNY",
-        breadth_missing_value=0,
+        breadth_missing_value=None,
+        breadth_status_field="breadth_status",
         point_in_time=False,
         dataset_version=None,
         price_adjustment="raw",

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import sqlite3
+from pathlib import Path
 
 import duckdb
 import numpy as np
@@ -74,6 +76,16 @@ def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, 
             normalized.append(_normalize_symbol(v))
         requested = normalized
     with pool_lock(root):
+        if (Path(root) / "etfs.sqlite").exists():
+            from .sqlite_etf_store import read
+
+            try:
+                return read(root, requested=requested, start=start, end=end, lookback=lookback,
+                            selected=selected, listing=listing)
+            except (sqlite3.Error, ValueError) as exc:
+                if isinstance(exc, DataPoolError):
+                    raise
+                raise DataPoolError("ETF_INVALID", str(exc)) from exc
         storage = DailyStorage(root)
         with duckdb.connect() as conn:
             try:
@@ -107,7 +119,8 @@ def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, 
                 name_expression = "arg_max(name, trade_date)" if "name" in names else "NULL"
                 # 输出规范格式: symbol.market (如 000001.SH)
                 return conn.execute(
-                    "SELECT symbol || '.' || market AS symbol, market, symbol AS code, "
+                    "SELECT symbol || '.' || market AS symbol, market, "
+                    "CAST(symbol AS VARCHAR) AS code, "
                     f"{name_expression} AS name, min(trade_date) AS start, "
                     "max(trade_date) AS end, count(*) AS row_count "
                     f"FROM bars{where} GROUP BY market, symbol ORDER BY symbol",
@@ -138,7 +151,8 @@ def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, 
                 for key, (dtype, _) in OPTIONAL_FIELDS.items()
             )
             # 输出规范格式: symbol.market (如 000001.SH)
-            sql = f"""SELECT symbol || '.' || market AS symbol, market, symbol AS code,
+            sql = f"""SELECT symbol || '.' || market AS symbol, market,
+                CAST(symbol AS VARCHAR) AS code,
                 trade_date AS date, open, high, low, close, {volume} AS volume,
                 amount, {turnover} AS turnover_rate, {extensions} FROM bars{where}"""
             if lookback:

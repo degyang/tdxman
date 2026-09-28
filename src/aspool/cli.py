@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import click
 import duckdb
@@ -10,7 +11,7 @@ import pyarrow.csv as pacsv
 
 from .config import free_stockdb_root
 from .free_stockdb import import_adjustments, import_daily, import_minutes, validate_period
-from .fundamentals import refresh_fundamentals, update_from_quotes
+from .fundamentals import refresh_fundamentals
 from .help import AspoolCommand, AspoolExGroup, AspoolGroup
 from .store import default_root, initialize
 from .tdx_online import update_daily_offline, update_online
@@ -19,10 +20,7 @@ PERIODS = ["daily", "minutes"]
 
 
 class _AssetType(click.Choice):
-    """Keep the established help width while documenting ETF in the reference text."""
-
-    def get_metavar(self, param, ctx):
-        return "[stock|index]"
+    """Asset choices used by the shared sync command."""
 
 
 def _root(value: Path | None) -> Path:
@@ -112,7 +110,7 @@ def import_free_stockdb(
 @click.option(
     "--type",
     "asset_type",
-    type=_AssetType(["stock", "index", "ex", "etf"]),
+    type=_AssetType(["stock", "index", "ex", "etf", "all"]),
     default="stock",
     show_default=True,
     help="维护股票、指数或 ETF 日线数据池",
@@ -157,6 +155,12 @@ def import_free_stockdb(
               help="补齐日期股本、参考价及量价指标，再重算涨跌停和连板。")
 @click.option("--enrich-only", is_flag=True,
               help="跳过主源 K 线同步，仅执行股票日线字段补齐和派生重算。")
+@click.option("--retries", type=click.IntRange(0, 5), default=2, show_default=True)
+@click.option("--retry-delay", type=click.FloatRange(0, 30), default=1.0, show_default=True)
+@click.option("--status", "status_filter", type=click.Choice(["missing", "invalid"]),
+              help="只修复指定未解决状态。")
+@click.option("--max-consecutive-failures", type=click.IntRange(min=1), default=3,
+              show_default=True, help="单标的重试耗尽后连续失败熔断阈值。")
 def sync(
     source: str,
     period: str,
@@ -173,10 +177,47 @@ def sync(
     baostock: bool | None = None,
     enrich: bool = True,
     enrich_only: bool = False,
+    retries: int = 2,
+    retry_delay: float = 1.0,
+    status_filter: str | None = None,
+    max_consecutive_failures: int = 3,
 ) -> None:
     """从指定源校准历史数据，并补齐至最新在线行情。"""
-    target = _root(root)
+    target = _root(root) if root else (
+        Path("data").resolve() if Path("data/stocks.sqlite").is_file() else _root(None)
+    )
+    if asset_type == "all":
+        if (
+            source != "tdx"
+            or period != "daily"
+            or category
+            or tdx_mode != "online"
+            or status_filter
+        ):
+            raise click.UsageError("--type all 仅支持在线 TDX 日线")
+        _run_all(
+            target, mode="sync", limit=limit, workers=workers,
+            start=start_date.date().isoformat() if start_date else None,
+            end=end_date.date().isoformat() if end_date else None,
+            retries=retries, retry_delay=retry_delay,
+            max_consecutive_failures=max_consecutive_failures,
+        )
+        return
     stock_daily = asset_type == "stock" and period == "daily"
+    if status_filter and not stock_daily:
+        raise click.UsageError("--status 仅支持股票日线")
+    if stock_daily and (target / "stocks.sqlite").is_file():
+        if source not in ("tdx", "baostock") or tdx_mode != "online" or async_mode:
+            raise click.UsageError("SQLite 日线 sync 支持在线 tdx/baostock；不支持 --async")
+        if not enrich or enrich_only or baostock is not None or lookback is not None:
+            raise click.UsageError("SQLite sync 自动补算缺失指标；请用 --source、--start、--end")
+        _sqlite_command(target, source=source, limit=limit, mode="sync", workers=workers,
+                        start=start_date.date().isoformat() if start_date else None,
+                        end=end_date.date().isoformat() if end_date else None,
+                        retries=retries, retry_delay=retry_delay,
+                        status_filter=status_filter,
+                        max_consecutive_failures=max_consecutive_failures)
+        return
     if not stock_daily and (start_date or end_date or lookback is not None
                             or baostock is not None or enrich_only):
         raise click.UsageError("字段补齐参数仅支持 stock 日线")
@@ -199,10 +240,11 @@ def sync(
             raise click.UsageError("指数仅支持 --source tdx --period daily")
         from tdxman.exceptions import TdxError
 
-        from .index_pool import sync_indices
+        from .sqlite_index_sync import sync_indices
 
         try:
-            report, path = sync_indices(target, tdx_mode, async_mode, limit, workers=workers)
+            report, path = sync_indices(target, tdx_mode, async_mode, limit, workers=workers,
+                                        retries=retries, retry_delay=retry_delay)
         except (OSError, ValueError, TdxError) as exc:
             raise click.ClickException(str(exc)) from exc
         successes = report["success"]
@@ -213,7 +255,7 @@ def sync(
             f"未变 {sum(r['unchanged'] for r in successes)}，"
             f"隔离异常 {sum(len(r['rejected']) for r in successes)}；报告：{path}"
         )
-        if report["failed"]:
+        if report["failed"] or report.get("status") in ("partial", "failed"):
             raise click.ClickException("部分指数未完成，请查看报告后重试")
         return
     if asset_type in {"etf", "ex"}:
@@ -231,6 +273,22 @@ def sync(
             raise click.UsageError("--type etf 只能使用 --category ETF")
         if source != "tdx" or period != "daily":
             raise click.UsageError("ex/ETF 仅支持 --source tdx --period daily")
+        if (target / "etfs.sqlite").exists():
+            from .sqlite_etf_sync import sync_etfs
+
+            try:
+                report, path = sync_etfs(target, mode=tdx_mode, asynchronous=async_mode,
+                                        limit=limit, workers=workers, retries=retries,
+                                        retry_delay=retry_delay)
+            except (OSError, ValueError) as exc:
+                raise click.ClickException(str(exc)) from exc
+            click.echo(f"ETF SQLite：成功 {len(report['success'])}，失败 {len(report['failed'])}；"
+                       f"当日无交易 {len(report['no_trade'])}；"
+                       f"新增 {sum(r['added'] for r in report['success'])}，"
+                       f"修改 {sum(r['changed'] for r in report['success'])}；报告：{path}")
+            if report["status"] != "ok":
+                raise click.ClickException("部分 ETF 未完成，请检查报告")
+            return
         initialize(target)
         try:
             if tdx_mode == "offline":
@@ -342,62 +400,171 @@ def _show_baostock_report(report, path):
 
 
 @cli.command(cls=AspoolCommand)
+@click.option("--type", "asset_type", type=click.Choice(["stock", "index", "etf", "all"]),
+              default="stock", show_default=True)
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--limit", type=click.IntRange(min=1))
-@click.option("--async", "async_mode", is_flag=True, help="使用异步报价客户端。")
+@click.option("--source", type=click.Choice(["tdx", "baostock"]), default="tdx", show_default=True)
+@click.option("--symbol", "symbols", multiple=True, help="指定股票，如 000001.SZ；可重复。")
 @click.option(
     "--workers", type=click.IntRange(1, 8), default=4, show_default=True, help="独立报价连接数。"
 )
-@click.option("--baostock/--no-baostock", default=None,
-              help="报价后运行 BaoStock 历史补齐；默认读取配置（启用）。")
-@click.option("--lookback", type=click.IntRange(min=1), help="BaoStock 补齐交易日数；默认 30。")
+@click.option("--start", type=click.DateTime(formats=["%Y-%m-%d"]))
+@click.option("--end", type=click.DateTime(formats=["%Y-%m-%d"]))
+@click.option("--retries", type=click.IntRange(0, 5), default=2, show_default=True)
+@click.option("--retry-delay", type=click.FloatRange(0, 30), default=1.0, show_default=True)
+@click.option("--status", "status_filter", type=click.Choice(["missing", "invalid"]),
+              help="只修复指定未解决状态。")
+@click.option("--max-consecutive-failures", type=click.IntRange(min=1), default=3,
+              show_default=True)
 def update(
-    root: Path | None, limit: int | None, async_mode: bool, workers: int,
-    baostock: bool | None = None, lookback: int | None = None,
+    asset_type, root, limit, source, symbols, workers, start, end, retries, retry_delay,
+    status_filter, max_consecutive_failures,
 ) -> None:
-    """收盘后更新报价，再用 BaoStock 补齐历史字段与交易状态。"""
-    from tdxman.exceptions import TdxError
+    """收盘报价更新 SQLite 日线及派生；备用源用 --source baostock 显式选择。"""
+    target = _root(root) if root else Path("data").resolve()
+    if asset_type == "all":
+        if source != "tdx" or symbols or status_filter:
+            raise click.UsageError("--type all 仅支持完整 TDX 更新，不接受 --symbol/--status")
+        _run_all(target, mode="update", limit=limit, workers=workers,
+                 retries=retries, retry_delay=retry_delay,
+                 max_consecutive_failures=max_consecutive_failures)
+        return
+    if asset_type == "index":
+        if source != "tdx" or symbols or start or end or status_filter:
+            raise click.UsageError("指数 update 仅支持 TDX K 线")
+        from .sqlite_index_sync import sync_indices
 
-    from .baostock_source import enabled, supplement_daily
-    from .fundamentals import QuoteUpdateError
-
-    target = _root(root)
-    use_baostock = enabled() if baostock is None else baostock
-    if lookback is not None and not use_baostock:
-        raise click.UsageError("--lookback 需要启用 --baostock")
-    primary_error = None
-    try:
-        symbols, rows = update_from_quotes(
-            target, limit, async_mode=async_mode, workers=workers
-        )
-        click.echo(f"报价检查完成：{symbols} 个标的，写入变化日线 {rows} 行并刷新基本面快照")
-    except (ValueError, OSError, TdxError) as exc:
-        if not use_baostock or "09:00 至 15:30" in str(exc):
-            raise click.ClickException(str(exc)) from exc
-        primary_error = exc
-        click.echo(f"通达信阶段未全部完成：{exc}；继续执行 BaoStock 补齐。", err=True)
-    _show_maintenance_report(target)
-    if use_baostock:
-        report, path = supplement_daily(target, lookback=lookback, limit=limit)
-        _show_baostock_report(report, path)
+        report, path = sync_indices(target, workers=workers, limit=limit, retries=retries,
+                                    retry_delay=retry_delay)
+        click.echo(f"指数 update：{report['status']}；报告：{path}")
         if report["status"] != "ok":
-            raise click.ClickException(f"BaoStock 补齐未全部完成：{path}")
-        if isinstance(primary_error, QuoteUpdateError):
-            from .pool import pool_lock
-            from .security_facts import lifecycle_map
+            raise click.ClickException("指数数据未完整更新")
+        return
+    if asset_type == "etf":
+        if source != "tdx" or symbols or start or end or status_filter:
+            raise click.UsageError("ETF update 仅支持 TDX")
+        from .sqlite_etf_sync import sync_etfs
 
-            with pool_lock(target):
-                metadata = lifecycle_map(target)
-            day = primary_error.trade_date
-            omitted = [code for code in primary_error.report["missing"] if not any(
-                row.get("delisting_date") is not None and row["delisting_date"] <= day
-                for symbol, row in metadata.items() if symbol.startswith(code + ".")
-            )]
-            if not (omitted or primary_error.report["failed"] or primary_error.report["rejected"]
-                    or primary_error.report.get("limit_events", {}).get("status") == "failed"):
-                primary_error = None
-    if primary_error is not None:
-        raise click.ClickException(str(primary_error))
+        report, path = sync_etfs(target, workers=workers, limit=limit, retries=retries,
+                                 retry_delay=retry_delay)
+        click.echo(f"ETF update：{report['status']}；报告：{path}")
+        if report["status"] != "ok":
+            raise click.ClickException("ETF 数据未完整更新")
+        return
+    _sqlite_command(target, source=source, symbols=symbols, limit=limit, workers=workers,
+                    start=start.date().isoformat() if start else None,
+                    end=end.date().isoformat() if end else None,
+                    retries=retries, retry_delay=retry_delay, status_filter=status_filter,
+                    max_consecutive_failures=max_consecutive_failures)
+
+
+def _sqlite_command(target, **options):
+    from datetime import datetime, timezone
+
+    from .sqlite_update_cli import run_update
+
+    # Reports never become part of the runtime data replica.
+    folder = target.parent / ".local" / "reports"
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / ("sqlite-" + options.get("mode", "update") + "-" +
+                     datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + ".json")
+    report = {"status": "running", "root": str(target)}
+    path.write_text(json.dumps(report) + "\n")
+    try:
+        run_update(target, report=report, **options)
+    except Exception as exc:
+        report.update(status="failed", error=str(exc))
+        path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        raise click.ClickException(f"{exc}；报告：{path}") from exc
+    path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    click.echo(f"SQLite {options.get('mode', 'update')}：{report['status']}；报告：{path}")
+    if report["status"] not in ("ok", "completed_with_missing"):
+        raise click.ClickException("部分数据未完成，旧数据已保留；详见报告")
+
+
+def _run_all(target, *, mode, limit, workers, retries, retry_delay,
+             max_consecutive_failures, start=None, end=None):
+    """Run the complete operational dataset and keep one inspectable summary."""
+    from datetime import datetime, timezone
+
+    from tdxman.mac.client import MacClient
+
+    from .fundamentals import refresh_fundamentals
+    from .sqlite_directory import publish_directory as publish_stock_directory
+    from .sqlite_directory import read_directory
+    from .sqlite_etf_sync import online_items, sync_etfs
+    from .sqlite_etf_sync import publish_directory as publish_etf_directory
+    from .sqlite_index_sync import sync_indices
+    from .sqlite_update_cli import SourceSession, run_update
+
+    folder = target.parent / ".local" / "reports"
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / (
+        "all-" + mode + "-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + ".json"
+    )
+    summary = {"status": "running", "mode": mode, "root": str(target), "blocks": {}}
+    path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
+    try:
+        directory_events = []
+        directory_session = SourceSession(
+            lambda: MacClient.from_best_host(
+                heartbeat_interval=0, auto_reconnect=False, timeout=10
+            ),
+            retries=retries,
+            delay=retry_delay,
+            events=directory_events,
+        )
+        directory_report = {}
+        try:
+            stock_names = read_directory(directory_session, report=directory_report)
+        finally:
+            directory_session.close()
+        if directory_report["failed"]:
+            raise ValueError(f"股票目录读取不完整：{directory_report['failed']}")
+        publish_stock_directory(
+            target,
+            stock_names,
+            day=datetime.now(ZoneInfo("Asia/Shanghai")).date(),
+        )
+        etf_items = online_items(
+            retries=retries, retry_delay=retry_delay, events=directory_events
+        )
+        etf_directory = publish_etf_directory(target, etf_items)
+        summary["blocks"]["directory"] = {
+            "status": "ok",
+            "stocks": len(stock_names),
+            "etfs": len(etf_items),
+            "etf_changes": etf_directory,
+            "retries": directory_events,
+        }
+        index, index_path = sync_indices(target, workers=workers, limit=limit,
+                                         retries=retries, retry_delay=retry_delay)
+        summary["blocks"]["index"] = {"status": index["status"], "report": str(index_path)}
+        stock = {}
+        run_update(target, report=stock, mode=mode, limit=limit, workers=workers,
+                   start=start, end=end, retries=retries, retry_delay=retry_delay,
+                   max_consecutive_failures=max_consecutive_failures,
+                   directory_rows=stock_names)
+        summary["blocks"]["stock"] = stock
+        etf, etf_path = sync_etfs(target, workers=workers, limit=limit,
+                                  retries=retries, retry_delay=retry_delay, items=etf_items)
+        summary["blocks"]["etf"] = {"status": etf["status"], "report": str(etf_path)}
+        count, rows = refresh_fundamentals(target, limit=limit)
+        summary["blocks"]["fundamentals"] = {"status": "ok", "symbols": count, "rows": rows}
+        states = [block.get("status") for block in summary["blocks"].values()]
+        summary["status"] = (
+            "failed" if any(s in ("failed", "partial", "aborted_source_failure") for s in states)
+            else "completed_with_missing" if "completed_with_missing" in states else "ok"
+        )
+    except Exception as exc:
+        summary.update(status="failed", error=str(exc))
+        raise click.ClickException(f"全量数据编排失败：{exc}；报告：{path}") from exc
+    finally:
+        path.write_text(json.dumps(summary, ensure_ascii=False, indent=2, default=str) + "\n")
+    click.echo(f"全部数据 {mode}：{summary['status']}；报告：{path}")
+    if summary["status"] == "failed":
+        raise click.ClickException("存在未完成数据块")
 
 
 @cli.command("fundamentals", cls=AspoolCommand)
@@ -412,8 +579,94 @@ def fundamentals(async_mode: bool, root: Path | None, limit: int | None) -> None
 
 @cli.command(cls=AspoolCommand)
 @click.option("--root", type=click.Path(path_type=Path))
-def status(root: Path | None) -> None:
-    """显示日线、分钟线覆盖范围和最近同步状态。"""
+@click.option("--dataset", type=click.Choice(
+    ["all", "securities", "calendar", "fundamentals", "stock-bars", "corporate-actions",
+     "stock-features", "market-summary", "index-bars", "etf-bars", "etf-factors"]),
+    default="all", show_default=True)
+@click.option("--format", "fmt", type=click.Choice(["table", "json"]), default="table")
+def status(root: Path | None, dataset: str, fmt: str) -> None:
+    """只读检查全部正式数据块的覆盖范围。"""
+    target = _root(root)
+    rows = _dataset_status(target)
+    if dataset != "all":
+        rows = [row for row in rows if row["dataset"] == dataset]
+    if fmt == "json":
+        click.echo(json.dumps(rows, ensure_ascii=False, indent=2, default=str))
+    else:
+        click.echo("dataset | rows | symbols | range | unresolved")
+        click.echo("--------+------+---------+-------+-----------")
+        for row in rows:
+            click.echo(
+                f"{row['dataset']} | {row.get('rows') if row.get('rows') is not None else '?'} | "
+                f"{row.get('symbols') if row.get('symbols') is not None else '?'} | "
+                f"{row.get('start') or '-'} ~ {row.get('end') or '-'} | "
+                f"{row.get('unresolved', 0)}"
+            )
+    return
+
+
+def _dataset_status(target: Path) -> list[dict[str, object]]:
+    """Read-only, bounded metadata checks for every production data block."""
+    rows: list[dict[str, object]] = []
+    catalog_path = target / "catalog.duckdb"
+    if catalog_path.is_file():
+        with duckdb.connect(str(catalog_path), read_only=True) as conn:
+            tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
+            if "securities" in tables:
+                count, active = conn.execute(
+                    "SELECT count(*),count(*) FILTER (WHERE active) FROM securities"
+                ).fetchone()
+                rows.append(dict(dataset="securities", rows=count, symbols=active))
+            if "security_calendar" in tables:
+                count, first, last = conn.execute(
+                    "SELECT count(*),min(trade_date),max(trade_date) "
+                    "FROM security_calendar WHERE is_open"
+                ).fetchone()
+                rows.append(dict(dataset="calendar", rows=count, symbols=1, start=first, end=last))
+            if "fundamental_snapshots" in tables:
+                count, last = conn.execute(
+                    "SELECT count(*),max(refreshed_at) FROM fundamental_snapshots"
+                ).fetchone()
+                rows.append(dict(dataset="fundamentals", rows=count, symbols=count, end=last))
+    if (target / "stocks.sqlite").is_file():
+        from .sqlite_stock_store import stock_connection
+
+        with stock_connection(target) as conn:
+            for dataset, table, date_field in (
+                ("stock-bars", "daily_bars", "trade_date"),
+                ("corporate-actions", "corporate_actions", "effective_date"),
+                ("stock-features", "daily_features", "trade_date"),
+                ("market-summary", "market_daily_summary", "period_end"),
+            ):
+                first = conn.execute(
+                    f"SELECT min({date_field}) FROM {table}"
+                ).fetchone()[0]
+                last = conn.execute(
+                    f"SELECT max({date_field}) FROM {table}"
+                ).fetchone()[0]
+                row = dict(dataset=dataset, rows=None, symbols=None, start=first, end=last)
+                rows.append(row)
+    for dataset, filename, tables in (
+        ("index-bars", "indices.sqlite", [("daily_bars", "trade_date")]),
+        ("etf-bars", "etfs.sqlite", [("daily_bars", "trade_date")]),
+        ("etf-factors", "etfs.sqlite", [("adjustment_factors", "trade_date")]),
+    ):
+        path = target / filename
+        if not path.is_file():
+            continue
+        import sqlite3
+
+        with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as conn:
+            table, date_field = tables[0]
+            count, symbols, first, last = conn.execute(
+                f"SELECT count(*),count(DISTINCT symbol),min({date_field}),"
+                f"max({date_field}) FROM {table}"
+            ).fetchone()
+            rows.append(dict(dataset=dataset, rows=count, symbols=symbols, start=first, end=last))
+    return rows
+
+
+def _legacy_status(root: Path | None) -> None:
     target = _root(root)
     initialize(target)
     conn = duckdb.connect(target / "catalog.duckdb", read_only=True)
@@ -442,6 +695,30 @@ def status(root: Path | None) -> None:
         ).fetchone()
     finally:
         conn.close()
+    if (target / "stocks.sqlite").is_file():
+        from .sqlite_stock_store import stock_connection
+
+        with stock_connection(target) as stocks:
+            summaries["daily"] = stocks.execute(
+                "SELECT count(DISTINCT symbol),min(trade_date),max(trade_date),count(*) "
+                "FROM daily_bars"
+            ).fetchone()
+    if (target / "indices.sqlite").is_file():
+        from .sqlite_index_store import index_connection
+
+        with index_connection(target) as indices:
+            index_summary = indices.execute(
+                "SELECT count(DISTINCT symbol),min(trade_date),max(trade_date),count(*) "
+                "FROM daily_bars"
+            ).fetchone()
+    if (target / "etfs.sqlite").is_file():
+        from .sqlite_etf_store import connection
+
+        with connection(target) as etfs:
+            etf_summary = etfs.execute(
+                "SELECT count(DISTINCT symbol),min(trade_date),max(trade_date),count(*) "
+                "FROM daily_bars"
+            ).fetchone()
     click.echo(f"root: {target}")
     for period, summary in summaries.items():
         click.echo(
@@ -467,10 +744,10 @@ def status(root: Path | None) -> None:
         _show_maintenance_report(target)
 
 
-@cli.command("universe", cls=AspoolCommand)
+@cli.command("directory", cls=AspoolCommand)
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--type", "asset_type", type=click.Choice(["stock", "etf"]), default="stock")
-def universe(root: Path | None, asset_type: str) -> None:
+def directory(root: Path | None, asset_type: str) -> None:
     """刷新股票或 ETF 证券目录，展示待初始化与非活跃代码。"""
     from .universe import refresh_etf_universe, refresh_stock_universe
 
@@ -482,27 +759,238 @@ def universe(root: Path | None, asset_type: str) -> None:
         raise click.ClickException(str(exc)) from exc
     click.echo(
         f"证券目录：{report['listed']} 个；待初始化 {len(report['added'])} 个；"
-        f"标记非活跃 {len(report['inactive'])} 个；重新活跃 {len(report['reactivated'])} 个"
+        f"标记非活跃 {report['inactive']} 个；重新活跃 {len(report['reactivated'])} 个"
     )
 
 
+@cli.command("universe", cls=AspoolCommand, hidden=True)
+@click.option("--root", type=click.Path(path_type=Path))
+@click.option("--type", "asset_type", type=click.Choice(["stock", "etf"]), default="stock")
+def universe_alias(root: Path | None, asset_type: str) -> None:
+    """Compatibility alias for directory."""
+    from click import Context
+
+    ctx = Context(directory)
+    ctx.invoke(directory, root=root, asset_type=asset_type)
+
+
+@cli.command("contract", cls=AspoolCommand)
+@click.option("--format", "fmt", type=click.Choice(["table", "json"]), default="table")
+def contract(fmt: str) -> None:
+    """列出每块生产数据的输入、落库、输出和维护入口。"""
+    from .data_flow_contract import data_flows, validate_data_flows
+
+    validate_data_flows()
+    rows = data_flows()
+    if fmt == "json":
+        click.echo(json.dumps(rows, ensure_ascii=False, indent=2))
+        return
+    columns = ("name", "storage", "write_cli", "outputs", "read_cli")
+    widths = {
+        column: max(len(column), *(len(row[column]) for row in rows)) for column in columns
+    }
+    click.echo(" | ".join(column.ljust(widths[column]) for column in columns))
+    click.echo("-+-".join("-" * widths[column] for column in columns))
+    for row in rows:
+        click.echo(" | ".join(row[column].ljust(widths[column]) for column in columns))
+
+
 @cli.command(cls=AspoolCommand)
-@click.argument("symbol")
+@click.argument("symbol", required=False)
+@click.option(
+    "--dataset",
+    type=click.Choice(
+        ["securities", "calendar", "fundamentals", "stock-bars", "corporate-actions",
+         "stock-features", "limit-events", "market-summary", "index-bars", "etf-bars",
+         "etf-factors", "stock", "index", "etf", "security", "market"]
+    ),
+    default="stock-bars",
+    show_default=True,
+)
 @click.option("--period", type=click.Choice(PERIODS), default="daily", show_default=True)
+@click.option("--frequency", type=click.Choice(["D", "W", "M"]), default="D",
+              show_default=True, help="市场汇总频率。")
 @click.option("--start", type=click.DateTime(formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S"]))
 @click.option("--end", type=click.DateTime(formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S"]))
 @click.option("--format", "fmt", type=click.Choice(["table", "csv", "json"]), default="table")
+@click.option("--status", "status_filter",
+              type=click.Choice(["traded", "no-trade", "missing", "invalid"]))
+@click.option("--limit", "row_limit", type=click.IntRange(min=1), default=1000,
+              show_default=True)
 @click.option("--root", type=click.Path(path_type=Path))
 def query(
-    symbol: str, period: str, start: object, end: object, fmt: str, root: Path | None
+    symbol: str | None,
+    dataset: str,
+    period: str,
+    frequency: str,
+    start: object,
+    end: object,
+    fmt: str,
+    status_filter: str | None,
+    row_limit: int,
+    root: Path | None,
 ) -> None:
-    """读取本地指定标的的日线或一分钟线。"""
-    symbol = symbol.upper()
-    if not re.fullmatch(r"(?:SH|SZ|BJ)\d{6}", symbol):
-        raise click.BadParameter("SYMBOL 应为市场加六位代码，如 SZ000001 或 SH600519")
+    """从统一数据根读取原始或派生日级数据。"""
+    dataset = {"stock": "stock-bars", "index": "index-bars", "etf": "etf-bars",
+               "security": "stock-features", "market": "market-summary"}.get(dataset, dataset)
+    symbol_required = dataset in {"stock-bars", "index-bars", "etf-bars"}
+    if symbol_required and not symbol:
+        raise click.UsageError(f"--dataset {dataset} 需要 SYMBOL")
+    symbol = symbol.upper() if symbol else None
+    if symbol and re.fullmatch(r"\d{6}\.(?:SH|SZ|BJ)", symbol):
+        canonical = symbol
+        symbol = symbol[-2:] + symbol[:6]
+    elif symbol and re.fullmatch(r"(?:SH|SZ|BJ)\d{6}", symbol):
+        canonical = symbol[2:] + "." + symbol[:2]
+    elif symbol:
+        raise click.BadParameter("SYMBOL 应为市场加六位代码，如 000001.SZ 或 SZ000001")
+    else:
+        canonical = None
 
     target = _root(root)
     key = "trade_date" if period == "daily" else "timestamp"
+    if dataset != "stock-bars" and period != "daily":
+        raise click.UsageError("stock 以外的数据集只支持 daily")
+    if dataset != "market-summary" and frequency != "D":
+        raise click.UsageError("--frequency 仅适用于 --dataset market-summary")
+
+    if dataset in {"securities", "fundamentals", "corporate-actions", "etf-factors"}:
+        import pandas as pd
+        import pyarrow as pa
+
+        params: list[object] = []
+        clauses: list[str] = []
+        if dataset in {"securities", "fundamentals"}:
+            table_name = "securities" if dataset == "securities" else "fundamental_snapshots"
+            if canonical:
+                key = "symbol" if dataset == "securities" else "code"
+                clauses.append(f"{key}=?")
+                params.append(canonical if dataset == "securities" else canonical[:6])
+            sql = f"SELECT * FROM {table_name}"
+            if clauses:
+                sql += " WHERE " + " AND ".join(clauses)
+            sql += f" ORDER BY symbol LIMIT {row_limit}"
+            with duckdb.connect(str(target / "catalog.duckdb"), read_only=True) as conn:
+                frame = conn.execute(sql, params).fetchdf()
+        else:
+            from .sqlite_etf_store import connection as etf_connection
+            from .sqlite_stock_store import stock_connection
+
+            db = stock_connection if dataset == "corporate-actions" else etf_connection
+            table_name = (
+                "corporate_actions" if dataset == "corporate-actions" else "adjustment_factors"
+            )
+            date_field = "effective_date" if dataset == "corporate-actions" else "trade_date"
+            if canonical:
+                clauses.append("symbol=?")
+                params.append(canonical)
+            if start:
+                clauses.append(f"{date_field}>=?")
+                params.append(start.date().isoformat())
+            if end:
+                clauses.append(f"{date_field}<=?")
+                params.append(end.date().isoformat())
+            sql = f"SELECT * FROM {table_name}"
+            if clauses:
+                sql += " WHERE " + " AND ".join(clauses)
+            sql += f" ORDER BY {date_field},symbol LIMIT {row_limit}"
+            with db(target) as conn:
+                frame = pd.read_sql_query(sql, conn, params=params)
+        _render_query(pa.Table.from_pandas(frame, preserve_index=False), fmt)
+        return
+
+    if dataset == "stock-features":
+        import pandas as pd
+        import pyarrow as pa
+
+        from .sqlite_stock_store import stock_connection
+
+        clauses, params = [], []
+        if canonical:
+            clauses.append("symbol=?")
+            params.append(canonical)
+        if start:
+            clauses.append("trade_date>=?")
+            params.append(start.date().isoformat())
+        if end:
+            clauses.append("trade_date<=?")
+            params.append(end.date().isoformat())
+        if status_filter:
+            if status_filter == "missing":
+                clauses.append("trading_status='MISSING'")
+            elif status_filter == "invalid":
+                clauses.append("(trading_status='INVALID' OR calc_status='INVALID')")
+            else:
+                clauses.append("calc_status=?")
+                params.append({"traded": "TRADED", "no-trade": "NO_TRADE",
+                               }[status_filter])
+        if not clauses:
+            raise click.UsageError("stock-features 需要 SYMBOL、日期边界或 --status")
+        sql = "SELECT * FROM daily_features WHERE " + " AND ".join(clauses)
+        sql += f" ORDER BY trade_date,symbol LIMIT {row_limit}"
+        with stock_connection(target) as conn:
+            frame = pd.read_sql_query(sql, conn, params=params)
+        _render_query(pa.Table.from_pandas(frame, preserve_index=False), fmt)
+        return
+
+    if dataset in {"market-summary", "limit-events", "calendar"}:
+        import pyarrow as pa
+
+        from .api_contract import DataPoolError
+        from .pool import DataPool
+
+        if dataset in {"market-summary", "limit-events"} and not (start and end):
+            raise click.UsageError(f"--dataset {dataset} 必须同时指定 --start 和 --end")
+        pool = DataPool(target)
+        try:
+            if dataset == "market-summary":
+                frame = pool.read_market_summary(
+                    start=start.date(), end=end.date(), frequency=frequency
+                )
+            elif dataset == "limit-events":
+                frame = pool.read_limit_events(
+                    start=start.date(), end=end.date(), symbols=canonical
+                )
+            else:
+                frame = pool.read_trading_calendar(
+                    start=start.date() if start else None,
+                    end=end.date() if end else None,
+                )
+        except (DataPoolError, FileNotFoundError, ValueError) as exc:
+            raise click.ClickException(f"读取本地数据失败：{exc}") from exc
+        table = pa.Table.from_pandas(frame.head(row_limit), preserve_index=False)
+        _render_query(table, fmt)
+        return
+
+    if period == "daily" and (
+        (dataset == "stock-bars" and (target / "stocks.sqlite").is_file())
+        or dataset == "index-bars"
+        or dataset == "etf-bars"
+    ):
+        import pyarrow as pa
+
+        from .api_contract import DataPoolError
+        from .pool import DataPool
+
+        reader = {
+            "stock-bars": DataPool(target).read_daily,
+            "index-bars": DataPool(target).read_index_daily,
+            "etf-bars": DataPool(target).read_etf_daily,
+        }[dataset]
+        try:
+            frame = reader(
+                symbols=canonical,
+                start=start.date() if start else None,
+                end=end.date() if end else None,
+            )
+        except (DataPoolError, FileNotFoundError, ValueError) as exc:
+            raise click.ClickException(f"读取本地数据失败：{exc}") from exc
+        if frame.empty:
+            raise click.ClickException(f"本地数据池未找到 {symbol} 的 {dataset} daily 数据")
+        table = pa.Table.from_pandas(frame, preserve_index=False)
+        _render_query(table, fmt)
+        return
+
     from .daily_access import DailyStorage
     from .pool import pool_lock
 
@@ -544,34 +1032,38 @@ def query(
                 table = conn.execute(sql + f" order by {key}", params).fetch_arrow_table()
             except duckdb.Error as exc:
                 raise click.ClickException(f"读取本地数据失败：{exc}") from exc
-        if fmt == "json":
-            rows = [
-                {
-                    key: value.isoformat() if hasattr(value, "isoformat") else value
-                    for key, value in row.items()
-                }
-                for row in table.to_pylist()
-            ]
-            click.echo(json.dumps(rows, ensure_ascii=False))
-        elif fmt == "csv":
-            sink = __import__("pyarrow").BufferOutputStream()
-            pacsv.write_csv(table, sink)
-            click.echo(sink.getvalue().to_pybytes().decode(), nl=False)
-        else:
-            columns = table.column_names
-            rows = table.to_pylist()
-            widths = [
-                max(len(column), *(len(str(row.get(column, ""))) for row in rows))
-                for column in columns
-            ]
-            click.echo(" | ".join(column.ljust(width) for column, width in zip(columns, widths)))
-            click.echo("-+-".join("-" * width for width in widths))
-            for row in rows:
-                click.echo(
-                    " | ".join(
-                        str(row.get(column, "")).ljust(width)
-                        for column, width in zip(columns, widths)
-                    )
-                )
+        _render_query(table, fmt)
     finally:
         conn.close()
+
+
+def _render_query(table, fmt: str) -> None:
+    if fmt == "json":
+        rows = [
+            {
+                key: value.isoformat() if hasattr(value, "isoformat") else value
+                for key, value in row.items()
+            }
+            for row in table.to_pylist()
+        ]
+        click.echo(json.dumps(rows, ensure_ascii=False))
+    elif fmt == "csv":
+        sink = __import__("pyarrow").BufferOutputStream()
+        pacsv.write_csv(table, sink)
+        click.echo(sink.getvalue().to_pybytes().decode(), nl=False)
+    else:
+        columns = table.column_names
+        rows = table.to_pylist()
+        widths = [
+            max(len(column), *(len(str(row.get(column, ""))) for row in rows))
+            for column in columns
+        ]
+        click.echo(" | ".join(column.ljust(width) for column, width in zip(columns, widths)))
+        click.echo("-+-".join("-" * width for width in widths))
+        for row in rows:
+            click.echo(
+                " | ".join(
+                    str(row.get(column, "")).ljust(width)
+                    for column, width in zip(columns, widths)
+                )
+            )

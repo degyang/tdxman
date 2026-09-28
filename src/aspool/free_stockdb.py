@@ -174,8 +174,16 @@ def _write_daily(root: Path, market: str, symbol: str, rows: list[dict[str, obje
                      stale_start=min(d for d in touched if d.year in output_years))
 
 
-@writer
 def import_daily(
+    root: Path, source_root: Path, incremental: bool, limit: int | None = None
+) -> ImportStats:
+    if (Path(root) / "stocks.sqlite").exists():
+        raise ValueError("SQLite 池禁止旧日线文件导入；历史迁移使用显式 ops 脚本")
+    return _import_daily_legacy(root, source_root, incremental, limit)
+
+
+@writer
+def _import_daily_legacy(
     root: Path, source_root: Path, incremental: bool, limit: int | None = None
 ) -> ImportStats:
     from .change_observation import empty_cost
@@ -241,9 +249,15 @@ def import_daily(
     return stats
 
 
-@writer
 def import_adjustments(root: Path, source_root: Path) -> int:
     """Import free-stockdb cumulative adjustment factors as a separate dataset."""
+    if (root / "stocks.sqlite").exists():
+        raise ValueError("SQLite 池的因子导入必须通过显式 ops 迁移并重算依赖；禁止生成旧因子快照")
+    return _import_adjustments_legacy(root, source_root)
+
+
+@writer
+def _import_adjustments_legacy(root: Path, source_root: Path) -> int:
     initialize(root)
     rows: list[dict[str, object]] = []
     with FreeStockDb(source_root) as source:

@@ -818,7 +818,7 @@ def update_reference_factors(
     }
 
 
-def _coverage_events(events: Iterable[Mapping[str, Any]], source: str):
+def _coverage_events(events: Iterable[Mapping[str, Any]], source: str, *, categories=(1, 2, 5)):
     """Normalize a complete finite event set without guessing duplicate identities."""
     rows = [dict(item) for item in events]
     slots: dict[tuple[str, int], list[dict[str, Any]]] = defaultdict(list)
@@ -829,7 +829,7 @@ def _coverage_events(events: Iterable[Mapping[str, Any]], source: str):
         day = _day(item.get("effective_date", item.get("date")))
         item["effective_date"] = day
         category = int(item["category"])
-        if category not in (1, 2, 5):
+        if category not in categories:
             raise ValueError(f"Unsupported corporate action category {category}")
         slots[(day, category)].append(item)
     for (day, category), group in slots.items():
@@ -1009,6 +1009,20 @@ def advance_factor_coverage(
                 raise ValueError("Cannot verify overlapping events from another source")
             item = json.loads(payload)
             item.update(effective_date=day, source=event_source, source_key=key, category=category)
+            # Migration retained SDK payloads verbatim; these amounts are already
+            # per share. Generic legacy event inputs otherwise remain per ten.
+            if (
+                event_source == "tdx:xdxr"
+                and category == 1
+                and re.fullmatch(r"category=1:slot=[1-9]\d*", key)
+            ):
+                for canonical, raw in (
+                    ("cash_dividend_per_share", "fenhong"),
+                    ("bonus_shares_per_share", "songzhuangu"),
+                    ("rights_shares_per_share", "peigu"),
+                    ("rights_price", "peigujia"),
+                ):
+                    item.setdefault(canonical, item.get(raw))
             stored_rows.append(item)
         stored = _coverage_events(stored_rows, source)
         historical = {

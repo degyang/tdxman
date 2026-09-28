@@ -246,6 +246,28 @@ class DataPool:
 
     def read_security_info(self, *, symbols=None):
         """Read sourced listing and code-exit dates; names are current metadata."""
+        catalog_path = self.root / "catalog.duckdb"
+        if (self.root / "stocks.sqlite").is_file() and catalog_path.is_file():
+            from .limit_api import _normalize_requested_symbols
+            from .store import read_only_catalog
+
+            clauses, params = [], []
+            if symbols is not None:
+                clauses.append("symbol IN (SELECT unnest(?))")
+                params.append(_normalize_requested_symbols(symbols))
+            where = " WHERE " + " AND ".join(clauses) if clauses else ""
+            with read_only_catalog(self.root) as conn:
+                tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
+                if "securities" in tables:
+                    frame = conn.execute(
+                        "SELECT symbol,code,market,asset_type,name,active,listing_date,"
+                        "delisting_date,updated_at FROM securities"
+                        + where
+                        + " ORDER BY symbol",
+                        params,
+                    ).fetchdf()
+                    frame.attrs.update(source="catalog.securities", point_in_time=False)
+                    return frame
         from .security_facts import BASIC_TABLE, read_facts
 
         return read_facts(self.root, BASIC_TABLE, symbols=symbols)
@@ -463,13 +485,18 @@ class DataPool:
         numerator remains current without a daily quote request.
         """
         path = self.root / "lake/fundamentals/snapshots.parquet"
-        if not path.exists():
-            raise FileNotFoundError("No fundamentals snapshots in aspool")
+        from .fundamental_catalog import available, read
+
         with pool_lock(self.root):
-            with duckdb.connect() as conn:
-                frame = conn.execute(
-                    "select * from read_parquet(?) order by market, code", [str(path)]
-                ).fetchdf()
+            if available(self.root):
+                frame = read(self.root)
+            else:
+                if not path.exists():
+                    raise FileNotFoundError("No fundamentals snapshots in aspool")
+                with duckdb.connect() as conn:
+                    frame = conn.execute(
+                        "select * from read_parquet(?) order by market, code", [str(path)]
+                    ).fetchdf()
         frame = frame.rename(columns={"total_shares": "total_share", "float_shares": "float_share"})
         # 规范格式 code.market：与 read_daily 输出一致，避免 join 丢失。
         frame["symbol_id"] = frame.code + "." + frame.market
@@ -482,7 +509,8 @@ class DataPool:
                 market_part, code_part = _normalize_symbol(value).split(".", 1)
                 want.add(f"{code_part}.{market_part}")
             frame = frame[frame.symbol_id.isin(want)]
-        prices = self.read_daily(symbols=sorted(frame.symbol_id.unique()), end=as_of)
+        prices = self.read_daily(symbols=sorted(frame.symbol_id.unique()), end=as_of, lookback=1,
+                                 fields=["symbol", "date", "close"])
         closes = prices.groupby("symbol", as_index=False).tail(1).set_index("symbol").close
         frame["close"] = frame.symbol_id.map(closes)
         frame["total_mv"] = frame.close * frame.total_share

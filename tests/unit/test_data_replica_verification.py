@@ -21,7 +21,8 @@ def _write(path, value):
 
 
 def _seal(root, manifest_path, evidence_path):
-    paths = [root / "stocks.sqlite", root / "catalog.duckdb", *sorted((root / "lake").rglob("*"))]
+    names = ("stocks.sqlite", "catalog.duckdb", "indices.sqlite", "etfs.sqlite")
+    paths = [root / name for name in names]
     entries = [
         dict(
             path=path.relative_to(root).as_posix(),
@@ -51,9 +52,11 @@ def _seal(root, manifest_path, evidence_path):
 @pytest.fixture
 def replica(tmp_path):
     root = tmp_path / "replica"
-    (root / "lake/bars").mkdir(parents=True)
+    root.mkdir()
     (root / "catalog.duckdb").write_bytes(b"closed catalog fixture; only the digest is checked")
-    (root / "lake/bars/daily.parquet").write_bytes(b"small manifest payload")
+    for name in ("indices.sqlite", "etfs.sqlite"):
+        with sqlite3.connect(root / name) as conn:
+            conn.execute("PRAGMA user_version=1")
     with sqlite3.connect(root / "stocks.sqlite") as conn:
         conn.executescript((REPOSITORY / "src/aspool/stocks_schema.sql").read_text())
         conn.execute("""INSERT INTO daily_bars
@@ -86,7 +89,7 @@ def test_verified_replica_reuses_evidence_and_performs_only_bounded_reads(replic
 
     monkeypatch.setattr(verifier.sqlite3, "connect", connect)
     result = verifier.verify(*replica)
-    assert result["status"] == "verified" and result["files"] == 3
+    assert result["status"] == "verified" and result["files"] == 4
     assert result["bytes"] == json.loads(manifest.read_text())["bytes"]
     assert result["rows"] == json.loads(evidence.read_text())["rows"]
     assert (
@@ -116,7 +119,7 @@ def test_verified_replica_reuses_evidence_and_performs_only_bounded_reads(replic
 @pytest.mark.parametrize("corruption", ["hash", "size", "manifest_total"])
 def test_manifest_hash_and_size_mismatch_fail(replica, corruption):
     root, manifest, _ = replica
-    target = root / "lake/bars/daily.parquet"
+    target = root / "etfs.sqlite"
     if corruption == "hash":
         original = target.read_bytes()
         target.write_bytes(b"X" + original[1:])
@@ -133,9 +136,11 @@ def test_manifest_hash_and_size_mismatch_fail(replica, corruption):
         verifier.verify(*replica)
 
 
-@pytest.mark.parametrize("extra", ["lake/bars/extra.parquet", "unexpected.duckdb"])
+@pytest.mark.parametrize("extra", ["scratch/extra.bin", "unexpected.duckdb"])
 def test_extra_business_file_rejected(replica, extra):
-    (replica[0] / extra).write_bytes(b"unlisted business file")
+    path = replica[0] / extra
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"unlisted business file")
     with pytest.raises(ValueError, match="extra business files"):
         verifier.verify(*replica)
 
@@ -145,9 +150,9 @@ def test_extra_business_file_rejected(replica, extra):
     [
         "../outside",
         "/tmp/outside",
-        "lake/../outside",
-        "lake//x",
-        "lake/./x",
+        "nested/../outside",
+        "nested//x",
+        "nested/./x",
         "C:/outside",
         "C:\\outside",
         "",
@@ -183,22 +188,23 @@ def test_symlink_file_directory_or_root_rejected(replica, tmp_path, kind):
         alias.symlink_to(root, target_is_directory=True)
         call = alias, manifest, evidence
     elif kind == "directory":
-        (root / "lake/link").symlink_to(tmp_path, target_is_directory=True)
+        (root / "link").symlink_to(tmp_path, target_is_directory=True)
         call = replica
     else:
         outside = tmp_path / "outside"
         outside.write_bytes(b"outside")
         target = root / "catalog.duckdb" if kind == "file_inside" else outside
-        (root / "lake/link").symlink_to(target)
+        (root / "link").symlink_to(target)
         call = replica
     with pytest.raises(ValueError, match="Symlink"):
         verifier.verify(*call)
 
 
-def test_nonempty_wal_rejected_but_existing_empty_sidecars_remain_unchanged(replica):
+@pytest.mark.parametrize("database", ["stocks", "indices", "etfs"])
+def test_nonempty_wal_rejected_but_existing_empty_sidecars_remain_unchanged(replica, database):
     root = replica[0]
-    wal = root / "stocks.sqlite-wal"
-    shm = root / "stocks.sqlite-shm"
+    wal = root / f"{database}.sqlite-wal"
+    shm = root / f"{database}.sqlite-shm"
     wal.write_bytes(b"uncheckpointed data")
     with pytest.raises(ValueError, match="Nonempty SQLite WAL"):
         verifier.verify(*replica)
@@ -279,7 +285,7 @@ def test_extra_file_appearing_after_hashing_is_rejected(replica, monkeypatch):
 
     def samples(path):
         result = original_samples(path)
-        (root / "lake/late-file").write_bytes(b"concurrent transfer")
+        (root / "late-file").write_bytes(b"concurrent transfer")
         return result
 
     monkeypatch.setattr(verifier, "_sqlite_samples", samples)
@@ -287,12 +293,12 @@ def test_extra_file_appearing_after_hashing_is_rejected(replica, monkeypatch):
         verifier.verify(*replica)
 
 
-def test_control_file_in_lake_is_still_required_in_manifest(replica):
+def test_control_file_in_data_root_is_still_required_in_manifest(replica):
     root, manifest, evidence = replica
-    lake_evidence = root / "lake/derived-result.json"
-    lake_evidence.write_bytes(evidence.read_bytes())
+    local_evidence = root / "derived-result.json"
+    local_evidence.write_bytes(evidence.read_bytes())
     with pytest.raises(ValueError, match="extra business files"):
-        verifier.verify(root, manifest, lake_evidence)
+        verifier.verify(root, manifest, local_evidence)
 
 
 @pytest.mark.parametrize("report_location", ["outside", "local_reports"])
@@ -321,7 +327,7 @@ def test_cli_success_then_failure_replaces_stale_success_report(
     assert verifier.main(argv) == 0
     assert json.loads(report.read_text())["status"] == "verified"
     capsys.readouterr()
-    (root / "lake/unexpected").write_bytes(b"extra")
+    (root / "unexpected").write_bytes(b"extra")
     assert verifier.main(argv) == 1
     assert json.loads(report.read_text())["status"] == "failed"
     captured = capsys.readouterr()

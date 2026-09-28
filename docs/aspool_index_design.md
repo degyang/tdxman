@@ -1,5 +1,9 @@
 # aspool 指数数据池需求、设计与验收
 
+2026-09-28 新安排：按用户要求迁至独立 `indices.sqlite`，命令和公开 API 不变。
+新存储、读写路由、恢复及执行结果见 [指数 SQLite 迁移](index_sqlite_migration.md)。
+下文 Parquet 和根内报告路径为旧后端说明，仅适用于尚未迁移的数据根。
+
 ## 已确认需求
 
 仅增加 `aspool sync --type stock|index`，默认 stock 保持原行为。index 仅支持 tdx 来源和 daily 周期，继承 online/offline、async、root 和 limit。首次建库或新增指数的历史取数据源实际可取得的最长范围，不以2010年截断；日常同步只增量补齐；涨跌统计缺失按0保存，由应用端判断。

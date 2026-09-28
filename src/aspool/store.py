@@ -34,9 +34,10 @@ def _coverage_table(period: str) -> str:
 def initialize(root: Path) -> None:
     from .change_protocol import _mkdir_durable
 
-    for period in ("daily", "minutes"):
-        _mkdir_durable(root / "lake" / "bars" / period)
-    _mkdir_durable(root / "lake" / "fundamentals")
+    if not (root / "stocks.sqlite").exists():
+        for period in ("daily", "minutes"):
+            _mkdir_durable(root / "lake" / "bars" / period)
+        _mkdir_durable(root / "lake" / "fundamentals")
     with catalog(root) as conn:
         for table in ("coverage", "coverage_minutes"):
             conn.execute(

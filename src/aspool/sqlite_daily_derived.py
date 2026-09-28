@@ -56,7 +56,7 @@ def classify_trading(row: Mapping) -> str:
     """Missing bars and confirmed suspension share the same statistical treatment."""
     if row.get("bar_date") is None:
         return "NO_TRADE"
-    if row.get("trading_status") in ("SUSPENDED", "停牌"):
+    if row.get("trading_status") in ("SUSPENDED", "停牌", "NO_TRADE", "NOT_LISTED"):
         if any(finite(row.get(key)) and row[key] > 0 for key in ("volume", "amount")):
             raise DataPoolError("SOURCE_CONFLICT", "Suspended bar has actual turnover")
         return "NO_TRADE"
@@ -91,6 +91,19 @@ def derive_daily_row(
         return result, None
 
     code, market = row["symbol"].split(".")
+    if market == "BJ":
+        # Regime's A-share limit statistics intentionally exclude Beijing-board
+        # securities. Keep their real bars and returns, but publish no limit event.
+        result.update(
+            limit_status="NO_LIMIT",
+            touch_limit_up=0,
+            close_limit_up=0,
+            touch_limit_down=0,
+            close_limit_down=0,
+            consecutive_up=0,
+            streak_known=1,
+        )
+        return result, 0
     raw_st = row.get("is_st")
     rule = resolve_limit_rule(
         Market[market],

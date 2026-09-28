@@ -54,7 +54,7 @@ Codex 默认实施使用 `gpt-6-sol / high`；复杂存储/依赖设计和关键
 
 ## 新版运行数据目录
 
-新版 `tdxman/data/` 只保留 `stocks.sqlite`（运行时可有 WAL/SHM）、`catalog.duckdb` 和必要的 `lake/` 公共域。迁移源和恢复材料放 `.local/recovery/`，运行日志、传输清单和详细验证放 `.local/reports/`；小型交付证据进 `docs/evidence/`。临时测试库不得留在运行数据目录，也不参与复制。先完成 Jakarta 的关闭工件全量复制、哈希验收和受控安装，再考虑增量同步；不能将初始 M0 副本冒充最新派生成品。
+新版 `tdxman/data/` 只保留 `stocks.sqlite`、`indices.sqlite`、`etfs.sqlite` 和公共目录库 `catalog.duckdb`（运行时可有数据库 WAL/SHM）。当前生产池已退役全部 `lake/` 分区：个股、指数、ETF 均从对应 SQLite 读写，基本面快照在 catalog 的 `fundamental_snapshots` 表；不能因旧命令重新生成 Parquet 或采集缓存。指数保留 `aspool sync --type index`，ETF 保留 `aspool sync --type ex --category ETF`。迁移源和恢复材料放 `.local/recovery/`，运行日志、传输清单和详细验证放 `.local/reports/`；小型交付证据进 `docs/evidence/`。临时测试库不得留在运行数据目录，也不参与复制。迁移验收必须列全数据域及其读写入口，不能以股票或指数迁移代替整个池完成。先完成 Jakarta 的关闭工件全量复制、哈希验收和受控安装，再考虑增量同步；不能将初始 M0 副本冒充最新派生成品。
 
 ## 协议编解码注意事项
 

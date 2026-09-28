@@ -59,6 +59,11 @@ def _load_tdxman() -> tuple[Any, Any, Any, Any, Any]:
 
 
 def _symbols(root: Path, limit: int | None) -> list[str]:
+    if (Path(root) / "stocks.sqlite").is_file():
+        from .securities import active_securities
+
+        values = [row[1] for row in active_securities(root, "stock")]
+        return values[:limit] if limit else values
     with catalog(root) as conn:
         try:
             rows = conn.execute(
@@ -126,8 +131,16 @@ def _same_snapshot(left: dict[str, object] | None, right: dict[str, object]) -> 
                         {k: v for k, v in right.items() if k != "refreshed_at"})
 
 
-@maintenance
 def _write(root: Path, incoming: list[dict[str, object]]) -> bool:
+    from .fundamental_catalog import available, write
+
+    if available(root):
+        return write(root, incoming)
+    return _write_legacy(root, incoming)
+
+
+@maintenance
+def _write_legacy(root: Path, incoming: list[dict[str, object]]) -> bool:
     from .change_protocol import recover
 
     recover(root)
@@ -529,8 +542,22 @@ async def _refresh_async(root: Path, symbols: list[str]) -> tuple[int, int]:
     return len(symbols), len(rows)
 
 
-@maintenance
 def refresh_fundamentals(
+    root: Path, *, async_mode: bool = False, limit: int | None = None
+) -> tuple[int, int]:
+    from .fundamental_catalog import available
+
+    if available(root):
+        symbols = _symbols(root, limit)
+        if not symbols:
+            return 0, 0
+        return (asyncio.run(_refresh_async(root, symbols)) if async_mode
+                else _refresh_sync(root, symbols))
+    return _refresh_fundamentals_legacy(root, async_mode=async_mode, limit=limit)
+
+
+@maintenance
+def _refresh_fundamentals_legacy(
     root: Path, *, async_mode: bool = False, limit: int | None = None
 ) -> tuple[int, int]:
     """Manually refresh the complete fundamentals snapshot from MAC quotes."""
@@ -543,6 +570,14 @@ def refresh_fundamentals(
     return _refresh_sync(root, symbols)
 
 
-@writer
 def _publish_snapshots(root: Path, rows: list[dict[str, object]]) -> bool:
-    return _write(root, rows)
+    from .fundamental_catalog import available, write
+
+    if available(root):
+        return write(root, rows)
+    return _publish_snapshots_legacy(root, rows)
+
+
+@writer
+def _publish_snapshots_legacy(root: Path, rows: list[dict[str, object]]) -> bool:
+    return _write_legacy(root, rows)

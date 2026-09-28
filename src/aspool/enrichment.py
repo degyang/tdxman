@@ -461,8 +461,17 @@ def audit_conflicts(root, results):
     return report
 
 
-@maintenance
 def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers=4,
+                 recompute=True, compare_baostock=True):
+    if (Path(root) / "stocks.sqlite").exists():
+        raise ValueError("SQLite 字段补齐请使用 aspool sync --start/--end；禁止旧文件补齐流程")
+    return _enrich_daily_legacy(root, start=start, end=end, lookback=lookback, limit=limit,
+                               workers=workers, recompute=recompute,
+                               compare_baostock=compare_baostock)
+
+
+@maintenance
+def _enrich_daily_legacy(root, *, start=None, end=None, lookback=30, limit=None, workers=4,
                  recompute=True, compare_baostock=True):
     """Enrich existing stock history, cache raw evidence and report residual gaps."""
     from tdxman.client import TdxClient

@@ -684,6 +684,124 @@ def test_source_sync_verifies_action_tail_before_writing_new_day(tmp_path):
         )
 
 
+def test_recent_event_revision_updates_reference_summary_and_rolls_back(tmp_path):
+    import sqlite3
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        event_day = DAYS[55]
+        event = dict(
+            effective_date=event_day,
+            category=1,
+            source_key="dividend",
+            cash_dividend_per_share=1,
+            bonus_shares_per_share=0,
+            rights_shares_per_share=0,
+            rights_price=0,
+        )
+        options = dict(
+            merge_event_revisions=True,
+            factor_extensions=[
+                dict(
+                    symbol=SYMBOL,
+                    verified_start=DAYS[50],
+                    verified_end=DAYS[64],
+                    events=[event],
+                )
+            ],
+        )
+        result = apply(conn, **options)
+        assert min(result["affected_sessions"]) == event_day
+        assert conn.execute(
+            "SELECT pre_close,close_limit_up FROM daily_features WHERE trade_date=?", (event_day,)
+        ).fetchone() == (9, 1)
+        assert conn.execute(
+            "SELECT close_limit_up_count FROM market_daily_summary WHERE period_key=?",
+            (event_day,),
+        ).fetchall() == [(1,), (1,)]
+        before = dump(conn)
+        assert apply(conn, **options)["changed_factor_rows"] == 0
+        assert dump(conn) == before
+        event["cash_dividend_per_share"] = 2
+        conn.execute(
+            "CREATE TEMP TRIGGER fail_summary BEFORE UPDATE ON market_daily_summary "
+            "BEGIN SELECT RAISE(ABORT, 'forced summary failure'); END"
+        )
+        with pytest.raises(sqlite3.IntegrityError, match="forced summary failure"):
+            apply(conn, **options)
+        assert dump(conn) == before
+        conn.execute("DROP TRIGGER fail_summary")
+        apply(conn, **options)
+        assert (
+            conn.execute(
+                "SELECT pre_close FROM daily_features WHERE trade_date=?", (event_day,)
+            ).fetchone()[0]
+            == 8
+        )
+
+
+def test_recent_update_isolates_bad_security_but_not_database_failure(tmp_path):
+    import pandas as pd
+
+    from aspool.sqlite_daily_sync import sync_daily_source
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+    other = "600001.SH"
+
+    class Client:
+        def get_daily(self, market, code, **kwargs):
+            symbol = f"{code}.{market.name}"
+            return pd.DataFrame(
+                [
+                    dict(
+                        symbol=symbol,
+                        date=date.fromisoformat(DAYS[59]),
+                        open=10,
+                        high=10,
+                        low=10,
+                        close=10,
+                        volume=100,
+                        amount=1000,
+                        is_st=0,
+                        trading_status="TRADING",
+                    )
+                ]
+            )
+
+    report = sync_daily_source(
+        tmp_path,
+        client=Client(),
+        symbols=[SYMBOL, other],
+        market_sessions=DAYS,
+        as_of=DAYS[59],
+        start=DAYS[59],
+        end=DAYS[59],
+        source="tdxman:quote",
+        event_refresh_start=DAYS[50],
+        action_fetcher=lambda *args: [
+            dict(
+                effective_date=DAYS[59],
+                category=99,
+                source_key="unsupported",
+            )
+        ],
+    )
+    assert report["failed"][0]["symbol"] == SYMBOL
+    assert report["success"][0]["symbols"] == [other]
+    with stock_connection(tmp_path) as conn:
+        assert (
+            conn.execute("SELECT count(*) FROM daily_bars WHERE symbol=?", (other,)).fetchone()[0]
+            == 1
+        )
+        assert (
+            conn.execute(
+                "SELECT count(*) FROM corporate_actions WHERE record_kind='event'"
+            ).fetchone()[0]
+            == 0
+        )
+
+
 def test_calendar_refresh_is_finite_noop_and_rejects_conflicting_history(tmp_path):
     import duckdb
     import pandas as pd

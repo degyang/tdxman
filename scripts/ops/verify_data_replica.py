@@ -19,8 +19,10 @@ from contextlib import closing
 from pathlib import Path, PureWindowsPath
 
 TABLES = {"daily_bars", "daily_features", "corporate_actions", "market_daily_summary"}
+REQUIRED_FILES = {"stocks.sqlite", "indices.sqlite", "etfs.sqlite", "catalog.duckdb"}
 SHA256 = re.compile(r"^[0-9a-fA-F]{64}$")
-SIDECARS = {"stocks.sqlite-wal", "stocks.sqlite-shm"}
+SIDECARS = {f"{name}.sqlite-{suffix}" for name in ("stocks", "indices", "etfs")
+            for suffix in ("wal", "shm")}
 SAMPLES = {
     "daily_bars": (
         "SELECT symbol,trade_date,open,high,low,close,amount "
@@ -136,9 +138,7 @@ def _inventory(root):
             relative = path.relative_to(root).as_posix()
             _safe_file(root, relative)
             files[relative] = _signature(path.lstat())
-    if not (root / "lake").is_dir():
-        raise ValueError("Missing lake directory")
-    if files.get("stocks.sqlite-wal", (0, 0, 0, 0))[3]:
+    if any(files.get(name, (0, 0, 0, 0))[3] for name in SIDECARS if name.endswith("-wal")):
         raise ValueError("Nonempty SQLite WAL: checkpoint and close the source writer first")
     return files
 
@@ -167,8 +167,10 @@ def _manifest(document):
     total = _integer(document.get("bytes"), "Manifest total bytes")
     if sum(item["bytes"] for item in entries.values()) != total:
         raise ValueError("Manifest total bytes differ from its file sizes")
-    if not {"stocks.sqlite", "catalog.duckdb"} <= entries.keys():
-        raise ValueError("Manifest must contain stocks.sqlite and catalog.duckdb")
+    if not REQUIRED_FILES <= entries.keys():
+        raise ValueError(
+            "Manifest must contain stocks.sqlite, indices.sqlite, etfs.sqlite and catalog.duckdb"
+        )
     return entries, total
 
 

@@ -57,103 +57,46 @@ def fetch_a_share_universe():
 
 
 def fetch_etf_universe():
-    """Load the reviewed ETF whitelist; live discovery remains script-owned."""
-    from .etf_lists import load_etfs
-
-    try:
-        return [
-            {
-                "symbol": row["code"],
-                "market": row["market"],
-                "name": row["name"],
-                "asset_type": "etf",
-            }
-            for row in load_etfs()
-        ]
-    except FileNotFoundError:
-        pass
-
-    # A source checkout without the generated whitelist can still bootstrap it
-    # once; the maintenance script should then be used for reviewed updates.
+    """Fetch the current ETF directory used by the SQLite sync scope."""
     from tdxman.mac.client import MacClient
-    from tdxman.mac.enums import Category, SortOrder, SortType
 
-    with MacClient(timeout=5, auto_reconnect=False, heartbeat_interval=0) as client:
-        frame = client.get_stock_quotes_list(
-            Category.ETF, count=6000, sort_type=SortType.CODE, sort_order=SortOrder.ASC
-        )
-    if frame.empty:
-        raise ValueError("ETF 证券目录为空")
-    markets = {0: "SZ", 1: "SH"}
-    result = []
-    for row in frame.to_dict("records"):
-        market = markets.get(row.get("market"))
-        code = str(row.get("code", ""))
-        if market in {"SH", "SZ"} and code.isdigit() and len(code) == 6:
-            result.append(_entry(market, row, "etf"))
-    if not result:
-        raise ValueError("ETF 证券目录没有可用的沪深代码")
-    return sorted(result, key=lambda row: (row["market"], row["symbol"]))
+    from .etf_lists import collect
+
+    with MacClient.from_best_host(
+        timeout=10, auto_reconnect=False, heartbeat_interval=0
+    ) as client:
+        items = collect(client)[0]["etfs"]
+    return [
+        {
+            "symbol": row["code"],
+            "market": row["market"],
+            "name": row["name"],
+            "asset_type": "etf",
+        }
+        for row in items
+    ]
 
 
 @writer
 def _publish_universe(root, entries):
-    now = datetime.now()
-    with catalog(root) as conn:
-        conn.execute("""CREATE TABLE IF NOT EXISTS universe (
-            symbol VARCHAR PRIMARY KEY, market VARCHAR NOT NULL, name VARCHAR,
-            active BOOLEAN NOT NULL, first_seen TIMESTAMP NOT NULL,
-            last_seen TIMESTAMP NOT NULL, source VARCHAR NOT NULL,
-            asset_type VARCHAR NOT NULL DEFAULT 'stock')""")
-        conn.execute(
-            "ALTER TABLE universe ADD COLUMN IF NOT EXISTS asset_type VARCHAR DEFAULT 'stock'"
-        )
-        previous = {
-            row[0]: {
-                "market": row[1],
-                "name": row[2],
-                "active": row[3],
-                "asset_type": row[4] or "stock",
-            }
-            for row in conn.execute(
-                "SELECT symbol, market, name, active, asset_type FROM universe"
-            ).fetchall()
-        }
-        from .change_protocol import catalog_rows, observe
+    from .securities import ensure_securities, publish_directory
 
-        for entry in entries:
-            if entry.get("operation", "update") not in {"insert", "update"} or \
-                    entry.get("active", True) is False:
-                raise ValueError("Explicit universe deactivation/retraction is unsupported")
-        rows = []
-        for entry in entries:
-            old = previous.get(entry["symbol"])
-            rows.append(dict(
-                symbol=entry["symbol"], market=entry["market"], name=entry["name"], active=True,
-                **({"first_seen": now, "last_seen": now} if old is None else {}),
-                source=f"tdx:{entry.get('asset_type', 'stock')}-list",
-                asset_type=entry.get("asset_type", "stock"),
-            ))
-        catalog_rows(root, "universe", ["symbol"], rows, source="tdx:directory",
-                     reason="universe_scope", ignore=("first_seen", "last_seen"),
-                     stale_start=lambda old, new: (
-                         datetime.min.date() if any(
-                             r and r.get("asset_type", "stock") == "stock" for r in (old, new)
-                         ) else None))
-        missing = []  # Source omissions never authorize deactivation.
-        for kind in {r["asset_type"] for r in rows}:
-            observe(conn, f"universe:{kind}")
+    ensure_securities(root)
+    kind = entries[0].get("asset_type", "stock") if entries else "stock"
+    rows = [
+        dict(code=e["symbol"], symbol=f"{e['symbol']}.{e['market']}",
+             market=e["market"], name=e["name"])
+        for e in entries
+    ]
+    result = publish_directory(root, rows, asset_type=kind)
+    with catalog(root) as conn:
         covered = {row[0] for row in conn.execute("SELECT symbol FROM coverage").fetchall()}
     added = [entry for entry in entries if entry["symbol"] not in covered]
     return {
         "listed": len(entries),
         "added": added,
-        "inactive": missing,
-        "reactivated": sorted(
-            entry["symbol"]
-            for entry in entries
-            if previous.get(entry["symbol"], {}).get("active") is False
-        ),
+        "inactive": result["inactive"],
+        "reactivated": [],
     }
 
 
@@ -185,10 +128,7 @@ def universe_is_stale(root: Path, days: int = 7, asset_type: str | None = None) 
     """Avoid a full directory scan on every normal daily K-line repair."""
     with catalog(root) as conn:
         try:
-            columns = {row[1] for row in conn.execute("PRAGMA table_info('universe')").fetchall()}
-            if "asset_type" not in columns:
-                return True
-            query = "SELECT max(last_seen) FROM universe"
+            query = "SELECT max(updated_at) FROM securities"
             params = []
             if asset_type:
                 query += " WHERE asset_type = ?"
@@ -213,9 +153,9 @@ def pending_universe_symbols(root: Path, asset_type: str = "stock"):
     with catalog(root) as conn:
         try:
             rows = conn.execute(
-                """SELECT u.symbol, u.market, u.name, u.asset_type FROM universe u
-                LEFT JOIN coverage c ON c.symbol = u.symbol
-                WHERE u.active AND u.asset_type = ? AND c.symbol IS NULL ORDER BY u.symbol""",
+                """SELECT s.code, s.market, s.name, s.asset_type FROM securities s
+                LEFT JOIN coverage c ON c.symbol = s.code
+                WHERE s.active AND s.asset_type = ? AND c.symbol IS NULL ORDER BY s.symbol""",
                 [asset_type],
             ).fetchall()
         except Exception:

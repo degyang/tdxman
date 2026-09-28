@@ -27,6 +27,14 @@ ST 来源为该日 `isST`，参考价来源为该日 `preclose`。盘中单股�
 
 ## 日常更新与历史补齐
 
+新版 SQLite 日线命令以 [update/sync 契约](sqlite_update_sync_cli.md) 为准：默认
+`aspool update --root data` 只使用通达信报价；备用源通过
+`aspool update --root data --source baostock` 显式选择。历史 K 线使用
+`aspool sync --root data --source baostock --start 2026-09-23 --end 2026-09-24`。
+不会按旧配置自动追加 BaoStock。两条路径均执行必要的逐股派生和日市场汇总。
+
+以下配置和合并说明记录旧文件池的补齐流程，不代表新版 SQLite 会自动执行第二轮补源：
+
 ```bash
 # 已有股票池：通达信报价后自动执行 BaoStock 补齐
 aspool update

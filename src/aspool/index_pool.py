@@ -310,8 +310,18 @@ def _publish_indices(root, pending, mode):
     return results, failures
 
 
+def sync_indices(root, mode="online", asynchronous=False, limit=None, items=None, workers=1,
+                 retries=2, retry_delay=1):
+    if (Path(root) / "indices.sqlite").is_file():
+        from .sqlite_index_sync import sync_indices as sqlite_sync
+
+        return sqlite_sync(root, mode, asynchronous, limit, items, workers, retries, retry_delay)
+    return _sync_indices_legacy(root, mode, asynchronous, limit, items, workers)
+
+
 @maintenance
-def sync_indices(root, mode="online", asynchronous=False, limit=None, items=None, workers=1):
+def _sync_indices_legacy(root, mode="online", asynchronous=False, limit=None,
+                         items=None, workers=1):
     started = perf_counter()
     root = Path(root)
     items = load_indices() if items is None else items

@@ -69,4 +69,6 @@ memory_limit 为 SQLite 缓存配置提示：一半用于页缓存，并非整�
 
 ## 本轮收尾与续接
 
+2026-09-28 后续：公共质量接口已交付，Fundwise 正在接收；新增字段尚未在真实库启用。下一阶段按 [公共质量交付后执行计划](post_public_quality_execution_plan.md) 推进真实日更、输入修复、成品同步与消费验收，不能将下述旧副本验收视为新增质量字段已同步。
+
 已推送 tdxman `77f4f86`（含辅助校验器 `bb78832`）、Fundwise `3d68000`。Jakarta 主仓库已拉取代码，Python 3.11 SQLite v3 导入检查通过；辅助 worktree 标记 completed，未重复其 40 项测试。新版 data 已安装，Jakarta Fundwise 18 日评分、578 条主线排名及三个 HTTP 端点验收通过。历史输入缺口和默认生产配置切换仍未关闭；增量同步后置。见[实际结果](fw04_jakarta_full_copy_acceptance.md)。

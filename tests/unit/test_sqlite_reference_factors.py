@@ -770,6 +770,73 @@ def _advance_snapshot(conn):
     ).fetchall()
 
 
+def test_recent_event_revision_rebuilds_suffix_and_repeat_is_noop(advance_conn):
+    from aspool.sqlite_event_update import merge_recent_events
+
+    conn = advance_conn
+    _advance_seed_factor(conn, last="2024-01-03")
+    _advance_bar(conn, "2024-01-02", close=10)
+    args = dict(symbol="000001.SZ", verified_start="2024-01-03", verified_end="2024-01-05")
+    _advance_seed_factor(conn, first="2024-01-04", last="2024-01-05", cumulative=2.2)
+    merge_recent_events(
+        conn,
+        **args,
+        events=[
+            _advance_event("2024-01-04", cash=1),
+            dict(effective_date="2024-01-04", category=9, source_key="shares", panhou_liutong=100),
+        ],
+    )
+    prefix = conn.execute(
+        "SELECT * FROM corporate_actions WHERE record_kind='factor' AND effective_date='2024-01-01'"
+    ).fetchone()
+    revised = merge_recent_events(conn, **args, events=[_advance_event("2024-01-04", cash=2)])
+    assert revised["affected_from"] == "2024-01-04"
+    assert conn.execute(
+        "SELECT source,factor_basis FROM corporate_actions WHERE record_kind='factor' "
+        "AND effective_date='2024-01-04'"
+    ).fetchone() == ("derived:event_chain", "anchor_continuation:daily_revision")
+    assert conn.execute(
+        "SELECT cumulative_factor FROM corporate_actions WHERE record_kind='factor' "
+        "AND effective_date='2024-01-04'"
+    ).fetchone()[0] == pytest.approx(2.5)
+    assert (
+        conn.execute(
+            "SELECT * FROM corporate_actions WHERE record_kind='factor' "
+            "AND effective_date='2024-01-01'"
+        ).fetchone()
+        == prefix
+    )
+    snapshot = _advance_snapshot(conn)
+    assert (
+        merge_recent_events(conn, **args, events=[_advance_event("2024-01-04", cash=2)])[
+            "changed_rows"
+        ]
+        == 0
+    )
+    assert merge_recent_events(conn, **args, events=[])["changed_rows"] == 0
+    assert _advance_snapshot(conn) == snapshot
+
+
+@pytest.mark.parametrize("category", range(2, 11))
+def test_recent_non_price_event_revision_does_not_touch_factors(advance_conn, category):
+    from aspool.sqlite_event_update import merge_recent_events
+
+    conn = advance_conn
+    _advance_seed_factor(conn, last="2024-01-05")
+    args = dict(symbol="000001.SZ", verified_start="2024-01-03", verified_end="2024-01-05")
+    event = dict(
+        effective_date="2024-01-04", category=category, source_key="shares", panhou_liutong=100
+    )
+    merge_recent_events(conn, **args, events=[event])
+    factors = conn.execute("SELECT * FROM corporate_actions WHERE record_kind='factor'").fetchall()
+    result = merge_recent_events(conn, **args, events=[dict(event, panhou_liutong=200)])
+    assert result["changed_event_rows"] == 1 and result["affected_from"] is None
+    assert (
+        conn.execute("SELECT * FROM corporate_actions WHERE record_kind='factor'").fetchall()
+        == factors
+    )
+
+
 def test_advance_empty_interval_extends_only_tail_and_joins_outer_transaction(advance_conn):
     conn = advance_conn
     future_stamp = 10**18
@@ -805,6 +872,60 @@ def test_advance_empty_interval_extends_only_tail_and_joins_outer_transaction(ad
             verified_end="2024-01-04",
             events=[],
         )
+
+
+def test_advance_migrated_sdk_events_keep_identity_and_per_share_units(advance_conn, monkeypatch):
+    from aspool import enrichment
+    from aspool.sqlite_daily_sync import fetch_tdx_action_interval
+
+    conn = advance_conn
+    _advance_seed_factor(conn)
+    _advance_bar(conn, "2024-01-02", close=10)
+    raw = dict(
+        date="2024-01-03T00:00:00.000",
+        category=1,
+        fenhong=0.164,
+        songzhuangu=0.0,
+        peigu=0.0,
+        peigujia=0.0,
+        code="000001",
+        market=0,
+    )
+    capital = dict(date=raw["date"], category=5, panhou_liutong=10000.0)
+    for event in (raw, capital):
+        conn.execute(
+            "INSERT INTO corporate_actions(symbol,effective_date,record_kind,source,"
+            "source_key,category,payload_json,updated_at) VALUES "
+            "('000001.SZ','2024-01-03','event','tdx:xdxr',?,?,?,1)",
+            (f"category={event['category']}:slot=1", event["category"], json.dumps(event)),
+        )
+    monkeypatch.setattr(
+        enrichment, "_fetch", lambda *args: dict(events=[raw, capital], fetched_date="2024-01-04")
+    )
+    events = fetch_tdx_action_interval(None, "000001.SZ", "2024-01-03", "2024-01-04")
+    assert [e["source_key"] for e in events] == ["category=1:slot=1", "category=5:slot=1"]
+    result = advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-03",
+        verified_end="2024-01-04",
+        events=events,
+    )
+    assert result["changed_event_rows"] == 0
+    assert conn.execute(
+        "SELECT cumulative_factor FROM corporate_actions "
+        "WHERE record_kind='factor' AND effective_date='2024-01-03'"
+    ).fetchone()[0] == pytest.approx(2 * 10 / (10 - 0.164))
+    snapshot = _advance_snapshot(conn)
+    with pytest.raises(ValueError, match="Historical event set changed"):
+        advance_factor_coverage(
+            conn,
+            symbol="000001.SZ",
+            verified_start="2024-01-03",
+            verified_end="2024-01-04",
+            events=[dict(events[0], cash_dividend_per_share=0.2), events[1]],
+        )
+    assert _advance_snapshot(conn) == snapshot
 
 
 def test_advance_cash_and_bonus_keep_anchor_scale_and_preserve_prefix(advance_conn):

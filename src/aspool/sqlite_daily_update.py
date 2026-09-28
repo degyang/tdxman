@@ -139,13 +139,15 @@ def apply_daily_changes(
     factor_extensions=(),
     market_sessions,
     listed_days=None,
+    fill_missing_metrics=False,
+    merge_event_revisions=False,
 ) -> dict:
     """Apply at most ten source dates, propagating actual dependencies atomically.
 
     Source adapters provide canonical units and dated provenance. This function
     owns BEGIN/COMMIT; an active caller transaction is rejected. No batch IDs,
-    deletes, factor replacement or automatic full-history repair are accepted.
-    Verified factor extensions advance only the existing coverage tail.
+    bar deletes or automatic full-history repair are accepted. Verified event
+    merges can revise a bounded factor suffix when explicitly enabled.
     A missing required bootstrap or an excessive suffix fails without writes.
     """
     if conn.in_transaction:
@@ -163,6 +165,7 @@ def apply_daily_changes(
         raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Source range outside session budget")
     result = dict(
         changed_rows=0,
+        changed_metric_rows=0,
         changed_factor_rows=0,
         affected_sessions=[],
         recomputed_feature_rows=0,
@@ -173,6 +176,7 @@ def apply_daily_changes(
     if not keys and not extensions:
         return dict(result, elapsed_ms=0)
     # Import only when used so pure window selection remains independent.
+    from .sqlite_event_update import SymbolUpdateError, merge_recent_events
     from .sqlite_reference_factors import advance_factor_coverage, update_reference_factors
 
     started = time.monotonic()
@@ -187,6 +191,8 @@ def apply_daily_changes(
     derived = defaultdict(set)
     close_dependencies = defaultdict(set)
     ma_dependencies = set()
+    volume_dependencies = defaultdict(set)
+    volume_propagation = defaultdict(set)
     try:
         conn.execute("BEGIN IMMEDIATE")
         for index, key in enumerate(sorted(keys)):
@@ -227,15 +233,32 @@ def apply_daily_changes(
                     and old_fact[value_field] != facts[value_field]
                     and old_source
                     and not old_source.startswith("raw_fallback:")
+                    and not (
+                        value_field == "source_is_st"
+                        and {old_source, source} <= {"tdxman:quote", "tdxman:directory"}
+                    )
                 ):
-                    raise DataPoolError(
+                    error = DataPoolError(
                         "SOURCE_CONFLICT",
                         f"Conflicting dated source correction: {symbol} {day} {value_field}",
                     )
+                    if merge_event_revisions:
+                        raise SymbolUpdateError(symbol, error)
+                    raise error
             if not old_fact:
                 facts = dict(facts, calc_status="TRADED")
             fact_delta = _write(conn, "daily_features", key, facts, old_fact)
-            if not bar_delta and not fact_delta:
+            if (
+                fill_missing_metrics
+                and "volume" in incoming_bars.get(key, {})
+                and (old_bar.get("vol_ratio") is None or old_bar.get("turnover_rate") is None)
+            ):
+                # An unchanged K-line can still need its first metric calculation.
+                volume_dependencies[symbol].add(day)
+            listing_ready = old_fact.get("limit_reason") == "missing_listing_date" and day in (
+                listed_days or {}
+            ).get(symbol, {})
+            if not bar_delta and not fact_delta and not listing_ready:
                 continue
             result["changed_rows"] += bool(bar_delta) + bool(fact_delta)
             if result["changed_rows"] > 100_000:
@@ -247,12 +270,18 @@ def apply_daily_changes(
             )
             after = dict(after_bar, **{k: v for k, v in after_fact.items() if k not in after_bar})
             after["bar_date"] = day if after_bar else None
-            status = classify_trading(after)
+            try:
+                status = classify_trading(after)
+            except DataPoolError as exc:
+                if merge_event_revisions:
+                    raise SymbolUpdateError(symbol, exc) from exc
+                raise
             identity_changed = status != old_status or "_insert" in bar_delta
             if (
                 bar_delta & (PRICE_FIELDS | REFERENCE_FIELDS)
                 or fact_delta
                 or identity_changed
+                or listing_ready
                 or after_fact.get("limit_status") is None
                 and status == "TRADED"
             ):
@@ -260,6 +289,20 @@ def apply_daily_changes(
             if "close" in bar_delta or identity_changed:
                 close_dependencies[symbol].add(day)
                 ma_dependencies.add(symbol)
+            if bar_delta & {"volume", "float_share", "float_share_source"} or identity_changed:
+                volume_dependencies[symbol].add(day)
+            if "volume" in bar_delta or identity_changed:
+                volume_propagation[symbol].add(day)
+
+        from .sqlite_volume_metrics import recompute_volume_metrics
+
+        for symbol, days in volume_dependencies.items():
+            changed_days, reads = recompute_volume_metrics(
+                conn, symbol, days, propagate_days=volume_propagation[symbol]
+            )
+            affected.update(changed_days)
+            result["read_rows"] += reads
+            result["changed_metric_rows"] += len(changed_days)
 
         for symbol, changed_days in close_dependencies.items():
             for day in changed_days:
@@ -289,9 +332,15 @@ def apply_daily_changes(
         # Extend factors after raw writes so new ex-dates can use prior new bars,
         # but before references/MA calculations; every dependency commits together.
         for extension in extensions:
-            stats = advance_factor_coverage(conn, **extension)
+            if merge_event_revisions:
+                try:
+                    stats = merge_recent_events(conn, **extension)
+                except ValueError as exc:
+                    raise SymbolUpdateError(extension["symbol"], exc) from exc
+            else:
+                stats = advance_factor_coverage(conn, **extension)
             result["changed_factor_rows"] += stats["changed_rows"]
-            if not stats["changed_rows"]:
+            if not stats["changed_rows"] or stats["affected_from"] is None:
                 continue
             symbol = extension["symbol"]
             rows = conn.execute(

@@ -11,11 +11,20 @@ manifest="$repo_root/.local/reports/full-copy-manifest.json"
 evidence="$repo_root/docs/evidence/sqlite-migration-assessment/20260928-derived-result.json"
 [[ -f "$manifest" && -f "$evidence" ]]
 [[ ! -s "$repo_root/data/stocks.sqlite-wal" ]]
+[[ ! -s "$repo_root/data/indices.sqlite-wal" ]]
+[[ ! -s "$repo_root/data/etfs.sqlite-wal" ]]
 [[ ! -f "$repo_root/data/catalog.duckdb.wal" ]]
-if fuser "$repo_root/data/stocks.sqlite" "$repo_root/data/catalog.duckdb" >/dev/null 2>&1; then
+database_paths=("$repo_root/data/stocks.sqlite" "$repo_root/data/catalog.duckdb")
+if [[ -f "$repo_root/data/indices.sqlite" ]]; then
+    database_paths+=("$repo_root/data/indices.sqlite")
+fi
+if [[ -f "$repo_root/data/etfs.sqlite" ]]; then
+    database_paths+=("$repo_root/data/etfs.sqlite")
+fi
+if fuser "${database_paths[@]}" >/dev/null 2>&1; then
     echo 'Close database readers and writers before copying' >&2; exit 1
 fi
-"$repo_root/.venv/bin/python" - "$manifest" "$repo_root/.local/reports/full-copy-files.txt" <<'PY'
+"$repo_root/.venv/bin/python" - "$manifest" "$repo_root/.local/reports/full-copy-files.txt" "$repo_root/data" <<'PY'
 import json, sys
 from pathlib import PurePosixPath, Path
 value=json.loads(Path(sys.argv[1]).read_text())
@@ -29,6 +38,10 @@ for item in value['files']:
         raise ValueError(f'Duplicate manifest path: {path}')
     seen.add(str(path))
     paths.append(str(path))
+if (Path(sys.argv[3]) / 'indices.sqlite').exists() and 'indices.sqlite' not in seen:
+    raise ValueError('Manifest omits the migrated indices.sqlite; rebuild it before copying')
+if (Path(sys.argv[3]) / 'etfs.sqlite').exists() and 'etfs.sqlite' not in seen:
+    raise ValueError('Manifest omits etfs.sqlite; rebuild it before copying')
 if sum(item['bytes'] for item in value['files']) != value['bytes']:
     raise ValueError('Manifest total bytes do not match file sizes')
 Path(sys.argv[2]).write_text('\n'.join(paths)+'\n')

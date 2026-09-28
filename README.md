@@ -571,6 +571,11 @@ commands 层不依赖 transport，可独立单测。
 `offline.vipdoc` 是通达信本地行情目录，都不是数据池输出路径。
 
 Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](docs/aspool_api.md)。
+新版项目数据统一位于 `data/`：股票使用 `stocks.sqlite`，指数使用独立的
+`indices.sqlite`，ETF 使用 `etfs.sqlite`，公共目录与基本面快照保留在 `catalog.duckdb`。
+当前项目生产池已全部退役 `lake/` 分区，见 [ETF 与辅助数据迁移验收](docs/etf_reference_sqlite_migration.md)。
+指数保留 `aspool update|sync --type index` 和 `read_index_daily` /
+`list_indices` 接口；迁移步骤、增量边界与验收见 [指数 SQLite 迁移](docs/index_sqlite_migration.md)。
 五年涨停事件及当日成交额使用 `DataPool.iter_limit_events_with_amount()` 分批读取；
 接口、缓存示例和资源边界见 [aspool API](docs/aspool_api.md#9-已发布事件与当日成交额的有界读取)。
 
@@ -603,65 +608,67 @@ aspool sync --type index --source tdx --tdx-mode online --period daily
 09:00～15:30（含端点）运行；更新限制在内部按上海时区判断，以下同时设置命令日志时区。
 该限制按星期判断，并非节假日交易日历。`sync` 没有相同时间限制，盘中调用可能保存未收盘日线。
 
-在已有股票日线池的项目根目录执行下面一组命令。它是工作流示例，**没有 `aspool daily` 子命令**：
+在已有股票日线池的项目根目录执行统一命令：
 
 ```bash
 source .venv/bin/activate
 export TZ=Asia/Shanghai
 
-aspool update &&
-aspool sync --type index --source tdx --tdx-mode online --period daily &&
-aspool sync --type ex --category ETF --source tdx --period daily &&
+aspool update --type all --source tdx &&
 aspool status
 ```
 
 顺序含义：
 
-1. 股票 `update`：用 quote 刷新当日记录和低频快照，再用 BaoStock 补齐沪深股票最近30个交易日的缺失字段、行情及状态，并重算派生结果。正常每日更新不再先跑一轮股票 sync。
-2. 指数 `sync`：首次建库或新增指数获取最长历史；已有指数增量补齐并重取最近5条已存记录，停更较久时继续分页。保存 OHLCV、成交额和涨跌家数，缺失家数按0处理。
-3. `ex` ETF `sync`：ETF 不进入指数池，首次仅保存 2010-01-01 以来的股票式 OHLCV 数据，后续增量更新；其他扩展类别先查看 `aspool ex categories`，规划项不会被误同步。
-4. `status`：查看股票、ETF、分钟线、指数覆盖汇总及最近维护报告；逐指数/ETF覆盖仍可用下方 API 检查。
+1. 完整读取股票和 ETF 当日目录，发布到 `catalog.duckdb:securities`。
+2. 指数 `update` 使用 MAC 日 K 线增量补齐，并从上证指数实际日期维护交易日历；广度用 `breadth_status` 区分可用和不可用，不用 `0/0` 冒充。
+3. 股票 `update` 使用 quote 保存当日量比、换手率，原子计算涨跌停、连板和日级市场汇总；只对昨收变化的疑似除权股票查询事件。周/月 schema 与接口已预留，writer 尚未投产。
+4. ETF 增量同步到独立 `etfs.sqlite`；K 线为空时用带日期报价确认无交易，不制造零值日线。
+5. 刷新最新基本面快照并输出统一报告。BaoStock 仅由 `--source baostock` 显式选择，不自动切源。详见 [完整数据与 CLI 契约](docs/production_data_flow_contract.md)。
 
 股票漏更或需要修补时，再先执行：
 
 ```bash
-aspool sync --type stock --source tdx --tdx-mode online --period daily
+aspool sync --root data --type all --source tdx
 aspool update
 ```
 
-股票在线 sync 也按本地历史末端增量分页，不再固定只取一页30条。先修补、后报价刷新，保留最新交易日的真实报价字段。
+不传日期时，各数据块按自己的末端增量补齐；股票默认重叠最近十个交易日。显式窗口仍限制在 31 个自然日、至多十个实际交易日，补算缺失量比和换手率，再更新同一套逐股派生与日汇总。
 
 股票日线 `sync` 同时补齐日期股本、参考价、收盘量比、换手率和市值，再重算涨跌停和连板。
 BaoStock 用于冲突样本的只读算法校对；详见 [日线字段补齐](docs/daily_enrichment.md)。
-已有历史仅补字段可用 `aspool sync --enrich-only --start 2021-09-24 --end 2026-09-24`。
-可手动运行 `aspool universe` 查看目录、待初始化和非活跃代码。
+旧文件池的 `--enrich-only` 不适用于新版 SQLite；较长历史由 ops 分窗维护。
+可手动运行 `aspool directory --type stock|etf` 刷新目录；`aspool universe` 仅保留为隐藏兼容别名。
 
 BaoStock 可单独查询或修复指定历史区间：
 
 ```bash
 tdxman quote 600519.SH --count 30 --source baostock --format table
 tdxman symbol-info 601091.SH --source baostock
-aspool sync --source baostock --start 2026-09-01 --end 2026-09-18
+aspool sync --root data --type stock --source baostock --status missing
+aspool sync --root data --type stock --source baostock --status missing \
+  --start 2026-09-23 --end 2026-09-24
 ```
 
-`settings/config.yaml` 的 `aspool.baostock.enabled/lookback` 控制默认开关和回溯交易日数；
-`aspool update --no-baostock` 可临时关闭。建议16:00后运行，补齐阶段在16:00前不读取当日日线。
+新版 `aspool update --source baostock` 显式选择备用源，不再读取配置自动追加 BaoStock；
+`--retries 2 --retry-delay 1` 控制单标的有限读取重试；连续三只重试耗尽后默认熔断，可用 `--max-consecutive-failures` 调整。建议16:00后运行，并核对源端实际数据日期。
 BaoStock 只支持沪深 A 股，首次串行补齐可能较慢；缺失会话、源间冲突和连板未知都会保留在报告中。
 详见 [BaoStock 数据源、合并规则和覆盖边界](docs/baostock.md)。
 
-通达信日线 update/sync 默认使用4个独立连接；`--workers 1` 为串行，最多8个连接。
-`--async` 使用异步客户端；同步和异步都支持有限并发，同一连接不并发发送请求。
-BaoStock 阶段固定串行，不受上述并发参数控制。
+新版 update 报价默认使用4个独立连接；`--workers 1` 为串行，最多8个连接。
+SQLite 股票历史 sync 与 BaoStock 固定串行；两条路径的写事务串行执行。旧文件池 sync 的异步选项不适用于新版 SQLite 股票路径；指数 SQLite sync 支持异步读取，写事务仍串行执行。
 
 ```bash
-aspool update --async --workers 4
+aspool update --root data --workers 4
 aspool sync --type index --source tdx --period daily --async --workers 4
 ```
 
 `&&` 在失败时停止后续步骤。查看命令输出的未返回、拒绝和失败数量；无数据不代表已经更新。
-股票运行报告位于 `ROOT/reports/maintenance/`，指数报告位于 `ROOT/reports/index-sync/`。
+新版 SQLite 的运行报告位于数据根目录同级的 `.local/reports/`；旧文件池股票报告位于
+`ROOT/reports/maintenance/`，旧指数报告位于 `ROOT/reports/index-sync/`。
 过期报价、无日期报价和非法日线被拒绝，保留原有记录；没有变化的文件跳过重写。
-当前仍沿用每证券一个Parquet文件，变化时重写文件，但只把近期记录转换为Python对象，较早历史在Arrow中保留。
+新版 SQLite 仅写入新增或变化的键；尚未迁移的旧文件池仍使用每证券一个 Parquet 文件，
+变化时重写文件，较早历史在 Arrow 中保留。
 
 ### 同步后检查与 Fundwise 读取
 

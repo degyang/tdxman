@@ -28,6 +28,10 @@ ETF_HISTORY_START = date(2010, 1, 1)
 
 def _fundamentals(root: Path) -> dict[str, dict[str, object]]:
     """Read manual fundamentals snapshots for daily-bar enrichment, if present."""
+    from .fundamental_catalog import available, read
+
+    if available(root):
+        return {r["symbol"]:r for r in read(root).to_dict("records")}
     path = root / "lake/fundamentals/snapshots.parquet"
     if not path.exists():
         return {}
@@ -486,11 +490,29 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
 
 
 def update_daily(root, limit=None, workers=1, asset_type="stock", derive_limits=True):
+    if asset_type == "stock" and (Path(root) / "stocks.sqlite").exists():
+        raise ValueError("SQLite 股票日线请使用 aspool update 或带日期窗口的 aspool sync")
+    if asset_type == "etf" and (Path(root) / "etfs.sqlite").exists():
+        return _sqlite_etfs(root, limit=limit, workers=workers)
     return asyncio.run(_sync_daily_run(root, limit, False, workers, asset_type, derive_limits))
 
 
 async def update_daily_async(root, limit=None, workers=1, asset_type="stock", derive_limits=True):
+    if asset_type == "stock" and (Path(root) / "stocks.sqlite").exists():
+        raise ValueError("SQLite 股票日线请使用 aspool update 或带日期窗口的 aspool sync")
+    if asset_type == "etf" and (Path(root) / "etfs.sqlite").exists():
+        return await asyncio.to_thread(_sqlite_etfs, root, limit=limit, workers=workers,
+                                       asynchronous=True)
     return await _sync_daily_run(root, limit, True, workers, asset_type, derive_limits)
+
+
+def _sqlite_etfs(root, **kwargs):
+    from .sqlite_etf_sync import sync_etfs
+
+    report, path = sync_etfs(root, **kwargs)
+    if report["status"] != "ok":
+        raise ValueError(f"ETF sync incomplete: {path}")
+    return len(report["success"]), sum(r["added"]+r["changed"] for r in report["success"])
 
 
 def update_minutes(
@@ -532,8 +554,16 @@ def update_minutes(
     return count, rows_written
 
 
+def update_daily_offline(root: Path, limit: int | None = None, asset_type: str = "stock"):
+    if asset_type == "stock" and (Path(root) / "stocks.sqlite").exists():
+        raise ValueError("SQLite 股票离线导入使用显式 ops 脚本；禁止旧文件更新")
+    if asset_type == "etf" and (Path(root) / "etfs.sqlite").exists():
+        return _sqlite_etfs(root, limit=limit, mode="offline")
+    return _update_daily_offline_legacy(root, limit, asset_type)
+
+
 @writer
-def update_daily_offline(
+def _update_daily_offline_legacy(
     root: Path, limit: int | None = None, asset_type: str = "stock"
 ) -> tuple[int, int]:
     """Merge local vipdoc daily bars into the pool, preserving static snapshots."""
