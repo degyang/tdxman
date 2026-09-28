@@ -18,7 +18,10 @@ import time
 from contextlib import closing
 from pathlib import Path, PureWindowsPath
 
-TABLES = {"daily_bars", "daily_features", "corporate_actions", "market_daily_summary"}
+BUSINESS_TABLES = {
+    "daily_bars", "daily_features", "corporate_actions", "market_daily_summary"
+}
+TABLES = BUSINESS_TABLES | {"dataset_state"}
 REQUIRED_FILES = {"stocks.sqlite", "indices.sqlite", "etfs.sqlite", "catalog.duckdb"}
 SHA256 = re.compile(r"^[0-9a-fA-F]{64}$")
 SIDECARS = {f"{name}.sqlite-{suffix}" for name in ("stocks", "indices", "etfs")
@@ -184,7 +187,7 @@ def _evidence(document):
     _sha256(document.get("database_sha256"), "Evidence database digest")
     _integer(document.get("database_bytes"), "Evidence database bytes")
     rows = document.get("rows")
-    if not isinstance(rows, dict) or set(rows) != TABLES:
+    if not isinstance(rows, dict) or set(rows) != BUSINESS_TABLES:
         raise ValueError("Evidence rows must cover the four stock tables")
     for table, count in rows.items():
         _integer(count, f"Evidence rows.{table}")

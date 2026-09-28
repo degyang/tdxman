@@ -13,7 +13,7 @@ from aspool.source_retry import read_with_retry
 from aspool.sqlite_daily_sync import sync_daily_source
 from aspool.sqlite_daily_update import apply_daily_changes
 from aspool.sqlite_stock_store import stock_connection
-from aspool.sqlite_update_cli import QuoteSource, SourceSession, run_update
+from aspool.sqlite_update_cli import QuoteSource, SourceSession, _sync_candidates, run_update
 from aspool.sqlite_volume_metrics import TURNOVER_SOURCE, VOLUME_SOURCE
 from tdxman.mac.client import MacClient
 
@@ -292,6 +292,52 @@ def test_sync_uses_kline_and_fills_missing_metrics(tmp_path, monkeypatch):
         )
 
 
+def test_successful_kline_window_marks_absent_session_as_no_trade(tmp_path):
+    days = store(tmp_path)
+    with stock_connection(tmp_path, read_only=False) as conn:
+        conn.execute(
+            "INSERT INTO corporate_actions(symbol,effective_date,record_kind,source,source_key,"
+            "cumulative_factor,valid_from,valid_through,factor_basis,updated_at) "
+            "VALUES ('000001.SZ',?,'factor','fixture','selected',1,?,?,"
+            "'source_cumulative_factor:source_anchor:fixture',1)",
+            (days[0], days[0], "2026-09-29"),
+        )
+        conn.commit()
+
+    class OneDay:
+        def get_daily(self, market, code, **kwargs):
+            return pd.DataFrame(
+                [
+                    dict(
+                        symbol="000001.SZ",
+                        date=date(2026, 9, 28),
+                        open=10,
+                        high=10,
+                        low=10,
+                        close=10,
+                        volume=100,
+                        amount=1000,
+                    )
+                ]
+            )
+
+    sync_daily_source(
+        tmp_path,
+        client=OneDay(),
+        symbols=["000001.SZ"],
+        market_sessions=[*days, "2026-09-28", "2026-09-29"],
+        as_of="2026-09-29",
+        start="2026-09-28",
+        end="2026-09-29",
+        source="tdxman:kline",
+    )
+    with stock_connection(tmp_path) as conn:
+        assert conn.execute(
+            "SELECT trading_status,calc_status FROM daily_features "
+            "WHERE symbol='000001.SZ' AND trade_date='2026-09-29'"
+        ).fetchone() == ("NO_TRADE", "NO_TRADE")
+
+
 def test_volume_repair_updates_five_successors_and_rolls_back(tmp_path, monkeypatch):
     days = store(tmp_path)
     with stock_connection(tmp_path, read_only=False) as conn:
@@ -360,9 +406,7 @@ def test_cli_routes_sources_and_sync_keeps_enrichment(tmp_path, monkeypatch):
     assert runner.invoke(cli, ["sync", "--root", str(tmp_path), "--no-enrich"]).exit_code == 2
 
 
-def test_all_cli_refreshes_directories_before_index_stock_etf_and_fundamentals(
-    tmp_path, monkeypatch
-):
+def test_all_cli_refreshes_directories_before_index_stock_and_etf(tmp_path, monkeypatch):
     order = []
 
     def read_directory(session, *, report):
@@ -395,10 +439,6 @@ def test_all_cli_refreshes_directories_before_index_stock_etf_and_fundamentals(
         assert kwargs["items"][0]["code"] == "510010"
         return {"status": "ok"}, tmp_path / "etf.json"
 
-    def fundamentals(*args, **kwargs):
-        order.append("fundamentals")
-        return 1, 1
-
     monkeypatch.setattr("aspool.sqlite_directory.read_directory", read_directory)
     monkeypatch.setattr("aspool.sqlite_directory.publish_directory", publish_stock)
     monkeypatch.setattr("aspool.sqlite_etf_sync.online_items", online_items)
@@ -406,7 +446,6 @@ def test_all_cli_refreshes_directories_before_index_stock_etf_and_fundamentals(
     monkeypatch.setattr("aspool.sqlite_index_sync.sync_indices", indices)
     monkeypatch.setattr("aspool.sqlite_update_cli.run_update", stock)
     monkeypatch.setattr("aspool.sqlite_etf_sync.sync_etfs", etfs)
-    monkeypatch.setattr("aspool.fundamentals.refresh_fundamentals", fundamentals)
     result = CliRunner().invoke(cli, ["update", "--type", "all", "--root", str(tmp_path)])
     assert result.exit_code == 0, result.output
     assert order == [
@@ -417,8 +456,70 @@ def test_all_cli_refreshes_directories_before_index_stock_etf_and_fundamentals(
         "index",
         "stock",
         "etf",
-        "fundamentals",
     ]
+
+
+def test_sync_count_defaults_to_ten_and_conflicts_with_explicit_range(tmp_path, monkeypatch):
+    (tmp_path / "stocks.sqlite").touch()
+    calls = []
+
+    def run(root, *, report, **kwargs):
+        calls.append(kwargs)
+        report.update(status="ok")
+
+    monkeypatch.setattr("aspool.sqlite_update_cli.run_update", run)
+    runner = CliRunner()
+    result = runner.invoke(cli, ["sync", "--root", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    assert calls[-1]["count"] == 10
+    result = runner.invoke(
+        cli,
+        ["sync", "--root", str(tmp_path), "--count", "30"],
+    )
+    assert result.exit_code == 0, result.output
+    assert calls[-1]["count"] == 30
+    result = runner.invoke(
+        cli,
+        [
+            "sync", "--root", str(tmp_path), "--count", "30",
+            "--start", "2026-09-01", "--end", "2026-09-28",
+        ],
+    )
+    assert result.exit_code == 2
+    assert "互斥" in result.output
+
+
+def test_sync_candidate_scan_skips_complete_symbols_and_selects_real_gaps(tmp_path):
+    days = store(tmp_path)
+    with stock_connection(tmp_path, read_only=False) as conn:
+        conn.execute(
+            "INSERT INTO corporate_actions(symbol,effective_date,record_kind,source,source_key,"
+            "cumulative_factor,valid_from,valid_through,factor_basis,updated_at) "
+            "VALUES ('000001.SZ',?,'factor','fixture','selected',1,?,?,"
+            "'source_cumulative_factor:source_anchor:fixture',1)",
+            (days[0], days[0], days[-1]),
+        )
+        conn.commit()
+    lifecycle = {"000001.SZ": (date(2020, 1, 1), None)}
+    assert _sync_candidates(tmp_path, ["000001.SZ"], days[-3:], lifecycle) == []
+    with stock_connection(tmp_path, read_only=False) as conn:
+        conn.execute(
+            "DELETE FROM daily_bars WHERE symbol='000001.SZ' AND trade_date=?", (days[-2],)
+        )
+        conn.execute(
+            "DELETE FROM daily_features WHERE symbol='000001.SZ' AND trade_date=?", (days[-2],)
+        )
+        conn.commit()
+    assert _sync_candidates(tmp_path, ["000001.SZ"], days[-3:], lifecycle) == ["000001.SZ"]
+
+
+def test_sync_with_no_candidates_is_a_successful_noop(tmp_path, monkeypatch):
+    store(tmp_path)
+    monkeypatch.setattr("aspool.sqlite_update_cli._sync_candidates", lambda *args: [])
+    report = run_update(tmp_path, mode="sync", now=NOW, retry_delay=0)
+    assert report["status"] == "ok"
+    assert report["requested"] == 0
+    assert report["reason"] == "requested window is already complete"
 
 
 def test_retry_is_bounded_and_validation_errors_are_not_retried(monkeypatch):

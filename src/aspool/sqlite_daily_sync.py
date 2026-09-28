@@ -5,11 +5,13 @@ from __future__ import annotations
 import math
 from collections import Counter
 from datetime import date, timedelta
+from pathlib import Path
 
 import pandas as pd
 
 from tdxman.models.enums import Market
 
+from .pool import pool_lock
 from .sqlite_daily_update import apply_daily_changes, daily_window
 from .sqlite_stock_store import stock_connection
 
@@ -62,7 +64,20 @@ def sync_daily_source(
     )
     with stock_connection(root, read_only=False) as conn:
         pending_symbols, pending_bars, pending_facts, pending_extensions = [], [], [], []
+        pending_state_symbols, pending_state_facts = [], []
         consecutive_failures = 0
+
+        def mirror(applied, symbols):
+            if not (Path(root) / "features.sqlite").is_file():
+                return
+            from .platform_v2 import mirror_platform_v2
+
+            applied["platform_v2"] = mirror_platform_v2(
+                root,
+                symbols=symbols,
+                dates=applied["affected_sessions"],
+                raw_revision=applied["raw_revision"],
+            )
 
         def flush():
             if not pending_symbols:
@@ -72,18 +87,20 @@ def sync_daily_source(
             remaining = set(pending_symbols)
             while remaining:
                 try:
-                    applied = apply_daily_changes(
-                        conn,
-                        bars=[r for r in pending_bars if r["symbol"] in remaining],
-                        dated_facts=[r for r in pending_facts if r["symbol"] in remaining],
-                        factor_extensions=[
-                            r for r in pending_extensions if r["symbol"] in remaining
-                        ],
-                        market_sessions=sessions,
-                        listed_days=listed_days,
-                        fill_missing_metrics=source != "tdxman:quote",
-                        merge_event_revisions=event_refresh_start is not None,
-                    )
+                    with pool_lock(root, write=True):
+                        applied = apply_daily_changes(
+                            conn,
+                            bars=[r for r in pending_bars if r["symbol"] in remaining],
+                            dated_facts=[r for r in pending_facts if r["symbol"] in remaining],
+                            factor_extensions=[
+                                r for r in pending_extensions if r["symbol"] in remaining
+                            ],
+                            market_sessions=sessions,
+                            listed_days=listed_days,
+                            fill_missing_metrics=source != "tdxman:quote",
+                            merge_event_revisions=event_refresh_start is not None,
+                        )
+                        mirror(applied, remaining)
                 except SymbolUpdateError as exc:
                     # The rejected transaction has rolled back. Remove only its
                     # invalid input; never retry database/transaction deadline failures.
@@ -101,13 +118,31 @@ def sync_daily_source(
             pending_facts.clear()
             pending_extensions.clear()
 
+        def flush_states():
+            if not pending_state_symbols:
+                return
+            with pool_lock(root, write=True):
+                applied = apply_daily_changes(
+                    conn,
+                    dated_facts=pending_state_facts,
+                    market_sessions=sessions,
+                    listed_days=listed_days,
+                )
+                mirror(applied, set(pending_state_symbols))
+            result.setdefault("state_writes", []).append(
+                dict(symbols=sorted(set(pending_state_symbols)), **applied)
+            )
+            pending_state_symbols.clear()
+            pending_state_facts.clear()
+
         ordered_symbols = list(dict.fromkeys(symbols))
         for position, symbol in enumerate(ordered_symbols):
             code, market = symbol.split(".")
             if market not in (("SH", "SZ", "BJ") if source.startswith("tdxman:") else ("SH", "SZ")):
+                result["unsupported"].append(symbol)
                 result["missing"].append(symbol)
-                pending_symbols.append(symbol)
-                pending_facts.extend(
+                pending_state_symbols.append(symbol)
+                pending_state_facts.extend(
                     dict(symbol=symbol, trade_date=day, trading_status="MISSING",
                          trading_status_source=source)
                     for day in window
@@ -124,8 +159,8 @@ def sync_daily_source(
             except Exception as exc:
                 result["failed"].append(dict(symbol=symbol, error=str(exc)))
                 result["missing"].append(symbol)
-                pending_symbols.append(symbol)
-                pending_facts.extend(
+                pending_state_symbols.append(symbol)
+                pending_state_facts.extend(
                     dict(symbol=symbol, trade_date=day, trading_status="MISSING",
                          trading_status_source=source)
                     for day in window
@@ -139,8 +174,8 @@ def sync_daily_source(
             if frame.empty:
                 result["empty"].append(symbol)
                 result["missing"].append(symbol)
-                pending_symbols.append(symbol)
-                pending_facts.extend(
+                pending_state_symbols.append(symbol)
+                pending_state_facts.extend(
                     dict(symbol=symbol, trade_date=day, trading_status="MISSING",
                          trading_status_source=source)
                     for day in window
@@ -164,8 +199,8 @@ def sync_daily_source(
                         raise ValueError("Source returned a wrong symbol or date")
             except (TypeError, ValueError) as exc:
                 result["invalid"].append(dict(symbol=symbol, error=str(exc)))
-                pending_symbols.append(symbol)
-                pending_facts.extend(
+                pending_state_symbols.append(symbol)
+                pending_state_facts.extend(
                     dict(symbol=symbol, trade_date=day, trading_status="INVALID",
                          trading_status_source=source)
                     for day in window
@@ -178,9 +213,11 @@ def sync_daily_source(
                 continue
             bars, facts = [], []
             all_missing = True
+            returned_dates = set()
             for raw in records:
                 row = {k: (None if pd.isna(v) else v) for k, v in raw.items()}
                 day = row["date"].isoformat()
+                returned_dates.add(day)
                 key = dict(symbol=symbol, trade_date=day)
                 fact = dict(
                     key,
@@ -238,6 +275,19 @@ def sync_daily_source(
                 if row.get("name") is not None:
                     bar["name_source"] = row.get("name_source") or source
                 bars.append(bar)
+            if source == "tdxman:kline":
+                for day in window:
+                    if day in returned_dates:
+                        continue
+                    facts.append(
+                        dict(
+                            symbol=symbol,
+                            trade_date=day,
+                            trading_status="NO_TRADE",
+                            trading_status_source=source,
+                        )
+                    )
+                    result["no_trade"].append(symbol)
             consecutive_failures = consecutive_failures + 1 if all_missing else 0
             through = max(fact["trade_date"] for fact in facts)
             tail = conn.execute(
@@ -307,6 +357,7 @@ def sync_daily_source(
             if len(pending_symbols) >= max_symbols_per_write:
                 flush()
         flush()
+        flush_states()
     return result
 
 

@@ -43,7 +43,7 @@ def _day(value):
 
 
 def daily_window(market_sessions, *, as_of, start=None, end=None):
-    """Default to five confirmed sessions; a repair always specifies both ends."""
+    """Select an explicit bounded repair window from confirmed sessions."""
     as_of = _day(as_of)
     days = sorted({_day(day) for day in market_sessions if day <= as_of})
     if (start is None) != (end is None):
@@ -55,8 +55,8 @@ def daily_window(market_sessions, *, as_of, start=None, end=None):
         days = [day for day in days if start <= day <= end]
     else:
         days = days[-5:]
-    if not days or len(days) > 10:
-        raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Expected 1..10 input sessions")
+    if not days or len(days) > 60:
+        raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Expected 1..60 input sessions")
     return days
 
 
@@ -142,7 +142,7 @@ def apply_daily_changes(
     fill_missing_metrics=False,
     merge_event_revisions=False,
 ) -> dict:
-    """Apply at most ten source dates, propagating actual dependencies atomically.
+    """Apply at most 60 source dates, propagating actual dependencies atomically.
 
     Source adapters provide canonical units and dated provenance. This function
     owns BEGIN/COMMIT; an active caller transaction is rejected. No batch IDs,
@@ -161,7 +161,7 @@ def apply_daily_changes(
     keys = incoming_bars.keys() | incoming_facts.keys()
     sessions = {_day(day) for day in market_sessions}
     input_dates = {day for _, day in keys}
-    if len(input_dates) > 10 or not input_dates <= sessions or len(keys) > 100_000:
+    if len(input_dates) > 60 or not input_dates <= sessions or len(keys) > 100_000:
         raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Source range outside session budget")
     result = dict(
         changed_rows=0,
@@ -466,6 +466,25 @@ def apply_daily_changes(
             result["read_rows"] += stats["read_rows"]
         if time.monotonic() >= deadline:
             raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Writer deadline exceeded")
+        state = conn.execute(
+            "SELECT revision FROM dataset_state WHERE dataset='stock_raw'"
+        ).fetchone()
+        changed_state = bool(
+            result["changed_rows"]
+            or result["changed_metric_rows"]
+            or result["changed_factor_rows"]
+            or result["changed_feature_rows"]
+            or result["summary_rows"]
+        )
+        revision = (state[0] if state else 0) + int(changed_state)
+        if changed_state:
+            maximum = conn.execute("SELECT max(trade_date) FROM daily_bars").fetchone()[0]
+            conn.execute(
+                "INSERT INTO dataset_state VALUES ('stock_raw',?,?,?) "
+                "ON CONFLICT(dataset) DO UPDATE SET revision=excluded.revision,"
+                "max_date=excluded.max_date,updated_at=excluded.updated_at",
+                (revision, maximum, time.time_ns() // 1000),
+            )
         conn.commit()
     except Exception as exc:
         conn.set_progress_handler(None, 0)
@@ -478,6 +497,7 @@ def apply_daily_changes(
         conn.execute(f"PRAGMA busy_timeout={old_timeout}")
     return dict(
         result,
+        raw_revision=revision,
         affected_sessions=sorted(affected),
         elapsed_ms=round((time.monotonic() - started) * 1000),
     )

@@ -4,19 +4,31 @@ from .api_contract import DataPoolError
 from .sqlite_summary_quality import QUALITY_FIELDS
 
 
-def daily_columns(conn):
-    columns = [row[1] for row in conn.execute("PRAGMA table_info(market_daily_summary)")]
+def _table_info(conn, table):
+    if "." in table:
+        schema, name = table.split(".", 1)
+        return conn.execute(f"PRAGMA {schema}.table_info({name})").fetchall()
+    return conn.execute(f"PRAGMA table_info({table})").fetchall()
+
+
+def daily_columns(conn, table="market_daily_summary"):
+    columns = [row[1] for row in _table_info(conn, table)]
     return columns[: columns.index("above_ma20_pct") + 1] + ["updated_at"]
 
 
-def describe_fields(conn, *, fields=None, frequency="D", scope="all_stocks"):
+def describe_fields(
+    conn, *, fields=None, frequency="D", scope="all_stocks",
+    table="market_daily_summary",
+):
     if frequency != "D":
         raise DataPoolError("FREQUENCY_NOT_READY", "Only daily summaries are implemented")
     if scope not in ("all_stocks", "exclude_known_st"):
         raise DataPoolError("INVALID_ARGUMENT", "Unsupported market scope")
-    schema = {row[1]: row for row in conn.execute("PRAGMA table_info(market_daily_summary)")}
+    schema = {row[1]: row for row in _table_info(conn, table)}
     # Optional columns may have been appended by maintenance ALTER TABLE.
-    allowed = list(dict.fromkeys(daily_columns(conn) + [k for k in QUALITY_FIELDS if k in schema]))
+    allowed = list(
+        dict.fromkeys(daily_columns(conn, table) + [k for k in QUALITY_FIELDS if k in schema])
+    )
     chosen = allowed if fields is None else ([fields] if isinstance(fields, str) else list(fields))
     if not chosen or len(chosen) != len(set(chosen)) or set(chosen) - set(allowed):
         raise DataPoolError("FIELD_UNSUPPORTED", "Unknown or unavailable daily summary field")

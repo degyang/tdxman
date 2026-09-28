@@ -113,7 +113,16 @@ def test_full_source_migration_and_resume(tmp_path):
         assert c.execute("SELECT count(*) FROM market_daily_summary").fetchone() == (0,)
         assert c.execute("SELECT source_pre_close,calc_status FROM daily_features "
                          "ORDER BY trade_date").fetchall() == [(9.5, "TRADED"), (10., "NO_TRADE")]
-        assert c.execute("SELECT count(*) FROM sqlite_master WHERE type='table'").fetchone() == (4,)
+        assert {
+            row[0]
+            for row in c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        } == {
+            "daily_bars",
+            "daily_features",
+            "corporate_actions",
+            "market_daily_summary",
+            "dataset_state",
+        }
         factor_payload = c.execute("SELECT payload_json FROM corporate_actions "
                                    "WHERE symbol='920001.BJ'").fetchone()[0]
         assert json.loads(factor_payload)["market"] == "SH"

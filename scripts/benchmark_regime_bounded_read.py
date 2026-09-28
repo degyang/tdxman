@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -52,6 +53,24 @@ def fingerprint(value):
 
 def source_manifest(pool, start, end):
     coverage = pool.read_limit_coverage(start=start, end=end)
+    if pool.describe().get('contract_version', 2) >= 3:
+        with pool.stock_snapshot() as reader:
+            raw = reader.conn.execute(
+                "SELECT dataset,revision,max_date,updated_at FROM dataset_state "
+                "WHERE dataset='stock_raw'"
+            ).fetchall()
+            if reader.feature_table.startswith('features.'):
+                derived = reader.conn.execute(
+                    "SELECT dataset,scope_key,raw_revision,factor_revision,status,updated_at "
+                    "FROM features.feature_state ORDER BY dataset,scope_key"
+                ).fetchall()
+            else:
+                derived = []
+        return {
+            'coverage': json.loads(coverage.to_json(orient='records', date_format='iso')),
+            'staleness': [],
+            'state': {'raw': raw, 'derived': derived},
+        }
     stale = pool.read_limit_staleness(start=start, end=end)
     return {
         'coverage': json.loads(coverage.to_json(orient='records', date_format='iso')),
@@ -107,7 +126,12 @@ def consume(pool, args, cache=None, verify=False):
                  compared_rows=0, compared_windows=0, amount_checked=0)
     start, end = pd.Timestamp(args.start).date(), pd.Timestamp(args.end).date()
     window_count = (end - start).days // args.batch_days + 1
-    with pool.iter_limit_events_with_amount(
+    reference_context = (
+        pool.stock_snapshot()
+        if verify and pool.describe().get('contract_version', 2) >= 3
+        else nullcontext()
+    )
+    with reference_context as reference, pool.iter_limit_events_with_amount(
         start=start, end=end, batch_days=args.batch_days, max_rows=args.max_rows,
         temp_directory=cache.parent if cache else None, **filters,
     ) as batches:
@@ -115,7 +139,11 @@ def consume(pool, args, cache=None, verify=False):
             lo = start + timedelta(days=window * args.batch_days)
             hi = min(end, lo + timedelta(days=args.batch_days - 1))
             if verify:
-                expected = pool.read_limit_events(start=lo, end=hi)
+                expected = (
+                    reference.read_limit_events(start=lo, end=hi)
+                    if reference is not None
+                    else pool.read_limit_events(start=lo, end=hi)
+                )
                 if not args.all_events:
                     expected = expected[
                         expected.close_limit_up.eq(True) & expected.consecutive_up.ge(1)

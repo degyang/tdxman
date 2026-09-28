@@ -240,7 +240,7 @@ def test_index_api_invalid_parameters(tmp_path, kwargs, code):
 def test_cli_help_index_options_and_examples():
     result = CliRunner().invoke(cli, ["sync", "--help"], prog_name="aspool")
     assert result.exit_code == 0
-    assert "--type [stock|index]" in result.output
+    assert "--type [stock|index|ex|etf|all]" in result.output
     assert "aspool sync --type index --source tdx --period daily" in result.output
     assert "('--type'" not in result.output
 

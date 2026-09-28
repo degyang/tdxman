@@ -109,7 +109,12 @@ CREATE TABLE daily_features (
 ) STRICT, WITHOUT ROWID;
 -- No foreign key to bars: dated source facts without a bar must be retained.
 CREATE INDEX daily_features_by_date ON daily_features(trade_date, symbol);
-CREATE INDEX daily_features_events ON daily_features(trade_date, symbol)
+CREATE INDEX daily_features_events ON daily_features(
+    trade_date, symbol, calc_status,
+    touch_limit_up, touch_limit_down, close_limit_up, close_limit_down,
+    limit_up_price, limit_down_price, consecutive_up, prior_consecutive_up,
+    streak_known, is_st, limit_status, updated_at
+)
     WHERE close_limit_up = 1 OR touch_limit_up = 1
        OR close_limit_down = 1 OR touch_limit_down = 1;
 
@@ -176,3 +181,10 @@ CREATE TABLE market_daily_summary (
 ) STRICT, WITHOUT ROWID;
 CREATE INDEX market_summary_by_range
     ON market_daily_summary(frequency, scope, period_start);
+
+CREATE TABLE dataset_state (
+    dataset TEXT PRIMARY KEY,
+    revision INTEGER NOT NULL,
+    max_date TEXT,
+    updated_at INTEGER NOT NULL
+) STRICT, WITHOUT ROWID;

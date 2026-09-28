@@ -74,13 +74,23 @@ def sync_indices(
     workers=1,
     retries=2,
     retry_delay=1,
+    start=None,
+    end=None,
+    count=None,
 ):
     if mode not in ("online", "offline") or not 1 <= workers <= 8:
         raise ValueError("Invalid index sync mode/workers")
     if not 0 <= retries <= 5 or not 0 <= retry_delay <= 30:
         raise ValueError("Invalid index retry policy")
     root = Path(root).resolve()
+    if (start is None) != (end is None):
+        raise ValueError("Specify both start and end")
+    if count is not None and start is not None:
+        raise ValueError("count and an explicit range are mutually exclusive")
+    if count is not None and (isinstance(count, bool) or not 1 <= count <= 60):
+        raise ValueError("count must be between 1 and 60")
     expected_end = None
+    window_start = start
     if (root / "catalog.duckdb").exists():
         with duckdb.connect(str(root / "catalog.duckdb"), read_only=True) as catalog:
             if "security_calendar" in {row[0] for row in catalog.execute("SHOW TABLES").fetchall()}:
@@ -88,6 +98,13 @@ def sync_indices(
                     "SELECT max(trade_date) FROM security_calendar WHERE is_open AND trade_date<=?",
                     [datetime.now(ZoneInfo("Asia/Shanghai")).date()],
                 ).fetchone()[0]
+                if start is None and count is not None:
+                    recent = catalog.execute(
+                        "SELECT trade_date FROM security_calendar WHERE is_open AND trade_date<=? "
+                        "ORDER BY trade_date DESC LIMIT ?",
+                        [expected_end, count],
+                    ).fetchall()
+                    window_start = str(min(row[0] for row in recent)) if recent else None
     started = perf_counter()
     items = load_indices() if items is None else items
     items = items[:limit] if limit else items
@@ -108,15 +125,12 @@ def sync_indices(
     path = root.parent / ".local/reports/index-sync" / (report["run_id"] + ".json")
     atomic_json(path, report)
     with index_connection(root, read_only=False) as conn:
-        jobs = [
-            (
-                item,
-                min(days)
-                if (days := last_dates(conn, f"{item['code']}.{item['market']}"))
-                else None,
-            )
-            for item in items
-        ]
+        jobs = []
+        for item in items:
+            days = last_dates(conn, f"{item['code']}.{item['market']}")
+            local_since = min(days) if days else None
+            since = window_start or local_since
+            jobs.append((item, since))
 
         def consume(entry):
             (item, since), rows, error, _ = entry
@@ -125,6 +139,10 @@ def sync_indices(
                 return
             if mode == "offline" and since:
                 rows = [r for r in rows if str(r["date"])[:10] >= since]
+            if window_start:
+                rows = [r for r in rows if str(r["date"])[:10] >= window_start]
+            if end:
+                rows = [r for r in rows if str(r["date"])[:10] <= end]
             try:
                 with pool_lock(root, write=True):
                     result = save_rows(conn, item, rows, source="tdxman:index:" + mode)

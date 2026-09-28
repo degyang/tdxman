@@ -92,7 +92,7 @@ def test_single_day_over_page_limit_continues_without_loss(tmp_path):
     assert stream.closed and not stream.completed and stream.reader is None
 
 
-def test_summary_projection_and_removed_publication_apis(tmp_path):
+def test_summary_and_legacy_quality_projections(tmp_path):
     seed(tmp_path)
     pool = DataPool(tmp_path)
     frame = pool.read_market_daily(
@@ -102,9 +102,32 @@ def test_summary_projection_and_removed_publication_apis(tmp_path):
     with pytest.raises(DataPoolError) as error:
         pool.read_market_summary(start="2026-09-24", end="2026-09-24", frequency="W")
     assert error.value.code == "FREQUENCY_NOT_READY"
-    with pytest.raises(DataPoolError) as error:
-        pool.read_limit_coverage()
-    assert error.value.code == "API_REMOVED"
+    coverage = pool.read_limit_coverage()
+    assert coverage.columns.tolist() == [
+        "trade_date", "batch_id", "scope_id", "rule_version", "computed_at",
+        "processed_count", "known_count", "unknown_count", "no_limit_count",
+        "invalid_count", "status", "stale", "stale_reason",
+    ]
+    assert coverage.trade_date.dt.strftime("%Y-%m-%d").tolist() == ["2026-09-24"]
+    assert coverage.batch_id.isna().all() and not coverage.stale.iloc[0]
+
+
+def test_limit_exception_projection_has_no_publication_identity(tmp_path):
+    seed(tmp_path)
+    with stock_connection(tmp_path, read_only=False) as conn:
+        conn.execute(
+            "UPDATE daily_features SET limit_status='UNKNOWN',limit_reason='missing_reference',"
+            "touch_limit_up=NULL,close_limit_up=NULL,touch_limit_down=NULL,"
+            "close_limit_down=NULL,limit_up_price=NULL,limit_down_price=NULL,"
+            "streak_known=0,consecutive_up=NULL WHERE symbol='000001.SZ' "
+            "AND trade_date='2026-09-24'"
+        )
+        conn.commit()
+    frame = DataPool(tmp_path).read_limit_exceptions(trade_date="2026-09-24")
+    assert frame[["symbol", "kind", "reason"]].to_dict("records") == [
+        {"symbol": "000001.SZ", "kind": "UNKNOWN", "reason": "missing_reference"}
+    ]
+    assert frame.batch_id.isna().all()
 
 
 def test_nullable_summary_counts_stay_integers_for_consumers(tmp_path):

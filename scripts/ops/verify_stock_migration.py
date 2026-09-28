@@ -11,7 +11,10 @@ import json
 import sqlite3
 from pathlib import Path
 
-TABLES = {"daily_bars", "daily_features", "corporate_actions", "market_daily_summary"}
+BUSINESS_TABLES = {
+    "daily_bars", "daily_features", "corporate_actions", "market_daily_summary"
+}
+TABLES = BUSINESS_TABLES | {"dataset_state"}
 INDEXES = {"daily_bars_by_date", "daily_features_by_date", "daily_features_events",
            "corporate_actions_selected_factor", "market_summary_by_range"}
 
@@ -55,7 +58,7 @@ def verify(root, *, reuse_source_integrity=False):
                 raise ValueError("SQLite integrity check failed")
             integrity_origin = "local_full_check"
         counts = {table: conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
-                  for table in sorted(TABLES)}
+                  for table in sorted(BUSINESS_TABLES)}
         if counts != dict(report["rows"], market_daily_summary=0):
             raise ValueError("Counts differ from the facts-stage result")
         cursor = conn.execute("SELECT symbol,trade_date,close,amount FROM daily_bars "

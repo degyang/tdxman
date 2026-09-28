@@ -33,6 +33,12 @@ def stock_connection(root: Path, *, create: bool = False, read_only: bool = True
             conn.execute("PRAGMA synchronous=FULL")
         if create:
             conn.executescript(files("aspool").joinpath("stocks_schema.sql").read_text())
+        if not read_only:
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS dataset_state("
+                "dataset TEXT PRIMARY KEY,revision INTEGER NOT NULL,max_date TEXT,"
+                "updated_at INTEGER NOT NULL) STRICT, WITHOUT ROWID"
+            )
         if conn.execute("PRAGMA user_version").fetchone()[0] != 1:
             raise ValueError("Unsupported stock schema version")
         yield conn

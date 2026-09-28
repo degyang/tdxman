@@ -103,14 +103,50 @@ class StockSnapshot:
     def __init__(self, root):
         self.root = root
         self.conn = None
+        self.feature_table = "daily_features"
+        self.summary_table = "market_daily_summary"
+        self.factor_table = None
 
     def __enter__(self):
         if self.conn is not None:
             raise ValueError("Snapshot is already open")
         self._connection = stock_connection(self.root)
         self.conn = self._connection.__enter__()
+        from .platform_v2 import layout_version
+
+        if layout_version(self.root) >= 2:
+            uri = (self.root / "features.sqlite").resolve().as_uri() + "?mode=ro"
+            self.conn.execute("ATTACH DATABASE ? AS features", (uri,))
+            adjustment_uri = (self.root / "adjustments.sqlite").resolve().as_uri() + "?mode=ro"
+            self.conn.execute("ATTACH DATABASE ? AS adjustments", (adjustment_uri,))
+            self.feature_table = "features.stock_daily_features"
+            self.summary_table = "features.market_regime_features"
+            self.factor_table = "adjustments.stock_adjustment_factors"
         self.conn.execute("BEGIN")
         self.conn.execute("SELECT name FROM sqlite_master LIMIT 1").fetchone()
+        if self.feature_table != "daily_features":
+            raw = self.conn.execute(
+                "SELECT revision FROM dataset_state WHERE dataset='stock_raw'"
+            ).fetchone()
+            states = self.conn.execute(
+                "SELECT dataset,raw_revision,factor_revision,status FROM features.feature_state "
+                "WHERE scope_key='all'"
+            ).fetchall()
+            factor = self.conn.execute(
+                "SELECT revision FROM adjustments.adjustment_state "
+                "WHERE dataset='stock_adjustment_factors'"
+            ).fetchone()
+            if raw is None or {row[0] for row in states} != {
+                "stock_daily_features", "market_regime_features"
+            } or factor is None or any(
+                row[1] != raw[0] or row[2] != factor[0] or row[3] != "READY"
+                for row in states
+            ):
+                self._connection.__exit__(None, None, None)
+                self.conn = None
+                raise DataPoolError(
+                    "DERIVED_NOT_READY", "Layered feature revisions do not match stock_raw"
+                )
         return self
 
     def __exit__(self, *error):
@@ -141,9 +177,26 @@ class StockSnapshot:
         ).fetchone():
             raise DataPoolError("DAILY_INVALID", "Invalid or incomplete daily OHLCV/amount")
 
-    def read_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
+    def read_daily(
+        self, *, symbols=None, start=None, end=None, lookback=None, fields=None,
+        adjust="none", adjustment_base=None,
+    ):
         self._require_open()
-        chosen = _fields(fields, DAILY_FIELDS)
+        if adjust not in {"none", "qfq", "hfq"}:
+            raise DataPoolError("INVALID_ARGUMENT", "adjust must be none, qfq or hfq")
+        if adjustment_base is not None:
+            try:
+                adjustment_base = pd.Timestamp(adjustment_base).date().isoformat()
+            except (TypeError, ValueError) as exc:
+                raise DataPoolError("INVALID_ARGUMENT", "Invalid adjustment_base") from exc
+            if adjust == "none":
+                raise DataPoolError(
+                    "INVALID_ARGUMENT", "adjustment_base requires qfq or hfq"
+                )
+        requested_fields = _fields(fields, DAILY_FIELDS)
+        chosen = list(requested_fields)
+        if adjust != "none":
+            chosen.extend(name for name in ("symbol", "date") if name not in chosen)
         lo, hi = _bounds(start, end)
         names = _symbols(symbols)
         if lookback is not None and (
@@ -160,7 +213,7 @@ class StockSnapshot:
         expressions.update({name: f'f."{name}"' for name in FEATURE_FIELDS})
         projection = ",".join(f'{expressions[name]} AS "{name}"' for name in chosen)
         join = (
-            " LEFT JOIN daily_features f USING(symbol,trade_date)"
+            f" LEFT JOIN {self.feature_table} f USING(symbol,trade_date)"
             if set(chosen) & FEATURE_FIELDS
             else ""
         )
@@ -172,7 +225,9 @@ class StockSnapshot:
             clauses.append("b.trade_date<=?")
             params.append(hi.isoformat())
         if names == []:
-            return _frame([], chosen)
+            return self._finish_daily(
+                _frame([], chosen), adjust, adjustment_base, requested_fields
+            )
         rows = []
         if lookback:
             # Seek each symbol's trailing N keys, never window all historical bars.
@@ -219,13 +274,99 @@ class StockSnapshot:
                 raise DataPoolError("DAILY_TOO_LARGE", "DataFrame exceeds 500000 rows")
             if rows:
                 self._validate_bars(where, params)
-        return _frame(rows, chosen)
+        return self._finish_daily(
+            _frame(rows, chosen), adjust, adjustment_base, requested_fields
+        )
+
+    def _finish_daily(self, frame, adjust, adjustment_base, requested_fields):
+        result = self._adjust_daily(frame, adjust, adjustment_base)
+        if list(result.columns) == list(requested_fields):
+            return result
+        attrs = dict(result.attrs)
+        result = result[list(requested_fields)].copy()
+        result.attrs.update(attrs)
+        return result
+
+    def _adjust_daily(self, frame, adjust, adjustment_base):
+        frame.attrs.update(adjustment=adjust, adjustment_base=adjustment_base)
+        if adjust == "none" or frame.empty:
+            return frame
+        price_fields = [
+            name for name in ("open", "high", "low", "close", "pre_close") if name in frame
+        ]
+        if not price_fields:
+            return frame
+        if self.factor_table is None or "symbol" not in frame or "date" not in frame:
+            raise DataPoolError(
+                "ADJUSTMENT_NOT_READY",
+                "Adjusted reads require symbol/date fields and the layered factor store",
+            )
+        result = frame.copy()
+        factors_used = {}
+        for symbol, positions in result.groupby("symbol", sort=False).groups.items():
+            rows = self.conn.execute(
+                f"SELECT valid_from,valid_through,cumulative_factor FROM {self.factor_table} "
+                "WHERE symbol=? ORDER BY valid_from",
+                (symbol,),
+            ).fetchall()
+            if not rows:
+                raise DataPoolError(
+                    "ADJUSTMENT_NOT_READY", f"No adjustment factors for {symbol}"
+                )
+            dates = result.loc[positions, "date"].dt.strftime("%Y-%m-%d")
+            values = pd.Series(float("nan"), index=positions, dtype="float64")
+            for valid_from, valid_through, factor in rows:
+                mask = (dates >= valid_from) & (dates <= valid_through)
+                values.loc[dates.index[mask]] = factor
+            if values.isna().any():
+                raise DataPoolError(
+                    "ADJUSTMENT_NOT_READY", f"Factor coverage is incomplete for {symbol}"
+                )
+            if adjustment_base:
+                reference = next(
+                    (
+                        factor
+                        for valid_from, valid_through, factor in rows
+                        if valid_from <= adjustment_base <= valid_through
+                    ),
+                    None,
+                )
+            elif adjust == "qfq":
+                reference = values.loc[dates.idxmax()]
+            else:
+                reference = rows[0][2]
+            if reference is None or reference <= 0:
+                raise DataPoolError(
+                    "ADJUSTMENT_NOT_READY", f"Adjustment base is uncovered for {symbol}"
+                )
+            multiplier = values / reference
+            for field in price_fields:
+                result.loc[positions, field] = (
+                    pd.to_numeric(result.loc[positions, field]) * multiplier.loc[positions]
+                )
+            factors_used[symbol] = {
+                "base": adjustment_base or ("query_end" if adjust == "qfq" else "history_start"),
+                "factor": reference,
+            }
+        result.attrs.update(frame.attrs)
+        result.attrs.update(
+            adjustment=adjust,
+            price_adjustment=adjust,
+            adjustment_factors=factors_used,
+        )
+        return result
 
     def read_daily_features(self, *, symbols=None, start=None, end=None, fields=None):
         self._require_open()
         lo, hi = _bounds(start, end)
         names = _symbols(symbols)
-        allowed = [row[1] for row in self.conn.execute("PRAGMA table_info(daily_features)")]
+        if "." in self.feature_table:
+            allowed = [
+                row[1]
+                for row in self.conn.execute("PRAGMA features.table_info(stock_daily_features)")
+            ]
+        else:
+            allowed = [row[1] for row in self.conn.execute("PRAGMA table_info(daily_features)")]
         chosen = _fields(fields, allowed)
         clauses, params = [], []
         for bound, sign in ((lo, ">="), (hi, "<=")):
@@ -239,7 +380,7 @@ class StockSnapshot:
         rows = self.conn.execute(
             "SELECT "
             + ",".join('"' + name + '"' for name in chosen)
-            + " FROM daily_features"
+            + f" FROM {self.feature_table}"
             + where
             + " ORDER BY symbol,trade_date LIMIT 500001",
             params,
@@ -259,19 +400,19 @@ class StockSnapshot:
             raise DataPoolError("INVALID_ARGUMENT", "Invalid scope or closed_only")
         from .sqlite_market_metadata import describe_fields
 
-        allowed = describe_fields(self.conn, scope=scope)
+        allowed = describe_fields(self.conn, scope=scope, table=self.summary_table)
         chosen = _fields(fields, allowed)
         rows = self.conn.execute(
             "SELECT "
             + ",".join('"' + name + '"' for name in chosen)
-            + " FROM market_daily_summary WHERE frequency=? AND scope=? "
+            + f" FROM {self.summary_table} WHERE frequency=? AND scope=? "
             "AND period_key BETWEEN ? AND ? ORDER BY period_key",
             (frequency, scope, lo.isoformat(), hi.isoformat()),
         ).fetchall()
         if (
             not rows
             and not self.conn.execute(
-                "SELECT 1 FROM market_daily_summary WHERE frequency='D' LIMIT 1"
+                f"SELECT 1 FROM {self.summary_table} WHERE frequency='D' LIMIT 1"
             ).fetchone()
         ):
             raise DataPoolError("FEATURE_NOT_READY", "Daily summary has not been calculated")
@@ -290,18 +431,27 @@ class StockSnapshot:
             start = end = trade_date
         chosen = _fields(fields, EVENT_FIELDS)
         lo, hi = _bounds(start, end, required=True)
-        sql, params = _event_query(chosen, lo, hi, _symbols(symbols), None, None)
+        sql, params = _event_query(
+            chosen, lo, hi, _symbols(symbols), None, None, self.feature_table
+        )
         rows = self.conn.execute(sql + " LIMIT 500001", params).fetchall()
         if len(rows) > 500_000:
             raise DataPoolError("LIMIT_TOO_LARGE", "Use iter_limit_events_with_amount")
         return _frame(rows, chosen)
 
 
-def _event_query(fields, lo, hi, symbols, close_limit_up, min_consecutive_up):
+def _event_query(
+    fields, lo, hi, symbols, close_limit_up, min_consecutive_up,
+    feature_table="daily_features",
+):
     clauses = [
         "f.trade_date BETWEEN ? AND ?",
         "f.calc_status='TRADED'",
         "(f.touch_limit_up=1 OR f.touch_limit_down=1)",
+        # This implied predicate matches the partial-index definition exactly,
+        # allowing SQLite to use its event-only covering index after ATTACH.
+        "(f.close_limit_up=1 OR f.touch_limit_up=1 OR "
+        "f.close_limit_down=1 OR f.touch_limit_down=1)",
     ]
     params = [lo.isoformat(), hi.isoformat()]
     if symbols is not None:
@@ -320,7 +470,7 @@ def _event_query(fields, lo, hi, symbols, close_limit_up, min_consecutive_up):
         else ""
     )
     projection = ",".join(f'{EVENT_FIELDS[name]} AS "{name}"' for name in fields)
-    return f"SELECT {projection} FROM daily_features f{join} WHERE " + " AND ".join(
+    return f"SELECT {projection} FROM {feature_table} f{join} WHERE " + " AND ".join(
         clauses
     ) + " ORDER BY f.trade_date,f.symbol", params
 
@@ -414,6 +564,7 @@ class EventAmountBatches:
                     self.symbols,
                     self.close_limit_up,
                     self.min_consecutive_up,
+                    self.reader.feature_table,
                 )
                 self.cursor = self.reader.conn.execute(sql, params)
                 self.next_date = end + timedelta(days=1)
@@ -440,9 +591,9 @@ def describe(root):
     with StockSnapshot(root) as reader:
         from .sqlite_market_metadata import describe_fields
 
-        market_fields = describe_fields(reader.conn)
+        market_fields = describe_fields(reader.conn, table=reader.summary_table)
         first, last, days = reader.conn.execute(
-            "SELECT min(period_key),max(period_key),count(*) FROM market_daily_summary "
+            f"SELECT min(period_key),max(period_key),count(*) FROM {reader.summary_table} "
             "WHERE frequency='D' AND scope='all_stocks'"
         ).fetchone()
     return dict(
@@ -461,8 +612,8 @@ def describe(root):
             daily_limit_events=True,
             event_amount_join=True,
             read_snapshot=True,
-            daily_limit_coverage=False,
-            daily_limit_exceptions=False,
+            daily_limit_coverage=True,
+            daily_limit_exceptions=True,
         ),
     )
 
@@ -470,7 +621,8 @@ def describe(root):
 def read_limit_summary(root, *, start=None, end=None, scope="all_stocks"):
     with StockSnapshot(root) as reader:
         bounds = reader.conn.execute(
-            "SELECT min(period_key),max(period_key) FROM market_daily_summary WHERE frequency='D'"
+            f"SELECT min(period_key),max(period_key) FROM {reader.summary_table} "
+            "WHERE frequency='D'"
         ).fetchone()
         if bounds[0] is None:
             raise DataPoolError("FEATURE_NOT_READY", "Daily summary has not been calculated")
@@ -491,3 +643,83 @@ def read_limit_summary(root, *, start=None, end=None, scope="all_stocks"):
 
     result["trade_date"] = pd.to_datetime(result["trade_date"])
     return result
+
+
+def read_limit_coverage(root, *, start=None, end=None):
+    """Project the v2 coverage shape from current daily feature denominators."""
+    with StockSnapshot(root) as reader:
+        lo, hi = _bounds(start, end)
+        clauses = ["frequency='D'", "scope='all_stocks'"]
+        params = []
+        if lo:
+            clauses.append("period_key>=?")
+            params.append(lo.isoformat())
+        if hi:
+            clauses.append("period_key<=?")
+            params.append(hi.isoformat())
+        rows = reader.conn.execute(
+            "SELECT period_key,NULL,'all_stocks',NULL,NULL,"
+            "coalesce(limit_known_count,0)+coalesce(no_limit_count,0)+"
+            "coalesce(limit_unknown_count,0)+coalesce(limit_invalid_count,0),"
+            "limit_known_count,limit_unknown_count,no_limit_count,limit_invalid_count,"
+            f"'ready',0,NULL FROM {reader.summary_table} WHERE "
+            + " AND ".join(clauses)
+            + " ORDER BY period_key",
+            params,
+        ).fetchall()
+    fields = [
+        "trade_date",
+        "batch_id",
+        "scope_id",
+        "rule_version",
+        "computed_at",
+        "processed_count",
+        "known_count",
+        "unknown_count",
+        "no_limit_count",
+        "invalid_count",
+        "status",
+        "stale",
+        "stale_reason",
+    ]
+    return _frame(rows, fields)
+
+
+def read_limit_exceptions(
+    root, *, trade_date=None, start=None, end=None, symbols=None
+):
+    """Project unresolved daily rows without reviving publication tables."""
+    if trade_date is not None:
+        if start is not None or end is not None:
+            raise DataPoolError("INVALID_ARGUMENT", "Choose trade_date or a range")
+        start = end = trade_date
+    lo, hi = _bounds(start, end)
+    names = _symbols(symbols)
+    clauses = [
+        "(limit_status IN ('UNKNOWN','INVALID') OR "
+        "trading_status IN ('MISSING','INVALID'))"
+    ]
+    params = []
+    if lo:
+        clauses.append("trade_date>=?")
+        params.append(lo.isoformat())
+    if hi:
+        clauses.append("trade_date<=?")
+        params.append(hi.isoformat())
+    if names is not None:
+        clauses.append("symbol IN (" + ",".join("?" for _ in names) + ")" if names else "0")
+        params.extend(names)
+    with StockSnapshot(root) as reader:
+        rows = reader.conn.execute(
+            "SELECT trade_date,symbol,CASE WHEN limit_status='INVALID' OR "
+            "trading_status='INVALID' THEN 'INVALID' ELSE 'UNKNOWN' END,"
+            "coalesce(limit_reason,lower(trading_status),'unclassified'),"
+            f"'limit_status',NULL FROM {reader.feature_table} WHERE "
+            + " AND ".join(clauses)
+            + " ORDER BY trade_date,symbol",
+            params,
+        ).fetchall()
+    return _frame(
+        rows,
+        ["trade_date", "symbol", "kind", "reason", "affected_fields", "batch_id"],
+    )

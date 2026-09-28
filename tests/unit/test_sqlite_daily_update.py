@@ -207,7 +207,7 @@ def test_source_conflict_and_out_of_budget_leave_no_changes(tmp_path):
         assert dump(conn) == before
 
         with pytest.raises(DataPoolError, match="session budget"):
-            apply(conn, bars=[row(day) for day in DAYS[:11]])
+            apply(conn, bars=[row(day) for day in DAYS[:61]])
         assert dump(conn) == before
 
 

@@ -29,6 +29,7 @@ _REFERENCES: dict[str, HelpRows] = {
         ("--period", "daily 或 minutes；stock + source=tdx 要求该周期已有导入标的"),
         ("--source baostock", "串行补齐已有沪深股票的历史空缺；保留有效主源值，报告冲突"),
         ("--start / --end", "明确补齐窗口；省略时按各库末端和股票最近十个交易日重叠补齐"),
+        ("--count", "省略明确窗口时检查最近 N 个已完成交易日；默认10，与日期范围互斥"),
         ("--status", "missing 或 invalid；只修复相应逐股状态"),
         ("--max-consecutive-failures", "单股重试耗尽后连续失败熔断，默认3"),
         ("--baostock / --no-baostock", "只读校对冲突样本；默认读取配置，不以补源覆盖冲突"),
@@ -53,9 +54,17 @@ _REFERENCES: dict[str, HelpRows] = {
         ("--limit", "只处理前 N 个标的，用于小批量验证"),
     ),
     "aspool fundamentals": (
-        ("数据范围", "全市场低频基本面快照，不回填历史日线"),
-        ("--async", "使用 tdxman 异步 quote 客户端"),
+        ("ACTION", "update（默认）按来源报告日期追加，或 status 只读检查"),
+        ("数据范围", "财务报告和股东人数历史，不回填历史日线"),
+        ("--symbol", "仅更新指定规范证券代码，可重复"),
         ("--limit", "只处理前 N 个标的，用于小批量验证"),
+    ),
+    "aspool platform": (
+        (
+            "ACTION",
+            "prepare 创建影子库；verify/status 检查；activate 切换；rollback 回到布局1",
+        ),
+        ("切换规则", "prepare 不改变 layout_version，不切换 Fundwise 公开读取"),
     ),
     "aspool status": (
         ("--dataset", "检查全部或指定生产数据块；不触发写入"),
@@ -70,7 +79,8 @@ _REFERENCES: dict[str, HelpRows] = {
         (
             "--dataset",
             "securities、calendar、fundamentals、stock-bars、corporate-actions、"
-            "stock-features、limit-events、market-summary、index-bars、etf-bars 或 etf-factors",
+            "shareholder-counts、stock-features、limit-events、market-summary、index-bars、"
+            "etf-bars 或 etf-factors",
         ),
         ("--period", "daily 或 minutes；仅 stock 支持 minutes"),
         ("--frequency", "market-summary 使用 D、W 或 M；当前生产池已发布 D"),
@@ -100,7 +110,14 @@ _EXAMPLES: dict[str, tuple[str, ...]] = {
         "aspool sync --enrich-only --start 2021-09-24 --end 2026-09-24",
     ),
     "aspool update": ("aspool update --type all --root data", "aspool update --root data"),
-    "aspool fundamentals": ("aspool fundamentals --limit 20",),
+    "aspool fundamentals": (
+        "aspool fundamentals update --limit 20",
+        "aspool fundamentals status",
+    ),
+    "aspool platform": (
+        "aspool platform prepare --root data",
+        "aspool platform verify --root data",
+    ),
     "aspool status": ("aspool status",),
     "aspool query": (
         "aspool query 000001.SZ --dataset stock-bars --format table",
@@ -144,7 +161,7 @@ class AspoolGroup(click.Group):
 
     _COMMAND_GROUPS = (
         ("初始化与导入", ("init", "import")),
-        ("同步与维护", ("sync", "update", "fundamentals")),
+        ("同步与维护", ("sync", "update", "fundamentals", "platform")),
         ("读取与检查", ("query", "status", "contract", "directory", "ex")),
     )
 

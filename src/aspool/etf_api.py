@@ -51,8 +51,23 @@ def _selected(fields):
     return selected
 
 
-def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, listing=False):
-    selected = _selected(fields)
+def _read(
+    root, symbols=None, start=None, end=None, lookback=None, fields=None, listing=False,
+    adjust="none", adjustment_base=None,
+):
+    if adjust not in {"none", "qfq", "hfq"}:
+        raise DataPoolError("INVALID_ARGUMENT", "adjust must be none, qfq or hfq")
+    if adjustment_base is not None:
+        try:
+            adjustment_base = pd.Timestamp(adjustment_base).date().isoformat()
+        except (TypeError, ValueError) as exc:
+            raise DataPoolError("INVALID_ARGUMENT", "Invalid adjustment_base") from exc
+        if adjust == "none":
+            raise DataPoolError("INVALID_ARGUMENT", "adjustment_base requires qfq or hfq")
+    requested_fields = _selected(fields)
+    selected = list(requested_fields)
+    if adjust != "none" and not listing:
+        selected.extend(name for name in ("symbol", "date") if name not in selected)
     if lookback is not None and (
         isinstance(lookback, bool) or not isinstance(lookback, int) or lookback < 1
     ):
@@ -80,8 +95,17 @@ def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, 
             from .sqlite_etf_store import read
 
             try:
-                return read(root, requested=requested, start=start, end=end, lookback=lookback,
-                            selected=selected, listing=listing)
+                frame = read(
+                    root, requested=requested, start=start, end=end, lookback=lookback,
+                    selected=selected, listing=listing,
+                )
+                return (
+                    frame
+                    if listing
+                    else _adjust(
+                        root, frame, requested_fields, adjust, adjustment_base
+                    )
+                )
             except (sqlite3.Error, ValueError) as exc:
                 if isinstance(exc, DataPoolError):
                     raise
@@ -180,7 +204,66 @@ def _read(root, symbols=None, start=None, end=None, lookback=None, fields=None, 
         point_in_time=False,
         dataset_version=None,
     )
-    return frame[selected].copy()
+    return _adjust(root, frame[selected].copy(), requested_fields, adjust, adjustment_base)
+
+
+def _adjust(root, frame, requested_fields, adjust, adjustment_base):
+    attrs = dict(frame.attrs)
+    attrs.update(adjustment=adjust, adjustment_base=adjustment_base)
+    if adjust == "none" or frame.empty:
+        result = frame[list(requested_fields)].copy()
+        result.attrs.update(attrs)
+        return result
+    from .platform_v2 import layout_version
+
+    v2 = layout_version(root) >= 2
+    path = Path(root) / ("adjustments.sqlite" if v2 else "etfs.sqlite")
+    table = "etf_adjustment_factors" if v2 else "adjustment_factors"
+    result = frame.copy()
+    used = {}
+    with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as conn:
+        for symbol, positions in result.groupby("symbol", sort=False).groups.items():
+            rows = conn.execute(
+                f"SELECT {('effective_date' if v2 else 'trade_date')},cumulative_factor "
+                f"FROM {table} WHERE symbol=? ORDER BY 1",
+                (symbol,),
+            ).fetchall()
+            if not rows:
+                raise DataPoolError("ADJUSTMENT_NOT_READY", f"No ETF factors for {symbol}")
+            dates = result.loc[positions, "date"].dt.strftime("%Y-%m-%d")
+            values = pd.Series(float("nan"), index=positions, dtype="float64")
+            for index in positions:
+                day = result.at[index, "date"].strftime("%Y-%m-%d")
+                factor = next(
+                    (value for effective, value in reversed(rows) if effective <= day), None
+                )
+                if factor is not None:
+                    values.at[index] = factor
+            if values.isna().any():
+                raise DataPoolError(
+                    "ADJUSTMENT_NOT_READY", f"ETF factor coverage is incomplete for {symbol}"
+                )
+            if adjustment_base:
+                reference = next(
+                    (value for effective, value in reversed(rows) if effective <= adjustment_base),
+                    None,
+                )
+            elif adjust == "qfq":
+                reference = values.loc[dates.idxmax()]
+            else:
+                reference = rows[0][1]
+            if reference is None or reference <= 0:
+                raise DataPoolError("ADJUSTMENT_NOT_READY", f"ETF base is uncovered for {symbol}")
+            multiplier = values / reference
+            for field in ("open", "high", "low", "close", "pre_close"):
+                if field in result:
+                    result.loc[positions, field] = (
+                        pd.to_numeric(result.loc[positions, field]) * multiplier.loc[positions]
+                    )
+            used[symbol] = reference
+    result = result[list(requested_fields)].copy()
+    result.attrs.update(attrs, price_adjustment=adjust, adjustment_factors=used)
+    return result
 
 
 def read_etf_daily(root, **kwargs):

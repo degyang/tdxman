@@ -307,6 +307,7 @@ def run_update(
     status_filter=None,
     max_consecutive_failures=3,
     directory_rows=None,
+    count=10,
 ):
     """Use quotes for TDX update; historical K-line maintenance belongs to sync."""
     from tdxman.baostock import BaostockClient
@@ -334,16 +335,20 @@ def run_update(
         raise ValueError("Unsupported status filter")
     if max_consecutive_failures < 1:
         raise ValueError("max_consecutive_failures must be positive")
+    if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 60:
+        raise ValueError("count must be between 1 and 60")
+    if mode == "sync" and ((start is None) != (end is None)):
+        raise ValueError("Specify both --start and --end")
     from .securities import ensure_securities
 
     ensure_securities(root)
-    if mode == "sync" and (start is None or end is None):
+    if mode == "sync" and start is None:
         with duckdb.connect(str(root / "catalog.duckdb"), read_only=True) as calendar:
             recent = [
                 row[0]
                 for row in calendar.execute(
                     "SELECT trade_date FROM security_calendar WHERE is_open AND trade_date<=? "
-                    "ORDER BY trade_date DESC LIMIT 10", [day]
+                    "ORDER BY trade_date DESC LIMIT ?", [day, count]
                 ).fetchall()
             ]
         if not recent:
@@ -353,8 +358,8 @@ def run_update(
         date.fromisoformat(start) > date.fromisoformat(end) or date.fromisoformat(end) > day
     ):
         raise ValueError("Invalid source date window")
-    if start and (date.fromisoformat(end) - date.fromisoformat(start)).days >= 31:
-        raise ValueError("Source window must fit within 31 natural days")
+    if start and (date.fromisoformat(end) - date.fromisoformat(start)).days >= 370:
+        raise ValueError("Source window must fit within 370 natural days")
     with stock_connection(root) as conn:
         selected = list(dict.fromkeys(symbols))
         if not selected and status_filter:
@@ -409,6 +414,39 @@ def run_update(
             and (lifecycle[s][1] is None or lifecycle[s][1] > first_day)
         )
     ]
+    gap_filtered = source == "tdx" and mode == "sync" and not symbols and not status_filter
+    if gap_filtered:
+        with duckdb.connect(str(root / "catalog.duckdb"), read_only=True) as calendar:
+            requested_sessions = [
+                row[0].isoformat()
+                for row in calendar.execute(
+                    "SELECT trade_date FROM security_calendar WHERE is_open "
+                    "AND trade_date BETWEEN ? AND ? ORDER BY trade_date",
+                    [date.fromisoformat(start), date.fromisoformat(end)],
+                ).fetchall()
+            ]
+        selected = _sync_candidates(root, selected, requested_sessions, lifecycle)
+        if not selected:
+            report = report if report is not None else {}
+            report.update(
+                source=source,
+                requested=0,
+                retries=[],
+                success=[],
+                empty=[],
+                failed=[],
+                unsupported=[],
+                factor_unavailable=[],
+                traded=[],
+                no_trade=[],
+                missing=[],
+                invalid=[],
+                aborted=False,
+                remaining_block=[],
+                status="ok",
+                reason="requested window is already complete",
+            )
+            return report
     report = report if report is not None else {}
     report.update(source=source, requested=len(selected), retries=[])
     status_selected = set(selected) if status_filter else None
@@ -516,8 +554,8 @@ def run_update(
             )
             if index.empty:
                 raise EmptySourceResponse("No index sessions in the requested sync window")
-            if len(index) > 10:
-                raise ValueError("Expected at most 10 input sessions")
+            if len(index) > 60:
+                raise ValueError("Expected at most 60 input sessions")
             with duckdb.connect(str(root / "catalog.duckdb")) as conn:
                 conn.execute("BEGIN")
                 for d in index["date"]:
@@ -595,3 +633,55 @@ def run_update(
     else:
         report["status"] = "ok"
     return report
+
+
+def _sync_candidates(root, symbols, sessions, lifecycle):
+    """Select securities with a raw/terminal-state gap or incomplete factor tail."""
+    if not sessions:
+        return []
+    candidates = []
+    target = max(sessions)
+    terminal = {"SUSPENDED", "NO_TRADE", "NOT_LISTED"}
+    with stock_connection(root) as conn:
+        for symbol in symbols:
+            listed, delisted = lifecycle.get(symbol, (None, None))
+            listed = str(listed)[:10] if listed is not None else None
+            delisted = str(delisted)[:10] if delisted is not None else None
+            expected = [
+                day
+                for day in sessions
+                if (listed is None or listed <= day) and (delisted is None or delisted > day)
+            ]
+            if not expected:
+                continue
+            marks = ",".join("?" for _ in expected)
+            rows = conn.execute(
+                "SELECT f.trade_date,b.trade_date,f.trading_status,f.calc_status,f.limit_status "
+                "FROM daily_features f LEFT JOIN daily_bars b USING(symbol,trade_date) "
+                f"WHERE f.symbol=? AND f.trade_date IN ({marks})",
+                [symbol, *expected],
+            ).fetchall()
+            observed = {row[0]: row[1:] for row in rows}
+            gap = False
+            for day in expected:
+                state = observed.get(day)
+                if state is None:
+                    gap = True
+                    break
+                bar_date, trading_status, calc_status, limit_status = state
+                if (
+                    trading_status in {"MISSING", "INVALID"}
+                    or calc_status == "INVALID"
+                    or (bar_date is not None and limit_status is None)
+                    or (bar_date is None and trading_status not in terminal)
+                ):
+                    gap = True
+                    break
+            factor_end = conn.execute(
+                "SELECT max(valid_through) FROM corporate_actions "
+                "WHERE symbol=? AND record_kind='factor'",
+                (symbol,),
+            ).fetchone()[0]
+            if gap or factor_end is None or factor_end < target:
+                candidates.append(symbol)
+    return candidates

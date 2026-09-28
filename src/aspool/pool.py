@@ -279,12 +279,18 @@ class DataPool:
         return read_facts(self.root, CALENDAR_TABLE, start=start, end=end)
 
     @public_read
-    def read_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
+    def read_daily(
+        self, *, symbols=None, start=None, end=None, lookback=None, fields=None,
+        adjust="none", adjustment_base=None,
+    ):
         if (self.root / "stocks.sqlite").is_file():
             with self.stock_snapshot() as reader:
                 return reader.read_daily(
-                    symbols=symbols, start=start, end=end, lookback=lookback, fields=fields
+                    symbols=symbols, start=start, end=end, lookback=lookback, fields=fields,
+                    adjust=adjust, adjustment_base=adjustment_base,
                 )
+        if adjust != "none" or adjustment_base is not None:
+            raise DataPoolError("CAPABILITY_UNAVAILABLE", "Legacy pools only expose raw prices")
         selected = (
             list(DAILY_FIELDS)
             if fields is None
@@ -538,12 +544,34 @@ class DataPool:
         return list_indices(self.root, symbols=symbols)
 
     @public_read
-    def read_etf_daily(self, *, symbols=None, start=None, end=None, lookback=None, fields=None):
+    def read_etf_daily(
+        self, *, symbols=None, start=None, end=None, lookback=None, fields=None,
+        adjust="none", adjustment_base=None,
+    ):
         """Read ETF daily bars with security (share/amount/turnover) semantics."""
         from .etf_api import read_etf_daily
 
         return read_etf_daily(
-            self.root, symbols=symbols, start=start, end=end, lookback=lookback, fields=fields
+            self.root, symbols=symbols, start=start, end=end, lookback=lookback, fields=fields,
+            adjust=adjust, adjustment_base=adjustment_base,
+        )
+
+    @public_read
+    def read_fundamental_reports(self, *, symbols=None, start=None, end=None):
+        """Read sourced finance rows by their source report date."""
+        from .fundamentals_store import read_financial_reports
+
+        return read_financial_reports(
+            self.root, symbols=symbols, start=start, end=end
+        )
+
+    @public_read
+    def read_shareholder_counts(self, *, symbols=None, start=None, end=None):
+        """Read dated shareholder counts without backfilling earlier sessions."""
+        from .fundamentals_store import read_shareholder_counts
+
+        return read_shareholder_counts(
+            self.root, symbols=symbols, start=start, end=end
         )
 
     @public_read
@@ -607,9 +635,9 @@ class DataPool:
     def read_limit_exceptions(self, *, trade_date=None, start=None, end=None, symbols=None):
         """已发布的异常/未知/无约束记录。"""
         if (self.root / "stocks.sqlite").is_file():
-            raise DataPoolError(
-                "API_REMOVED", "read_limit_exceptions was removed in v3; "
-                "use market summaries or daily features"
+            from .sqlite_read_api import read_limit_exceptions
+            return read_limit_exceptions(
+                self.root, trade_date=trade_date, start=start, end=end, symbols=symbols
             )
         from .limit_api import read_limit_exceptions
 
@@ -633,10 +661,8 @@ class DataPool:
     def read_limit_coverage(self, *, start=None, end=None):
         """已发布批次的范围与完成状态；含 stale 标记。"""
         if (self.root / "stocks.sqlite").is_file():
-            raise DataPoolError(
-                "API_REMOVED", "read_limit_coverage was removed in v3; "
-                "use market summaries or daily features"
-            )
+            from .sqlite_read_api import read_limit_coverage
+            return read_limit_coverage(self.root, start=start, end=end)
         from .limit_api import read_limit_coverage
 
         return read_limit_coverage(self.root, start=start, end=end)
@@ -752,6 +778,10 @@ class DataPool:
         if (self.root / "stocks.sqlite").is_file():
             result.update(contract_version=3, backend="sqlite", market_frequencies=["D"])
             result["capabilities"].update(market_summary=True, read_snapshot=True)
+            from .platform_v2 import layout_version
+
+            if layout_version(self.root) >= 2:
+                result["capabilities"]["adjustments"] = True
         return result
 
     def read_research_daily(

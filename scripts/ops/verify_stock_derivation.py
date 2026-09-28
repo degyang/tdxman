@@ -14,7 +14,7 @@ import time
 from contextlib import closing
 from pathlib import Path
 
-from verify_stock_migration import INDEXES, TABLES, digest
+from verify_stock_migration import BUSINESS_TABLES, INDEXES, TABLES, digest
 
 METRICS = {
     "trading_count": "calc_status='TRADED'",
@@ -73,7 +73,7 @@ def verify(root, reuse_source_integrity=False, evidence_root=None):
                 raise ValueError(f"Integrity check failed: {integrity[:5]}")
             counts = {
                 table: conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
-                for table in TABLES
+                for table in BUSINESS_TABLES
             }
             for table in ("daily_bars", "daily_features"):
                 if counts[table] != baseline["rows"][table]:
