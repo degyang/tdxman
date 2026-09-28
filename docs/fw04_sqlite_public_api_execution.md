@@ -62,6 +62,11 @@ memory_limit 为 SQLite 缓存配置提示：一半用于页缓存，并非整�
 - Jakarta 辅助任务 40 项副本校验测试通过（1.43 秒），已接收提交，不重复运行。
 - 五年事件/金额：24,608 行、259 页，每页最多 1,000 行，52.154 秒，峰值 RSS 411,104 KiB，≤ 2 GiB。证据：[五年读取](evidence/sqlite-migration-assessment/20260928-sqlite-read-five-year.json)。
 - Fundwise 全历史日频：6,479 日；盈利/韧性各 6,479 日，趋势 6,460 日，投机和综合分 1,727 日，综合分均标记 known_subset。周期阶段 0 日，原因是历史限价/ST/连续性输入不足；没有将未知伪装成零。证据：[日频结果](evidence/sqlite-migration-assessment/20260928-regime-result.json)。
+- 真实主线计算通过：614 个板块成分，遍历 321 个历史月，21,617 条排名覆盖 1,216 日（概念 19,081、行业 2,536）。状态 partial，基于已知涨停及连板样本和当前板块成分，并非历史成分回测。最终运行 111.01 秒、RSS 418,544 KiB；复用前次中断形成的 19 个月缓存和成分缓存。证据：[主线结果](evidence/sqlite-migration-assessment/20260928-regime-mainline-result.json)。
 - Fundwise 新增 5 项与受影响的有界读取/旧 CLI 定向验证通过；CLI 保持严格评分，页面允许明确标注的已知子集评分。
 
-公共市场特征落四表库；模型分数、周期/主线结果仍由 Fundwise 保存。索引缺日不能把跨交易日收益当作当日收益。ETF、指数读取保留公共域接口，已抽查实际两日日线。不能据上述工程验收宣称历史输入完整、主线已验收、生产已切换或 Jakarta 已同步。
+公共市场特征落四表库；模型分数、周期/主线结果仍由 Fundwise 保存。索引缺日不能把跨交易日收益当作当日收益。ETF、指数读取保留公共域接口，已抽查实际两日日线。不能据上述工程验收宣称历史输入完整、主线输入完整、生产已切换或 Jakarta 已同步。
+
+## 本轮收尾与续接
+
+已推送 tdxman `77f4f86`（含辅助校验器 `bb78832`）、Fundwise `3d68000`。Jakarta 主仓库已拉取代码，Python 3.11 SQLite v3 导入检查通过；辅助 worktree 标记 completed，未重复其 40 项测试。运行数据仍是旧 M0，剩余顺序为：加载 WSL wsler SSH agent → tmux 全量复制 → 接收端哈希验收 → 安装新 data → 再做生产配置切换。增量同步后置。
