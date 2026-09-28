@@ -343,3 +343,99 @@ def test_event_based_factor_dependency_cannot_be_committed_stale(tmp_path):
         with pytest.raises(DataPoolError, match="event reference"):
             apply(conn, bars=[row(DAYS[25], close=11)])
         assert dump(conn) == before
+
+
+def test_market_source_sync_aggregates_a_changed_date_once_for_multiple_stocks(tmp_path):
+    import pandas as pd
+
+    from aspool.sqlite_daily_sync import sync_baostock_daily
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        pass
+
+    class Client:
+        def get_daily(self, market, code, **kwargs):
+            item = row(DAYS[-1])
+            item.pop("trade_date")
+            item["symbol"] = f"{code}.SZ"
+            return pd.DataFrame(
+                [
+                    dict(
+                        item,
+                        date=date.fromisoformat(DAYS[-1]),
+                        pre_close=10,
+                        is_st=False,
+                        trading_status="TRADING",
+                        turnover_rate=1,
+                        pct_chg=0,
+                        pe_ttm=None,
+                        pb=None,
+                    )
+                ]
+            )
+
+    result = sync_baostock_daily(
+        tmp_path,
+        client=Client(),
+        symbols=[SYMBOL, "000002.SZ"],
+        market_sessions=DAYS,
+        as_of=DAYS[-1],
+    )
+    assert len(result["success"]) == 1
+    assert result["success"][0]["symbols"] == [SYMBOL, "000002.SZ"]
+    assert result["success"][0]["summary_rows"] == 2
+    with stock_connection(tmp_path) as conn:
+        assert (
+            conn.execute(
+                "SELECT trading_count FROM market_daily_summary WHERE scope='all_stocks'"
+            ).fetchone()[0]
+            == 2
+        )
+
+
+def test_writer_deadline_rolls_back_source_writes(tmp_path, monkeypatch):
+    import aspool.sqlite_daily_update as writer
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        # The clock advances after the first actual database mutation, so this
+        # exercises rollback after work, not only input validation.
+        monkeypatch.setattr(writer.time, "monotonic", lambda: 31 if conn.total_changes else 0)
+        inputs = [dict(row(DAYS[-1]), symbol=f"{i:06d}.SZ") for i in range(1000)]
+        with pytest.raises(DataPoolError) as error:
+            apply(conn, bars=inputs)
+        assert error.value.code == "LOCAL_UPDATE_BUDGET_EXCEEDED"
+        assert conn.total_changes > 0
+        assert conn.execute("SELECT count(*) FROM daily_bars").fetchone()[0] == 0
+        assert conn.execute("SELECT count(*) FROM daily_features").fetchone()[0] == 0
+        assert not conn.in_transaction
+
+
+def test_old_suspension_turnover_conflict_can_be_repaired_by_its_source(tmp_path):
+    from aspool.sqlite_daily_derived import DERIVED_COLUMNS
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        invalid = dict.fromkeys(DERIVED_COLUMNS)
+        invalid.update(calc_status="INVALID", limit_status="INVALID", streak_known=0)
+        conn.execute(
+            "UPDATE daily_features SET trading_status='SUSPENDED',"
+            "trading_status_source='baostock',"
+            + ",".join(k + "=?" for k in invalid)
+            + " WHERE trade_date=?",
+            (*invalid.values(), DAYS[25]),
+        )
+        conn.commit()
+        apply(
+            conn,
+            dated_facts=[
+                dict(
+                    symbol=SYMBOL,
+                    trade_date=DAYS[25],
+                    trading_status="TRADING",
+                    trading_status_source="baostock",
+                )
+            ],
+        )
+        assert conn.execute(
+            "SELECT calc_status,limit_status FROM daily_features WHERE trade_date=?", (DAYS[25],)
+        ).fetchone() == ("TRADED", "KNOWN")

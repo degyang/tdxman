@@ -97,7 +97,9 @@ def _inputs(rows, allowed):
                 and prior.get(source_field)
                 and source != prior[source_field]
             ):
-                raise DataPoolError("SOURCE_CONFLICT", "Conflicting dated source inputs")
+                raise DataPoolError(
+                    "SOURCE_CONFLICT", f"Conflicting dated source inputs: {symbol} {day}"
+                )
         # Like tick's keep-last merge, repeated keys are deterministic. Omitted
         # columns retain their earlier values; explicit NULL is a correction.
         merged.setdefault((symbol, day), {}).update(row)
@@ -178,12 +180,21 @@ def apply_daily_changes(
     ma_dependencies = set()
     try:
         conn.execute("BEGIN IMMEDIATE")
-        for key in sorted(keys):
+        for index, key in enumerate(sorted(keys)):
+            if index % 128 == 0 and time.monotonic() >= deadline:
+                raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Writer deadline exceeded")
             symbol, day = key
             old_bar, old_fact = _read(conn, "daily_bars", key), _read(conn, "daily_features", key)
             before = dict(old_bar, **{k: v for k, v in old_fact.items() if k not in old_bar})
             before["bar_date"] = day if old_bar else None
-            old_status = classify_trading(before)
+            try:
+                old_status = classify_trading(before)
+            except DataPoolError as exc:
+                if exc.code != "SOURCE_CONFLICT":
+                    raise
+                # A historical contradictory source row is invalid input, but
+                # must remain repairable by a correcting source observation.
+                old_status = "INVALID"
             bar_delta = (
                 _write(conn, "daily_bars", key, incoming_bars[key], old_bar)
                 if key in incoming_bars
@@ -208,7 +219,10 @@ def apply_daily_changes(
                     and old_source
                     and not old_source.startswith("raw_fallback:")
                 ):
-                    raise DataPoolError("SOURCE_CONFLICT", "Conflicting dated source correction")
+                    raise DataPoolError(
+                        "SOURCE_CONFLICT",
+                        f"Conflicting dated source correction: {symbol} {day} {value_field}",
+                    )
             if not old_fact:
                 facts = dict(facts, calc_status="TRADED")
             fact_delta = _write(conn, "daily_features", key, facts, old_fact)

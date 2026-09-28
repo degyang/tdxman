@@ -195,6 +195,10 @@ def run(root, report, symbols=(), resume=False):
     calendar, listings = catalog_inputs(root)
     started = time.monotonic()
     with stock_connection(root, read_only=False) as conn, report.open("a", buffering=1) as output:
+        # Date cross-sections revisit B-tree paths for thousands of securities.
+        # A bounded maintenance-only cache avoids repeated mounted-disk reads;
+        # normal business connections retain their smaller cache setting.
+        conn.execute("PRAGMA cache_size=-262144")
 
         def record(kind, **values):
             item = dict(
@@ -232,11 +236,20 @@ def run(root, report, symbols=(), resume=False):
             record("stock", **result)
         # A selected-stock diagnostic never publishes a partial-market summary.
         if not symbols and not failures:
+            first = conn.execute(
+                "SELECT trade_date FROM daily_features ORDER BY trade_date LIMIT 1"
+            ).fetchone()[0]
+            last = conn.execute(
+                "SELECT trade_date FROM daily_features ORDER BY trade_date DESC LIMIT 1"
+            ).fetchone()[0]
             days = [
-                r[0]
-                for r in conn.execute(
-                    "SELECT DISTINCT trade_date FROM daily_features ORDER BY trade_date"
-                )
+                day
+                for day in sorted(calendar)
+                if first <= day <= last
+                and calendar[day]
+                and conn.execute(
+                    "SELECT 1 FROM daily_features WHERE trade_date=? LIMIT 1", (day,)
+                ).fetchone()
             ]
             for day in days:
                 if day in done_dates:

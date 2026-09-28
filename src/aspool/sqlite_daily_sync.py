@@ -13,18 +13,46 @@ from .sqlite_stock_store import stock_connection
 
 
 def sync_baostock_daily(
-    root, *, client, symbols, market_sessions, as_of, start=None, end=None, listed_days=None
+    root,
+    *,
+    client,
+    symbols,
+    market_sessions,
+    as_of,
+    start=None,
+    end=None,
+    listed_days=None,
+    max_symbols_per_write=500,
 ):
-    """Fetch five recent sessions or an explicit repair, committing each stock.
+    """Fetch a finite window, then commit bounded groups without repeated cross-sections.
 
     The caller owns the serial BaostockClient session. BJ is unsupported by
     this provider and is reported, never silently considered synchronized.
     Network failures/empty responses retain old data; writer failures propagate.
     """
+    if not 1 <= max_symbols_per_write <= 500:
+        raise ValueError("Expected 1..500 symbols per write")
     sessions = list(market_sessions)
     window = daily_window(sessions, as_of=as_of, start=start, end=end)
     result = dict(requested_sessions=window, success=[], empty=[], failed=[], unsupported=[])
     with stock_connection(root, read_only=False) as conn:
+        pending_symbols, pending_bars, pending_facts = [], [], []
+
+        def flush():
+            if not pending_symbols:
+                return
+            applied = apply_daily_changes(
+                conn,
+                bars=pending_bars,
+                dated_facts=pending_facts,
+                market_sessions=sessions,
+                listed_days=listed_days,
+            )
+            result["success"].append(dict(symbols=list(pending_symbols), **applied))
+            pending_symbols.clear()
+            pending_bars.clear()
+            pending_facts.clear()
+
         for symbol in dict.fromkeys(symbols):
             code, market = symbol.split(".")
             if market not in ("SH", "SZ"):
@@ -87,12 +115,10 @@ def sync_baostock_daily(
                         pct_chg_source="baostock",
                     )
                 )
-            applied = apply_daily_changes(
-                conn,
-                bars=bars,
-                dated_facts=facts,
-                market_sessions=sessions,
-                listed_days=listed_days,
-            )
-            result["success"].append(dict(symbol=symbol, **applied))
+            pending_symbols.append(symbol)
+            pending_bars.extend(bars)
+            pending_facts.extend(facts)
+            if len(pending_symbols) >= max_symbols_per_write:
+                flush()
+        flush()
     return result

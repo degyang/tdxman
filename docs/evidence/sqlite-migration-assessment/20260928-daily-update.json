@@ -2,7 +2,7 @@
   "root_tests": {
     "daily_derived": 8,
     "daily_summary": 11,
-    "daily_update_and_sync": 10
+    "daily_update_and_sync": 13
   },
   "auxiliary_tests_reused": {
     "reference_factors": 11,
@@ -85,5 +85,45 @@
     "New writer currently handles D summaries; existing intersecting W/M results cause atomic rejection.",
     "BaoStock fetch supports SH/SZ; BJ reported unsupported.",
     "An edited close that feeds an event-derived factor requires explicit factor maintenance; the daily writer rejects and rolls back."
-  ]
+  ],
+  "hot_update_benchmark": {
+    "source": "/mnt/d/workstation/services/tdxman/data/_staging/fw02",
+    "target": "/mnt/d/workstation/services/tdxman/data/_reports/fw03-main/market-sample",
+    "synthetic_target": true,
+    "symbols": 500,
+    "input_rows": 2500,
+    "window": [
+      "2026-09-18",
+      "2026-09-21",
+      "2026-09-22",
+      "2026-09-23",
+      "2026-09-24"
+    ],
+    "copy_seconds": 53.986,
+    "update": {
+      "changed_rows": 2500,
+      "affected_sessions": [
+        "2026-09-18",
+        "2026-09-21",
+        "2026-09-22",
+        "2026-09-23",
+        "2026-09-24"
+      ],
+      "recomputed_feature_rows": 2500,
+      "changed_feature_rows": 2500,
+      "summary_rows": 10,
+      "read_rows": 39835,
+      "elapsed_ms": 10122
+    },
+    "repeat": {
+      "changed_rows": 0,
+      "affected_sessions": [],
+      "recomputed_feature_rows": 0,
+      "changed_feature_rows": 0,
+      "summary_rows": 0,
+      "read_rows": 0,
+      "elapsed_ms": 71
+    },
+    "max_rss_kib": 418304
+  }
 }
