@@ -1,6 +1,11 @@
+import json
+import sqlite3
+from pathlib import Path
+
 import pytest
 
 from aspool.sqlite_reference_factors import (
+    advance_factor_coverage,
     build_selected_factors,
     normalize_actions,
     select_is_st,
@@ -704,3 +709,337 @@ def test_failure_rolls_back_action_and_factor_writes(tmp_path):
                 actions_covered_dates=["2024-01-02"],
             )
         assert conn.execute("SELECT count(*) FROM corporate_actions").fetchone()[0] == 0
+
+
+@pytest.fixture
+def advance_conn():
+    with sqlite3.connect(":memory:") as conn:
+        conn.executescript(
+            (Path(__file__).resolve().parents[2] / "src/aspool/stocks_schema.sql").read_text()
+        )
+        conn.execute("BEGIN IMMEDIATE")
+        yield conn
+
+
+def _advance_seed_factor(conn, first="2024-01-01", last="2024-01-02", cumulative=2, stamp=100):
+    conn.execute(
+        """INSERT INTO corporate_actions
+        (symbol,effective_date,record_kind,source,source_key,cumulative_factor,
+         valid_from,valid_through,factor_basis,updated_at)
+        VALUES ('000001.SZ',?,'factor','selected:source_cumulative_factor','selected',
+                ?,?,?,'source_cumulative_factor:source_anchor:vendor',?)""",
+        (first, cumulative, first, last, stamp),
+    )
+
+
+def _advance_bar(conn, day, close=10, volume=100, status="TRADING", calc="NO_TRADE"):
+    conn.execute(
+        """INSERT INTO daily_bars(symbol,trade_date,open,high,low,close,volume,updated_at)
+        VALUES ('000001.SZ',?,?,?,?,?,?,100)""",
+        (day, close, close, close, close, volume),
+    )
+    conn.execute(
+        """INSERT INTO daily_features
+        (symbol,trade_date,trading_status,calc_status,limit_status,streak_known,updated_at)
+        VALUES ('000001.SZ',?,?,?, ?,?,100)""",
+        (
+            day,
+            status,
+            calc,
+            "INVALID" if calc == "INVALID" else None,
+            0 if calc == "INVALID" else None,
+        ),
+    )
+
+
+def _advance_event(day, *, cash=0, bonus=0, key="cash"):
+    return dict(
+        effective_date=day,
+        category=1,
+        source_key=key,
+        fenhong=cash * 10,
+        songzhuangu=bonus * 10,
+        peigu=0,
+    )
+
+
+def _advance_snapshot(conn):
+    return conn.execute(
+        "SELECT * FROM corporate_actions "
+        "ORDER BY symbol,effective_date,record_kind,source,source_key"
+    ).fetchall()
+
+
+def test_advance_empty_interval_extends_only_tail_and_joins_outer_transaction(advance_conn):
+    conn = advance_conn
+    future_stamp = 10**18
+    _advance_seed_factor(conn, last="2024-01-01", stamp=future_stamp)
+    _advance_seed_factor(
+        conn, first="2024-01-02", last="2024-01-02", cumulative=3, stamp=future_stamp
+    )
+    prefix = _advance_snapshot(conn)[0]
+    result = advance_factor_coverage(
+        conn, symbol="000001.SZ", verified_start="2024-01-03", verified_end="2024-01-06", events=[]
+    )
+    assert result == dict(
+        changed_factor_dates=["2024-01-02"],
+        changed_rows=1,
+        changed_event_rows=0,
+        affected_from="2024-01-03",
+        affected_through="2024-01-06",
+        valid_through="2024-01-06",
+    )
+    assert _advance_snapshot(conn)[0] == prefix
+    assert conn.execute(
+        "SELECT valid_through,cumulative_factor,updated_at FROM corporate_actions "
+        "WHERE effective_date='2024-01-02'"
+    ).fetchone() == ("2024-01-06", 3, future_stamp + 2)
+    assert conn.in_transaction
+    conn.rollback()
+    assert conn.execute("SELECT count(*) FROM corporate_actions").fetchone()[0] == 0
+    with pytest.raises(ValueError, match="outer write transaction"):
+        advance_factor_coverage(
+            conn,
+            symbol="000001.SZ",
+            verified_start="2024-01-03",
+            verified_end="2024-01-04",
+            events=[],
+        )
+
+
+def test_advance_cash_and_bonus_keep_anchor_scale_and_preserve_prefix(advance_conn):
+    conn = advance_conn
+    _advance_seed_factor(conn)
+    _advance_bar(conn, "2024-01-02", close=10, calc="INVALID")
+    _advance_bar(conn, "2024-01-03", close=50, volume=0, status="SUSPENDED")
+    cash = dict(
+        effective_date="2024-01-04",
+        category=1,
+        source_key="cash",
+        cash_dividend_per_share=1,
+        bonus_shares_per_share=0,
+        rights_shares_per_share=0,
+    )
+    first = advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-03",
+        verified_end="2024-01-05",
+        events=[cash, dict(cash)],
+    )
+    assert first["affected_from"] == "2024-01-03"
+    assert first["changed_event_rows"] == 1
+    prefix = conn.execute(
+        "SELECT * FROM corporate_actions WHERE record_kind='factor' AND effective_date='2024-01-01'"
+    ).fetchone()
+    _advance_bar(conn, "2024-01-05", close=9, volume=100, status=None, calc="NO_TRADE")
+    second = advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-06",
+        verified_end="2024-01-09",
+        events=[_advance_event("2024-01-07", bonus=1, key="bonus")],
+    )
+    assert second["affected_from"] == "2024-01-06"
+    assert second["changed_factor_dates"] == ["2024-01-04", "2024-01-07"]
+    assert (
+        conn.execute(
+            "SELECT * FROM corporate_actions WHERE record_kind='factor' "
+            "AND effective_date='2024-01-01'"
+        ).fetchone()
+        == prefix
+    )
+    factors = conn.execute(
+        """SELECT effective_date,event_factor,cumulative_factor,valid_through,source,factor_basis
+        FROM corporate_actions WHERE record_kind='factor' ORDER BY effective_date"""
+    ).fetchall()
+    assert len(factors) == 3
+    assert factors[1][1:3] == pytest.approx((10 / 9, 2 * 10 / 9))
+    assert factors[2][1:3] == pytest.approx((2, 4 * 10 / 9))
+    assert factors[2][3] == "2024-01-09"
+    assert factors[2][4] == "derived:anchor_continuation:tdx:xdxr"
+    assert factors[2][5].startswith("anchor_continuation:")
+    assert (
+        conn.execute(
+            "SELECT count(*) FROM corporate_actions WHERE record_kind='factor_anchor'"
+        ).fetchone()[0]
+        == 0
+    )
+
+
+def test_advance_repeat_and_verified_overlap_are_zero_writes(advance_conn):
+    conn = advance_conn
+    _advance_seed_factor(conn)
+    _advance_bar(conn, "2024-01-02")
+    event = _advance_event("2024-01-04", cash=1)
+    advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-03",
+        verified_end="2024-01-06",
+        events=[event],
+    )
+    snapshot, changes = _advance_snapshot(conn), conn.total_changes
+    repeat = advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-03",
+        verified_end="2024-01-06",
+        events=[event, dict(event)],
+    )
+    assert repeat["changed_rows"] == 0 and repeat["affected_from"] is None
+    assert conn.total_changes == changes and _advance_snapshot(conn) == snapshot
+    extend = advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-04",
+        verified_end="2024-01-08",
+        events=[event],
+    )
+    assert extend["affected_from"] == "2024-01-07"
+    assert extend["changed_rows"] == 1
+    changes = conn.total_changes
+    advance_factor_coverage(
+        conn, symbol="000001.SZ", verified_start="2024-01-07", verified_end="2024-01-08", events=[]
+    )
+    assert conn.total_changes == changes
+
+
+def test_advance_rejects_missing_coverage_gaps_and_unverified_bounds(advance_conn):
+    conn = advance_conn
+    call = dict(
+        symbol="000001.SZ", verified_start="2024-01-03", verified_end="2024-01-05", events=[]
+    )
+    with pytest.raises(ValueError, match="Missing selected factor anchor"):
+        advance_factor_coverage(conn, **call)
+    _advance_seed_factor(conn)
+    for override, message in [
+        ({"verified_start": "2024-01-04"}, "coverage gap"),
+        ({"verified_start": "2023-12-31"}, "outside existing coverage"),
+        ({"verified_end": "2024-01-01"}, "Invalid verified"),
+        ({"verified_start": "2024-01-02"}, "Historical overlap"),
+        ({"source": "unknown"}, "reliable event source"),
+        ({"events": [dict(date="2024-01-04", category=7)]}, "Unsupported"),
+        ({"events": [_advance_event("2024-01-06", cash=1)]}, "outside verified interval"),
+        ({"events": [_advance_event("2024-01-04", cash=1)]}, "Missing prior effective"),
+    ]:
+        snapshot = _advance_snapshot(conn)
+        with pytest.raises(ValueError, match=message):
+            advance_factor_coverage(conn, **dict(call, **override))
+        assert _advance_snapshot(conn) == snapshot
+    _advance_seed_factor(conn, first="2024-01-04", last="2024-01-05")
+    with pytest.raises(ValueError, match="coverage gap"):
+        advance_factor_coverage(
+            conn, **dict(call, verified_start="2024-01-06", verified_end="2024-01-07")
+        )
+
+
+def test_advance_historical_conflicts_and_write_failure_roll_back_savepoint(advance_conn):
+    conn = advance_conn
+    _advance_seed_factor(conn)
+    _advance_bar(conn, "2024-01-02")
+    event = _advance_event("2024-01-04", cash=1)
+    advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-03",
+        verified_end="2024-01-05",
+        events=[event],
+    )
+    snapshot = _advance_snapshot(conn)
+    for events in (
+        [],
+        [_advance_event("2024-01-04", cash=2)],
+        [event, _advance_event("2024-01-03", cash=1, key="retro")],
+    ):
+        with pytest.raises(ValueError, match="Historical event|Retrospective event"):
+            advance_factor_coverage(
+                conn,
+                symbol="000001.SZ",
+                verified_start="2024-01-03",
+                verified_end="2024-01-06",
+                events=events,
+            )
+        assert _advance_snapshot(conn) == snapshot
+    # A source updater may already have replaced its stored payload. Compare
+    # against the original coverage receipt, not only that mutable event row.
+    payload = conn.execute(
+        "SELECT payload_json FROM corporate_actions WHERE record_kind='event'"
+    ).fetchone()[0]
+    revised = json.loads(payload)
+    revised.update(fenhong=20, cash_dividend_per_share=2)
+    conn.execute(
+        "UPDATE corporate_actions SET payload_json=? WHERE record_kind='event'",
+        (json.dumps(revised),),
+    )
+    mutated = _advance_snapshot(conn)
+    with pytest.raises(ValueError, match="Historical event set changed"):
+        advance_factor_coverage(
+            conn,
+            symbol="000001.SZ",
+            verified_start="2024-01-03",
+            verified_end="2024-01-05",
+            events=[_advance_event("2024-01-04", cash=2)],
+        )
+    assert _advance_snapshot(conn) == mutated
+    conn.execute(
+        "UPDATE corporate_actions SET payload_json=? WHERE record_kind='event'", (payload,)
+    )
+    conn.execute("""CREATE TEMP TRIGGER fail_advance_event BEFORE INSERT ON corporate_actions
+    WHEN NEW.record_kind='event' AND NEW.effective_date='2024-01-07'
+    BEGIN SELECT RAISE(ABORT,'injected event write failure'); END""")
+    _advance_bar(conn, "2024-01-06", close=9)
+    with pytest.raises(sqlite3.IntegrityError, match="injected event write failure"):
+        advance_factor_coverage(
+            conn,
+            symbol="000001.SZ",
+            verified_start="2024-01-06",
+            verified_end="2024-01-08",
+            events=[_advance_event("2024-01-07", cash=1, key="later")],
+        )
+    assert _advance_snapshot(conn) == snapshot
+    assert conn.in_transaction
+    assert conn.execute(
+        "SELECT close FROM daily_bars WHERE trade_date='2024-01-06'"
+    ).fetchone() == (9,)
+
+
+def test_advance_two_cash_dividends_during_suspension_use_prior_factor_scale(advance_conn):
+    conn = advance_conn
+    _advance_seed_factor(conn)
+    _advance_bar(conn, "2024-01-02", close=10, calc="NO_TRADE")
+    for day in ("2024-01-03", "2024-01-04", "2024-01-05"):
+        _advance_bar(conn, day, close=10, volume=0, status="SUSPENDED", calc="TRADED")
+    first_event = _advance_event("2024-01-03", cash=1, key="first")
+    second_event = _advance_event("2024-01-05", cash=1, key="second")
+    before = _advance_snapshot(conn)[0]
+    advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-03",
+        verified_end="2024-01-04",
+        events=[first_event],
+    )
+    advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-05",
+        verified_end="2024-01-06",
+        events=[second_event],
+    )
+    assert _advance_snapshot(conn)[0] == before
+    factors = conn.execute(
+        "SELECT event_factor,cumulative_factor FROM corporate_actions "
+        "WHERE record_kind='factor' ORDER BY effective_date"
+    ).fetchall()
+    assert factors[-1] == pytest.approx((9 / 8, 2 * 10 / 8))
+    assert factors[-1][1] != pytest.approx(2 * (10 / 9) ** 2)
+    changes = conn.total_changes
+    result = advance_factor_coverage(
+        conn,
+        symbol="000001.SZ",
+        verified_start="2024-01-03",
+        verified_end="2024-01-06",
+        events=[first_event, second_event],
+    )
+    assert result["changed_rows"] == 0 and conn.total_changes == changes

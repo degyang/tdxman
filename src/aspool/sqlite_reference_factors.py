@@ -334,7 +334,12 @@ def build_selected_factors(
 
 
 def _insert_action(
-    conn: sqlite3.Connection, symbol: str, item: Mapping[str, Any], source: str
+    conn: sqlite3.Connection,
+    symbol: str,
+    item: Mapping[str, Any],
+    source: str,
+    *,
+    updated_at: int | None = None,
 ) -> None:
     day = _day(item.get("effective_date", item.get("date")))
     category = int(item["category"])
@@ -352,7 +357,7 @@ def _insert_action(
         DO UPDATE SET category=excluded.category,payload_json=excluded.payload_json,
                       updated_at=excluded.updated_at
         WHERE category IS NOT excluded.category OR payload_json IS NOT excluded.payload_json""",
-        (symbol, day, source, key, category, payload, time.time_ns() // 1000),
+        (symbol, day, source, key, category, payload, updated_at or time.time_ns() // 1000),
     )
 
 
@@ -811,3 +816,398 @@ def update_reference_factors(
         "factors": changed_factors,
         "features": changed_features,
     }
+
+
+def _coverage_events(events: Iterable[Mapping[str, Any]], source: str):
+    """Normalize a complete finite event set without guessing duplicate identities."""
+    rows = [dict(item) for item in events]
+    slots: dict[tuple[str, int], list[dict[str, Any]]] = defaultdict(list)
+    for item in rows:
+        if item.get("source", source) != source:
+            raise ValueError("Coverage events must match the explicit source")
+        item["source"] = source
+        day = _day(item.get("effective_date", item.get("date")))
+        item["effective_date"] = day
+        category = int(item["category"])
+        if category not in (1, 2, 5):
+            raise ValueError(f"Unsupported corporate action category {category}")
+        slots[(day, category)].append(item)
+    for (day, category), group in slots.items():
+        for item in group:
+            key = item.get("business_key") or item.get("event_id") or item.get("source_key")
+            if not key:
+                if len(group) > 1 and item.get("event_slot") is None:
+                    raise ValueError("Multiple coverage events need stable keys or event slots")
+                key = f"{source}:{category}:{day}:{item.get('event_slot', '0')}"
+            item["source_key"] = str(key)
+    normalized = [item for group in normalize_actions(rows) for item in group["events"]]
+    result = {}
+    for item in normalized:
+        key = (item["effective_date"], item["source_key"])
+        if key in result and _coverage_event_value(result[key]) != _coverage_event_value(item):
+            raise ValueError("Conflicting coverage event key")
+        result[key] = item
+    return result
+
+
+def _coverage_event_value(item: Mapping[str, Any]) -> str:
+    """Compare economic values, accepting equivalent legacy/per-share encodings."""
+    canonical = _canonical_event(item)
+    for key in ("date", "source_origins", "fenhong", "songzhuangu", "peigu", "peigujia"):
+        canonical.pop(key, None)
+    return json.dumps(canonical, sort_keys=True, allow_nan=False, default=str)
+
+
+def _coverage_previous_close(conn: sqlite3.Connection, symbol: str, before: str):
+    # calc_status can still describe the old bar while an updater is inserting
+    # new OHLC. Actual turnover or confirmed trading status establishes trading.
+    return conn.execute(
+        """SELECT b.trade_date,b.close FROM daily_bars b
+        LEFT JOIN daily_features f USING(symbol,trade_date)
+        WHERE b.symbol=? AND b.trade_date<?
+          AND b.open>0 AND b.high>0 AND b.low>0 AND b.close>0
+          AND abs(b.open)<1e308 AND abs(b.high)<1e308
+          AND abs(b.low)<1e308 AND abs(b.close)<1e308
+          AND b.low<=min(b.open,b.close) AND b.high>=max(b.open,b.close)
+          AND upper(coalesce(f.trading_status,'')) NOT IN
+              ('SUSPENDED','停牌','NO_TRADE','INVALID','0')
+          AND (b.volume>0 OR b.amount>0 OR upper(f.trading_status) IN
+              ('TRADING','TRADED','NORMAL','正常交易','1'))
+        ORDER BY b.trade_date DESC LIMIT 1""",
+        (symbol, before),
+    ).fetchone()
+
+
+def advance_factor_coverage(
+    conn: sqlite3.Connection,
+    *,
+    symbol: str,
+    verified_start: str,
+    verified_end: str,
+    events: Iterable[Mapping[str, Any]],
+    source: str = "tdx:xdxr",
+) -> dict[str, Any]:
+    """Advance an existing selected scale using a verified complete event interval.
+
+    Requires an outer transaction; joins its writer snapshot and never commits
+    it. Historical overlap is accepted only against this function's persisted
+    coverage receipt and identical stored events. Unverifiable history requires
+    explicit maintenance. affected_from is the former coverage end plus one.
+    """
+    if not conn.in_transaction:
+        raise ValueError("advance_factor_coverage requires an outer write transaction")
+    start, end = _day(verified_start), _day(verified_end)
+    if not symbol or end < start:
+        raise ValueError("Invalid verified coverage interval")
+    if not _known_source(source) or source.startswith(("raw_fallback:", "derived:")):
+        raise ValueError("Coverage needs an explicit reliable event source")
+    incoming = _coverage_events(events, source)
+    if any(not start <= day <= end for day, _ in incoming):
+        raise ValueError("Coverage event outside verified interval")
+    savepoint = "fw03_advance_factor_coverage"
+    conn.execute(f"SAVEPOINT {savepoint}")
+    try:
+        # Acquire the writer before taking any source/cache snapshot. No rows
+        # are touched, and releasing this savepoint keeps the caller's BEGIN.
+        conn.execute("UPDATE corporate_actions SET updated_at=updated_at WHERE 0")
+        cache = [
+            dict(
+                zip(
+                    (
+                        "effective_date",
+                        "source",
+                        "source_key",
+                        "cumulative_factor",
+                        "event_factor",
+                        "valid_from",
+                        "valid_through",
+                        "factor_basis",
+                        "payload_json",
+                        "updated_at",
+                    ),
+                    row,
+                )
+            )
+            for row in conn.execute(
+                """SELECT effective_date,source,source_key,cumulative_factor,event_factor,
+                valid_from,valid_through,factor_basis,payload_json,updated_at
+                FROM corporate_actions WHERE symbol=? AND record_kind='factor'
+                ORDER BY effective_date""",
+                (symbol,),
+            )
+        ]
+        if not cache:
+            raise ValueError("Missing selected factor anchor")
+        previous = None
+        for item in cache:
+            first, last = _day(item["valid_from"]), _day(item["valid_through"])
+            cumulative = _positive(item["cumulative_factor"], "selected cumulative factor")
+            if cumulative is None or first != item["effective_date"] or first > last:
+                raise ValueError("Invalid selected factor cache")
+            if not _known_source(item["source"]) or not item["factor_basis"].startswith(
+                ("source_cumulative_factor:source_anchor:", "event_chain:", "anchor_continuation:")
+            ):
+                raise ValueError("Unverified selected factor anchor basis")
+            if previous:
+                if (
+                    first
+                    != (
+                        date.fromisoformat(previous["valid_through"]) + timedelta(days=1)
+                    ).isoformat()
+                ):
+                    raise ValueError("Selected factor coverage gap or overlap")
+                if item["event_factor"] is not None and not math.isclose(
+                    _positive(item["event_factor"], "selected event factor"),
+                    cumulative / previous["cumulative_factor"],
+                    rel_tol=1e-12,
+                ):
+                    raise ValueError("Inconsistent selected factor scale")
+            previous = item
+        tail = cache[-1]
+        old_end = tail["valid_through"]
+        next_day = (date.fromisoformat(old_end) + timedelta(days=1)).isoformat()
+        if start < cache[0]["valid_from"] or start > next_day:
+            raise ValueError("Verified interval outside existing coverage or coverage gap")
+        tail_payload = json.loads(tail["payload_json"] or "{}")
+        if not isinstance(tail_payload, dict):
+            raise ValueError("Unverifiable factor coverage payload")
+        receipt = tail_payload.get("fw03_advance")
+        if receipt and (
+            receipt.get("version") != 1
+            or receipt.get("source") != source
+            or receipt.get("verified_end") != old_end
+            or not isinstance(receipt.get("events"), list)
+        ):
+            raise ValueError("Unverifiable factor coverage receipt or source change")
+        ledger = {(day, key): value for day, key, value in receipt["events"]} if receipt else {}
+        if receipt:
+            if len(ledger) != len(receipt["events"]) or any(
+                not receipt["verified_start"] <= day <= old_end for day, _ in ledger
+            ):
+                raise ValueError("Unverifiable factor coverage event receipt")
+            root = receipt["anchor"]
+            cached_root = next(
+                (row for row in cache if row["effective_date"] == root["effective_date"]), None
+            )
+            if cached_root is None or any(
+                cached_root[name] != root[name]
+                for name in ("source", "cumulative_factor", "factor_basis")
+            ):
+                raise ValueError("Verified root anchor changed; explicit maintenance required")
+        if start <= old_end and (not receipt or start < _day(receipt["verified_start"])):
+            raise ValueError(
+                "Historical overlap lacks verified event coverage; explicit maintenance required"
+            )
+        stored_rows = []
+        for day, event_source, key, category, payload in conn.execute(
+            """SELECT effective_date,source,source_key,category,payload_json
+            FROM corporate_actions WHERE symbol=? AND record_kind='event'
+              AND effective_date BETWEEN ? AND ? ORDER BY effective_date,source,source_key""",
+            (symbol, start, end),
+        ):
+            if event_source != source:
+                raise ValueError("Cannot verify overlapping events from another source")
+            item = json.loads(payload)
+            item.update(effective_date=day, source=event_source, source_key=key, category=category)
+            stored_rows.append(item)
+        stored = _coverage_events(stored_rows, source)
+        historical = {
+            key: value for key, value in ledger.items() if start <= key[0] <= min(end, old_end)
+        }
+        for collection in (incoming, stored):
+            overlap = {
+                key: _coverage_event_value(item)
+                for key, item in collection.items()
+                if key[0] <= old_end
+            }
+            if overlap != historical:
+                raise ValueError("Historical event set changed; explicit maintenance required")
+        for key, item in stored.items():
+            if key not in incoming or _coverage_event_value(item) != _coverage_event_value(
+                incoming[key]
+            ):
+                raise ValueError(
+                    "Historical event revision or omission; explicit maintenance required"
+                )
+        for key in incoming:
+            if key[0] <= old_end and key not in stored:
+                raise ValueError("Retrospective event insertion; explicit maintenance required")
+        result = {
+            "changed_factor_dates": [],
+            "changed_rows": 0,
+            "changed_event_rows": 0,
+            "affected_from": None,
+            "affected_through": None,
+            "valid_through": old_end,
+        }
+        if end > old_end:
+            if conn.execute(
+                """SELECT 1 FROM corporate_actions WHERE symbol=? AND record_kind='factor_anchor'
+                AND effective_date>? AND effective_date<=? LIMIT 1""",
+                (symbol, old_end, end),
+            ).fetchone():
+                raise ValueError(
+                    "New source anchor inside continuation interval requires explicit maintenance"
+                )
+            stamp = max(
+                time.time_ns() // 1000,
+                conn.execute(
+                    "SELECT coalesce(max(updated_at),0)+1 FROM corporate_actions WHERE symbol=?",
+                    (symbol,),
+                ).fetchone()[0],
+            )
+
+            def timestamp():
+                nonlocal stamp
+                stamp += 1
+                return stamp
+
+            root = (
+                receipt["anchor"]
+                if receipt
+                else {
+                    "effective_date": tail["effective_date"],
+                    "cumulative_factor": tail["cumulative_factor"],
+                    "source": tail["source"],
+                    "factor_basis": tail["factor_basis"],
+                }
+            )
+            proof = {
+                "version": 1,
+                "source": source,
+                "verified_start": receipt["verified_start"] if receipt else start,
+                "verified_end": end,
+                "anchor": root,
+                "events": [
+                    [day, key, value]
+                    for (day, key), value in sorted(
+                        {
+                            **ledger,
+                            **{
+                                key: _coverage_event_value(item)
+                                for key, item in incoming.items()
+                                if key[0] > old_end
+                            },
+                        }.items()
+                    )
+                ],
+            }
+
+            def proof_through(last):
+                return dict(
+                    proof,
+                    verified_end=last,
+                    events=[row for row in proof["events"] if row[0] <= last],
+                )
+
+            new_segments = []
+            running = tail["cumulative_factor"]
+            grouped = normalize_actions(
+                item for (day, _), item in incoming.items() if day > old_end
+            )
+            for group in grouped:
+                if not any(item["category"] == 1 for item in group["events"]):
+                    continue
+                day = group["effective_date"]
+                prior = _coverage_previous_close(conn, symbol, day)
+                if not prior:
+                    raise ValueError(f"Missing prior effective traded close for {day}")
+                prior_day, raw_close = prior
+                prior_factor = None
+                if prior_day <= old_end:
+                    prior_factor = next(
+                        (
+                            row["cumulative_factor"]
+                            for row in cache
+                            if row["valid_from"] <= prior_day <= row["valid_through"]
+                        ),
+                        None,
+                    )
+                else:
+                    prior_factor = tail["cumulative_factor"]
+                    for row in new_segments:
+                        if row["effective_date"] <= prior_day:
+                            prior_factor = row["cumulative_factor"]
+                if prior_factor is None:
+                    raise ValueError("Prior traded close is outside verified factor coverage")
+                scaled_close = raw_close * prior_factor / running
+                ratio = _event_ratio(scaled_close, group["events"])
+                if ratio == 1.0:
+                    continue
+                running = _positive(running * ratio, "continued cumulative factor")
+                new_segments.append(
+                    {"effective_date": day, "event_factor": ratio, "cumulative_factor": running}
+                )
+            tail_end = (
+                (
+                    date.fromisoformat(new_segments[0]["effective_date"]) - timedelta(days=1)
+                ).isoformat()
+                if new_segments
+                else end
+            )
+            if tail_end != old_end:
+                tail_payload["fw03_advance"] = proof_through(tail_end)
+                conn.execute(
+                    """UPDATE corporate_actions SET valid_through=?,payload_json=?,updated_at=?
+                    WHERE symbol=? AND effective_date=? AND record_kind='factor'""",
+                    (
+                        tail_end,
+                        json.dumps(tail_payload, sort_keys=True, allow_nan=False),
+                        timestamp(),
+                        symbol,
+                        tail["effective_date"],
+                    ),
+                )
+                result["changed_factor_dates"].append(tail["effective_date"])
+            for index, row in enumerate(new_segments):
+                last = (
+                    (
+                        date.fromisoformat(new_segments[index + 1]["effective_date"])
+                        - timedelta(days=1)
+                    ).isoformat()
+                    if index + 1 < len(new_segments)
+                    else end
+                )
+                payload = json.dumps(
+                    {"fw03_advance": proof_through(last)},
+                    sort_keys=True,
+                    allow_nan=False,
+                )
+                basis = (
+                    f"anchor_continuation:{root['source']}:{root['effective_date']}:events:{source}"
+                )
+                conn.execute(
+                    """INSERT INTO corporate_actions
+                    (symbol,effective_date,record_kind,source,source_key,event_factor,cumulative_factor,
+                     valid_from,valid_through,factor_basis,payload_json,updated_at)
+                    VALUES (?,?,'factor',?,'selected',?,?,?,?,?,?,?)""",
+                    (
+                        symbol,
+                        row["effective_date"],
+                        f"derived:anchor_continuation:{source}",
+                        row["event_factor"],
+                        row["cumulative_factor"],
+                        row["effective_date"],
+                        last,
+                        basis,
+                        payload,
+                        timestamp(),
+                    ),
+                )
+                result["changed_factor_dates"].append(row["effective_date"])
+            for key, item in incoming.items():
+                if key not in stored:
+                    _insert_action(conn, symbol, item, source, updated_at=timestamp())
+                    result["changed_event_rows"] += 1
+            result.update(
+                changed_rows=len(result["changed_factor_dates"]) + result["changed_event_rows"],
+                affected_from=next_day,
+                affected_through=end,
+                valid_through=end,
+            )
+        conn.execute(f"RELEASE SAVEPOINT {savepoint}")
+        return result
+    except Exception:
+        conn.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+        conn.execute(f"RELEASE SAVEPOINT {savepoint}")
+        raise
