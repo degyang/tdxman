@@ -45,13 +45,41 @@ CREATE INDEX daily_bars_by_date ON daily_bars(trade_date,symbol);
 """
 
 
+def _recover_interrupted_bj_migration(conn) -> None:
+    """Finish a v3 table replacement that stopped before the old table was dropped."""
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if "daily_bars_before_bj" not in tables:
+        return
+    old_rows = conn.execute("SELECT count(*) FROM daily_bars_before_bj").fetchone()[0]
+    current_rows = conn.execute("SELECT count(*) FROM daily_bars").fetchone()[0]
+    columns = ",".join(("symbol", *FIELDS, "source", "updated_at"))
+    if current_rows == 0 and old_rows:
+        conn.execute(
+            f"INSERT INTO daily_bars({columns}) SELECT {columns} FROM daily_bars_before_bj"
+        )
+        conn.commit()
+        current_rows = old_rows
+    if current_rows != old_rows:
+        raise ValueError("Interrupted index schema migration has inconsistent row counts")
+    conn.execute("DROP TABLE daily_bars_before_bj")
+    conn.commit()
+
+
 @contextmanager
 def index_connection(root, *, read_only=True):
     path = Path(root).resolve() / "indices.sqlite"
+    if not read_only:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    creating = not path.exists()
+    mode = "ro" if read_only else ("rwc" if creating else "rw")
     conn = sqlite3.connect(
-        path.as_uri() + ("?mode=ro" if read_only else "?mode=rw"), uri=True, timeout=30
+        path.as_uri() + f"?mode={mode}", uri=True, timeout=30
     )
     try:
+        if creating:
+            if read_only:
+                raise ValueError("Index database does not exist")
+            conn.executescript(DDL)
         conn.execute("PRAGMA cache_size=-32768")
         version = conn.execute("PRAGMA user_version").fetchone()[0]
         if version not in (1, 2, 3):
@@ -75,6 +103,7 @@ def index_connection(root, *, read_only=True):
                     "WHERE breadth_status <> CASE WHEN up_count+down_count>0 "
                     "THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END"
                 )
+                conn.commit()
                 version = 2
             if version < 3:
                 conn.execute("DROP INDEX IF EXISTS daily_bars_by_date")
@@ -84,7 +113,10 @@ def index_connection(root, *, read_only=True):
                 conn.execute(
                     f"INSERT INTO daily_bars({columns}) SELECT {columns} FROM daily_bars_before_bj"
                 )
+                conn.commit()
                 conn.execute("DROP TABLE daily_bars_before_bj")
+                conn.commit()
+            _recover_interrupted_bj_migration(conn)
         yield conn
     finally:
         conn.close()

@@ -189,7 +189,10 @@ def sync(
         raise click.UsageError("--start 与 --end 必须同时指定")
     if count is not None and start_date is not None:
         raise click.UsageError("--count 与 --start/--end 互斥")
-    count = count or 10
+    # A dated range is an explicit sync contract; do not inject the tail-window
+    # default and make it mutually exclusive in the downstream writer.
+    if count is None and start_date is None:
+        count = 10
     target = _root(root) if root else (
         Path("data").resolve() if Path("data/stocks.sqlite").is_file() else _root(None)
     )

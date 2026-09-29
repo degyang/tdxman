@@ -403,6 +403,7 @@ def test_cli_routes_sources_and_sync_keeps_enrichment(tmp_path, monkeypatch):
         == 0
     )
     assert calls[-1]["mode"] == "sync"
+    assert calls[-1]["count"] is None
     assert runner.invoke(cli, ["sync", "--root", str(tmp_path), "--no-enrich"]).exit_code == 2
 
 

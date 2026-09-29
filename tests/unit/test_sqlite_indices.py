@@ -17,7 +17,7 @@ from click.testing import CliRunner
 from aspool import DataPool, DataPoolError
 from aspool.cli import cli
 from aspool.index_pool import SCHEMA, index_path, normalize, sync_indices
-from aspool.sqlite_index_store import index_connection, save_rows
+from aspool.sqlite_index_store import DDL, index_connection, save_rows
 from aspool.sqlite_index_sync import index_record, online_records
 
 ITEM = dict(market="SH", code="881165", name="其他饰品", source=["HY"])
@@ -138,6 +138,30 @@ def test_writer_noop_revisions_and_failure_rollback(tmp_path):
             ("881165.SH", "2026-09-23"),
         ).fetchall()
         assert "SEARCH" in str(plan) and "PRIMARY KEY" in str(plan)
+
+
+def test_interrupted_bj_schema_migration_recovers_before_sync(tmp_path):
+    root = tmp_path / "data"
+    legacy(root)
+    migrator()(root, workdir=tmp_path / "recovery")
+    path = root / "indices.sqlite"
+    with sqlite3.connect(path) as conn:
+        conn.execute("DROP INDEX daily_bars_by_date")
+        conn.execute("ALTER TABLE daily_bars RENAME TO daily_bars_before_bj")
+        conn.executescript(DDL)
+    with index_connection(root, read_only=False) as conn:
+        assert conn.execute("SELECT count(*) FROM daily_bars").fetchone()[0] == 2
+        assert conn.execute(
+            "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='daily_bars_before_bj'"
+        ).fetchone()[0] == 0
+        assert not conn.in_transaction
+
+
+def test_empty_index_store_is_created_for_full_sync(tmp_path):
+    root = tmp_path / "data"
+    with index_connection(root, read_only=False) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert conn.execute("SELECT count(*) FROM daily_bars").fetchone()[0] == 0
 
 
 def mac_bar(day="2026-09-28"):
