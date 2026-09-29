@@ -522,6 +522,16 @@ def test_sync_with_no_candidates_is_a_successful_noop(tmp_path, monkeypatch):
     assert report["reason"] == "requested window is already complete"
 
 
+def test_market_hours_block_quote_update_but_allow_historical_sync(tmp_path, monkeypatch):
+    store(tmp_path)
+    market_hours = datetime(2026, 9, 29, 10, tzinfo=ZoneInfo("Asia/Shanghai"))
+    monkeypatch.setattr("aspool.sqlite_update_cli._sync_candidates", lambda *args: [])
+    report = run_update(tmp_path, mode="sync", now=market_hours, retry_delay=0)
+    assert report["status"] == "ok"
+    with pytest.raises(ValueError, match="aspool update"):
+        run_update(tmp_path, mode="update", now=market_hours, retry_delay=0)
+
+
 def test_retry_is_bounded_and_validation_errors_are_not_retried(monkeypatch):
     waits, calls = [], []
     monkeypatch.setattr("aspool.source_retry.time.sleep", waits.append)

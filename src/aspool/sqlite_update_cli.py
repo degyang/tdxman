@@ -323,7 +323,7 @@ def run_update(
         raise ValueError("Invalid mode or workers")
     if not 0 <= retries <= 5 or not 0 <= retry_delay <= 30:
         raise ValueError("Invalid retry limits")
-    if not quote_update_allowed(now):
+    if mode == "update" and not quote_update_allowed(now):
         raise ValueError("工作日 09:00 至 15:30 不允许运行 aspool update")
     if not (root / "stocks.sqlite").is_file():
         raise ValueError("aspool update requires the migrated stocks.sqlite; specify --root")
