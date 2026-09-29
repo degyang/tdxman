@@ -6,7 +6,7 @@ from types import TracebackType
 from typing import TypeVar
 
 from ..commands.base import BaseCommand
-from ..config import get_best_ex_host, get_ex_hosts, save_best_ex_host
+from ..config import get_best_ex_endpoint, get_best_ex_host, get_ex_hosts
 from ..exceptions import TdxConnectionError
 from .commands.get_history_bars_range import GetExHistoryInstrumentBarsRangeCmd
 from .commands.get_instrument_bars import GetExInstrumentBarsCmd
@@ -56,40 +56,44 @@ class ExTdxClient:
     def __init__(
         self,
         host: str | None = None,
-        port: int = _DEFAULT_EX_PORT,
+        port: int | None = None,
         timeout: float = 15.0,
         auto_reconnect: bool = True,
     ) -> None:
-        self._host = host if host is not None else get_best_ex_host()
-        self._port = port
+        endpoint = get_best_ex_endpoint() if host is None and port is None else None
+        self._host = host if host is not None else (endpoint[0] if endpoint else get_best_ex_host())
+        self._port = port if port is not None else (endpoint[1] if endpoint else _DEFAULT_EX_PORT)
         self._timeout = timeout
         self._auto_reconnect = auto_reconnect
-        self._conn = ExTdxConnection(self._host, port, timeout)
+        self._conn = ExTdxConnection(self._host, self._port, timeout)
 
     @classmethod
     def from_best_host(
         cls,
         hosts: list[str] | None = None,
-        port: int = _DEFAULT_EX_PORT,
+        port: int | None = None,
         timeout: float = 15.0,
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
+        refresh: bool = False,
     ) -> "ExTdxClient":
-        """测量所有扩展行情服务器延迟，选最低延迟建立连接。自动保存最佳主机。"""
+        """Use the local EX ranking unless an explicit refresh is requested."""
+        if not refresh:
+            return cls(None, port, timeout, auto_reconnect)
         if hosts is None:
             hosts = get_ex_hosts()
-        ranked = ping_ex_all(hosts, port, ping_timeout)
+        probe_port = port if port is not None else _DEFAULT_EX_PORT
+        ranked = ping_ex_all(hosts, probe_port, ping_timeout)
         best = ranked[0][0] if ranked else hosts[0]
-        save_best_ex_host(best)
-        return cls(best, port, timeout, auto_reconnect)
+        return cls(best, probe_port, timeout, auto_reconnect)
 
     @staticmethod
     def ping_all(
         hosts: list[str] | None = None,
-        port: int = _DEFAULT_EX_PORT,
+        port: int | None = None,
         timeout: float = 5.0,
     ) -> list[tuple[str, float]]:
-        return ping_ex_all(hosts, port, timeout)
+        return ping_ex_all(hosts, port if port is not None else _DEFAULT_EX_PORT, timeout)
 
     # ------------------------------------------------------------------ #
     # 连接管理
@@ -243,17 +247,18 @@ class AsyncExTdxClient:
     def __init__(
         self,
         host: str | None = None,
-        port: int = _DEFAULT_EX_PORT,
+        port: int | None = None,
         timeout: float = 15.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 60.0,
     ) -> None:
-        self._host = host if host is not None else get_best_ex_host()
-        self._port = port
+        endpoint = get_best_ex_endpoint() if host is None and port is None else None
+        self._host = host if host is not None else (endpoint[0] if endpoint else get_best_ex_host())
+        self._port = port if port is not None else (endpoint[1] if endpoint else _DEFAULT_EX_PORT)
         self._timeout = timeout
         self._auto_reconnect = auto_reconnect
         self._heartbeat_interval = heartbeat_interval
-        self._conn = AsyncExTdxConnection(self._host, port, timeout)
+        self._conn = AsyncExTdxConnection(self._host, self._port, timeout)
         self._execute_lock = asyncio.Lock()
         self._heartbeat_task: asyncio.Task[None] | None = None
 
@@ -261,26 +266,29 @@ class AsyncExTdxClient:
     def from_best_host(
         cls,
         hosts: list[str] | None = None,
-        port: int = _DEFAULT_EX_PORT,
+        port: int | None = None,
         timeout: float = 15.0,
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 60.0,
+        refresh: bool = False,
     ) -> "AsyncExTdxClient":
+        if not refresh:
+            return cls(None, port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
             hosts = get_ex_hosts()
-        ranked = ping_ex_all(hosts, port, ping_timeout)
+        probe_port = port if port is not None else _DEFAULT_EX_PORT
+        ranked = ping_ex_all(hosts, probe_port, ping_timeout)
         best = ranked[0][0] if ranked else hosts[0]
-        save_best_ex_host(best)
-        return cls(best, port, timeout, auto_reconnect, heartbeat_interval)
+        return cls(best, probe_port, timeout, auto_reconnect, heartbeat_interval)
 
     @staticmethod
     def ping_all(
         hosts: list[str] | None = None,
-        port: int = _DEFAULT_EX_PORT,
+        port: int | None = None,
         timeout: float = 5.0,
     ) -> list[tuple[str, float]]:
-        return ping_ex_all(hosts, port, timeout)
+        return ping_ex_all(hosts, port if port is not None else _DEFAULT_EX_PORT, timeout)
 
     # ------------------------------------------------------------------ #
     # 连接管理

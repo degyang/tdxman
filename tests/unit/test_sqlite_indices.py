@@ -174,6 +174,9 @@ def test_existing_cli_routes_sqlite_retry_and_keeps_data_clean(tmp_path, monkeyp
     root = tmp_path / "data"
     legacy(root)
     migrator()(root, workdir=tmp_path / "recovery")
+    from aspool.securities import publish_index_directory
+
+    publish_index_directory(root, [{**ITEM, "source": ["HY2"]}])
     calls = []
 
     class Client:
@@ -190,7 +193,7 @@ def test_existing_cli_routes_sqlite_retry_and_keeps_data_clean(tmp_path, monkeyp
             return pd.DataFrame([mac_bar("2026-09-23"), mac_bar()])
 
     monkeypatch.setattr(MacClient, "from_best_host", lambda **kwargs: Client())
-    monkeypatch.setattr("aspool.sqlite_index_sync.load_indices", lambda: [ITEM])
+    monkeypatch.setattr("aspool.universe.refresh_index_universe", lambda _: {})
     result = CliRunner().invoke(
         cli,
         ["sync", "--type", "index", "--root", str(root), "--retry-delay", "0", "--workers", "1"],

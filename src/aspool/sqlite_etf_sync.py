@@ -14,7 +14,7 @@ from tdxman.codec.bitmap import FieldBit, PresetField
 from tdxman.mac.client import AsyncMacClient, MacClient
 from tdxman.models.enums import Market
 
-from .etf_lists import collect, load_etfs
+from .etf_lists import collect
 from .fetch import client_factory, fetch_async, fetch_sync
 from .index_lists import atomic_json
 from .pool import pool_lock
@@ -119,11 +119,17 @@ def sync_etfs(
     root = Path(root).resolve()
     directory_retries = []
     if items is None:
-        items = (
-            online_items(retries=retries, retry_delay=retry_delay, events=directory_retries)
-            if mode == "online"
-            else load_etfs()
-        )
+        if mode == "online":
+            items = online_items(retries=retries, retry_delay=retry_delay, events=directory_retries)
+        else:
+            from .securities import active_securities
+
+            items = [
+                {"market": market, "code": code, "name": name, "source": ["ETF"]}
+                for _, code, market, name, _, _ in active_securities(root, "etf")
+            ]
+            if not items:
+                raise ValueError("ETF 目录为空，请先运行 aspool directory --type etf")
     directory = publish_directory(
         root,
         items,

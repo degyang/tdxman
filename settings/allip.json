@@ -1,0 +1,775 @@
+{
+  "schema_version": 1,
+  "updated_on": "2026-09-29",
+  "notes": "Merged static candidates. Endpoints are only candidates; tdxman bestip performs protocol-specific verification.",
+  "collected_from": [
+    {
+      "project": "tdxman",
+      "reference": "src/tdxman/config.py:_FALLBACK_HOSTS/_FALLBACK_MAC_HOSTS/_FALLBACK_EX_HOSTS/_FALLBACK_MAC_EX_HOSTS",
+      "collected_on": "2026-09-29"
+    },
+    {
+      "project": "hotdx",
+      "reference": "/mnt/d/workstation/projects/hotdx/tdxman/consts.py:HQ_HOSTS/EX_HOSTS",
+      "collected_on": "2026-09-29"
+    },
+    {
+      "project": "mootdx",
+      "reference": "/mnt/d/Workstation/Projects/mooTradeAgent/mootdx/consts.py; same static list family reviewed",
+      "collected_on": "2026-09-29"
+    }
+  ],
+  "endpoints": [
+    {
+      "host": "101.133.214.242",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站3"
+    },
+    {
+      "host": "101.33.225.16",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "101.35.121.35",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "101.42.164.241",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "101.42.240.54",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "101.43.159.194",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "106.14.190.242",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站8"
+    },
+    {
+      "host": "106.14.201.131",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站7"
+    },
+    {
+      "host": "106.52.170.195",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "110.41.147.114",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "深圳双线主站1"
+    },
+    {
+      "host": "110.41.154.219",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "深圳双线主站6"
+    },
+    {
+      "host": "110.41.2.72",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "111.229.247.189",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "111.230.186.52",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "111.231.113.208",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "112.74.214.43",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "113.45.175.47",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "115.238.56.198",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "115.238.90.165",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "116.205.135.205",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ],
+      "dialect": "mac"
+    },
+    {
+      "host": "116.205.143.214",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ],
+      "dialect": "standard"
+    },
+    {
+      "host": "116.205.163.254",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "广州双线主站5"
+    },
+    {
+      "host": "116.205.171.132",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "广州双线主站6"
+    },
+    {
+      "host": "116.205.183.150",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "广州双线主站7"
+    },
+    {
+      "host": "117.34.114.27",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "118.25.98.114",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "118.89.69.202",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "119.147.212.81",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "119.97.185.59",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "武汉电信主站1"
+    },
+    {
+      "host": "120.24.149.49",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "深圳双线主站3"
+    },
+    {
+      "host": "120.25.218.6",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "120.46.186.223",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "北京双线主站5"
+    },
+    {
+      "host": "120.53.8.251",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "121.36.225.169",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站9"
+    },
+    {
+      "host": "121.36.248.138",
+      "port": 7709,
+      "protocols": [
+        "mac"
+      ]
+    },
+    {
+      "host": "121.36.54.217",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "北京双线主站1"
+    },
+    {
+      "host": "121.36.81.195",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "北京双线主站2"
+    },
+    {
+      "host": "121.37.207.165",
+      "port": 7709,
+      "protocols": [
+        "mac"
+      ]
+    },
+    {
+      "host": "121.37.232.167",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ],
+      "dialect": "mac"
+    },
+    {
+      "host": "122.51.120.217",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "122.51.232.182",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "123.249.15.60",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "北京双线主站3"
+    },
+    {
+      "host": "123.60.164.122",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "123.60.173.210",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "123.60.47.136",
+      "port": 7709,
+      "protocols": [
+        "mac"
+      ]
+    },
+    {
+      "host": "123.60.70.228",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站10"
+    },
+    {
+      "host": "123.60.73.44",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站11"
+    },
+    {
+      "host": "123.60.84.66",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站15"
+    },
+    {
+      "host": "124.223.163.242",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "124.70.133.119",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站12"
+    },
+    {
+      "host": "124.70.176.52",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站1"
+    },
+    {
+      "host": "124.70.199.56",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站6"
+    },
+    {
+      "host": "124.70.22.210",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "北京双线主站6"
+    },
+    {
+      "host": "124.70.75.113",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "北京双线主站4"
+    },
+    {
+      "host": "124.71.187.122",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站14"
+    },
+    {
+      "host": "124.71.187.72",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站13"
+    },
+    {
+      "host": "124.71.223.19",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "124.71.85.110",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "广州双线主站1"
+    },
+    {
+      "host": "124.71.9.153",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "广州双线主站4"
+    },
+    {
+      "host": "129.204.230.128",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "139.159.239.163",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "广州双线主站3"
+    },
+    {
+      "host": "139.9.133.247",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "北京双线主站7"
+    },
+    {
+      "host": "139.9.191.175",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "139.9.51.18",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "广州双线主站2"
+    },
+    {
+      "host": "150.158.160.2",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "150.158.20.127",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "150.158.9.199",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "152.136.191.169",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "159.75.29.111",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "159.75.90.107",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "175.178.112.197",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "175.178.128.227",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "175.24.47.69",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "180.153.18.170",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "180.153.18.171",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "180.153.18.172",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "218.75.126.9",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "218.75.75.18",
+      "port": 7720,
+      "protocols": [
+        "ex"
+      ],
+      "name": "银河杭州电信扩展行情"
+    },
+    {
+      "host": "43.139.173.246",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "43.139.18.171",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "43.139.95.83",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "47.100.236.28",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站2"
+    },
+    {
+      "host": "47.107.228.47",
+      "port": 7719,
+      "protocols": [
+        "standard"
+      ],
+      "name": "深圳双线主站8"
+    },
+    {
+      "host": "47.107.64.168",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "深圳双线主站7"
+    },
+    {
+      "host": "47.107.75.159",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "47.112.95.207",
+      "port": 7720,
+      "protocols": [
+        "ex"
+      ],
+      "name": "银河阿里云扩展行情"
+    },
+    {
+      "host": "47.113.94.204",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "深圳双线主站4"
+    },
+    {
+      "host": "47.116.105.28",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站5"
+    },
+    {
+      "host": "47.116.21.80",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "上海双线主站4"
+    },
+    {
+      "host": "49.232.15.141",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "49.234.13.160",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "49.235.119.116",
+      "port": 7727,
+      "protocols": [
+        "ex"
+      ]
+    },
+    {
+      "host": "58.49.110.76",
+      "port": 7720,
+      "protocols": [
+        "ex"
+      ],
+      "name": "银河武汉电信扩展行情"
+    },
+    {
+      "host": "59.175.238.38",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "62.234.50.143",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "8.129.13.54",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "深圳双线主站2"
+    },
+    {
+      "host": "8.129.174.169",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ],
+      "name": "深圳双线主站5"
+    },
+    {
+      "host": "81.70.151.186",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "81.71.32.47",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "82.156.174.84",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    },
+    {
+      "host": "82.156.214.79",
+      "port": 7709,
+      "protocols": [
+        "standard"
+      ]
+    }
+  ]
+}

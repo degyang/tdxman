@@ -13,7 +13,7 @@ import pandas as pd
 
 from .._df import _to_df
 from ..commands.base import BaseCommand
-from ..config import get_best_mac_ex_host, get_mac_ex_hosts, save_best_mac_ex_host
+from ..config import get_best_mac_ex_endpoint, get_best_mac_ex_host, get_mac_ex_hosts
 from ..exceptions import TdxConnectionError
 from ..mac.commands.chart_sampling import ChartSamplingCmd
 from ..mac.commands.symbol_bar import SymbolBarCmd
@@ -60,39 +60,45 @@ class MacExClient:
     def __init__(
         self,
         host: str | None = None,
-        port: int = _DEFAULT_PORT,
+        port: int | None = None,
         timeout: float = 15.0,
         auto_reconnect: bool = True,
     ) -> None:
-        self._host = host if host is not None else get_best_mac_ex_host()
-        self._port = port
+        endpoint = get_best_mac_ex_endpoint() if host is None and port is None else None
+        preferred_host = endpoint[0] if endpoint else get_best_mac_ex_host()
+        self._host = host if host is not None else preferred_host
+        self._port = port if port is not None else (endpoint[1] if endpoint else _DEFAULT_PORT)
         self._timeout = timeout
         self._auto_reconnect = auto_reconnect
-        self._conn = ExTdxConnection(self._host, port, timeout, mac_ex_mode=True)
+        self._conn = ExTdxConnection(self._host, self._port, timeout, mac_ex_mode=True)
 
     @classmethod
     def from_best_host(
         cls,
         hosts: list[str] | None = None,
-        port: int = _DEFAULT_PORT,
+        port: int | None = None,
         timeout: float = 15.0,
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
+        refresh: bool = False,
     ) -> "MacExClient":
-        """测量所有 MAC 扩展行情服务器延迟，选最低延迟建立连接。"""
+        """Use the local MAC EX ranking unless an explicit refresh is requested."""
+        if not refresh:
+            return cls(None, port, timeout, auto_reconnect)
         candidates = hosts or get_mac_ex_hosts()
-        ranked = ping_ex_all(candidates, port, ping_timeout)
+        probe_port = port if port is not None else _DEFAULT_PORT
+        ranked = ping_ex_all(candidates, probe_port, ping_timeout)
         best = ranked[0][0] if ranked else candidates[0]
-        save_best_mac_ex_host(best)
-        return cls(best, port, timeout, auto_reconnect)
+        return cls(best, probe_port, timeout, auto_reconnect)
 
     @staticmethod
     def ping_all(
         hosts: list[str] | None = None,
-        port: int = _DEFAULT_PORT,
+        port: int | None = None,
         timeout: float = 5.0,
     ) -> list[tuple[str, float]]:
-        return ping_ex_all(hosts or get_mac_ex_hosts(), port, timeout)
+        probe_port = port if port is not None else _DEFAULT_PORT
+        return ping_ex_all(hosts or get_mac_ex_hosts(), probe_port, timeout)
 
     # ------------------------------------------------------------------ #
     # 连接管理
@@ -431,17 +437,19 @@ class AsyncMacExClient:
     def __init__(
         self,
         host: str | None = None,
-        port: int = _DEFAULT_PORT,
+        port: int | None = None,
         timeout: float = 15.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 60.0,
     ) -> None:
-        self._host = host if host is not None else get_best_mac_ex_host()
-        self._port = port
+        endpoint = get_best_mac_ex_endpoint() if host is None and port is None else None
+        preferred_host = endpoint[0] if endpoint else get_best_mac_ex_host()
+        self._host = host if host is not None else preferred_host
+        self._port = port if port is not None else (endpoint[1] if endpoint else _DEFAULT_PORT)
         self._timeout = timeout
         self._auto_reconnect = auto_reconnect
         self._heartbeat_interval = heartbeat_interval
-        self._conn = AsyncExTdxConnection(self._host, port, timeout, mac_ex_mode=True)
+        self._conn = AsyncExTdxConnection(self._host, self._port, timeout, mac_ex_mode=True)
         self._execute_lock = asyncio.Lock()
         self._heartbeat_task: asyncio.Task[None] | None = None
 
@@ -449,25 +457,29 @@ class AsyncMacExClient:
     def from_best_host(
         cls,
         hosts: list[str] | None = None,
-        port: int = _DEFAULT_PORT,
+        port: int | None = None,
         timeout: float = 15.0,
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 60.0,
+        refresh: bool = False,
     ) -> "AsyncMacExClient":
+        if not refresh:
+            return cls(None, port, timeout, auto_reconnect, heartbeat_interval)
         candidates = hosts or get_mac_ex_hosts()
-        ranked = ping_ex_all(candidates, port, ping_timeout)
+        probe_port = port if port is not None else _DEFAULT_PORT
+        ranked = ping_ex_all(candidates, probe_port, ping_timeout)
         best = ranked[0][0] if ranked else candidates[0]
-        save_best_mac_ex_host(best)
-        return cls(best, port, timeout, auto_reconnect, heartbeat_interval)
+        return cls(best, probe_port, timeout, auto_reconnect, heartbeat_interval)
 
     @staticmethod
     def ping_all(
         hosts: list[str] | None = None,
-        port: int = _DEFAULT_PORT,
+        port: int | None = None,
         timeout: float = 5.0,
     ) -> list[tuple[str, float]]:
-        return ping_ex_all(hosts or get_mac_ex_hosts(), port, timeout)
+        probe_port = port if port is not None else _DEFAULT_PORT
+        return ping_ex_all(hosts or get_mac_ex_hosts(), probe_port, timeout)
 
     # ------------------------------------------------------------------ #
     # 连接管理

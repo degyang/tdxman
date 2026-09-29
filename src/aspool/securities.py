@@ -1,4 +1,4 @@
-"""Canonical stock and ETF directory stored in catalog.duckdb."""
+"""Canonical stock, ETF, and index directory stored in catalog.duckdb."""
 
 from __future__ import annotations
 
@@ -19,8 +19,18 @@ CREATE TABLE IF NOT EXISTS securities (
     delisting_date DATE,
     updated_at TIMESTAMP NOT NULL,
     CHECK (market IN ('SH','SZ','BJ')),
-    CHECK (asset_type IN ('stock','etf')),
+    CHECK (asset_type IN ('stock','etf','index')),
     CHECK (symbol = code || '.' || market)
+)
+"""
+
+INDEX_MEMBERSHIPS_DDL = """
+CREATE TABLE IF NOT EXISTS index_memberships (
+    symbol VARCHAR NOT NULL,
+    category VARCHAR NOT NULL CHECK (category IN ('HY2','GN','FG','ZS','benchmark')),
+    active BOOLEAN NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (symbol, category)
 )
 """
 
@@ -32,11 +42,28 @@ def _tables(conn) -> set[str]:
 def ensure_securities(root: Path) -> dict[str, int]:
     """Create the canonical table and migrate legacy directory rows idempotently."""
     path = Path(root).resolve() / "catalog.duckdb"
+    path.parent.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).replace(tzinfo=None)
     with duckdb.connect(str(path)) as conn:
         conn.execute("BEGIN")
         try:
+            tables = _tables(conn)
+            if "securities" in tables:
+                sql = conn.execute(
+                    "SELECT sql FROM duckdb_tables() WHERE table_name='securities'"
+                ).fetchone()[0]
+                if "'index'" not in sql:
+                    conn.execute(DDL.replace("securities", "securities_next", 1))
+                    conn.execute(
+                        """INSERT INTO securities_next
+                        (symbol,code,market,asset_type,name,active,listing_date,delisting_date,updated_at)
+                        SELECT symbol,code,market,asset_type,name,active,
+                               listing_date,delisting_date,updated_at FROM securities"""
+                    )
+                    conn.execute("DROP TABLE securities")
+                    conn.execute("ALTER TABLE securities_next RENAME TO securities")
             conn.execute(DDL)
+            conn.execute(INDEX_MEMBERSHIPS_DDL)
             before = conn.execute("SELECT count(*) FROM securities").fetchone()[0]
             tables = _tables(conn)
             if before == 0 and "universe" in tables:
@@ -101,7 +128,7 @@ def publish_directory(
     observed_at: datetime | None = None,
 ) -> dict[str, int]:
     """Publish complete market observations; only actual business changes touch updated_at."""
-    if asset_type not in {"stock", "etf"}:
+    if asset_type not in {"stock", "etf", "index"}:
         raise ValueError("Unsupported asset type")
     observed_at = observed_at or datetime.now(UTC).replace(tzinfo=None)
     normalized: dict[str, tuple[str, str, str]] = {}
@@ -178,3 +205,143 @@ def active_securities(root: Path, asset_type: str, markets: set[str] | None = No
     sql += " ORDER BY symbol"
     with duckdb.connect(str(Path(root).resolve() / "catalog.duckdb"), read_only=True) as conn:
         return conn.execute(sql, params).fetchall()
+
+
+def publish_index_directory(
+    root: Path,
+    entries: list[dict[str, object]],
+    *,
+    benchmark_symbols: set[str] | None = None,
+    observed_at: datetime | None = None,
+) -> dict[str, int]:
+    """Publish a complete dynamic index directory and its category memberships."""
+    observed_at = observed_at or datetime.now(UTC).replace(tzinfo=None)
+    normalized: dict[str, tuple[str, str, str, tuple[str, ...]]] = {}
+    valid_categories = {"HY2", "GN", "FG", "ZS"}
+    for entry in entries:
+        code = str(entry["code"])
+        market = str(entry["market"])
+        name = str(entry["name"]).strip()
+        symbol = str(entry.get("symbol") or f"{code}.{market}")
+        categories = tuple(sorted(set(entry.get("source", entry.get("categories", [])))))
+        if (
+            symbol != f"{code}.{market}"
+            or len(code) != 6
+            or not code.isascii()
+            or not code.isdigit()
+            or market not in {"SH", "SZ", "BJ"}
+            or not name
+            or not set(categories) <= valid_categories
+            or not categories
+            or symbol in normalized
+        ):
+            raise ValueError(f"Invalid index directory entry: {symbol}")
+        if "\ufffd" in name:
+            raise ValueError(f"Invalid index directory name: {symbol}")
+        normalized[symbol] = (code, market, name, categories)
+    if not normalized:
+        raise ValueError("Empty index directory cannot be published")
+    ensure_securities(root)
+    benchmark_symbols = benchmark_symbols or set()
+    with duckdb.connect(str(Path(root).resolve() / "catalog.duckdb")) as conn:
+        conn.execute("BEGIN")
+        try:
+            previous = {
+                row[0]: row[1:]
+                for row in conn.execute(
+                    "SELECT symbol,code,market,name,active FROM securities WHERE asset_type='index'"
+                ).fetchall()
+            }
+            added = changed = unchanged = inactive = 0
+            for symbol, (code, market, name, _) in normalized.items():
+                old = previous.get(symbol)
+                current = (code, market, name, True)
+                if old is None:
+                    added += 1
+                elif old == current:
+                    unchanged += 1
+                else:
+                    changed += 1
+                if old != current:
+                    conn.execute(
+                        """INSERT INTO securities
+                        (symbol,code,market,asset_type,name,active,updated_at)
+                        VALUES (?,?,?,?,?,true,?)
+                        ON CONFLICT(symbol) DO UPDATE SET code=excluded.code,
+                          market=excluded.market,asset_type=excluded.asset_type,
+                          name=excluded.name,active=true,updated_at=excluded.updated_at""",
+                        [symbol, code, market, "index", name, observed_at],
+                    )
+            for symbol, old in previous.items():
+                if old[3] and symbol not in normalized:
+                    conn.execute(
+                        "UPDATE securities SET active=false,updated_at=? WHERE symbol=?",
+                        [observed_at, symbol],
+                    )
+                    inactive += 1
+
+            wanted = {
+                (symbol, category)
+                for symbol, (_, _, _, categories) in normalized.items()
+                for category in categories
+            }
+            wanted.update(
+                (symbol, "benchmark") for symbol in benchmark_symbols if symbol in normalized
+            )
+            previous_memberships = {
+                (row[0], row[1]): row[2]
+                for row in conn.execute(
+                    "SELECT symbol,category,active FROM index_memberships"
+                ).fetchall()
+            }
+            membership_changed = membership_inactive = 0
+            for symbol, category in wanted:
+                if previous_memberships.get((symbol, category)) is True:
+                    continue
+                conn.execute(
+                    """INSERT INTO index_memberships(symbol,category,active,updated_at)
+                    VALUES (?,?,true,?) ON CONFLICT(symbol,category) DO UPDATE
+                    SET active=true,updated_at=excluded.updated_at""",
+                    [symbol, category, observed_at],
+                )
+                membership_changed += 1
+            for key, active in previous_memberships.items():
+                if active and key not in wanted:
+                    conn.execute(
+                        "UPDATE index_memberships SET active=false,updated_at=? "
+                        "WHERE symbol=? AND category=?",
+                        [observed_at, *key],
+                    )
+                    membership_inactive += 1
+            conn.execute("COMMIT")
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
+    return {
+        "listed": len(normalized),
+        "added": added,
+        "changed": changed,
+        "unchanged": unchanged,
+        "inactive": inactive,
+        "membership_changed": membership_changed,
+        "membership_inactive": membership_inactive,
+    }
+
+
+def active_indices(root: Path) -> list[dict[str, object]]:
+    """Return the current dynamic index directory with all active categories."""
+    ensure_securities(root)
+    with duckdb.connect(str(Path(root).resolve() / "catalog.duckdb"), read_only=True) as conn:
+        rows = conn.execute(
+            """SELECT s.symbol,s.code,s.market,s.name,m.category
+            FROM securities s JOIN index_memberships m ON m.symbol=s.symbol
+            WHERE s.asset_type='index' AND s.active AND m.active AND m.category <> 'benchmark'
+            ORDER BY s.symbol,m.category"""
+        ).fetchall()
+    items: dict[str, dict[str, object]] = {}
+    for symbol, code, market, name, category in rows:
+        item = items.setdefault(
+            symbol, {"symbol": symbol, "code": code, "market": market, "name": name, "source": []}
+        )
+        item["source"].append(category)
+    return list(items.values())

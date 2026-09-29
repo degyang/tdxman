@@ -161,8 +161,62 @@ def get_best_host() -> str:
     env = os.environ.get("TDXMAN_HOST")
     if env:
         return env
+    try:
+        from .bestip import preferred
+
+        ranked = preferred("standard")
+        if ranked:
+            return ranked[0]["host"]
+    except ValueError:
+        pass
     cfg = _load()
     return cfg.get("best_host", _FALLBACK_HOSTS[0])
+
+
+def get_best_standard_endpoint() -> tuple[str, int] | None:
+    """Return the preferred standard endpoint, including its verified port."""
+    if os.environ.get("TDXMAN_HOST"):
+        return None
+    try:
+        from .bestip import preferred
+
+        endpoints = preferred("standard")
+        if endpoints:
+            return endpoints[0]["host"], endpoints[0]["port"]
+    except ValueError:
+        pass
+    return None
+
+
+def get_best_mac_host() -> str:
+    """Return the device-local MAC ranking without sharing the standard best host."""
+    env = os.environ.get("TDXMAN_MAC_HOST")
+    if env:
+        return env
+    try:
+        from .bestip import preferred
+
+        ranked = preferred("mac")
+        if ranked:
+            return ranked[0]["host"]
+    except ValueError:
+        pass
+    return _FALLBACK_MAC_HOSTS[0]
+
+
+def get_best_mac_endpoint() -> tuple[str, int] | None:
+    """Return the preferred MAC endpoint, including its verified port."""
+    if os.environ.get("TDXMAN_MAC_HOST"):
+        return None
+    try:
+        from .bestip import preferred
+
+        endpoints = preferred("mac")
+        if endpoints:
+            return endpoints[0]["host"], endpoints[0]["port"]
+    except ValueError:
+        pass
+    return None
 
 
 def get_known_hosts() -> list[str]:
@@ -170,9 +224,14 @@ def get_known_hosts() -> list[str]:
     env = os.environ.get("TDXMAN_KNOWN_HOSTS")
     if env:
         return [h.strip() for h in env.split(",") if h.strip()]
-    cfg = _load()
-    configured = cfg.get("known_hosts", [])
-    return list(dict.fromkeys([*_FALLBACK_HOSTS, *configured]))
+    try:
+        from .bestip import preferred
+
+        return list(dict.fromkeys(item["host"] for item in preferred("standard")))
+    except ValueError:
+        cfg = _load()
+        configured = cfg.get("known_hosts", [])
+        return list(dict.fromkeys([*_FALLBACK_HOSTS, *configured]))
 
 
 def get_calc_hosts() -> list[str]:
@@ -183,14 +242,24 @@ def get_calc_hosts() -> list[str]:
 
 def get_mac_hosts() -> list[str]:
     """返回 MAC 行情服务器列表。"""
-    cfg = _load()
-    return cfg.get("mac_hosts", list(_FALLBACK_MAC_HOSTS))
+    try:
+        from .bestip import preferred
+
+        return list(dict.fromkeys(item["host"] for item in preferred("mac")))
+    except ValueError:
+        cfg = _load()
+        return cfg.get("mac_hosts", list(_FALLBACK_MAC_HOSTS))
 
 
 def get_ex_hosts() -> list[str]:
     """返回扩展行情服务器列表。"""
-    cfg = _load()
-    return cfg.get("ex_hosts", list(_FALLBACK_EX_HOSTS))
+    try:
+        from .bestip import preferred
+
+        return list(dict.fromkeys(item["host"] for item in preferred("ex", dialect="standard")))
+    except ValueError:
+        cfg = _load()
+        return cfg.get("ex_hosts", list(_FALLBACK_EX_HOSTS))
 
 
 def get_best_ex_host() -> str:
@@ -198,14 +267,42 @@ def get_best_ex_host() -> str:
     env = os.environ.get("TDXMAN_EX_HOST")
     if env:
         return env
+    try:
+        from .bestip import preferred
+
+        endpoints = preferred("ex", dialect="standard")
+        if endpoints:
+            return endpoints[0]["host"]
+    except ValueError:
+        pass
     cfg = _load()
     return cfg.get("best_ex_host", _FALLBACK_EX_HOSTS[0])
 
 
+def get_best_ex_endpoint() -> tuple[str, int] | None:
+    """Return the preferred standard-dialect EX endpoint and port."""
+    if os.environ.get("TDXMAN_EX_HOST"):
+        return None
+    try:
+        from .bestip import preferred
+
+        endpoints = preferred("ex", dialect="standard")
+        if endpoints:
+            return endpoints[0]["host"], endpoints[0]["port"]
+    except ValueError:
+        pass
+    return None
+
+
 def get_mac_ex_hosts() -> list[str]:
     """返回 MAC 协议扩展行情服务器列表。"""
-    cfg = _load()
-    return cfg.get("mac_ex_hosts", list(_FALLBACK_MAC_EX_HOSTS))
+    try:
+        from .bestip import preferred
+
+        return list(dict.fromkeys(item["host"] for item in preferred("ex", dialect="mac")))
+    except ValueError:
+        cfg = _load()
+        return cfg.get("mac_ex_hosts", list(_FALLBACK_MAC_EX_HOSTS))
 
 
 def get_best_mac_ex_host() -> str:
@@ -213,8 +310,31 @@ def get_best_mac_ex_host() -> str:
     env = os.environ.get("TDXMAN_MAC_EX_HOST")
     if env:
         return env
+    try:
+        from .bestip import preferred
+
+        endpoints = preferred("ex", dialect="mac")
+        if endpoints:
+            return endpoints[0]["host"]
+    except ValueError:
+        pass
     cfg = _load()
     return cfg.get("best_mac_ex_host", _FALLBACK_MAC_EX_HOSTS[0])
+
+
+def get_best_mac_ex_endpoint() -> tuple[str, int] | None:
+    """Return the preferred MAC-dialect EX endpoint and port."""
+    if os.environ.get("TDXMAN_MAC_EX_HOST"):
+        return None
+    try:
+        from .bestip import preferred
+
+        endpoints = preferred("ex", dialect="mac")
+        if endpoints:
+            return endpoints[0]["host"], endpoints[0]["port"]
+    except ValueError:
+        pass
+    return None
 
 
 def get_port() -> int:

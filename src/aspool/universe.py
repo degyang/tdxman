@@ -77,6 +77,18 @@ def fetch_etf_universe():
     ]
 
 
+def fetch_index_universe():
+    """Fetch the complete live index directories required by the daily index store."""
+    from tdxman.mac.client import MacClient
+
+    from .index_lists import collect
+
+    with MacClient.from_best_host(
+        timeout=10, auto_reconnect=False, heartbeat_interval=0
+    ) as client:
+        return collect(client)
+
+
 @writer
 def _publish_universe(root, entries):
     from .securities import ensure_securities, publish_directory
@@ -122,6 +134,30 @@ def refresh_stock_universe(root: Path):
 
 def refresh_etf_universe(root: Path):
     return _refresh_universe(root, fetch_etf_universe)
+
+
+def refresh_index_universe(root: Path):
+    """Publish the complete dynamic index directory only after all groups are staged."""
+    from .index_lists import BENCHMARK_SYMBOLS
+    from .securities import publish_index_directory
+
+    try:
+        collected, excluded = fetch_index_universe()
+    except Exception:
+        from tdxman.mac.client import MacClient
+
+        MacClient.from_best_host(heartbeat_interval=0)
+        collected, excluded = fetch_index_universe()
+    benchmarks = {f"{code}.{market}" for market, code in BENCHMARK_SYMBOLS}
+    result = publish_index_directory(Path(root), collected["indices"], benchmark_symbols=benchmarks)
+    return {
+        **result,
+        "excluded": excluded,
+        "categories": {
+            category: sum(category in entry["source"] for entry in collected["indices"])
+            for category in ("HY2", "GN", "FG", "ZS")
+        },
+    }
 
 
 def universe_is_stale(root: Path, days: int = 7, asset_type: str | None = None) -> bool:

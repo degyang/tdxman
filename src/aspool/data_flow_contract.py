@@ -21,9 +21,9 @@ class DataFlow:
 DATA_FLOWS = (
     DataFlow(
         "securities",
-        "catalog.duckdb: securities",
-        "TDX current SH/SZ/BJ directory; TDX finance IPO date",
-        "aspool update --type stock; aspool directory --type stock|etf",
+        "catalog.duckdb: securities; index_memberships",
+        "TDX current SH/SZ/BJ stock, ETF, and index directories; TDX finance IPO date",
+        "aspool update --type stock; aspool directory --type stock|etf|index|all",
         "DataPool.read_security_info(); stock update scope",
         "aspool query --dataset securities",
         "routine incremental",
@@ -103,7 +103,7 @@ DATA_FLOWS = (
     DataFlow(
         "index_daily_bars",
         "indices.sqlite: daily_bars",
-        "configured index directory and TDX index K-lines",
+        "catalog active HY2/GN/FG/ZS index directory and TDX index K-lines",
         "aspool update|sync --type index",
         "DataPool.read_index_daily(); DataPool.list_indices()",
         "aspool query --dataset index-bars SYMBOL",

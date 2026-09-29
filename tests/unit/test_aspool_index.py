@@ -118,23 +118,20 @@ def test_index_rejects_source_and_period_before_creating_pool(tmp_path, args):
 
 def test_list_blacklist_sources_and_changes():
     class Client:
-        def get_board_list(self, *args, **kwargs):
-            return pd.DataFrame(
-                [
-                    {"market": 1, "code": "881001", "name": "煤炭"},
-                    {"market": 1, "code": "880000", "name": "昨日涨停"},
-                ]
-            )
+        def get_board_list(self, board_type, *args, **kwargs):
+            rows = [{"market": 1, "code": "881001", "name": "煤炭"}]
+            if board_type.name == "FG":
+                rows.append({"market": 1, "code": "880000", "name": "昨日涨停"})
+            return pd.DataFrame(rows)
 
         def get_stock_quotes_list(self, *args, **kwargs):
             return pd.DataFrame([{"market": 1, "code": "000300", "name": "沪深300"}])
 
-    with patch("aspool.index_lists.COMMON_INDICES", {("SH", "000300")}):
-        result, excluded = collect(Client())
+    result, excluded = collect(Client())
     assert len(result["indices"]) == 2
-    assert len(excluded) == 4
+    assert len(excluded) == 1
     coal = next(r for r in result["indices"] if r["code"] == "881001")
-    assert coal["source"] == ["HY", "HY2", "GN", "FG"]
+    assert coal["source"] == ["HY2", "GN", "FG"]
     assert difference(result, result)["changed"] == []
     renamed = json.loads(json.dumps(result))
     renamed["indices"][0]["name"] = "renamed"

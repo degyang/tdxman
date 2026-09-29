@@ -13,7 +13,7 @@ import pandas as pd
 from .._df import _to_df
 from ..codec.bitmap import Fields, PresetField
 from ..commands.base import BaseCommand
-from ..config import get_best_host, get_mac_hosts, get_port, get_timeout, save_best_host
+from ..config import get_best_mac_endpoint, get_best_mac_host, get_mac_hosts, get_port, get_timeout
 from ..exceptions import TdxConnectionError
 from ..transport.async_ import AsyncTdxConnection
 from ..transport.sync import TdxConnection, ping_mac_all
@@ -143,8 +143,10 @@ class MacClient:
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
     ) -> None:
-        self._host = host if host is not None else get_best_host()
-        self._port = port if port is not None else get_port()
+        endpoint = get_best_mac_endpoint() if host is None and port is None else None
+        preferred_host = endpoint[0] if endpoint else get_best_mac_host()
+        self._host = host if host is not None else preferred_host
+        self._port = port if port is not None else (endpoint[1] if endpoint else get_port())
         self._timeout = timeout if timeout is not None else get_timeout()
         self._auto_reconnect = auto_reconnect
         self._heartbeat_interval = heartbeat_interval
@@ -163,11 +165,11 @@ class MacClient:
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
-        refresh: bool = True,
+        refresh: bool = False,
     ) -> MacClient:
-        """测量所有 MAC 服务器延迟，选最低延迟的建立客户端。自动保存最佳主机。"""
+        """Use the local MAC ranking unless an explicit refresh is requested."""
         if not refresh:
-            return cls(get_best_host(), port, timeout, auto_reconnect, heartbeat_interval)
+            return cls(get_best_mac_host(), port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
             hosts = get_mac_hosts()
         if port is None:
@@ -176,7 +178,6 @@ class MacClient:
             timeout = get_timeout()
         ranked = ping_mac_all(hosts, port, ping_timeout)
         best = ranked[0][0] if ranked else hosts[0]
-        save_best_host(best)
         return cls(best, port, timeout, auto_reconnect, heartbeat_interval)
 
     @staticmethod
@@ -767,8 +768,10 @@ class AsyncMacClient:
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
     ) -> None:
-        self._host = host if host is not None else get_best_host()
-        self._port = port if port is not None else get_port()
+        endpoint = get_best_mac_endpoint() if host is None and port is None else None
+        preferred_host = endpoint[0] if endpoint else get_best_mac_host()
+        self._host = host if host is not None else preferred_host
+        self._port = port if port is not None else (endpoint[1] if endpoint else get_port())
         self._timeout = timeout if timeout is not None else get_timeout()
         self._auto_reconnect = auto_reconnect
         self._heartbeat_interval = heartbeat_interval
@@ -789,11 +792,11 @@ class AsyncMacClient:
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
-        refresh: bool = True,
+        refresh: bool = False,
     ) -> AsyncMacClient:
-        """测量所有 MAC 服务器延迟，选最低延迟的建立客户端。自动保存最佳主机。"""
+        """Use the local MAC ranking unless an explicit refresh is requested."""
         if not refresh:
-            return cls(get_best_host(), port, timeout, auto_reconnect, heartbeat_interval)
+            return cls(get_best_mac_host(), port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
             hosts = get_mac_hosts()
         if port is None:
@@ -802,7 +805,6 @@ class AsyncMacClient:
             timeout = get_timeout()
         ranked = ping_mac_all(hosts, port, ping_timeout)
         best = ranked[0][0] if ranked else hosts[0]
-        save_best_host(best)
         return cls(best, port, timeout, auto_reconnect, heartbeat_interval)
 
     @staticmethod

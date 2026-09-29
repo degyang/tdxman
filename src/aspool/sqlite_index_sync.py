@@ -16,7 +16,7 @@ from tdxman.mac.enums import Adjust, Period
 from tdxman.models.enums import Market
 
 from .fetch import client_factory, fetch_async, fetch_sync
-from .index_lists import atomic_json, load_indices
+from .index_lists import atomic_json
 from .pool import pool_lock
 from .source_retry import EmptySourceResponse
 from .sqlite_index_store import index_connection, last_dates, save_rows
@@ -106,7 +106,12 @@ def sync_indices(
                     ).fetchall()
                     window_start = str(min(row[0] for row in recent)) if recent else None
     started = perf_counter()
-    items = load_indices() if items is None else items
+    if items is None:
+        from .securities import active_indices
+
+        items = active_indices(root)
+        if not items:
+            raise ValueError("指数目录为空，请先运行 aspool directory --type index")
     items = items[:limit] if limit else items
     report = dict(
         run_id=uuid4().hex,

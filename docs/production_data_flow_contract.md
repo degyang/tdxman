@@ -15,6 +15,7 @@
 data/
 ├── catalog.duckdb
 │   ├── securities
+│   ├── index_memberships
 │   ├── security_calendar
 │   └── fundamental_snapshots
 ├── stocks.sqlite
@@ -33,14 +34,14 @@ data/
 
 | 数据块 | 输入 | 写入入口 | 输出 |
 |---|---|---|---|
-| `securities` | TDX 沪深北股票目录、ETF 目录、明确的上市/退市资料 | `update/sync` 自动刷新；`directory` 独立刷新 | 当日预期证券集合、当前名称及有效日期边界 |
+| `securities` / `index_memberships` | TDX 沪深北股票、ETF、HY2/GN/FG/ZS 完整目录 | `update/sync` 自动刷新；`directory` 独立刷新 | 当日预期证券集合、当前名称及指数分类关系 |
 | `security_calendar` | 上证指数日 K 线的实际日期 | 指数 `update/sync` | 市场交易会话轴 |
 | `fundamental_snapshots` | TDX quote 基本面字段 | `fundamentals`；`--type all` 复用/补取当前 quote | 最新股本及估值基础快照 |
 | `stocks.daily_bars` | TDX 当日 quote；TDX/BaoStock 历史 K 线 | 股票 `update/sync` | 未复权股票日线 |
 | `stocks.corporate_actions` | TDX 除权事件 | 股票 `update/sync` | 参考昨收和稀疏复权因子输入 |
 | `stocks.daily_features` | 股票日线、事件、名称/ST、交易状态 | 与股票事实同一事务 | `TRADED/NO_TRADE/MISSING/INVALID`、涨跌停、连板、MA20 |
 | `stocks.market_daily_summary` | 当日逐股事实和派生 | 与股票事实同一事务 | D 公共市场特征及 Regime 输入；W/M 使用同表预留契约 |
-| `indices.daily_bars` | 配置指数目录和 TDX 指数日 K 线 | 指数 `update/sync` | 指数 OHLCVA 和可用的上涨/下跌家数 |
+| `indices.daily_bars` | catalog 当前有效指数目录和 TDX 指数日 K 线 | 指数 `update/sync` | 指数 OHLCVA 和可用的上涨/下跌家数 |
 | `etfs.daily_bars` | 当日 ETF 完整目录和 TDX ETF 日 K 线 | ETF `update/sync` | 未复权 ETF 日线 |
 | `etfs.adjustment_factors` | 已审核迁移源；后续明确的在线因子源 | ops 迁移/维护 | ETF 复权参考；不伪装成已在线更新 |
 
@@ -55,7 +56,7 @@ securities
 ├── symbol          TEXT PRIMARY KEY，例如 000001.SZ
 ├── code            TEXT
 ├── market          TEXT，SH/SZ/BJ
-├── asset_type      TEXT，stock/etf
+├── asset_type      TEXT，stock/etf/index
 ├── name            TEXT，当前名称
 ├── active          BOOLEAN，是否仍在完整当日目录
 ├── listing_date    DATE，可空
@@ -66,6 +67,18 @@ securities
 `listing_date` 用于排除上市前日期及计算新股无涨跌幅限制窗口；`delisting_date` 用于历史有效范围和停止退市后请求。目录遗漏可以改变 `active`，但不能凭一次遗漏填写精确退市日期。删除 `first_seen/last_seen/directory_source/lifecycle_source/refreshed_at`：它们不参与业务，目录观察时间和来源进入外部运行报告。
 
 每次目录必须完整读取对应市场后再发布。任一市场分页失败时，不发布该市场的部分目录。
+
+指数的分类关系独立保存，避免同一指数同时属于多个分类时重复保存日 K：
+
+```text
+index_memberships
+├── symbol          TEXT，关联 securities.symbol
+├── category        TEXT，HY2/GN/FG/ZS/benchmark
+├── active          BOOLEAN
+└── updated_at      TIMESTAMP
+```
+
+指数目录由 `HY2 + GN + FG + ZS` 在线完整目录构成；只在 `FG` 中排除名称以“昨日”开头的临时指数。源端 `999999.SH` 统一规范为 `000001.SH`。ETF 和指数离线补齐读取最近一次成功发布的 catalog 目录，`settings/etf_list.json` 和 `settings/board_index.json` 不参与生产运行选择。
 
 ## 3. 数据状态和闭合验收
 
@@ -121,7 +134,7 @@ aspool sync --type stock --source baostock --status missing \
 
 `update --type all` 与 `sync --type all` 顺序：
 
-1. 完整获取股票和 ETF 目录。
+1. 完整获取股票、ETF 和指数目录。
 2. 用指数 K 线更新指数库并从上证指数日期更新交易日历。
 3. 更新/补齐股票，查询受影响证券的除权事件，原子计算逐股派生和 D 汇总；W/M writer 尚未投产。
 4. 更新/补齐 ETF。

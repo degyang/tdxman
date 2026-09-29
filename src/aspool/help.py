@@ -71,7 +71,7 @@ _REFERENCES: dict[str, HelpRows] = {
         ("--format", "table 或 json"),
     ),
     "aspool directory": (
-        ("--type", "stock（默认）或 etf；刷新对应的证券目录"),
+        ("--type", "stock（默认）、etf、index 或 all；刷新对应的证券目录"),
         ("数据范围", "当前证券目录、待初始化和非活跃代码"),
     ),
     "aspool query": (

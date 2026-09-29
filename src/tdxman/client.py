@@ -34,11 +34,11 @@ from .commands.transaction import GetHistoryTransactionDataCmd, GetTransactionDa
 from .commands.xdxr_info import GetXdxrInfoCmd
 from .config import (
     get_best_host,
+    get_best_standard_endpoint,
     get_calc_hosts,
     get_known_hosts,
     get_port,
     get_timeout,
-    save_best_host,
 )
 from .exceptions import TdxConnectionError, TdxDecodeError
 from .models.bar import SecurityBar
@@ -210,8 +210,9 @@ class TdxClient:
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
     ) -> None:
-        self._host = host if host is not None else get_best_host()
-        self._port = port if port is not None else get_port()
+        endpoint = get_best_standard_endpoint() if host is None and port is None else None
+        self._host = host if host is not None else (endpoint[0] if endpoint else get_best_host())
+        self._port = port if port is not None else (endpoint[1] if endpoint else get_port())
         self._timeout = timeout if timeout is not None else get_timeout()
         self._auto_reconnect = auto_reconnect
         self._heartbeat_interval = heartbeat_interval
@@ -230,13 +231,9 @@ class TdxClient:
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
-        refresh: bool = True,
+        refresh: bool = False,
     ) -> "TdxClient":
-        """测量 hosts 中所有服务器延迟，选最低延迟的建立连接。
-
-        自动将最佳主机保存到 config.json，后续连接默认使用该主机。
-        若所有服务器均不可达，回退到 hosts[0]。
-        """
+        """Use the local standard ranking unless an explicit refresh is requested."""
         if not refresh:
             return cls(get_best_host(), port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
@@ -247,7 +244,6 @@ class TdxClient:
             timeout = get_timeout()
         ranked = ping_all(hosts, port, ping_timeout)
         best = ranked[0][0] if ranked else hosts[0]
-        save_best_host(best)
         return cls(best, port, timeout, auto_reconnect, heartbeat_interval)
 
     @staticmethod
@@ -348,7 +344,6 @@ class TdxClient:
             except (TdxConnectionError, TdxDecodeError) as exc:
                 last_error = exc
             else:
-                save_best_host(host)
                 return result
             finally:
                 candidate.close()
@@ -835,8 +830,9 @@ class AsyncTdxClient:
         auto_reconnect: bool = True,
         heartbeat_interval: float = 60.0,
     ) -> None:
-        self._host = host if host is not None else get_best_host()
-        self._port = port if port is not None else get_port()
+        endpoint = get_best_standard_endpoint() if host is None and port is None else None
+        self._host = host if host is not None else (endpoint[0] if endpoint else get_best_host())
+        self._port = port if port is not None else (endpoint[1] if endpoint else get_port())
         self._timeout = timeout if timeout is not None else get_timeout()
         self._auto_reconnect = auto_reconnect
         self._heartbeat_interval = heartbeat_interval
@@ -853,12 +849,9 @@ class AsyncTdxClient:
         ping_timeout: float = 5.0,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 60.0,
-        refresh: bool = True,
+        refresh: bool = False,
     ) -> "AsyncTdxClient":
-        """测量 hosts 中所有服务器延迟，选最低延迟的建立连接。
-
-        自动将最佳主机保存到 config.json。
-        """
+        """Use the local standard ranking unless an explicit refresh is requested."""
         if not refresh:
             return cls(get_best_host(), port, timeout, auto_reconnect, heartbeat_interval)
         if hosts is None:
@@ -869,7 +862,6 @@ class AsyncTdxClient:
             timeout = get_timeout()
         ranked = ping_all(hosts, port, ping_timeout)
         best = ranked[0][0] if ranked else hosts[0]
-        save_best_host(best)
         return cls(best, port, timeout, auto_reconnect, heartbeat_interval)
 
     @staticmethod

@@ -5,7 +5,7 @@ from __future__ import annotations
 import click
 
 from .. import __version__
-from .cmd_admin import ping, version
+from .cmd_admin import bestip, ping, version
 from .cmd_auction import auction
 from .cmd_board import belong_board, board_list, board_members
 from .cmd_capital import capital_flow
@@ -43,7 +43,7 @@ class TdxmanGroup(click.Group):
             "市场资料与板块",
             ("belong-board", "board-list", "board-members", "server-info"),
         ),
-        ("工具", ("markets", "ping", "version")),
+        ("工具", ("bestip", "markets", "ping", "version")),
     )
 
     def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
@@ -88,6 +88,7 @@ def cli() -> None:
 
 
 cli.add_command(ping)
+cli.add_command(bestip)
 cli.add_command(version)
 cli.add_command(kline)
 cli.add_command(quote)

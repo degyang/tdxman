@@ -25,10 +25,10 @@ FIELDS = (
     "breadth_status",
 )
 DDL = """
-PRAGMA user_version=2;
+PRAGMA user_version=3;
 CREATE TABLE daily_bars (
     symbol TEXT NOT NULL, trade_date TEXT NOT NULL,
-    market TEXT NOT NULL CHECK(market IN ('SH','SZ')), code TEXT NOT NULL,
+    market TEXT NOT NULL CHECK(market IN ('SH','SZ','BJ')), code TEXT NOT NULL,
     name TEXT NOT NULL, open REAL NOT NULL, high REAL NOT NULL,
     low REAL NOT NULL, close REAL NOT NULL, volume REAL NOT NULL, amount REAL NOT NULL,
     up_count INTEGER NOT NULL, down_count INTEGER NOT NULL,
@@ -54,7 +54,7 @@ def index_connection(root, *, read_only=True):
     try:
         conn.execute("PRAGMA cache_size=-32768")
         version = conn.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (1, 2):
+        if version not in (1, 2, 3):
             raise ValueError("Unsupported index schema version")
         if read_only:
             conn.execute("PRAGMA query_only=ON")
@@ -75,7 +75,16 @@ def index_connection(root, *, read_only=True):
                     "WHERE breadth_status <> CASE WHEN up_count+down_count>0 "
                     "THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END"
                 )
-                conn.execute("PRAGMA user_version=2")
+                version = 2
+            if version < 3:
+                conn.execute("DROP INDEX IF EXISTS daily_bars_by_date")
+                conn.execute("ALTER TABLE daily_bars RENAME TO daily_bars_before_bj")
+                conn.executescript(DDL)
+                columns = ",".join(("symbol", *FIELDS, "source", "updated_at"))
+                conn.execute(
+                    f"INSERT INTO daily_bars({columns}) SELECT {columns} FROM daily_bars_before_bj"
+                )
+                conn.execute("DROP TABLE daily_bars_before_bj")
         yield conn
     finally:
         conn.close()

@@ -1,4 +1,4 @@
-"""Manual, reviewable index universe maintenance."""
+"""Live index directory collection for industry, concept, style, and standard indices."""
 
 import json
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 from tdxman.mac.enums import BoardType, Category, SortOrder, SortType
 
 DEFAULT_LIST = Path(__file__).resolve().parents[2] / "settings/board_index.json"
-COMMON_INDICES = {
+BENCHMARK_SYMBOLS = {
     ("SH", "000001"),
     ("SH", "000016"),
     ("SH", "000300"),
@@ -34,7 +34,7 @@ def atomic_json(path, value):
 def collect(client):
     records = {}
     excluded = []
-    for source in ("HY", "HY2", "GN", "FG", "ZS"):
+    for source in ("HY2", "GN", "FG", "ZS"):
         frame = (
             client.get_stock_quotes_list(
                 Category.ZS, count=10000, sort_type=SortType.CODE, sort_order=SortOrder.ASC
@@ -45,36 +45,24 @@ def collect(client):
         if frame.empty:
             raise ValueError(f"{source} 返回空清单，保留原配置")
         for row in frame.to_dict("records"):
-            market = {0: "SZ", 1: "SH"}.get(row["market"])
-            if market is None and source == "ZS":
-                continue
+            market = {0: "SZ", 1: "SH", 2: "BJ"}.get(row.get("market"))
             if market is None:
                 raise ValueError(f"不支持的指数市场: {row['market']}")
-            key = (market, str(row["code"]))
-            if source == "ZS" and key not in COMMON_INDICES:
-                continue
-            if row["name"].startswith("昨日"):
+            code = str(row.get("code", ""))
+            name = str(row.get("name", ""))
+            if len(code) != 6 or not code.isascii() or not code.isdigit() or not name:
+                raise ValueError(f"{source} 返回无效指数身份")
+            # TDX's live standard-index directory exposes Shanghai Composite as 999999.
+            if source == "ZS" and (market, code) == ("SH", "999999"):
+                code = "000001"
+            key = (market, code)
+            if source == "FG" and name.startswith("昨日"):
                 excluded.append({"market": market, "code": key[1], "name": row["name"]})
                 continue
             entry = records.setdefault(
-                key, {"market": market, "code": key[1], "name": row["name"], "source": []}
+                key, {"market": market, "code": key[1], "name": name, "source": []}
             )
             entry["source"].append(source)
-    missing = COMMON_INDICES - records.keys()
-    if missing:
-        # Some servers expose a capped ZS directory. Resolve configured codes explicitly.
-        frame = client.get_stock_quotes([(1 if m == "SH" else 0, c) for m, c in sorted(missing)])
-        for row in frame.to_dict("records"):
-            key = ({0: "SZ", 1: "SH"}[row["market"]], str(row["code"]))
-            if key in missing and row["name"]:
-                records[key] = {
-                    "market": key[0],
-                    "code": key[1],
-                    "name": row["name"],
-                    "source": ["ZS"],
-                }
-        if COMMON_INDICES - records.keys():
-            raise ValueError(f"常用指数缺失: {sorted(COMMON_INDICES - records.keys())}")
     return {
         "schema_version": 1,
         "blacklist_name_prefixes": ["昨日"],
@@ -99,22 +87,8 @@ def difference(old, new):
 
 
 def load_indices(path=DEFAULT_LIST):
+    """Legacy Parquet-only helper; SQLite production sync never calls this function."""
     rows = json.loads(Path(path).read_text())["indices"]
-    seen = set()
-    for row in rows:
-        key = (row["market"], row["code"])
-        if (
-            key in seen
-            or key[0] not in ("SH", "SZ")
-            or len(key[1]) != 6
-            or not key[1].isascii()
-            or not key[1].isdigit()
-            or not row["source"]
-        ):
-            raise ValueError(f"指数清单记录无效或重复: {row}")
-        if row["name"].startswith("昨日"):
-            raise ValueError(f"清单包含黑名单指数: {row}")
-        seen.add(key)
     if not rows:
-        raise ValueError("指数清单为空，请先运行 scripts/maintain_board_lists.py --write")
+        raise ValueError("指数清单为空")
     return rows

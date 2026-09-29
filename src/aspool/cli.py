@@ -248,14 +248,19 @@ def sync(
             raise click.UsageError("指数仅支持 --source tdx --period daily")
         from tdxman.exceptions import TdxError
 
+        from .securities import active_indices
         from .sqlite_index_sync import sync_indices
+        from .universe import refresh_index_universe
 
         try:
+            if tdx_mode == "online":
+                refresh_index_universe(target)
+            items = active_indices(target)
             report, path = sync_indices(target, tdx_mode, async_mode, limit, workers=workers,
                                         retries=retries, retry_delay=retry_delay,
                                         start=start_date.date().isoformat() if start_date else None,
                                         end=end_date.date().isoformat() if end_date else None,
-                                        count=count)
+                                        count=count, items=items)
         except (OSError, ValueError, TdxError) as exc:
             raise click.ClickException(str(exc)) from exc
         successes = report["success"]
@@ -447,10 +452,13 @@ def update(
     if asset_type == "index":
         if source != "tdx" or symbols or start or end or status_filter:
             raise click.UsageError("指数 update 仅支持 TDX K 线")
+        from .securities import active_indices
         from .sqlite_index_sync import sync_indices
+        from .universe import refresh_index_universe
 
+        refresh_index_universe(target)
         report, path = sync_indices(target, workers=workers, limit=limit, retries=retries,
-                                    retry_delay=retry_delay)
+                                    retry_delay=retry_delay, items=active_indices(target))
         click.echo(f"指数 update：{report['status']}；报告：{path}")
         if report["status"] != "ok":
             raise click.ClickException("指数数据未完整更新")
@@ -504,12 +512,14 @@ def _run_all(target, *, mode, limit, workers, retries, retry_delay,
 
     from tdxman.mac.client import MacClient
 
+    from .securities import active_indices
     from .sqlite_directory import publish_directory as publish_stock_directory
     from .sqlite_directory import read_directory
     from .sqlite_etf_sync import online_items, sync_etfs
     from .sqlite_etf_sync import publish_directory as publish_etf_directory
     from .sqlite_index_sync import sync_indices
     from .sqlite_update_cli import SourceSession, run_update
+    from .universe import refresh_index_universe
 
     folder = target.parent / ".local" / "reports"
     folder.mkdir(parents=True, exist_ok=True)
@@ -544,16 +554,19 @@ def _run_all(target, *, mode, limit, workers, retries, retry_delay,
             retries=retries, retry_delay=retry_delay, events=directory_events
         )
         etf_directory = publish_etf_directory(target, etf_items)
+        index_directory = refresh_index_universe(target)
         summary["blocks"]["directory"] = {
             "status": "ok",
             "stocks": len(stock_names),
             "etfs": len(etf_items),
             "etf_changes": etf_directory,
+            "index_changes": index_directory,
             "retries": directory_events,
         }
         window = dict(start=start, end=end, count=count) if mode == "sync" else {}
         index, index_path = sync_indices(target, workers=workers, limit=limit,
-                                         retries=retries, retry_delay=retry_delay, **window)
+                                         retries=retries, retry_delay=retry_delay,
+                                         items=active_indices(target), **window)
         summary["blocks"]["index"] = {"status": index["status"], "report": str(index_path)}
         stock = {}
         run_update(target, report=stock, mode=mode, limit=limit, workers=workers,
@@ -834,26 +847,56 @@ def _legacy_status(root: Path | None) -> None:
 
 @cli.command("directory", cls=AspoolCommand)
 @click.option("--root", type=click.Path(path_type=Path))
-@click.option("--type", "asset_type", type=click.Choice(["stock", "etf"]), default="stock")
+@click.option(
+    "--type", "asset_type", type=click.Choice(["stock", "etf", "index", "all"]), default="stock"
+)
 def directory(root: Path | None, asset_type: str) -> None:
-    """刷新股票或 ETF 证券目录，展示待初始化与非活跃代码。"""
-    from .universe import refresh_etf_universe, refresh_stock_universe
+    """刷新在线证券目录，展示新增与非活跃代码。"""
+    from .universe import refresh_etf_universe, refresh_index_universe, refresh_stock_universe
 
     try:
-        report = (refresh_etf_universe if asset_type == "etf" else refresh_stock_universe)(
-            _root(root)
+        target = _root(root)
+        if asset_type == "index":
+            report = refresh_index_universe(target)
+            click.echo(
+                f"指数目录：{report['listed']} 个；新增 {report['added']} 个；"
+                f"标记非活跃 {report['inactive']} 个；分类 {report['categories']}；"
+                f"排除昨日风格 {len(report['excluded'])} 个"
+            )
+            return
+        refreshers = (
+            [("stock", refresh_stock_universe), ("etf", refresh_etf_universe),
+             ("index", refresh_index_universe)]
+            if asset_type == "all"
+            else [
+                (
+                    asset_type,
+                    refresh_etf_universe if asset_type == "etf" else refresh_stock_universe,
+                )
+            ]
         )
+        reports = [(kind, refresh(target)) for kind, refresh in refreshers]
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
-    click.echo(
-        f"证券目录：{report['listed']} 个；待初始化 {len(report['added'])} 个；"
-        f"标记非活跃 {report['inactive']} 个；重新活跃 {len(report['reactivated'])} 个"
-    )
+    for kind, report in reports:
+        if kind == "index":
+            click.echo(
+                f"指数目录：{report['listed']} 个；新增 {report['added']} 个；"
+                f"标记非活跃 {report['inactive']} 个；分类 {report['categories']}；"
+                f"排除昨日风格 {len(report['excluded'])} 个"
+            )
+            continue
+        click.echo(
+            f"{kind} 目录：{report['listed']} 个；待初始化 {len(report['added'])} 个；"
+            f"标记非活跃 {report['inactive']} 个；重新活跃 {len(report['reactivated'])} 个"
+        )
 
 
 @cli.command("universe", cls=AspoolCommand, hidden=True)
 @click.option("--root", type=click.Path(path_type=Path))
-@click.option("--type", "asset_type", type=click.Choice(["stock", "etf"]), default="stock")
+@click.option(
+    "--type", "asset_type", type=click.Choice(["stock", "etf", "index", "all"]), default="stock"
+)
 def universe_alias(root: Path | None, asset_type: str) -> None:
     """Compatibility alias for directory."""
     from click import Context
