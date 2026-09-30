@@ -574,7 +574,7 @@ Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](do
 数据域分层需求与物理设计见
 [数据域分层需求](docs/design/data_platform_v2_requirements.md)和
 [数据域分层设计](docs/design/data_platform_v2_design.md)。当前已提供可恢复的影子迁移、核验和显式激活，
-执行状态见 [数据域分层实施记录](docs/achievements/platform_v2_execution.md)；生产运行方式仍以
+执行状态见 [数据域分层实施记录](docs/implements/platform_v2_execution.md)；生产运行方式仍以
 [生产数据流契约](docs/design/production_data_flow_contract.md)为准。
 新版项目数据统一位于 `data/`：股票使用 `stocks.sqlite`，指数使用独立的
 `indices.sqlite`，ETF 使用 `etfs.sqlite`；分层布局另使用 `fundamentals.sqlite`、

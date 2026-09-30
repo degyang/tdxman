@@ -1,7 +1,7 @@
 # asPool 数据域分层需求
 
 日期：2026-09-29。状态：实施中。影子迁移、基本面分库、同步窗口和兼容读取已实现，实际进度见
-[实施记录](../achievements/platform_v2_execution.md)。当前生产结构与可用命令仍以
+[实施记录](../implements/platform_v2_execution.md)。当前生产结构与可用命令仍以
 [生产数据流契约](production_data_flow_contract.md)为准；本文冻结下一阶段的数据边界和验收口径，
 尚未通过激活门槛的目标能力不描述成已经上线。
 
