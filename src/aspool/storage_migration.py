@@ -285,6 +285,8 @@ def consolidate_storage(root, *, recovery):
 
 def restore_migration(root, *, recovery):
     """Restore the complete verified pool after a failed migration, never route around it."""
+    from .change_protocol import _sync_directory
+
     root, recovery = Path(root).resolve(), Path(recovery).resolve()
     with pool_lock(root, write=True):
         path = migration_path(root)
@@ -302,6 +304,8 @@ def restore_migration(root, *, recovery):
             temporary.replace(root / name)
             for suffix in ("-wal", "-shm"):
                 (root / (name + suffix)).unlink(missing_ok=True)
+        # Persist replacement names and retired WALs before removing the gate.
+        _sync_directory(root)
         verify_recovery(root, recovery)
         durable_remove(path)
     return {"restored": True, "root": str(root), "recovery": str(recovery), "layout": 2}
