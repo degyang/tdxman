@@ -1510,3 +1510,33 @@ def _render_query(table, fmt: str) -> None:
                     str(row.get(column, "")).ljust(width) for column, width in zip(columns, widths)
                 )
             )
+
+
+@cli.command("factors-bootstrap", cls=AspoolCommand)
+@click.option("--root", type=click.Path(path_type=Path))
+@click.option("--as-of", type=click.DateTime(formats=["%Y-%m-%d"]))
+@click.option("--symbol", "symbols", multiple=True)
+@click.option("--maintenance", is_flag=True, help="显式初始化最多 200 个标的的完整上市历史。")
+def factors_bootstrap(root, as_of, symbols, maintenance):
+    """校验除权事件及前后复权行情，初始化缺失的因子和 MA20。"""
+    from .sqlite_factor_bootstrap import bootstrap_factors
+
+    result = bootstrap_factors(
+        _root(root),
+        as_of=as_of.date().isoformat() if as_of else None,
+        symbols=symbols,
+        maintenance=maintenance,
+    )
+    from datetime import datetime, timezone
+
+    from .index_lists import atomic_json
+
+    result["status"] = "partial" if result["failed"] or result["deferred"] else "ok"
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    report = _root(root).parent / ".local/reports/factor-bootstrap" / (stamp + ".json")
+    report.parent.mkdir(parents=True, exist_ok=True)
+    atomic_json(report, result)
+    click.echo(json.dumps(result, ensure_ascii=False))
+    click.echo(f"报告：{report}")
+    if result["failed"] or result["deferred"]:
+        raise click.ClickException("部分因子初始化尚未完成，详见 failed/deferred。")

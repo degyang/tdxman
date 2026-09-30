@@ -71,6 +71,13 @@ _REFERENCES: dict[str, HelpRows] = {
             "prepare/activate/reconcile/rollback 仅用于旧布局",
         ),
     ),
+    "aspool factors-bootstrap": (
+        ("--root", "明确指定数据池；只初始化没有因子和锚点的股票"),
+        ("--as-of", "截至已确认交易日；默认目录交易日历的最后开市日"),
+        ("--symbol", "可重复指定，便于有界维护"),
+        ("--maintenance", "显式历史维护；默认仅接纳最多 60 行的新上市历史"),
+        ("证据", "完整上市事件链与未复权/前复权/后复权 OHLC 一致；失败保留缺失"),
+    ),
     "aspool status": (
         ("--dataset", "检查全部或指定生产数据块；不触发写入"),
         ("--format", "table 或 json"),

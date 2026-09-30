@@ -19,6 +19,7 @@ def test_pipeline_keeps_data_dependencies_in_operational_order(tmp_path):
     assert [stage.name for stage in stages] == [
         "directory",
         "stock_update",
+        "factor_bootstrap",
         "index_update",
         "etf_update",
         "fundamentals",
@@ -138,6 +139,10 @@ def test_pipeline_preserves_partial_receipts_and_runs_independent_stages(tmp_pat
         calls.append(command[:3])
         if command[0] == "directory":
             return subprocess.CompletedProcess(command, 0, "directory ok")
+        if command[0] == "factors-bootstrap":
+            path = tmp_path / "bootstrap.json"
+            path.write_text(json.dumps({"status": "ok"}))
+            return subprocess.CompletedProcess(command, 0, f"报告：{path}\n")
         partial = command[2] in ("stock", "index")
         path = tmp_path / f"{command[2]}.json"
         path.write_text(
@@ -156,12 +161,19 @@ def test_pipeline_preserves_partial_receipts_and_runs_independent_stages(tmp_pat
 
     monkeypatch.setattr(MODULE, "run_command", run)
     assert MODULE.main(["--root", str(tmp_path / "data")]) == 1
-    assert [c[2] for c in calls] == ["all", "stock", "index", "etf", "--root"]
+    assert [c[2] for c in calls] == [
+        "all",
+        "stock",
+        str(tmp_path / "data"),
+        "index",
+        "etf",
+        "--root",
+    ]
     report = json.loads(
         next((tmp_path / ".local/reports/daily-pipeline").glob("*.json")).read_text()
     )
     assert report["status"] == "partial"
-    assert [s["status"] for s in report["stages"]] == ["ok", "partial", "partial", "ok", "ok"]
+    assert [s["status"] for s in report["stages"]] == ["ok", "partial", "ok", "partial", "ok", "ok"]
     assert report["stages"][1]["source_counts"]["factor_failed"] == 1
     assert report["elapsed_ms"] >= 0
     assert report["audit_elapsed_ms"] >= 0

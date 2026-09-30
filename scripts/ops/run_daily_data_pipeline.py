@@ -61,6 +61,11 @@ def pipeline_stages(root: Path, *, workers: int) -> list[Stage]:
             "写入当日未复权 quote 与直接派生，再逐证券处理除权事件和因子后缀",
         ),
         Stage(
+            "factor_bootstrap",
+            ("factors-bootstrap", "--root", str(root)),
+            "验证新上市股票的完整事件链并初始化缺失因子（最多 60 行/证券）",
+        ),
+        Stage(
             "index_update",
             ("update", "--type", "index", *common),
             "以指数日 K 更新交易日历和指数原始行情",

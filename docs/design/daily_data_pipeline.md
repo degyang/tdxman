@@ -27,10 +27,11 @@ bash scripts/ops/run_daily_data_pipeline.sh --root /path/to/data
 1. 刷新股票、ETF、指数目录；目录是后续请求的唯一有效集合。
 2. `update --type stock` 写入当日未复权 quote 日线及来源量比、换手率。
 3. 股票 `update` 先提交已验证的原始行情、交易状态和可计算派生；再逐证券更新近期公司行为和因子后缀。因子失败不撤销合法行情，依赖因子的 MA20/广度样本保持缺失并记录原因。
-4. `update --type index` 更新指数日 K 和交易日历。
-5. `update --type etf` 更新 ETF 未复权日线；源端确认无交易时保留 `NO_TRADE`。
-6. 每天刷新最新财报与股东人数快照。它不是历史财务回填；`--with-fundamentals` 仅保留为兼容旧调度的无操作参数。
-7. 读取 `aspool contract --format json` 与 `aspool status --format json`，按目标交易日比较当前有效股票集合、派生集合、因子覆盖和市场汇总；不能只比较最大日期或行数。
+4. `factors-bootstrap` 以完整当前上市事件链和三种复权行情验证新股，初始化缺失因子及 MA20；默认每只最多 60 行、每批最多 32 只，旧历史只报告待维护。
+5. `update --type index` 更新指数日 K 和交易日历。
+6. `update --type etf` 更新 ETF 未复权日线；源端确认无交易时保留 `NO_TRADE`。
+7. 每天刷新最新财报与股东人数快照。它不是历史财务回填；`--with-fundamentals` 仅保留为兼容旧调度的无操作参数。
+8. 读取 `aspool contract --format json` 与 `aspool status --format json`，按目标交易日比较当前有效股票集合、派生集合、因子覆盖和市场汇总；不能只比较最大日期或行数。
 
 流水线汇总各阶段的持久化子报告：单证券失败把该阶段标为 `partial` 而不是 `failed`，
 后续独立阶段继续运行，但整个运行的最终状态为 `partial`。`factor_unavailable`
@@ -53,7 +54,35 @@ WAL 保持有界；已经提交的批次可在中断后直接复用。
 迁移中断使用 `aspool platform restore --root data --recovery <池外已验证恢复点>`。
 旧布局 2 的 `reconcile` 仅用于迁移前的旧镜像恢复，不是布局 3 的维护入口。
 
-复权、Enriched 和 Regime 公共输入没有额外独立命令。每只证券的因子与受影响派生保持原子更新；全市场截面是否完整由最后的目标日验收决定。Fundwise 的模型评分、周期阶段和缓存更新仍由 Fundwise 触发，公开接口保持不变。
+已建立因子的后缀、Enriched 和 Regime 公共输入由日更维护。缺失因子的初始化有独立 `factors-bootstrap` 入口。每只证券的因子与受影响派生保持原子更新；全市场截面是否完整由最后的目标日验收决定。Fundwise 的模型评分、周期阶段和缓存更新仍由 Fundwise 触发，公开接口保持不变。
+
+## 缺失股票因子初始化
+
+```bash
+# 日常路径自动执行；只接纳完整的短上市历史。
+aspool factors-bootstrap --root data
+
+# 显式历史维护：最多 200 只、累计 100,000 行，每只少于 2,000 行。
+aspool factors-bootstrap --root data --maintenance --as-of 2026-09-30 --symbol 001232.SZ
+```
+
+初始化只处理没有因子和外部锚点的股票。目录上市日须与源端证券身份及 IPO 日期一致，
+未复权、前复权和后复权行情必须有相同日期轴，完整覆盖该上市日至指定交易日。
+SDK 除权金额按每股处理，排除上市前和目标日以后的事件；不支持的价格调整类别、
+同日多价格事件、缺失前收、行情截断或本地原始价格差异均拒绝发布。
+空事件响应还须通过财务身份确认和两种复权行情验证，不能单凭空响应补 1。
+
+完整证据链允许将上市基准设为 1，随后按 `前收盘 / 除权参考价` 累乘，
+比例复权时基准尺度消去。TDX 的仿射复权 OHLC 用于验证事件完整性；
+公开 `qfq/hfq` 仍使用累计因子的既有比例口径，不声称与 TDX 仿射价格逐点相同。
+北交所 MA20 沿用当前派生契约保持空值；不足 20 个有效交易样本也保持空值。
+
+证据（含三种 OHLC、事件、范围和 SHA-256）及操作报告留在池外
+`.local/reports/factor-bootstrap/`。因子及其来源证明仍只写 `adjustments.sqlite`，
+事件只写 `stocks.sqlite`，MA20 与受影响日汇总只写 `features.sqlite`。
+每个初始化批次通过共同持久化发布机制提交；异常恢复使用同一 `platform recover`。
+重跑发现已有因子后跳过网络和业务写入。历史维护预算与正常日更预算分离，
+不会因为初始化自动改写已有因子，也不会隐式修补原始行情。
 
 ## 尾部缺口修补
 

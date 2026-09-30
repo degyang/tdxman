@@ -49,7 +49,7 @@ def canonical_operation(conn, operation):
     if not isinstance(conn, CanonicalConnection):
         yield
         return
-    if operation not in {"daily_update", "summary_repair", "summary_recompute"}:
+    if operation not in {"daily_update", "summary_repair", "summary_recompute", "factor_bootstrap"}:
         raise ValueError("Unknown canonical writer")
     previous = getattr(conn, "_operation", None)
     conn._operation = operation
