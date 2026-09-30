@@ -40,7 +40,7 @@ aspool `enrichment.py:473` 还请求补齐起点前 120 个自然日的限价重
 ## 本次重新观测
 
 观测时间：2026-09-27 00:34:55（Asia/Shanghai）。
-原始结果与候选路径见 [20260927-observation.json](evidence/data-retention/20260927-observation.json)。
+原始结果与候选路径见 [20260927-observation.json](../evidence/data-retention/20260927-observation.json)。
 
 - 公开限价覆盖：2021-05-27—2026-09-24，共 1,296 日，规则版本均为 v8。
 - stale：605 日，2024-04-01—2026-09-24。这是本轮重新查询结果，不是沿用 2026-09-25 数值。
@@ -110,7 +110,7 @@ v7 导出约 2 MiB。此数字是旧文件体积上限，不是承诺的净释�
 完成后核对原始行情/指数文件指纹、生产数据库及发布/stale 状态未改变，并小范围验证公开读取。
 清理必须与补数、重算分开记录，避免将数据修复造成的状态变化归因于删除报表。
 
-后续执行纳入 [数据整治落地推进方案](../achievements/remediation_execution_plan.md) 的 DG-00、DG-04 和 DG-08；本文件继续保存逐对象保留依据，任务状态以推进方案为准。
+后续执行纳入 [数据整治落地推进方案](../achievements/../achievements/remediation_execution_plan.md) 的 DG-00、DG-04 和 DG-08；本文件继续保存逐对象保留依据，任务状态以推进方案为准。
 
 ## DG-01 变更链的保留边界
 

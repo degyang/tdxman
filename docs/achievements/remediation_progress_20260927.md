@@ -36,10 +36,10 @@ with pool_lock(lab_root, write=True):
 
 ## 验证与证据
 
-- [基线核验](evidence/data-remediation/20260927-dg00/baseline-verification.json)：源与快照一致，没有生产写入、补数、迁移或清理。
-- [真实样本隔离验证](evidence/data-remediation/20260927-dg01/delta-probe.json)：8 只股票，各修订末日 amount 一元；校验其他全部物理字段不变、公开读取成功、来源文件哈希不变；回放同样输入为零变化/零重写。
+- [基线核验](../evidence/data-remediation/20260927-dg00/baseline-verification.json)：源与快照一致，没有生产写入、补数、迁移或清理。
+- [真实样本隔离验证](../evidence/data-remediation/20260927-dg01/delta-probe.json)：8 只股票，各修订末日 amount 一元；校验其他全部物理字段不变、公开读取成功、来源文件哈希不变；回放同样输入为零变化/零重写。
 - 实验反映旧后端的结构限制：8 行变化仍需读取和重写 44,881 行，约 5,610 倍行重写放大。无变化回放仍读 44,881 行。工程修复消除了无效写入，尚未消除历史读取和有效修订时的整文件重写。
-- 测试结果和范围见 [validation.json](evidence/data-remediation/20260927-dg01/validation.json)。新增覆盖字段差异、NULL/False/数值类型、无变化回放、失效起点、失败替换、空来源、离线入口、ETF 隔离、生命周期补入与已有指标失效。
+- 测试结果和范围见 [validation.json](../evidence/data-remediation/20260927-dg01/validation.json)。新增覆盖字段差异、NULL/False/数值类型、无变化回放、失效起点、失败替换、空来源、离线入口、ETF 隔离、生命周期补入与已有指标失效。
 
 全量 unit suite 的 4 个已有失败已在 `5083dbb` 复现：`test_stock_default_still_uses_existing_pipeline` 缺少当前默认补齐流程所需的日历；`test_main_board_st`、ST 单日样例子测试、`test_compute_price_limits_for_stocks` 的预期未指定旧规则日期。它们没有通过改业务口径规避，也没有作为本轮通过项。此次没有重跑五年 RSS 验收、网络补数或生产恢复演练。
 
@@ -50,4 +50,4 @@ with pool_lock(lab_root, write=True):
 3. 现有离线/quote 路径虽复用幂等 merge，尚未全部持久化字段明细与成本；增量版本、锁等待、进程 RSS、计算/缓存失效和临时空间需按任务统一记录。
 4. 分年更新仍可能重读全部分区刷新 coverage；跨年滚动依赖、全部消费者兼容应在 DG-02 统一入口验收。此次未普遍分区、引入候选库或切换后端。
 
-下一包先补齐这些 DG-01 项，再按 [推进方案](remediation_execution_plan.md) 进入 DG-02。`reports/changes` 中仍被未结任务引用的证据须保留；清理政策不能把它们当普通可再生统计报告一律删除。
+下一包先补齐这些 DG-01 项，再按 [推进方案](../achievements/remediation_execution_plan.md) 进入 DG-02。`reports/changes` 中仍被未结任务引用的证据须保留；清理政策不能把它们当普通可再生统计报告一律删除。

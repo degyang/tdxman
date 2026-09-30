@@ -1,8 +1,8 @@
 # Orca 配合 Aspool 整改的执行约定
 
-日期：2026-09-27。适用范围：Windows Orca + Ubuntu-24.04 WSL 中的 tdxman 开发与隔离验证。整改依赖及验收以 [推进方案](remediation_execution_plan.md) 为准。
+日期：2026-09-27。适用范围：Windows Orca + Ubuntu-24.04 WSL 中的 tdxman 开发与隔离验证。整改依赖及验收以 [推进方案](../achievements/remediation_execution_plan.md) 为准。
 
-当前执行更新：本轮已实际完成四个受监督 Orca worker 任务，并将 DG-01/DG-02 集成 main；模型/effort 均核验且不高于 high。任务、证据复用、终端保留原因和下一工作包见 [集成记录](remediation_integration_20260927.md)。下文工具链准备阶段的“尚未启动”描述保留为历史验证边界，不代表当前运行状态。
+当前执行更新：本轮已实际完成四个受监督 Orca worker 任务，并将 DG-01/DG-02 集成 main；模型/effort 均核验且不高于 high。任务、证据复用、终端保留原因和下一工作包见 [集成记录](../achievements/remediation_integration_20260927.md)。下文工具链准备阶段的“尚未启动”描述保留为历史验证边界，不代表当前运行状态。
 
 ## 1. 已验证的工具链（准备阶段记录）
 
@@ -14,7 +14,7 @@
 - 终端执行验证得到 `platform=linux`、`WSL_DISTRO_NAME=Ubuntu-24.04`、`ORCA_CLI_COMMAND=orca-ide`；Git、Python、Codex 来自 WSL，Codex CLI 为 0.157.1。终端指令的实际完成由输出及结果文件核验，未把 `accepted=true` 当作执行成功。
 - 临时工作区没有 `.venv`，也没有继承主工作区尚未跟踪的整改方案。正式使用前必须保存代码基线并初始化环境。
 
-详细结果及验证边界见 [verification.json](evidence/orca-toolchain/20260927/verification.json)。本轮未测试 agent 登录/模型调用、多 agent 调度、生产数据写入或候选后端。
+详细结果及验证边界见 [verification.json](../evidence/orca-toolchain/20260927/verification.json)。本轮未测试 agent 登录/模型调用、多 agent 调度、生产数据写入或候选后端。
 
 ## 2. 工作区与数据边界
 

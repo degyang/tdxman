@@ -19,7 +19,7 @@ aspool 是 A 股长期数据池，保存全市场未复权日线、可选分钟�
 `symbol`、`market`、`code`、`date`、OHLC、`volume`、`amount`、`turnover_rate`，以及主库
 保存的名称、昨收、量比、涨跌幅、振幅、ST 状态、股本、市值、PE、PB。基本面快照
 是内部维护数据，不属于 Fundwise API。契约 2 支持 fields 投影、describe 能力目录和公开错误码；
-完整接口与回测扩展需求见 [aspool API](aspool_api.md)。不可变版本、交易日历、历史证券状态和
+完整接口与回测扩展需求见 [aspool API](../design/aspool_api.md)。不可变版本、交易日历、历史证券状态和
 严格时点查询尚未实现，主库历史日期不代表具有历史可知时间保证。
 
 ## 命令语义

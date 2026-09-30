@@ -55,7 +55,7 @@ coverage 的实际 extent/count 来自各文件 footer，并随每次实际发�
 
 五年窗口 2021-09-24～2026-09-24，1213 个已发布会话、261 个检查窗口、258 批，82,772 条事件全部逐批精确比对，30 条金额独立样本一致，NULL 金额 0，最大批 1004 行。耗时 **71.178 秒**，进程 highwater **298,508,288 字节（约 285 MiB）**，小于 2 GiB；无 swap/spill，结束 fd=4/线程=21，与开始相同。发布来源摘要及源码指纹前后不变。金额的独立精确比对是 30 个样本，不称为全部金额逐行审计。
 
-最终完整套件与五年 P0 结果见 [validation.json](evidence/data-remediation/20260927-dg02/validation.json)、[单元日志](evidence/data-remediation/20260927-dg02/unit.log) 和 [五年基准](evidence/data-remediation/20260927-dg02/p0-five-year.json)。该摘要记录源码指纹、实际提交、独立 `.venv`、明确数据根、命令、结果及限制；成功证据在交接时复用，不因合并或所有权转移重跑。
+最终完整套件与五年 P0 结果见 [validation.json](../evidence/data-remediation/20260927-dg02/validation.json)、[单元日志](../evidence/data-remediation/20260927-dg02/unit.log) 和 [五年基准](../evidence/data-remediation/20260927-dg02/p0-five-year.json)。该摘要记录源码指纹、实际提交、独立 `.venv`、明确数据根、命令、结果及限制；成功证据在交接时复用，不因合并或所有权转移重跑。
 
 新增 26 个参数化/专项测试覆盖 legacy 与 multi-year 的公开日线/research、ETF、指数隔离、稀疏事件金额、事实覆盖、缺失选择、导入重跑、repair/enrichment、CLI、混存拒绝、字段裁剪后的值校验、lookback 前重复校验、稀疏跨年滚动依赖、冷年份解码禁令、footer 替换/无统计回退和诊断计数。已有 `test_daily_remediation` 的跨年等值与第二分区失败回归一起通过 47 项。初始小范围回归中的 11 个金额失败揭示普通 relation view 不适用于只读 catalog，修复后受影响金额测试通过；新 fixture 曾漏填 batches 必填计数，补齐后通过，不把试验失败隐去。
 

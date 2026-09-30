@@ -6,9 +6,9 @@
 
 已验证快照：`/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot`；清单与完整恢复副本在同级目录。清单 SHA-256：`123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b`。
 
-[原始演练](evidence/data-remediation/20260927/baseline.json)包含 catalog + lake 全部 13,742 文件、2,702,716,946 字节，独立复制后逐文件哈希、股票/ETF/指数/限价/证券事实公开接口核验。全量恢复与校验 10.349 秒，指定证券文件恢复与校验 2.636 秒；仅一次本机热缓存观测，非 P95、故障发现时间或生产停机承诺。
+[原始演练](../evidence/data-remediation/20260927/baseline.json)包含 catalog + lake 全部 13,742 文件、2,702,716,946 字节，独立复制后逐文件哈希、股票/ETF/指数/限价/证券事实公开接口核验。全量恢复与校验 10.349 秒，指定证券文件恢复与校验 2.636 秒；仅一次本机热缓存观测，非 P95、故障发现时间或生产停机承诺。
 
-[本次复核](evidence/data-remediation/20260927-dg00/baseline-verification.json)使用 [只读核验脚本](../scripts/aspool_verify_baseline.py) 比对快照、生产池与既有清单，没有为补文档重新复制全池。此全量哈希是一次整改检查点，不放入日常更新或 Fundwise 缓存检查。
+[本次复核](../evidence/data-remediation/20260927-dg00/baseline-verification.json)使用 [只读核验脚本](../../scripts/aspool_verify_baseline.py) 比对快照、生产池与既有清单，没有为补文档重新复制全池。此全量哈希是一次整改检查点，不放入日常更新或 Fundwise 缓存检查。
 
 范围：数据库和 lake 中日线、指数、ETF、日期事实、派生及其他已有数据。reports 留在原池，未纳入此快照；既有冲突报告和旧日线/v7 证据不能因此删除。这个副本与源同机，不能抵御主机/磁盘损坏。
 

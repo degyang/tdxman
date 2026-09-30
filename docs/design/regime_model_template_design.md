@@ -29,7 +29,7 @@ asPool 计算可复用的市场特征；Fundwise 保存模型模板并运行评�
 | missing_policy | 输入缺失返回不可评分或明确的局部评分，不默认填 0 或 50 |
 | output_fields | 分数、子分、状态、使用的频率/范围、输入截止日和必要解释 |
 
-本轮已补充[完整模板样例](design/market_four_dimensions.v1.json)及[详细字段/接口设计](sqlite_stock_requirements_design.md)。样例以 JSON 保存，可作为 YAML 子集加载；包括全部输入映射、单位校验、四维权重/归一化、状态阈值、NULL 策略和 D/W/M 定义，不再引用未定义的 weekly_v1/monthly_v1 参数集。
+本轮已补充[完整模板样例](market_four_dimensions.v1.json)及[详细字段/接口设计](sqlite_stock_requirements_design.md)。样例以 JSON 保存，可作为 YAML 子集加载；包括全部输入映射、单位校验、四维权重/归一化、状态阈值、NULL 策略和 D/W/M 定义，不再引用未定义的 weekly_v1/monthly_v1 参数集。
 
 D 公式来自当前 Fundwise score_market。W/M 使用每日涨跌比例的样本加权、每日收益中位数的均值、涨停日均人数、周期封板比例和期末高度/MA20；指数使用真实周期收益。显式沿用 D 阈值，标 experimental_uncalibrated。原生周期收益的中位数另有 period_median_return，不与日中位数均值混用。第二模板在 S4 通过改变权重验证共享输入；本轮不提前复制一套几乎相同的生产模板。
 

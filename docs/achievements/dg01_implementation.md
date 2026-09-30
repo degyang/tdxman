@@ -73,7 +73,7 @@ catalog-only 四类事实在同一 DuckDB 事务内完成变更、逐行旧/新�
 
 实现提交为 `c3c45f96c05c343fab86ca090b9395dcbf63a0ef`。最终完整离线 **617 passed、4 skipped、18 subtests passed，144.88 秒**；两项市场网络默认关闭、两项外部 tick_stock_panel host 未提供，均沿用首批明确跳过边界。22 个本轮 Python 实施/测试文件加离线保护器的 scoped lint 通过，5 个选定文件格式检查通过。真实样本修正实际 1 行（0.220 秒），重放 0 行（0.051 秒），源快照未变。
 
-最终数字、代码提交、输入/版本指纹及命令保存在 [验收摘要](evidence/data-remediation/20260927-dg01-complete/validation.json)。完整离线日志、scoped lint、身份、真实样本与格式检查同目录；所有实验数据写入位于 `/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/` 下显式独立根，最终全套使用唯一 `final-independent` 根。离线保护器复用首批已验证 audit，禁止当前 Python 进程外部 socket 与生产/恢复根写；不宣称它覆盖 native 库或子进程的 OS 沙箱，子进程故障/锁测试使用明确小型实验根且代码无网络获取。
+最终数字、代码提交、输入/版本指纹及命令保存在 [验收摘要](../evidence/data-remediation/20260927-dg01-complete/validation.json)。完整离线日志、scoped lint、身份、真实样本与格式检查同目录；所有实验数据写入位于 `/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/` 下显式独立根，最终全套使用唯一 `final-independent` 根。离线保护器复用首批已验证 audit，禁止当前 Python 进程外部 socket 与生产/恢复根写；不宣称它覆盖 native 库或子进程的 OS 沙箱，子进程故障/锁测试使用明确小型实验根且代码无网络获取。
 
 开发验证出现 writer 新增重复键拒绝与读端故意制造坏文件 fixture 的冲突，已让坏样本直接写 Parquet，保留原全部读端断言，并新增 writer 重复拒绝。较早全套复用临时目录且出现状态缺失，单项独立重现通过；它们不作最终验收，最终串行独立根重跑。旧首批失败日志的行尾空白不改，diff/format 检查仅声明本轮明确代码/测试/文档范围。
 

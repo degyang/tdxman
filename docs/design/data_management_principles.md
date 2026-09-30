@@ -33,7 +33,7 @@
 
 Fundwise 路径以上均相对于 `/mnt/d/Workstation/Projects/fundwise`。这是一份代码检查，不是本轮端到端性能测量。
 
-已有 [数据观测](evidence/data-retention/20260927-observation.json) 在 2026-09-27 00:34:55（上海时间）记录：限价覆盖 1,296 日，其中 605 日 stale；这不证明所有基础字段、交易会话和证券覆盖均完整。`v8` 是规则版本，不能唯一标识整个数据池的某次快照。
+已有 [数据观测](../evidence/data-retention/20260927-observation.json) 在 2026-09-27 00:34:55（上海时间）记录：限价覆盖 1,296 日，其中 605 日 stale；这不证明所有基础字段、交易会话和证券覆盖均完整。`v8` 是规则版本，不能唯一标识整个数据池的某次快照。
 
 ## 3. 首先分开五种粒度
 
@@ -118,7 +118,7 @@ Fundwise 当前用全池文件指纹作为保守变化提示，在缺少上游�
 
 DuckDB 文档强调 Parquet 文件和 row group 大小会影响并行、裁剪与开销；分区过多也会产生昂贵的小文件管理成本。它给出的通用分析负载尺寸建议不应直接变成本项目的硬门槛。[DuckDB 文件格式性能](https://duckdb.org/docs/current/guides/performance/file_formats)、[DuckDB 分区写入](https://duckdb.org/docs/current/data/partitioning/partitioned_writes)
 
-本次 [文件大小观测](evidence/data-retention/20260927-file-sizes.json) 为 7,288 个日线文件，逻辑体积约 1,513.87 MiB，平均约 212.71 KiB、中位数约 170.62 KiB，最大约 0.58 MiB。它们已经很小。机械地再按“证券 × 年/月/日”拆分，可能减少局部重写，同时增加文件打开、扫描、备份和迁移复杂度。
+本次 [文件大小观测](../evidence/data-retention/20260927-file-sizes.json) 为 7,288 个日线文件，逻辑体积约 1,513.87 MiB，平均约 212.71 KiB、中位数约 170.62 KiB，最大约 0.58 MiB。它们已经很小。机械地再按“证券 × 年/月/日”拆分，可能减少局部重写，同时增加文件打开、扫描、备份和迁移复杂度。
 
 | 候选方式 | 优点 | 成本与采用条件 |
 |---|---|---|
@@ -215,4 +215,4 @@ P0 的五年读取峰值 RSS ≤ 2 GiB 是特定读取链路的验收，不自�
 
 关联文档：[Regime 数据保留方案](regime_data_retention_plan.md)。该方案中的固定观察天数和单基线建议以本文更严格的恢复条件为准。本文已完成资料与代码核对；未实施上述系统改造，未重新执行性能或恢复验收。
 
-工程推进与执行状态见 [数据整治落地推进方案](../achievements/remediation_execution_plan.md)；本文保留原则与研究依据。
+工程推进与执行状态见 [数据整治落地推进方案](../achievements/../achievements/remediation_execution_plan.md)；本文保留原则与研究依据。

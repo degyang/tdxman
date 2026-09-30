@@ -2,7 +2,7 @@
 
 日期：2026-09-28。状态：四表迁移、日派生及显式新根公开接口已实现；尚未生产切换。周/月和多模型执行待实现。进展见[FW-04](../achievements/fw04_sqlite_public_api_execution.md)。审核结论见[审核记录](sqlite_design_review.md)。
 
-这是[实施计划](sqlite_four_table_implementation_plan.md)的详细规格。范围为 tdxman/aspool 股票域及 Fundwise 消费接口；不改 ETF、指数、分钟的现有存储。此前评估中未确定的字段和算法，以本文及 [DDL](design/stocks_schema.sql)为本轮细化结果。业务库只有四表，不增加批次、发布、覆盖、异常、任务或模型结果表。
+这是[实施计划](sqlite_four_table_implementation_plan.md)的详细规格。范围为 tdxman/aspool 股票域及 Fundwise 消费接口；不改 ETF、指数、分钟的现有存储。此前评估中未确定的字段和算法，以本文及 [DDL](stocks_schema.sql)为本轮细化结果。业务库只有四表，不增加批次、发布、覆盖、异常、任务或模型结果表。
 
 ## 0. 新版数据根：tdxman/data
 
@@ -46,7 +46,7 @@ FW-02 原隔离目标现已安装到 data 根。后续接收暂存、备份、�
 
 ## 2. 表、字段与职责
 
-[stocks_schema.sql](design/stocks_schema.sql)给出全部列、主键和首期索引。使用 SQLite STRICT、WITHOUT ROWID，主键直接组织证券历史；日期索引支持市场截面。无触发器、视图、外键级联、持久化任务表。`PRAGMA user_version` 只表示物理 schema。
+[stocks_schema.sql](stocks_schema.sql)给出全部列、主键和首期索引。使用 SQLite STRICT、WITHOUT ROWID，主键直接组织证券历史；日期索引支持市场截面。无触发器、视图、外键级联、持久化任务表。`PRAGMA user_version` 只表示物理 schema。
 
 通用规则：symbol 为 `000001.SZ` 等规范字符串；日期为北京时间所属日期 `YYYY-MM-DD`；`updated_at` 为 UTC 整数微秒。价格 REAL 保持原 float64 语义，成交量为股、成交额为元；源 turnover_rate/pct_chg/amplitude 沿用现行百分数单位。nullable 布尔为 0/1/NULL。读契约继续标识 point_in_time=False：只存当前修订后的历史，不能声称可恢复过去任一时刻的数据版本。有限数、合法日历日期、资产分类、价格关系等在 writer 校验；缺字段和历史异常分开处理，拒绝迁移的行进入外部明细并阻止未经解释的切换，不能静默丢行。DDL 不是完整业务校验器。非有限数拒绝，不能由 sqlite 驱动将 NaN 悄悄转 NULL。
 
@@ -297,7 +297,7 @@ W/M 选择与 start/end 相交的周期，默认只返回已闭合且期内最�
 
 ## 5. Regime 模板和模型结果
 
-公共计算在 aspool 完成；Fundwise 读市场特征和小型指数序列，执行纯评分。完整参数样例见 [market_four_dimensions.v1.json](design/market_four_dimensions.v1.json)（JSON 是合法 YAML 子集，可直接作为结构化模板加载）。模板对象一个数据类即可；calculator 从固定注册表选择，不运行模板中的任意代码/SQL。
+公共计算在 aspool 完成；Fundwise 读市场特征和小型指数序列，执行纯评分。完整参数样例见 [market_four_dimensions.v1.json](market_four_dimensions.v1.json)（JSON 是合法 YAML 子集，可直接作为结构化模板加载）。模板对象一个数据类即可；calculator 从固定注册表选择，不运行模板中的任意代码/SQL。
 
 D 参数来自 Fundwise `1b256585` 的 score_market；W/M 首个模板是“周期内日市场状态”的参考模型：每日涨跌比例按样本数加权、封板率按人次、涨停家数取日均、连板/MA20 取期末；指数使用真实周期收益。W/M 显式继承 D 阈值，标 experimental_uncalibrated，不能暗称与日评分统计等价或已验证投资效果。原生周期收益分布另有 period_* 字段，模型选用时须另立模板版本。
 
@@ -357,7 +357,7 @@ def compute_regimes(model_ids: list[str], start: str, end: str, *,
 
 ## 7. 本轮设计验证与未决实施证据
 
-本轮使用隔离内存 SQLite 检查四表创建、关键约束、典型查询计划；检查旧字段映射目标列与完整模型模板；用当前 Fundwise 纯评分函数对照 D 模板算术。涨跌分布增量设计检查见[分桶验证记录](evidence/sqlite-migration-assessment/20260928-distribution-design-validation.json)。原有检查结果见[设计验证记录](evidence/sqlite-migration-assessment/20260928-design-validation.json)。未运行生产同步、迁移、重算或旧 agent 测试。
+本轮使用隔离内存 SQLite 检查四表创建、关键约束、典型查询计划；检查旧字段映射目标列与完整模型模板；用当前 Fundwise 纯评分函数对照 D 模板算术。涨跌分布增量设计检查见[分桶验证记录](../evidence/sqlite-migration-assessment/20260928-distribution-design-validation.json)。原有检查结果见[设计验证记录](../evidence/sqlite-migration-assessment/20260928-design-validation.json)。未运行生产同步、迁移、重算或旧 agent 测试。
 
 仍须 S1/S2 通过真实样本确定：多源参考价/因子冲突数量及处置、历史名称日期可靠性、周期扫描成本和30秒初始守卫是否适合实际机器。仍须 S5 证明：全量逐值对账、五年≤2GiB、新库磁盘占用、长读 WAL、并发/故障与恢复。不会把设计样例通过写成生产验收通过。
 

@@ -39,7 +39,7 @@
 
 单日成功且内存稳定后才扩大日期，整个过程没有并行派生作业或 OOM。五日逐日计算阶段峰值约 238032→262976→262976→280352→280352 KiB，没有恢复全市场历史缓存。多日仍重复读取单股历史。
 
-PM 的既有 77 项及后续恢复测试记录按 [PM 修复说明](limit_memory_recovery_fix.md)采信，不重复汇总为本轮独立测试数。本轮隔离确认命令：
+PM 的既有 77 项及后续恢复测试记录按 [PM 修复说明](../achievements/limit_memory_recovery_fix.md)采信，不重复汇总为本轮独立测试数。本轮隔离确认命令：
 
 ```bash
 .venv/bin/python -m pytest tests/unit/test_limit_events.py -q \

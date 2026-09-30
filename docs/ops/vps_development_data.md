@@ -105,4 +105,4 @@ tmux attach-session -t tdxman-task
 
 ## 派生成品进度（2026-09-28）
 
-本机 `data/stocks.sqlite` 已完成全历史派生并通过完整校验，约 8.59 GiB；[证据](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 已安装到主项目 `data/`，全量文件 SHA-256 与源成品一致，并通过 Fundwise 近期 SDK/HTTP 验收。旧 M0 移至 `.local/recovery/`。执行证据见[完整复制与消费验收](../achievements/fw04_jakarta_full_copy_acceptance.md)。
+本机 `data/stocks.sqlite` 已完成全历史派生并通过完整校验，约 8.59 GiB；[证据](../evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 已安装到主项目 `data/`，全量文件 SHA-256 与源成品一致，并通过 Fundwise 近期 SDK/HTTP 验收。旧 M0 移至 `.local/recovery/`。执行证据见[完整复制与消费验收](../achievements/fw04_jakarta_full_copy_acceptance.md)。

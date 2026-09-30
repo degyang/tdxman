@@ -4,7 +4,7 @@
 
 后续执行统一按[四表 SQLite 实施计划 S0–S7](../design/sqlite_four_table_implementation_plan.md)推进；数据与接口变更见[迁移评估](../design/sqlite_migration_api_assessment.md)。Regime 公共特征由 aspool 计算，Fundwise 用[模型模板](../design/regime_model_template_design.md)支持多模型 D/W/M；仍为四张股票业务表。下文未实施任务的旧细节不再优先于上述新计划。
 
-日期：2026-09-27。当前状态：DG-00 工程基线就绪；DG-01 实现、独立恢复审查及修复已合并 main（`5b42c52`）；DG-02 统一访问入口及验收已合并 main（`6c85113` / `3bfc857`）。DG-02 最终 666 单元测试及 18 个子测试通过、2 项明确跳过；五年 82,772 条事件精确比对通过，峰值 RSS 284.68 MiB。协调者复用 agent 验证，没有因交接或快进合并重跑测试。四个实际 Orca 任务及工作区收尾见 [本轮集成记录与下一包](remediation_integration_20260927.md)。DG-04 两阶段批准生产修复与 1,213 日实际重发布已验收并合并推送 main（`936b566`）；全池 stale=0。DG-03 完整字段、1×/2×/5× 增长、并发与恢复评估已完成，两个原型均未通过生产准入；生产后端切换和旧副本退役尚未实施。见 [DG-03/04 执行记录](dg03_dg04_execution.md)。
+日期：2026-09-27。当前状态：DG-00 工程基线就绪；DG-01 实现、独立恢复审查及修复已合并 main（`5b42c52`）；DG-02 统一访问入口及验收已合并 main（`6c85113` / `3bfc857`）。DG-02 最终 666 单元测试及 18 个子测试通过、2 项明确跳过；五年 82,772 条事件精确比对通过，峰值 RSS 284.68 MiB。协调者复用 agent 验证，没有因交接或快进合并重跑测试。四个实际 Orca 任务及工作区收尾见 [本轮集成记录与下一包](../achievements/remediation_integration_20260927.md)。DG-04 两阶段批准生产修复与 1,213 日实际重发布已验收并合并推送 main（`936b566`）；全池 stale=0。DG-03 完整字段、1×/2×/5× 增长、并发与恢复评估已完成，两个原型均未通过生产准入；生产后端切换和旧副本退役尚未实施。见 [DG-03/04 执行记录](dg03_dg04_execution.md)。
 
 ## 1. 目标、范围与权威入口
 
@@ -37,8 +37,8 @@
 | 9 列 DuckDB / 年月 Parquet 对比、64 证券增长实验 | 已完成隔离实验 | 未覆盖完整 schema、索引、约束和生产恢复 |
 | 1,296 日限价发布、605 日 stale | 2026-09-27 00:34:55 上海时间观测 | 不能沿用为执行时状态；DG-00 重新查询 |
 | 两个旧备份无损重压缩 | 前轮已完成 | 释放 24.31 MiB；未替代恢复演练 |
-| DG-00 一致副本与恢复演练 | 工程基线就绪 | [baseline.json](evidence/data-remediation/20260927/baseline.json)：13,742 文件、2,702,716,946 字节；完整复制恢复与校验 10.349 秒，指定证券文件恢复与校验 2.636 秒。[本轮核验](evidence/data-remediation/20260927-dg00/baseline-verification.json)源与快照一致，契约/入口/恢复计划已补齐；业务 RTO 等未知项仍保留 |
-| Orca CLI、技能与 WSL worktree 链路 | 基础验证及受监督顺序协作已使用 | [执行约定](orca_remediation_workflow.md)；本轮实施 `task_c544312049ac / gpt-6-sol high` 结束后，独立审查 `task_e72b8369e2bb / gpt-6-astra high` 接续，身份已核验；未执行生产任务或候选后端 |
+| DG-00 一致副本与恢复演练 | 工程基线就绪 | [baseline.json](../evidence/data-remediation/20260927/baseline.json)：13,742 文件、2,702,716,946 字节；完整复制恢复与校验 10.349 秒，指定证券文件恢复与校验 2.636 秒。[本轮核验](../evidence/data-remediation/20260927-dg00/baseline-verification.json)源与快照一致，契约/入口/恢复计划已补齐；业务 RTO 等未知项仍保留 |
+| Orca CLI、技能与 WSL worktree 链路 | 基础验证及受监督顺序协作已使用 | [执行约定](../implements/orca_remediation_workflow.md)；本轮实施 `task_c544312049ac / gpt-6-sol high` 结束后，独立审查 `task_e72b8369e2bb / gpt-6-astra high` 接续，身份已核验；未执行生产任务或候选后端 |
 | 本方案所列工程整改、生产修复与迁移 | DG-00～02 已集成；DG-04 实际生产修复/重发布已验收；DG-03 评估已完成、工程准入未通过，迁移待实施 | [执行记录](dg03_dg04_execution.md)与[DG-04 报告](dg04_implementation.md)；不代表基础字段全部完整或后端切换 |
 
 ## 3. 推进路径与任务看板
@@ -87,7 +87,7 @@
 
 验收：同样输入第二次执行不重写业务数据、不增加 stale、不改变业务 revision；源故障不被解释为删除；每次扩大影响范围能追溯到变化及规则。尚未完成依赖验证的字段保持保守失效。
 
-首批 `981ab5f` 已由协调者集成 main/feature；`f949dbc` / `30870a5` 的首批缺陷结案保留原 [审查证据](remediation_first_batch_review.md)。本轮 DG-01 剩余实现覆盖 merge/enrichment、在线/离线/free-stockdb、quote/快照、BaoStock 三类事实、index/coverage 与 universe scope，补齐真实变化、内部业务/元数据修订、逐行有界证据、文件准备后前滚、catalog 原子日志/coverage/stale/聚合及任务成本。完整差异经独立审查，修复恢复版本/manifest/父目录持久化、源故障/重试、UTC TTL、范围失效与成本记录问题；见 [审查报告](dg01_review.md) 和 [最终摘要](evidence/data-remediation/20260927-dg01-review/validation.json)。`bbb50b0` + `5b42c52` 已由协调者集成 main；生产池状态仍未变更。
+首批 `981ab5f` 已由协调者集成 main/feature；`f949dbc` / `30870a5` 的首批缺陷结案保留原 [审查证据](remediation_first_batch_review.md)。本轮 DG-01 剩余实现覆盖 merge/enrichment、在线/离线/free-stockdb、quote/快照、BaoStock 三类事实、index/coverage 与 universe scope，补齐真实变化、内部业务/元数据修订、逐行有界证据、文件准备后前滚、catalog 原子日志/coverage/stale/聚合及任务成本。完整差异经独立审查，修复恢复版本/manifest/父目录持久化、源故障/重试、UTC TTL、范围失效与成本记录问题；见 [审查报告](dg01_review.md) 和 [最终摘要](../evidence/data-remediation/20260927-dg01-review/validation.json)。`bbb50b0` + `5b42c52` 已由协调者集成 main；生产池状态仍未变更。
 
 无变化承诺针对源更新/补齐及其自动调度；协调者已明确确认显式 `compute_limit_events` 保留强制重算/重新发布语义，派生依赖/发布修订仍归 DG-05/06。单文件原子替换与 catalog 事务之间、多文件任务不是整体事务：pending 阻断公开读，源 writer 在下一写锁内前滚，snapshot 只锁并拒绝 pending，不隐式改源。缺失/损坏必要恢复对象安全拒绝，不能假称 applied。公开 revision/cache 与 Fundwise 不变。DG-01 时跨年/旧后端保守读取历史；DG-02 已按实际前置 bar 收窄分年读取，旧式单文件与递归计算仍有明确保守边界。隔离验收不授权生产修复、迁移、切换或清理。
 
@@ -101,7 +101,7 @@
 
 验收：公开日线、ETF、事件成交额、状态、导入与修复入口通过原契约检查；模拟分年布局不漏读、不重复；消费者不自行选择物理文件或拼接新旧后端。
 
-DG-02 feature `6c85113` 已实现具体 Parquet 日线入口；公开 daily/research/ETF/status、稀疏事件 amount、限价 scope/轴、merge/enrichment、BaoStock、在线/离线/free-stockdb、quote、CLI 及实际维护读取已接入。完整单位/字段/NULL/日期 overlay 与校验、批次/版本/锁保持；跨稀疏年份预热与依赖后缀等值，混存/错误分区拒绝，coverage 正常仅读冷年 footer。666 单元测试 +18 子测试通过，2 个外部 TickStockPanel host 环境测试显式跳过；五年 P0 比对 82,772 事件、抽查 30 金额，峰值 RSS 298,508,288 字节、71.178 秒通过。见 [实现/入口/限制报告](dg02_implementation.md) 和 [精确源码/命令/结果摘要](evidence/data-remediation/20260927-dg02/validation.json)。协调者已审阅并复用此证据，快进集成 `3bfc857`；未重复执行已通过验证。
+DG-02 feature `6c85113` 已实现具体 Parquet 日线入口；公开 daily/research/ETF/status、稀疏事件 amount、限价 scope/轴、merge/enrichment、BaoStock、在线/离线/free-stockdb、quote、CLI 及实际维护读取已接入。完整单位/字段/NULL/日期 overlay 与校验、批次/版本/锁保持；跨稀疏年份预热与依赖后缀等值，混存/错误分区拒绝，coverage 正常仅读冷年 footer。666 单元测试 +18 子测试通过，2 个外部 TickStockPanel host 环境测试显式跳过；五年 P0 比对 82,772 事件、抽查 30 金额，峰值 RSS 298,508,288 字节、71.178 秒通过。见 [实现/入口/限制报告](dg02_implementation.md) 和 [精确源码/命令/结果摘要](../evidence/data-remediation/20260927-dg02/validation.json)。协调者已审阅并复用此证据，快进集成 `3bfc857`；未重复执行已通过验证。
 
 兼容性例外明确保留：不存在证券/年份的存在性探测、旧池全局 `asset_type` 缺失的 metadata-only schema 探测（证明不存在可能遍历全部 footer，协调者明确接受）、无 min/max 统计的日期列回退、旧式单文件整读/重写及完整替换/递归计算保守历史。没有删除重复键/非法值检查，也没有普通调用自动拆分或生产写入。DG-03 评估 schema metadata index 与完整增长后端；DG-05/06 继续处理字段依赖、递归收敛及公开逻辑版本，而非把这次入口收敛记作这些任务已完成。
 
@@ -216,6 +216,6 @@ DG-00～02 的工程集成与 DG-04 的具体授权修复/重发布已完成；D
 
 ## 8. Orca 配合方式
 
-使用 [Orca 整改执行约定](orca_remediation_workflow.md) 管理工作区、独立环境、任务边界和证据。默认一个实施者顺序推进；只有明确安排多 agent 协作时才使用 `orchestration`，不因安装技能自动启动任务。
+使用 [Orca 整改执行约定](../implements/orca_remediation_workflow.md) 管理工作区、独立环境、任务边界和证据。默认一个实施者顺序推进；只有明确安排多 agent 协作时才使用 `orchestration`，不因安装技能自动启动任务。
 
 正式创建整改 worktree 前，先把当前未提交原则、计划、恢复脚本及小型证据保存为可审查的 Git 基线；创建时显式使用该提交作为基点。每个写入实验使用独立数据根目录，生产池只由指定维护入口写入。Orca 卡片用于进度展示，本文件与验收证据仍是工程状态依据。

@@ -177,4 +177,4 @@ uv pip install --python /path/to/consumer/.venv/bin/python \
 
 本次没有发布 PyPI、替换消费者环境或发送外部消息。可将本回执交给 Fundwise 维护者，无需其重复扫描明细构造质量原因或晋级分母。
 
-机器可读证据见 [20260928-public-quality](evidence/20260928-public-quality/)。
+机器可读证据见 [20260928-public-quality](../evidence/20260928-public-quality)。

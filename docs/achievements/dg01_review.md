@@ -1,6 +1,6 @@
 # DG-01 独立恢复审查
 
-日期：2026-09-27。**DG-01 feature 实现与独立隔离验收通过，无已发现未修复的本期要求；main 集成待协调者执行。** 审查基线 `981ab5f`，完整审阅实施 `c3c45f9` 及其记录 `9db1718` 的源码、测试、脚本、入口清单和证据；修复提交 `bbb50b0`。最终完整离线 **640 passed、4 skipped、18 subtests passed，177.80 秒**，详见 [验证摘要](evidence/data-remediation/20260927-dg01-review/validation.json)。
+日期：2026-09-27。**DG-01 feature 实现与独立隔离验收通过，无已发现未修复的本期要求；main 集成待协调者执行。** 审查基线 `981ab5f`，完整审阅实施 `c3c45f9` 及其记录 `9db1718` 的源码、测试、脚本、入口清单和证据；修复提交 `bbb50b0`。最终完整离线 **640 passed、4 skipped、18 subtests passed，177.80 秒**，详见 [验证摘要](../evidence/data-remediation/20260927-dg01-review/validation.json)。
 
 派发 `task_e72b8369e2bb / ctx_a6a121f168bf`，角色为独立关键恢复审查。Orca requested/effective 均核验为 `gpt-6-astra / high`，只保存允许字段；未升级 effort、未启动子 agent。实施派发已完成后独占 feature 修改，无 main 编辑、push、市场抓取、生产池或恢复快照写入。所有测试使用本 worktree `.venv` 和 `/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/` 下的独立根。
 
@@ -31,7 +31,7 @@
 
 正式 writer/命令的恢复在 maintenance context 内统计；实验直接调用低层 `recover` 而未提供该 context 时，没有独立恢复任务耗时/RSS，`recovery_run_id` 为 NULL，这些指标为 unavailable，不能从原任务耗时反推。原实现真实 12 行样本证据经指纹核验复用，没有为本次审查重复采样或复跑。
 
-恢复工具包含 catalog、lake 和 `change-state/**`，独占锁内拒绝 pending 而不隐式修改源。原实施报告的工件 SHA 和 `c3c45f9` 源码指纹已全部逐项核验，见 [校验结果](evidence/data-remediation/20260927-dg01-review/implementation-evidence-check.json)；本轮没有再次复制生产或恢复根。旧无 checksum 的实验 pending 不自动视为可信，需用匹配旧代码完成恢复或恢复可信对象；未部署的本轮 feature 没有授权在线状态迁移。
+恢复工具包含 catalog、lake 和 `change-state/**`，独占锁内拒绝 pending 而不隐式修改源。原实施报告的工件 SHA 和 `c3c45f9` 源码指纹已全部逐项核验，见 [校验结果](../evidence/data-remediation/20260927-dg01-review/implementation-evidence-check.json)；本轮没有再次复制生产或恢复根。旧无 checksum 的实验 pending 不自动视为可信，需用匹配旧代码完成恢复或恢复可信对象；未部署的本轮 feature 没有授权在线状态迁移。
 
 无变化的业务文件、内部业务 revision、stale 与自动重算承诺通过。健康观测与任务摘要仍会写 catalog，因此可能触发现有 Fundwise 物理指纹；这是 **DG-06 限制**，本轮没有公开逻辑 revision/cache 支持，`dataset_version` 仍未提供。旧后端整证券/受影响年读取与重写、全会话规划和保守 stale 后缀仍归 DG-02/05，不把这些现有限制误写成已实现的有界存储。
 
@@ -39,6 +39,6 @@
 
 ## 验证与交付
 
-原始红/绿日志和 [检查命令](evidence/data-remediation/20260927-dg01-review/checks.json) 全部保留。前两次新回归启动分别因导入路径和未建 basetemp 父目录失败，第三次才是 7 个实质红测；第四次的 outage fixture 缺日历，第五次修正后证实全部 5 项实质失败。它们均未替代最终隔离结果。
+原始红/绿日志和 [检查命令](../evidence/data-remediation/20260927-dg01-review/checks.json) 全部保留。前两次新回归启动分别因导入路径和未建 basetemp 父目录失败，第三次才是 7 个实质红测；第四次的 outage fixture 缺日历，第五次修正后证实全部 5 项实质失败。它们均未替代最终隔离结果。
 
-最终完整离线结果、精确提交、依赖、工件指纹和完成判定见 [validation.json](evidence/data-remediation/20260927-dg01-review/validation.json)。scoped lint 覆盖 `981ab5f..bbb50b0` 的 23 个 Python 源码/脚本/测试文件；format 只声明明确的 5 个文件。diff --check 明确排除原始测试日志，保留日志中的原始空白，不声称整个含日志差异无空白告警。
+最终完整离线结果、精确提交、依赖、工件指纹和完成判定见 [validation.json](../evidence/data-remediation/20260927-dg01-review/validation.json)。scoped lint 覆盖 `981ab5f..bbb50b0` 的 23 个 Python 源码/脚本/测试文件；format 只声明明确的 5 个文件。diff --check 明确排除原始测试日志，保留日志中的原始空白，不声称整个含日志差异无空白告警。

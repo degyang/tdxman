@@ -29,11 +29,11 @@
 
 证据与脚本：
 
-- [布局结果](evidence/storage-layout/20260927/results.json)：元数据盘点、3 种布局的聚合查询及规模统计。
-- [公开接口结果](evidence/storage-layout/20260927/public-results.json)：含校验、Pandas 返回和日期事实覆盖的真实接口。
-- [增长实验](evidence/storage-layout/20260927/growth-results.json)：真实 `merge_daily` 在临时副本上的历史增长测试。
-- [原布局查询 profile](evidence/storage-layout/20260927/raw_day_profile.json)：一天聚合报告读取 7,288 个文件。
-- [布局脚本](evidence/storage-layout/20260927/assess.py)、[增长脚本](evidence/storage-layout/20260927/growth.py)、[接口脚本](evidence/storage-layout/20260927/public_read.py)。
+- [布局结果](../evidence/storage-layout/20260927/results.json)：元数据盘点、3 种布局的聚合查询及规模统计。
+- [公开接口结果](../evidence/storage-layout/20260927/public-results.json)：含校验、Pandas 返回和日期事实覆盖的真实接口。
+- [增长实验](../evidence/storage-layout/20260927/growth-results.json)：真实 `merge_daily` 在临时副本上的历史增长测试。
+- [原布局查询 profile](../evidence/storage-layout/20260927/raw_day_profile.json)：一天聚合报告读取 7,288 个文件。
+- [布局脚本](../evidence/storage-layout/20260927/assess.py)、[增长脚本](../evidence/storage-layout/20260927/growth.py)、[接口脚本](../evidence/storage-layout/20260927/public_read.py)。
 
 ## 3. 当前结构的实际特征
 
@@ -199,4 +199,4 @@ flowchart LR
 
 保留采集、算法与 API 契约，重构日线事实的存储和访问方式；用完整原型验收决定具体迁移，而不是等到数据增长造成服务不可用才开始处理。
 
-任务拆分、依赖、切换与回退门槛见 [数据整治落地推进方案](../achievements/remediation_execution_plan.md)；本评估与隔离实验不替代完整候选验收。
+任务拆分、依赖、切换与回退门槛见 [数据整治落地推进方案](../achievements/../achievements/remediation_execution_plan.md)；本评估与隔离实验不替代完整候选验收。

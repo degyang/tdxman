@@ -7,7 +7,7 @@
 ## 身份、边界与提交
 
 - 任务 `task_e156082ba705`，Dispatch `ctx_3b811a14e5d6`；角色为独立关键审查。
-- 请求与实际均为 `gpt-6-astra / high`。业务工作开始前从本会话 `turn_context` 核验，协调者另核验 Orca requested/effective 启动回执；未换模型或提高 effort，未使用子 agent。[身份和环境证据](evidence/data-remediation/20260927-orca-review/session.json)只保留允许的身份字段，无凭据。
+- 请求与实际均为 `gpt-6-astra / high`。业务工作开始前从本会话 `turn_context` 核验，协调者另核验 Orca requested/effective 启动回执；未换模型或提高 effort，未使用子 agent。[身份和环境证据](../evidence/data-remediation/20260927-orca-review/session.json)只保留允许的身份字段，无凭据。
 - 工作区 `/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract`，分支 `degyang/aspool-dg00-contract`，使用该工作区 `.venv` 和 editable 源码。
 - 所有写入测试均用 `/home/ubuntu/aspool-labs/20260927-orca-review/task_e156082ba705/` 下的显式独立根。未写生产池/恢复快照，未抓取网络行情、迁移、删除数据、修改 Fundwise 或用户/全局配置，未合并 main 或推送。
 - `f949dbc`：非法板块参数在建立行情连接前校验，独立小提交。
@@ -18,7 +18,7 @@
 
 - 生产代码：`src/aspool/{change_observation,daily_storage,enrichment,free_stockdb,tdx_online}.py`，`src/tdxman/cli/cmd_board.py`。
 - 回归：`tests/unit/{test_daily_remediation,test_aspool_index,test_daily_derived,test_protocol_fixes,test_cli_board}.py`，`tests/fixtures/daily_derived_samples.json`。
-- 文档：本报告、`data_remediation_execution_plan.md`、`data_remediation_progress_20260927.md`，以及 `docs/evidence/data-remediation/20260927-orca-review/` 内的身份、检查日志、保护器和验证摘要。
+- 文档：本报告、`data_../achievements/remediation_execution_plan.md`、`data_remediation_progress_20260927.md`，以及 `docs/evidence/data-remediation/20260927-orca-review/` 内的身份、检查日志、保护器和验证摘要。
 
 ## 发现与修复
 
@@ -37,7 +37,7 @@
 
 ## 四个基线失败逐项结案
 
-通过 `git archive 5083dbb src tests` 导出到独立实验目录，以该目录 `src` 作为 `PYTHONPATH`，使用当前工作区 `.venv` 和离线保护器重现。[原始复现日志](evidence/data-remediation/20260927-orca-review/baseline-audit.txt)还包含上述额外板块 CLI 缺陷。
+通过 `git archive 5083dbb src tests` 导出到独立实验目录，以该目录 `src` 作为 `PYTHONPATH`，使用当前工作区 `.venv` 和离线保护器重现。[原始复现日志](../evidence/data-remediation/20260927-orca-review/baseline-audit.txt)还包含上述额外板块 CLI 缺陷。
 
 | 原失败 | 核实的原因 | 保留/增强的断言 |
 |---|---|---|
@@ -50,11 +50,11 @@
 
 ## 验证、成本与内存边界
 
-- 最终完整离线套件：**556 passed、4 skipped、18 subtests passed，38.49 秒**。[完整日志](evidence/data-remediation/20260927-orca-review/full-offline-final.txt)。没有剩余失败。
+- 最终完整离线套件：**556 passed、4 skipped、18 subtests passed，38.49 秒**。[完整日志](../evidence/data-remediation/20260927-orca-review/full-offline-final.txt)。没有剩余失败。
 - 4 个 skip 全部说明：两项真实网络 smoke test 按 `XMTDX_LIVE=0` 跳过；两项外部 tick-stock-panel 宿主只读契约测试因未设置 `TICK_STOCK_PANEL_ROOT` 跳过。本任务不配置该外部宿主。
-- DG-01 专项：21 passed；[日志](evidence/data-remediation/20260927-orca-review/regression-3.txt)。包含此前 11 项和本轮增加的故障、生命周期、跨年及计数测试。
-- [scoped lint](evidence/data-remediation/20260927-orca-review/lint.txt)通过，包含首批 5 个 Aspool 模块、2 个脚本、本轮 CLI 模块、相关测试和离线保护器。4 个原先采用统一格式的文件 format check 通过；既有大文件未做无关格式化。`git diff --check` 通过。
-- [离线保护器](evidence/data-remediation/20260927-orca-review/run_offline.py)禁止当前测试进程的外部 socket 连接，允许 transport 单测使用 loopback；拒绝 Python 层对生产/恢复根的写操作。它不是对 native 库/子进程的 OS 沙箱；实际测试通过显式独立根隔离，不据此声称绝对系统级防护。
+- DG-01 专项：21 passed；[日志](../evidence/data-remediation/20260927-orca-review/regression-3.txt)。包含此前 11 项和本轮增加的故障、生命周期、跨年及计数测试。
+- [scoped lint](../evidence/data-remediation/20260927-orca-review/lint.txt)通过，包含首批 5 个 Aspool 模块、2 个脚本、本轮 CLI 模块、相关测试和离线保护器。4 个原先采用统一格式的文件 format check 通过；既有大文件未做无关格式化。`git diff --check` 通过。
+- [离线保护器](../evidence/data-remediation/20260927-orca-review/run_offline.py)禁止当前测试进程的外部 socket 连接，允许 transport 单测使用 loopback；拒绝 Python 层对生产/恢复根的写操作。它不是对 native 库/子进程的 OS 沙箱；实际测试通过显式独立根隔离，不据此声称绝对系统级防护。
 - 字段差异仅在一个证券内累计，保存到独立 JSON 后，批次结果只保留路径、计数和日期；回归检查 partial 文件只包含已提交年份并且总结果没有内嵌 `changes`。这是 O(单证券变化行数) 的证据内存边界，不是固定大小，也不是整任务 RSS 上限；conflicts/quality 汇总仍需后续资源治理。
 - `rows_read` 是已解码 Arrow 行数，`rows_materialized` 是用于合并/推导的 Python 行记录数；enrichment 复用已经物化的行，避免未计数的二次 `tail.to_pylist()`。文件字节是逻辑大小代理，不是设备 I/O；`changed_rows`/写入计数仅在 replace 成功后累计，stale 标记可重复。
 - enrichment 的 `elapsed_seconds` 现在包含单证券观测保存；在线 cost 仍测 `merge_daily` 阶段，不包含观测保存或最后批量 coverage 提交；均不包括外部网络和锁等待。直接 merge 的早期异常可能没有完整耗时值，不将其当总任务耗时。`coverage_repairs` 单列元数据修复，不冒充行情变化。

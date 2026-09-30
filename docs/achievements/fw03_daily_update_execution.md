@@ -81,17 +81,17 @@ Payload 顶层为 `bars`、`dated_facts`、可选 `factor_extensions`。后者�
 - 3 只真实股票 13,918 行完成历史派生；最近日参考价/ST/限价/MA20 可用。早期缺日期 ST 的记录保持 UNKNOWN。
 - 真实在线获取 `000001.SZ` 的 2026-09-23—24：2 行源变更、2 行派生、4 行汇总，事务 15 ms。再次在线获取：源、派生、汇总均 0 写入，4 ms。
 - 隔离样本删除 `300822.SZ` 的 2026-09-23 日线后回补：2 个影响日期、2 行派生、4 行汇总，6 ms；该股所有历史派生字段恢复到原值，比较排除更新时间。
-- 数据见 [daily-update evidence](evidence/sqlite-migration-assessment/20260928-daily-update.json)。这些小样本耗时不是全市场性能承诺。
+- 数据见 [daily-update evidence](../evidence/sqlite-migration-assessment/20260928-daily-update.json)。这些小样本耗时不是全市场性能承诺。
 
 ## 未完成验收与明确限制
 
-全库历史派生与最终校验已完成：5,586 股、16,350,085 条原始日线、16,350,599 条逐股特征；6,479 日 × 2 口径，共 12,958 条汇总。数据库 9,218,285,568 字节（约 8.59 GiB）。完整 integrity、源记录数、独立 SQL 汇总对账、日期覆盖、分布计数、因子区间检查通过，校验 762.197 秒，峰值 RSS 295,792 KiB。见 [全库验收证据](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 现有原始迁移副本已验收；新派生成品尚待 SSH 密钥解锁后同步。
+全库历史派生与最终校验已完成：5,586 股、16,350,085 条原始日线、16,350,599 条逐股特征；6,479 日 × 2 口径，共 12,958 条汇总。数据库 9,218,285,568 字节（约 8.59 GiB）。完整 integrity、源记录数、独立 SQL 汇总对账、日期覆盖、分布计数、因子区间检查通过，校验 762.197 秒，峰值 RSS 295,792 KiB。见 [全库验收证据](../evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 现有原始迁移副本已验收；新派生成品尚待 SSH 密钥解锁后同步。
 
 日期 ST 缺失不以当前名称倒填；没有因子覆盖不默认因子 1，因此相关历史限价或 MA20 可为未知。新交易日超出已有因子覆盖时，在线入口先取得 TDX 事件和身份确认，再推进已有选定因子尺度；无事件只延长尾段，有事件按日期新增稀疏段，绝不全历史累乘。没有可靠初始锚点时返回 `factor_unavailable`，保留未知；需要推进已有覆盖却无法核实事件时，已验证的原始行情和非因子派生仍保留，该证券的因子后缀单独记为失败。日入口目前生成 D 汇总；若已经存在相交 W/M 汇总，整笔拒绝，避免留下过期周期数据。现有 DataPool/Fundwise 默认读取入口尚未切换 SQLite；本次不宣称 FW-04 或全部 Fundwise 联调完成。
 
 补充集成回归：参考价模块重算时保持原记录时间戳下界，时钟回退不降低消费者缓存版本；若改动价格是已有事件推导因子的参考价，普通日入口整笔拒绝并交给显式因子维护，避免提交过期因子。
 
-Jakarta 原始来源只读审计见 [source-readiness](evidence/sqlite-migration-assessment/20260928-source-readiness.json)：可靠日期昨收 412,066 行（2.52%），日期 ST 413,515 行（2.53%）；2000—2020 年均无可靠 dated 来源；5,424/5,586 只股票有来源因子锚点。审计复用已验收的 M0 副本，不重复 hash/integrity 或已有回归。这些原始来源比例不等于最终派生 UNKNOWN 比例。
+Jakarta 原始来源只读审计见 [source-readiness](../evidence/sqlite-migration-assessment/20260928-source-readiness.json)：可靠日期昨收 412,066 行（2.52%），日期 ST 413,515 行（2.53%）；2000—2020 年均无可靠 dated 来源；5,424/5,586 只股票有来源因子锚点。审计复用已验收的 M0 副本，不重复 hash/integrity 或已有回归。这些原始来源比例不等于最终派生 UNKNOWN 比例。
 
 补充实测前验证：多股源更新按有界分组合并，两个股票同日只写两条 scope 汇总；事务中推进至时间预算后撤销已写入源行。成功结果按 `success[].symbols` 返回参与该次事务的股票及合计写入成本；没有业务 batch_id。
 

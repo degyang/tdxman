@@ -119,10 +119,10 @@ timestamp=None仅演示缺失表达，不能作为盘后时效验收的通过样
 
 关键源码：
 
-- [标准客户端](../src/tdxman/client.py)、[MAC客户端](../src/tdxman/mac/client.py)。
-- [标准K线模型](../src/tdxman/models/bar.py)、[报价模型](../src/tdxman/models/quote.py)、[MAC模型](../src/tdxman/mac/models.py)。
-- [MAC K线解析](../src/tdxman/mac/commands/symbol_bar.py)、[字段预设](../src/tdxman/codec/bitmap.py)。
-- [DataPool](../src/aspool/pool.py)、[ETF读取](../src/aspool/etf_api.py)、[指数读取](../src/aspool/index_api.py)、[日线字段契约](../src/aspool/api_contract.py)。
+- [标准客户端](../../src/tdxman/client.py)、[MAC客户端](../../src/tdxman/mac/client.py)。
+- [标准K线模型](../../src/tdxman/models/bar.py)、[报价模型](../../src/tdxman/models/quote.py)、[MAC模型](../../src/tdxman/mac/models.py)。
+- [MAC K线解析](../../src/tdxman/mac/commands/symbol_bar.py)、[字段预设](../../src/tdxman/codec/bitmap.py)。
+- [DataPool](../../src/aspool/pool.py)、[ETF读取](../../src/aspool/etf_api.py)、[指数读取](../../src/aspool/index_api.py)、[日线字段契约](../../src/aspool/api_contract.py)。
 
 aspool 已有内部分钟同步不等于已有公开分钟读取接口；本期分钟查询直接复用客户端，不绕过 DataPool 读取内部 Parquet。
 

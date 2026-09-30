@@ -88,5 +88,5 @@ python scripts/rebuild_limit_history.py --start 2021-09-24 --end 2026-09-24 --ex
 继续累计，缺行会话不计天数，并输出 `consecutive_gap_sessions`；另将已确认的
 旧主板 IPO 首日排除在连板计数之外，后续首个已确认涨停从 1 板计数。
 首日特殊限价事件仍保留未知，边界随发布事务持久化。详见
-[连板跨缺行口径](aspool_api.md#8-连板跨缺行口径v7)及
-[旧主板 IPO 首日口径](aspool_api.md#10-旧主板-ipo-首日的连板计数v8)。
+[连板跨缺行口径](../design/aspool_api.md#8-连板跨缺行口径v7)及
+[旧主板 IPO 首日口径](../design/aspool_api.md#10-旧主板-ipo-首日的连板计数v8)。

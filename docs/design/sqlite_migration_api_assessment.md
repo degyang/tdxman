@@ -8,7 +8,7 @@
 
 Regime 的公共市场特征应在 aspool 日更时一起计算，放入 market_daily_summary。按用户后续要求扩展为日/周/月特征，Fundwise 用模型模板运行不同评分/阶段模型，避免每个模型重新读取全年股票明细。评分权重、模型参数、训练和用户自定义板块主线留在 Fundwise。四张表不增加模型结果表或通用特征平台。频率、周期边界及非可加指标以[模板与日周月设计](regime_model_template_design.md)为准。
 
-本轮核对 tdxman `3f5054e2`、Fundwise `1b256585`、tick-stock-panel `d71cafc8`。生产根 `/home/ubuntu/.aspool` 仅以 Parquet footer、JSON 源记录和 DuckDB read_only 连接调查；没有运行同步、补齐或重算。各项观测不是冻结快照，也不是完整逐值迁移验收。证据：[本轮盘点 JSON](evidence/sqlite-migration-assessment/20260928-inventory.json)。
+本轮核对 tdxman `3f5054e2`、Fundwise `1b256585`、tick-stock-panel `d71cafc8`。生产根 `/home/ubuntu/.aspool` 仅以 Parquet footer、JSON 源记录和 DuckDB read_only 连接调查；没有运行同步、补齐或重算。各项观测不是冻结快照，也不是完整逐值迁移验收。证据：[本轮盘点 JSON](../evidence/sqlite-migration-assessment/20260928-inventory.json)。
 
 ## 2. 存量数据及不能直接复制的部分
 
@@ -48,7 +48,7 @@ Regime 的公共市场特征应在 aspool 日更时一起计算，放入 market_
 
 可靠当日 name 可以直接判断 ST；name 与其日期依据随 daily_bars 保留，不为名称判断另建表。对于没有可靠历史名称但已有明确日期 ST 来源的记录，daily_features 保存可空 is_st 和来源；按名称生成的标记是可重算缓存，不是另一份独立事实。特别核对 is_st_name_date 与快照来源，不把当前名字拷贝成多年 ST。trading_status 非本统计流程必需，仅作为 daily_features 可选源字段保留，识别停牌占位并兼容旧读者，不引入状态补齐流程。源字段与计算字段有各自列，计算更新不覆盖源字段。
 
-canonical volume 沿用 `coalesce(volume, vol)`，turnover_rate 沿用 `coalesce(turnover_rate, turnover)`；发生别名不等时列入差异记录。`float_share` 与 `float_shares` 不因拼写相似自动合并。原 date/int64、datetime、code、market 与路径键逐项核对，证券前导零保留；派生 market/code 可在读取时从规范 symbol 返回。源扩展的保留/退役逐字段见[字段映射](evidence/sqlite-migration-assessment/20260928-field-map.json)。
+canonical volume 沿用 `coalesce(volume, vol)`，turnover_rate 沿用 `coalesce(turnover_rate, turnover)`；发生别名不等时列入差异记录。`float_share` 与 `float_shares` 不因拼写相似自动合并。原 date/int64、datetime、code、market 与路径键逐项核对，证券前导零保留；派生 market/code 可在读取时从规范 symbol 返回。源扩展的保留/退役逐字段见[字段映射](../evidence/sqlite-migration-assessment/20260928-field-map.json)。
 
 corporate_actions 的 factor_anchor 是现有累计因子的来源记录，不冒充一笔分红事件。计算先按已验证的来源口径选择一种有效因子序列；不能把因子与重建事件乘两遍，也不能从累计因子反推不存在的分红金额。本轮 event category=1 有 58,687 条，并不等于因子 58,677 条；必须按证券/日期/来源比较后确定有效序列。源为每股还是每十股、复权基准日及因子方向要固定。
 

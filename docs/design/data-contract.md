@@ -2,7 +2,7 @@
 
 2026-09-28：本文是旧后端的兼容性基线，不是新统计目标。用户已指定缺数据与停牌同统计、取消业务批次；新四表与日周月模型契约见[迁移/API 评估](sqlite_migration_api_assessment.md)和[模板设计](regime_model_template_design.md)。迁移需区分保留的原始数据语义与明确改变的统计口径。
 
-日期：2026-09-27。依据 tdxman 基线 `5083dbb` 与 Fundwise `1b25658` 的代码；这是兼容性基线，不是全市场数据完整性证明。整改状态以 [推进方案](../achievements/remediation_execution_plan.md) 为准。
+日期：2026-09-27。依据 tdxman 基线 `5083dbb` 与 Fundwise `1b25658` 的代码；这是兼容性基线，不是全市场数据完整性证明。整改状态以 [推进方案](../achievements/../achievements/remediation_execution_plan.md) 为准。
 
 ## 键、范围与单位
 
@@ -16,7 +16,7 @@
 | 日历 | `security_calendar(trade_date)` | `is_open` 是来源明确给出的会话事实；不能把缺行当休市 |
 | 限价派生 | 日发布指针 `(trade_date,batch_id)` 关联批次内各表 | 同日 summary / coverage / events / exceptions / references 必须匹配发布批次，规则版本和 stale 独立保留 |
 
-股票字段全集以 [api_contract.py](../src/aspool/api_contract.py) 的 `DAILY_FIELDS` 为准。`turnover_rate,pct_chg,amplitude` 是百分数值（0.43 表示 0.43%）；`vol_ratio` 是比率；`float_share,total_share` 为股，市值为元。限价 `limit_pct` 是比率（0.10 表示 10%）。MAC 日 K、实时 quote、离线 vipdoc 的成交量在各采集入口换算，不能重复乘 100。
+股票字段全集以 [api_contract.py](../../src/aspool/api_contract.py) 的 `DAILY_FIELDS` 为准。`turnover_rate,pct_chg,amplitude` 是百分数值（0.43 表示 0.43%）；`vol_ratio` 是比率；`float_share,total_share` 为股，市值为元。限价 `limit_pct` 是比率（0.10 表示 10%）。MAC 日 K、实时 quote、离线 vipdoc 的成交量在各采集入口换算，不能重复乘 100。
 
 日期使用市场交易日，非 UTC 截日。公开日期为 Pandas 时间列；输入起止日期包含边界，lookback 与日期过滤语义保持现行 API。Fundwise Regime 按上证指数实际会话选窗口，按月计算时向前读取 60 **自然日**预热，不是固定 60 个交易日。
 
@@ -41,7 +41,7 @@ Fundwise 环境读取：`symbol,market,code,date,close,pre_close,pct_chg,amount,
 
 | 缺口 | 处理 / 后续任务 |
 |---|---|
-| 既有 605 日 stale、来源冲突与 522 条候选记录 | 重新核验后的基线见 [证据](evidence/data-remediation/20260927-dg00/baseline-verification.json)；DG-04 逐项处理，不沿用历史数量直接批量覆盖 |
+| 既有 605 日 stale、来源冲突与 522 条候选记录 | 重新核验后的基线见 [证据](../evidence/data-remediation/20260927-dg00/baseline-verification.json)；DG-04 逐项处理，不沿用历史数量直接批量覆盖 |
 | 日期事实仅覆盖一部分证券/日期；27 种物理 schema | 保留 NULL 和来源；DG-04 做按证券/日期/字段缺口核验。现有行数不证明覆盖完整 |
 | 分年布局兼容 | DG-02 feature 已统一旧式/分年入口及 status/ETF；实际验收见 [报告](../achievements/dg02_implementation.md)。混存与错误分区拒绝；不自动拆分，完整迁移仍归 DG-03/DG-07 |
 | 无公开逻辑 revision；Fundwise 使用文件统计兜底 | DG-01 记录真实变化，DG-06 再建立公开版本契约，期间保留保守缓存失效 |

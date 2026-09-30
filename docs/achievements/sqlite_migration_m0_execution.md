@@ -27,12 +27,12 @@
 
 最终全量迁移用时 33 分 56.91 秒，峰值 RSS 714,140 KiB（0.68 GiB），无交换。此前维护全部二级索引的试跑已中止，最终导入改为末尾创建非唯一辅助索引；主键和唯一约束始终启用。上述资源数字仅对应成功的最终运行，**不代表五年事件金额 API 的 RSS 验收**。
 
-完整机器可读摘要见[本机证据](evidence/sqlite-migration-assessment/20260928-local-facts-migration.json)。逐股进度、压缩字段差异与原始结果保留在数据根 `_reports/`；运行日志及 time 记录位于 `data/_reports/migration-bootstrap/`。
+完整机器可读摘要见[本机证据](../evidence/sqlite-migration-assessment/20260928-local-facts-migration.json)。逐股进度、压缩字段差异与原始结果保留在数据根 `_reports/`；运行日志及 time 记录位于 `data/_reports/migration-bootstrap/`。
 
 ## 源差异的处理
 
 - 6,125,240 条字段别名优先级差异、16,930 条按日参考昨收优先级差异均记录原候选；它们是字段差异条目，不能当作异常日线行数。
-- 24 条 ST 冲突按日期来源优先级选入来源候选。原始标记均无来源/名称日期，另一侧为 Baostock 日期记录；这不是对真实历史 ST 的独立认证，最终 ST 仍待计算。[逐条复核](evidence/sqlite-migration-assessment/20260928-migration-st-review.json)保留依据。
+- 24 条 ST 冲突按日期来源优先级选入来源候选。原始标记均无来源/名称日期，另一侧为 Baostock 日期记录；这不是对真实历史 ST 的独立认证，最终 ST 仍待计算。[逐条复核](../evidence/sqlite-migration-assessment/20260928-migration-st-review.json)保留依据。
 - 旧因子中 295 个北交所代码的市场后缀，经公共目录确认后规范化，共 1,088 个锚点；原市场/代码保存在载荷和源键中。`920305.BJ` 缺当前目录条目，按现有 A 股识别规则保留并记入报告。
 - 1,085 条 ETF 因子及 201 条其他基金/REIT 因子不进入股票库，原文件保留。事件与因子锚点并存不意味着二者重复累乘；选定累计因子尚待 FW-03。
 - 原先 277,429 条参考价另存为计算证据，去掉批次身份，保留旧 stale 状态供复核，不伪装成权威来源事实。
@@ -50,7 +50,7 @@
 - 远端 Python 3.11.15、SQLite 3.50.4；实际股票验收用时 88.75 秒，峰值 RSS 54,460 KiB。源端 Python 3.12.14、SQLite 3.53.1；异机读取已验证，不要求版本数字完全相同。
 - 完成后剩余 2,419,507,200 字节（2.25 GiB）。适合只读开发与隔离小样本写入，不足以再复制完整股票库；整库派生回填先核算数据增长/WAL/临时空间，不在这台 VPS 直接启动。
 
-证据：[远端股票](evidence/sqlite-migration-assessment/20260928-jakarta-stock-verify.json)、[远端公共域](evidence/sqlite-migration-assessment/20260928-jakarta-public-verify.json)。运行报告另在远端 `data/_reports/migration-bootstrap/`。后续接收其他设备时复用已封闭工件和源端验收，执行同样的哈希、结构与读取验证，不重跑来源迁移测试。
+证据：[远端股票](../evidence/sqlite-migration-assessment/20260928-jakarta-stock-verify.json)、[远端公共域](../evidence/sqlite-migration-assessment/20260928-jakarta-public-verify.json)。运行报告另在远端 `data/_reports/migration-bootstrap/`。后续接收其他设备时复用已封闭工件和源端验收，执行同样的哈希、结构与读取验证，不重跑来源迁移测试。
 
 ## 验证与能力边界
 
@@ -64,4 +64,4 @@
 
 ## 2026-09-28 派生成品更新
 
-上述哈希和空汇总状态属于初始 M0 工件。随后本机同一路径已完成 FW-03 历史派生，最终为 9,218,285,568 字节，SHA-256 `6eb13bafe07ce0fcc1a24047761dd91b26ba31302dedcc6369276993487b2808`；原始日线和迁入事实数量保持不变。见 [派生验收](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 当前仍是已验收的初始 M0 副本，不能套用本机的新哈希。新工件使用 `verify_stock_derivation.py` 验收，不再使用要求初始空汇总状态的旧校验入口。
+上述哈希和空汇总状态属于初始 M0 工件。随后本机同一路径已完成 FW-03 历史派生，最终为 9,218,285,568 字节，SHA-256 `6eb13bafe07ce0fcc1a24047761dd91b26ba31302dedcc6369276993487b2808`；原始日线和迁入事实数量保持不变。见 [派生验收](../evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 当前仍是已验收的初始 M0 副本，不能套用本机的新哈希。新工件使用 `verify_stock_derivation.py` 验收，不再使用要求初始空汇总状态的旧校验入口。

@@ -56,4 +56,4 @@
 - 同步可能含2026-09-17盘中条目。需要完整收盘数据的消费端应设置 `end='2026-09-16'`，收盘后再次同步可更新当日。
 - 当前名单与名称不代表历史成分，不提供不可变版本或历史时点可知保证。
 
-接口契约见 [aspool API](aspool_api.md)，需求与实现设计见 [指数数据池设计](aspool_index_design.md)。
+接口契约见 [aspool API](../design/aspool_api.md)，需求与实现设计见 [指数数据池设计](aspool_index_design.md)。

@@ -86,7 +86,7 @@ SQLite 中遗漏的事实；类别 5 不改变价格复权比例，没有触发�
 - ETF 源文件：`.local/recovery/20260928-etfs-sqlite/legacy-etfs/`，附逐文件 SHA、行数和迁移库校验值。
 - 辅助源与迁移前目录库：`.local/recovery/20260928-reference-retirement-final/`，附逐文件 SHA 和事件差异。
 - 完整过程：`.local/reports/execution-20260928-etfs/`。首次无交易识别不全及事件对账失败的日志也保留。
-- 小型可提交回执：[验收 JSON](evidence/etf_and_reference_migration_20260928.json)。
+- 小型可提交回执：[验收 JSON](../evidence/etf_and_reference_migration_20260928.json)。
 
 ETF 迁移在本地临时磁盘构建，分批校验后复制关闭数据库、核对 SHA，再原子安装；不会再次重写整池。
 如需回退，先停写并关闭数据库使用者，保留当前三个 SQLite 的所有新数据，再按对应恢复报告还原旧路径；

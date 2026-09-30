@@ -12,7 +12,7 @@
 
 本机 tmux 执行完整文件传输（rsync whole-file + zstd），远端 Fundwise 环境安装和验收也使用 tmux。复制清单原先重复列出一次 catalog.duckdb；校验器拒绝安装。确认重复条目大小和哈希完全相同后去重，再完成真实字节校验，未重传股票库。复制脚本现会在发起传输前拒绝重复路径或不一致的总字节数；重复清单拒绝、修正清单接受的定向检查通过。此前文档 8,158 文件/9,483,547,533 字节是未去重清单统计，以本记录为准。
 
-证据：[副本与安装](evidence/sqlite-migration-assessment/20260928-jakarta-complete-replica.json)。完整逐文件报告保存在两端 `.local/reports/`；摘要包含清单哈希，可追溯完整报告。
+证据：[副本与安装](../evidence/sqlite-migration-assessment/20260928-jakarta-complete-replica.json)。完整逐文件报告保存在两端 `.local/reports/`；摘要包含清单哈希，可追溯完整报告。
 
 ## Fundwise 已介入的工作
 
@@ -26,7 +26,7 @@ Jakarta `/home/ubuntu/Projects/Fundwise` 已更新代码，使用 `uv sync --fro
 4. 使用已获取的 614 个板块成分缓存，生成 578 条近期主线排名，状态 partial；没有重复网络拉取相同成分。
 5. 临时回环 HTTP 服务的 `/api/regime/latest`、`/api/regime/coverage`、`/api/regime/mainline` 均通过，检查后服务退出，没有留下临时监听进程。
 
-证据：[Fundwise 消费验收](evidence/sqlite-migration-assessment/20260928-jakarta-fundwise-acceptance.json)。没有重算完整 6,479 日作为重复测试；已有全历史计算与五年 RSS 验收继续复用。
+证据：[Fundwise 消费验收](../evidence/sqlite-migration-assessment/20260928-jakarta-fundwise-acceptance.json)。没有重算完整 6,479 日作为重复测试；已有全历史计算与五年 RSS 验收继续复用。
 
 开发启动示例（仅本机回环，不是公网发布）：
 

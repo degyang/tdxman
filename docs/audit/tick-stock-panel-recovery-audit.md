@@ -12,7 +12,7 @@
 本轮没有修改 Tick Stock Panel 文件、配置、用户偏好、软链接或进程，也没有调用其 HTTP 服务。
 没有覆盖 `src/tdxman/integrations/...` 或 editable 安装引用的适配器，避免文件监听自动重载。
 
-候选改动汇总在 [tdxman 恢复补丁](patches/tdxman-provider-recovery.patch)。
+候选改动汇总在 [tdxman 恢复补丁](../patches/tdxman-provider-recovery.patch)。
 已使用 `git apply --check` 检查它能应用到本项目当前工作区，尚未应用。
 后续接入仅允许指向本项目受管资产的软链接或消费端配置；不再向消费端复制业务代码、测试或需求文档。
 
@@ -22,7 +22,7 @@
 后者实际属于 `DataStore`，且新增保护在 `try` 外，因此 AttributeError 直接导致 HTTP 500，
 请求未到 tdxman。这是此前助手引入的错误；之前将其归因于服务热重载退出的说法没有依据。
 
-[撤销错误保护的补丁](patches/tickflow-revert-minute-guard.patch)仅作为审计记录，未执行。
+[撤销错误保护的补丁](../patches/tickflow-revert-minute-guard.patch)仅作为审计记录，未执行。
 本轮后续只读检查发现外部已撤销这一改动，当前 `repository.py` 无工作区差异，
 因此不要再次应用撤销补丁。没有重启或请求线上接口，不能据此宣称运行中进程已加载新代码。
 原先空 Parquet 的 warning 仍可能出现，但原逻辑会返回空表并允许 provider 回退。

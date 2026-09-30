@@ -98,4 +98,4 @@ Fundwise 使用现有 `tickflow_regime_adapted_v1` 模型和公开 API，成功�
 结果位于 `.local/reports/execution-20260928-indices/fundwise/`。
 这是一次真实归档计算，尚未接入自动调度或刷新 Fundwise 应用缓存；也未执行 Jakarta 复制。
 
-小型可提交回执见 [验收证据](evidence/index_sqlite_20260928.json)。
+小型可提交回执见 [验收证据](../evidence/index_sqlite_20260928.json)。

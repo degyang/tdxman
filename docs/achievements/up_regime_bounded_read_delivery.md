@@ -40,7 +40,7 @@ SQL 仅多取一行判断越界，过大报 `LIMIT_TOO_LARGE`，需缩短日期�
 只有显式 `close_limit_up=True, min_consecutive_up=1` 才筛选已知且至少一板的收盘涨停事件。
 `fields` 保留请求顺序；默认字段含涨跌停/触板标记、限价、连板信息及
 `symbol/trade_date/amount/batch_id/rule_version/computed_at/published_at/stale/stale_reason`，
-完整列表见 [API 文档第 9 节](aspool_api.md#9-已发布事件与当日成交额的有界读取)。
+完整列表见 [API 文档第 9 节](../design/aspool_api.md#9-已发布事件与当日成交额的有界读取)。
 
 一条已发布事件对应一条记录；`amount` 只取同证券同交易日已存日线，单位人民币元。
 没有同日日线、没有 amount 列、amount 值缺失或跨文件 schema 不一致，均保留 null 及事件键；不补零、不跨日补值、不删除事件。
@@ -126,8 +126,8 @@ DuckDB `512MB` 是十进制参数（约 488.2 MiB），不是整个进程上限�
 
 ## 复现与证据
 
-全部正式证据为 [v8-*.json 与对应来源清单](evidence/up-regime-bounded-read/)，旧无 v8 前缀的文件仅为历史记录。
-脚本：[benchmark_regime_bounded_read.py](../scripts/benchmark_regime_bounded_read.py)。复现五年验收：
+全部正式证据为 [v8-*.json 与对应来源清单](../evidence/up-regime-bounded-read)，旧无 v8 前缀的文件仅为历史记录。
+脚本：[benchmark_regime_bounded_read.py](../../scripts/benchmark_regime_bounded_read.py)。复现五年验收：
 
 ```sh
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src \
@@ -148,10 +148,10 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src \
 ## 测试与交付边界
 
 定向回归 **163 passed**，覆盖新批读、旧日线、限价事件、参考价和证券编码兼容性；无排除项。
-相关修改通过 Ruff 与 `git diff --check`。原始日志见 [targeted-tests.log](evidence/up-regime-bounded-read/targeted-tests.log)。
+相关修改通过 Ruff 与 `git diff --check`。原始日志见 [targeted-tests.log](../evidence/up-regime-bounded-read/targeted-tests.log)。
 
 全仓单测为 **529 passed、6 failed、2 skipped、17 subtests passed**，失败明细保存在
-[full-unit-tests.log](evidence/up-regime-bounded-read/full-unit-tests.log)：
+[full-unit-tests.log](../evidence/up-regime-bounded-read/full-unit-tests.log)：
 
 - 合并逻辑 2 项：已有字段失效处理新增 null/source 字段，旧预期未包含这些字段。
 - 同步流程 1 项：测试仅模拟在线同步，未提供新增补齐流程要求的交易日历。
@@ -166,10 +166,10 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=src \
 分支保留了工作区已有 v8 及相关上游源码依赖，属于当前包的源码快照，不能将整个分支差异解释为纯 P0 补丁。
 未把本机 `settings/config.yaml` 和 `SKILL.md` 改动纳入包快照；主工作区及其索引保持原有工作方式，未提交到主分支或推送。
 
-安装包：[tdxman-1.1.1-py3-none-any.whl](../dist/up-regime-bounded-read/tdxman-1.1.1-py3-none-any.whl)。
+安装包：[tdxman-1.1.1-py3-none-any.whl](../../dist/up-regime-bounded-read/tdxman-1.1.1-py3-none-any.whl)。
 wheel SHA256：`ba2be74fdd53712d7f6db51f42a043b65458f46b41a7b07543504a67ac157a56`。
 独立环境安装后反射确认接口、版本，逐个核对包内 153 个 Python 源文件与代码提交内容一致，并只读消费末日数据。
-安装验证记录：[wheel-smoke.json](evidence/up-regime-bounded-read/wheel-smoke.json)。
+安装验证记录：[wheel-smoke.json](../evidence/up-regime-bounded-read/wheel-smoke.json)。
 
 同目录提供源码归档、验收依赖版本、`SHA256SUMS` 与 `release-manifest.json`；后者关联最终回执提交、代码提交及各工件校验值。
 源码归档包含最终回执和证据。可以使用：
