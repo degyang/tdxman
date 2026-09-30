@@ -1,7 +1,7 @@
 # asPool 数据域分层实施记录
 
-日期：2026-09-29。本文记录 [分层需求](data_platform_v2_requirements.md) 与
-[分层设计](data_platform_v2_design.md) 的实际实施边界，不以目标文档代替运行证据。
+日期：2026-09-29。本文记录 [分层需求](../design/data_platform_v2_requirements.md) 与
+[分层设计](../design/data_platform_v2_design.md) 的实际实施边界，不以目标文档代替运行证据。
 
 ## 已实现
 

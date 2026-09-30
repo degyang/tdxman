@@ -1,12 +1,12 @@
 # 数据整治第一批实施记录
 
-独立审查更新：本记录描述 `61559e1` 的首次交付状态；后续修复、四项失败结案及最终 556 passed / 4 skipped / 18 subtests passed 以 [第一批审查报告](data_remediation_first_batch_review.md) 为准，首批代码可合并，DG-01 仍部分完成。
+独立审查更新：本记录描述 `61559e1` 的首次交付状态；后续修复、四项失败结案及最终 556 passed / 4 skipped / 18 subtests passed 以 [第一批审查报告](remediation_first_batch_review.md) 为准，首批代码可合并，DG-01 仍部分完成。
 
 日期：2026-09-27。工作区：`/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract`；分支 `degyang/aspool-dg00-contract`，基点 `5083dbb`。由 Orca CLI 创建、当前会话顺序实施，没有启动新的 Codex worker 或多 agent，没有更改模型/effort。工作区独立 venv 的 DuckDB/PyArrow/Pandas 与原基线固定为 1.5.5/25.0.1/3.0.5。
 
 ## 已落地
 
-DG-00 工程基线已补齐：[数据契约](data-contract.md)、[消费者与入口清单](consumer-inventory.md)、[恢复计划](recovery-plan.md)。原恢复点及当前生产 catalog + lake 共 13,742 文件逐项 SHA-256 一致；仍为 1,296 发布日、605 stale 日。核验脚本不复制全池，明确这是一次整改检查点而非每日扫描流程。业务 RTO、最新行情延迟容忍度、异机灾备目标仍未确定，不作为后续生产切换已获验收的依据。
+DG-00 工程基线已补齐：[数据契约](../design/data-contract.md)、[消费者与入口清单](../design/consumer-inventory.md)、[恢复计划](../recovery-plan.md)。原恢复点及当前生产 catalog + lake 共 13,742 文件逐项 SHA-256 一致；仍为 1,296 发布日、605 stale 日。核验脚本不复制全池，明确这是一次整改检查点而非每日扫描流程。业务 RTO、最新行情延迟容忍度、异机灾备目标仍未确定，不作为后续生产切换已获验收的依据。
 
 DG-01 本轮落实幂等修复和日线观测部分：
 
@@ -50,4 +50,4 @@ with pool_lock(lab_root, write=True):
 3. 现有离线/quote 路径虽复用幂等 merge，尚未全部持久化字段明细与成本；增量版本、锁等待、进程 RSS、计算/缓存失效和临时空间需按任务统一记录。
 4. 分年更新仍可能重读全部分区刷新 coverage；跨年滚动依赖、全部消费者兼容应在 DG-02 统一入口验收。此次未普遍分区、引入候选库或切换后端。
 
-下一包先补齐这些 DG-01 项，再按 [推进方案](data_remediation_execution_plan.md) 进入 DG-02。`reports/changes` 中仍被未结任务引用的证据须保留；清理政策不能把它们当普通可再生统计报告一律删除。
+下一包先补齐这些 DG-01 项，再按 [推进方案](remediation_execution_plan.md) 进入 DG-02。`reports/changes` 中仍被未结任务引用的证据须保留；清理政策不能把它们当普通可再生统计报告一律删除。

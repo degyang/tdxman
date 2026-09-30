@@ -46,9 +46,9 @@ commands 层不依赖 transport，可独立单测。修改 codec 或 commands �
 6. **按恢复能力决定保留与清理。** 生产修复、迁移前建立一致恢复点并验证恢复。删除前核对当前发布、保留恢复链、运行任务及未结问题引用；保留必要的唯一来源证据。文件年龄、版本号、SHA 校验或连续若干日成功，均不能单独证明可以删除。
 7. **用正确性和增长负载验收演进。** 同一输入、规则与维度口径下，增量须与完整参考计算一致。存储选型同时验证近期全市场、单证券历史、修订写入、增长、并发和恢复；不以小文件数量直接决定拆分，也不将窄表微基准当作完整迁移验收。保持公开 API，覆盖股票、ETF 和既有消费者。
 
-按需查阅：[治理研究](docs/data_management_principles.md)、[存储专项评估](docs/daily_storage_architecture_assessment.md)、[落地推进与验收](docs/data_remediation_execution_plan.md)。工程状态以推进方案及实际证据为准，不把计划或评估写成已实现。
+按需查阅：[治理研究](docs/design/data_management_principles.md)、[存储专项评估](docs/daily_storage_architecture_assessment.md)、[落地推进与验收](docs/achievements/remediation_execution_plan.md)。工程状态以推进方案及实际证据为准，不把计划或评估写成已实现。
 
-在 Orca 中执行整改时按 [工作区与验证约定](docs/orca_remediation_workflow.md) 准备提交基线、独立 Python 环境及数据根目录；worktree 只隔离代码，不隔离默认生产池。安装 orchestration 技能不等于授权启动多 agent。
+在 Orca 中执行整改时按 [工作区与验证约定](docs/achievements/orca_remediation_workflow.md) 准备提交基线、独立 Python 环境及数据根目录；worktree 只隔离代码，不隔离默认生产池。安装 orchestration 技能不等于授权启动多 agent。
 
 Codex 默认实施使用 `gpt-6-sol / high`；复杂存储/依赖设计和关键恢复、切换、退役审查使用 `gpt-6-astra / high`。只有单独指定的纯资料整理使用 `gpt-6-luna / medium`。**未经用户明确确认，effort 最高为 `high`；使用 `xhigh`、`max`、`ultra` 或其他高于 `high` 的级别，必须事先获得用户对相应任务及级别的明确确认。**任务复杂、失败重试、切换模型或复用会话均不构成升级授权。启动及复用时固定并核对实际 model/effort，记录任务角色及确认依据；不静默回退。具体启动与核验见上述约定第 6 节；`.codex/` 是忽略的本地配置目录，新 worktree 不通过 Git 继承它。
 

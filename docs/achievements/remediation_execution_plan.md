@@ -1,10 +1,10 @@
 # Aspool 数据整治与日线存储重构推进方案
 
-2026-09-28 当前执行约束：[日线与派生数据精简决策](daily_data_simplification.md)取代下文尚未实施的复杂修订/发布设计。股票库目标为 SQLite 四张业务表（含 corporate_actions 除权资料），业务仅局部更新、同事务同步计算；缺数据与确认停牌采用相同涨跌统计逻辑，补数触发局部递推。全量维护仅由外部 ops 脚本执行。旧实验、已完成任务和验收数字保留为历史证据，不代表新方案已经实现。
+2026-09-28 当前执行约束：[日线与派生数据精简决策](../design/daily_data_simplification.md)取代下文尚未实施的复杂修订/发布设计。股票库目标为 SQLite 四张业务表（含 corporate_actions 除权资料），业务仅局部更新、同事务同步计算；缺数据与确认停牌采用相同涨跌统计逻辑，补数触发局部递推。全量维护仅由外部 ops 脚本执行。旧实验、已完成任务和验收数字保留为历史证据，不代表新方案已经实现。
 
-后续执行统一按[四表 SQLite 实施计划 S0–S7](sqlite_four_table_implementation_plan.md)推进；数据与接口变更见[迁移评估](sqlite_migration_api_assessment.md)。Regime 公共特征由 aspool 计算，Fundwise 用[模型模板](regime_model_template_design.md)支持多模型 D/W/M；仍为四张股票业务表。下文未实施任务的旧细节不再优先于上述新计划。
+后续执行统一按[四表 SQLite 实施计划 S0–S7](../design/sqlite_four_table_implementation_plan.md)推进；数据与接口变更见[迁移评估](../design/sqlite_migration_api_assessment.md)。Regime 公共特征由 aspool 计算，Fundwise 用[模型模板](../design/regime_model_template_design.md)支持多模型 D/W/M；仍为四张股票业务表。下文未实施任务的旧细节不再优先于上述新计划。
 
-日期：2026-09-27。当前状态：DG-00 工程基线就绪；DG-01 实现、独立恢复审查及修复已合并 main（`5b42c52`）；DG-02 统一访问入口及验收已合并 main（`6c85113` / `3bfc857`）。DG-02 最终 666 单元测试及 18 个子测试通过、2 项明确跳过；五年 82,772 条事件精确比对通过，峰值 RSS 284.68 MiB。协调者复用 agent 验证，没有因交接或快进合并重跑测试。四个实际 Orca 任务及工作区收尾见 [本轮集成记录与下一包](data_remediation_integration_20260927.md)。DG-04 两阶段批准生产修复与 1,213 日实际重发布已验收并合并推送 main（`936b566`）；全池 stale=0。DG-03 完整字段、1×/2×/5× 增长、并发与恢复评估已完成，两个原型均未通过生产准入；生产后端切换和旧副本退役尚未实施。见 [DG-03/04 执行记录](data_remediation_dg03_dg04_execution.md)。
+日期：2026-09-27。当前状态：DG-00 工程基线就绪；DG-01 实现、独立恢复审查及修复已合并 main（`5b42c52`）；DG-02 统一访问入口及验收已合并 main（`6c85113` / `3bfc857`）。DG-02 最终 666 单元测试及 18 个子测试通过、2 项明确跳过；五年 82,772 条事件精确比对通过，峰值 RSS 284.68 MiB。协调者复用 agent 验证，没有因交接或快进合并重跑测试。四个实际 Orca 任务及工作区收尾见 [本轮集成记录与下一包](remediation_integration_20260927.md)。DG-04 两阶段批准生产修复与 1,213 日实际重发布已验收并合并推送 main（`936b566`）；全池 stale=0。DG-03 完整字段、1×/2×/5× 增长、并发与恢复评估已完成，两个原型均未通过生产准入；生产后端切换和旧副本退役尚未实施。见 [DG-03/04 执行记录](dg03_dg04_execution.md)。
 
 ## 1. 目标、范围与权威入口
 
@@ -16,14 +16,14 @@
 
 依据：
 
-- [数据治理原则](data_management_principles.md)：变更、依赖、版本和恢复原则。
-- [日线存储专项评估](daily_storage_architecture_assessment.md)：代码证据、查询基准、增长实验及候选结构。
-- [数据保留与清理方案](regime_data_retention_plan.md)：当前备份、报告和未结证据处置。
+- [数据治理原则](../design/data_management_principles.md)：变更、依赖、版本和恢复原则。
+- [日线存储专项评估](../daily_storage_architecture_assessment.md)：代码证据、查询基准、增长实验及候选结构。
+- [数据保留与清理方案](../design/regime_data_retention_plan.md)：当前备份、报告和未结证据处置。
 - [P0 有界读取交付](up_regime_bounded_read_delivery.md)：已有公共接口及五年 RSS 验收基线。
 - [POS 项目入口](</mnt/d/Workstation/Projects/POS/10-Projects/Active/11.42 Tdxman/Overview.md>)：有日期的目标、评估记录与推进摘要。
 - POS 评估记录：[数据治理与整治原则](</mnt/d/Workstation/Projects/POS/10-Projects/Active/11.42 Tdxman/Aspool 数据治理与整治原则.md>)、[日线存储重构评估](</mnt/d/Workstation/Projects/POS/10-Projects/Active/11.42 Tdxman/Aspool 日线存储重构评估.md>)。
 
-方案已验证规范化 DuckDB 日线事实表与按年月聚合 Parquet 备选；两个原型均未准入。下一步按[精简决策](daily_data_simplification.md)实现并验证 SQLite 局部更新候选；[月文件补做计划](data_remediation_dg03_followup.md)仅保留为历史备选。候选架构仍需通过必要字段、增长、并发和恢复验证后才能切换。
+方案已验证规范化 DuckDB 日线事实表与按年月聚合 Parquet 备选；两个原型均未准入。下一步按[精简决策](../design/daily_data_simplification.md)实现并验证 SQLite 局部更新候选；[月文件补做计划](dg03_followup.md)仅保留为历史备选。候选架构仍需通过必要字段、增长、并发和恢复验证后才能切换。
 
 本期不改变 ST/板块时间口径，不重写行情采集协议和 Regime 评分，不扩大为分钟/tick 存储迁移，也不默认引入分布式平台。ETF 与其他既有消费者的兼容性属于日线迁移验收范围，不能按 Fundwise 单一需求删除。
 
@@ -39,7 +39,7 @@
 | 两个旧备份无损重压缩 | 前轮已完成 | 释放 24.31 MiB；未替代恢复演练 |
 | DG-00 一致副本与恢复演练 | 工程基线就绪 | [baseline.json](evidence/data-remediation/20260927/baseline.json)：13,742 文件、2,702,716,946 字节；完整复制恢复与校验 10.349 秒，指定证券文件恢复与校验 2.636 秒。[本轮核验](evidence/data-remediation/20260927-dg00/baseline-verification.json)源与快照一致，契约/入口/恢复计划已补齐；业务 RTO 等未知项仍保留 |
 | Orca CLI、技能与 WSL worktree 链路 | 基础验证及受监督顺序协作已使用 | [执行约定](orca_remediation_workflow.md)；本轮实施 `task_c544312049ac / gpt-6-sol high` 结束后，独立审查 `task_e72b8369e2bb / gpt-6-astra high` 接续，身份已核验；未执行生产任务或候选后端 |
-| 本方案所列工程整改、生产修复与迁移 | DG-00～02 已集成；DG-04 实际生产修复/重发布已验收；DG-03 评估已完成、工程准入未通过，迁移待实施 | [执行记录](data_remediation_dg03_dg04_execution.md)与[DG-04 报告](data_remediation_dg04_implementation.md)；不代表基础字段全部完整或后端切换 |
+| 本方案所列工程整改、生产修复与迁移 | DG-00～02 已集成；DG-04 实际生产修复/重发布已验收；DG-03 评估已完成、工程准入未通过，迁移待实施 | [执行记录](dg03_dg04_execution.md)与[DG-04 报告](dg04_implementation.md)；不代表基础字段全部完整或后端切换 |
 
 ## 3. 推进路径与任务看板
 
@@ -50,7 +50,7 @@
 | DG-00 | P0 | 当前数据基线、字段契约、修复前恢复点 | 无 | aspool + 消费方验收 | 工程基线就绪：契约/清单/恢复计划及复核齐备；业务恢复目标未知项显式保留，生产切换前确定 |
 | DG-01 | P0 | 实际变更清单、幂等性、操作成本观测 | DG-00 | aspool 写入/补齐 | feature 实现/独立恢复审查通过：入口、真实变化、持久前滚、业务/覆盖元数据日志及有界任务成本；640+18 通过、4 明确跳过；`bbb50b0` + `5b42c52` 已由协调者集成 main |
 | DG-02 | P1 | 统一日线存储访问边界，旧后端兼容 | DG-00 | aspool 存储/公开 API | 已验收并合并 main（`6c85113` / `3bfc857`）：666+18 通过、2 明确跳过；五年 82,772 事件比对、RSS 284.68 MiB；协调者审阅并复用证据 |
-| DG-03 | P1 | 完整候选后端及增长/并发验证，形成选型结论 | DG-02；修订重放使用 DG-01 | aspool 存储 | 评估已完成；工程准入未通过，见[架构决策](architecture-decision.md)与[补做计划](data_remediation_dg03_followup.md) |
+| DG-03 | P1 | 完整候选后端及增长/并发验证，形成选型结论 | DG-02；修订重放使用 DG-01 | aspool 存储 | 评估已完成；工程准入未通过，见[架构决策](../design/architecture-decision.md)与[补做计划](dg03_followup.md) |
 | DG-04 | P0 | 存量字段/缺口/冲突闭环及限价重新发布 | DG-00；生产变更追踪使用 DG-01 | aspool 数据维护 | 已完成已批准修复及 1,213 会话重发布；未知/冲突保留 |
 | DG-05 | P1 | 字段依赖失效、有界读取、递归状态收敛 | DG-01、DG-02 | aspool 派生计算 | 待实施 |
 | DG-06 | P1 | 去除业务批次；事务一致读与 Fundwise 局部缓存适配 | DG-02；局部变化对齐 DG-05 | aspool API + Fundwise | 待实施；按 2026-09-28 精简决策替代原发布代次设计 |
@@ -87,7 +87,7 @@
 
 验收：同样输入第二次执行不重写业务数据、不增加 stale、不改变业务 revision；源故障不被解释为删除；每次扩大影响范围能追溯到变化及规则。尚未完成依赖验证的字段保持保守失效。
 
-首批 `981ab5f` 已由协调者集成 main/feature；`f949dbc` / `30870a5` 的首批缺陷结案保留原 [审查证据](data_remediation_first_batch_review.md)。本轮 DG-01 剩余实现覆盖 merge/enrichment、在线/离线/free-stockdb、quote/快照、BaoStock 三类事实、index/coverage 与 universe scope，补齐真实变化、内部业务/元数据修订、逐行有界证据、文件准备后前滚、catalog 原子日志/coverage/stale/聚合及任务成本。完整差异经独立审查，修复恢复版本/manifest/父目录持久化、源故障/重试、UTC TTL、范围失效与成本记录问题；见 [审查报告](data_remediation_dg01_review.md) 和 [最终摘要](evidence/data-remediation/20260927-dg01-review/validation.json)。`bbb50b0` + `5b42c52` 已由协调者集成 main；生产池状态仍未变更。
+首批 `981ab5f` 已由协调者集成 main/feature；`f949dbc` / `30870a5` 的首批缺陷结案保留原 [审查证据](remediation_first_batch_review.md)。本轮 DG-01 剩余实现覆盖 merge/enrichment、在线/离线/free-stockdb、quote/快照、BaoStock 三类事实、index/coverage 与 universe scope，补齐真实变化、内部业务/元数据修订、逐行有界证据、文件准备后前滚、catalog 原子日志/coverage/stale/聚合及任务成本。完整差异经独立审查，修复恢复版本/manifest/父目录持久化、源故障/重试、UTC TTL、范围失效与成本记录问题；见 [审查报告](dg01_review.md) 和 [最终摘要](evidence/data-remediation/20260927-dg01-review/validation.json)。`bbb50b0` + `5b42c52` 已由协调者集成 main；生产池状态仍未变更。
 
 无变化承诺针对源更新/补齐及其自动调度；协调者已明确确认显式 `compute_limit_events` 保留强制重算/重新发布语义，派生依赖/发布修订仍归 DG-05/06。单文件原子替换与 catalog 事务之间、多文件任务不是整体事务：pending 阻断公开读，源 writer 在下一写锁内前滚，snapshot 只锁并拒绝 pending，不隐式改源。缺失/损坏必要恢复对象安全拒绝，不能假称 applied。公开 revision/cache 与 Fundwise 不变。DG-01 时跨年/旧后端保守读取历史；DG-02 已按实际前置 bar 收窄分年读取，旧式单文件与递归计算仍有明确保守边界。隔离验收不授权生产修复、迁移、切换或清理。
 
@@ -101,13 +101,13 @@
 
 验收：公开日线、ETF、事件成交额、状态、导入与修复入口通过原契约检查；模拟分年布局不漏读、不重复；消费者不自行选择物理文件或拼接新旧后端。
 
-DG-02 feature `6c85113` 已实现具体 Parquet 日线入口；公开 daily/research/ETF/status、稀疏事件 amount、限价 scope/轴、merge/enrichment、BaoStock、在线/离线/free-stockdb、quote、CLI 及实际维护读取已接入。完整单位/字段/NULL/日期 overlay 与校验、批次/版本/锁保持；跨稀疏年份预热与依赖后缀等值，混存/错误分区拒绝，coverage 正常仅读冷年 footer。666 单元测试 +18 子测试通过，2 个外部 TickStockPanel host 环境测试显式跳过；五年 P0 比对 82,772 事件、抽查 30 金额，峰值 RSS 298,508,288 字节、71.178 秒通过。见 [实现/入口/限制报告](data_remediation_dg02_implementation.md) 和 [精确源码/命令/结果摘要](evidence/data-remediation/20260927-dg02/validation.json)。协调者已审阅并复用此证据，快进集成 `3bfc857`；未重复执行已通过验证。
+DG-02 feature `6c85113` 已实现具体 Parquet 日线入口；公开 daily/research/ETF/status、稀疏事件 amount、限价 scope/轴、merge/enrichment、BaoStock、在线/离线/free-stockdb、quote、CLI 及实际维护读取已接入。完整单位/字段/NULL/日期 overlay 与校验、批次/版本/锁保持；跨稀疏年份预热与依赖后缀等值，混存/错误分区拒绝，coverage 正常仅读冷年 footer。666 单元测试 +18 子测试通过，2 个外部 TickStockPanel host 环境测试显式跳过；五年 P0 比对 82,772 事件、抽查 30 金额，峰值 RSS 298,508,288 字节、71.178 秒通过。见 [实现/入口/限制报告](dg02_implementation.md) 和 [精确源码/命令/结果摘要](evidence/data-remediation/20260927-dg02/validation.json)。协调者已审阅并复用此证据，快进集成 `3bfc857`；未重复执行已通过验证。
 
 兼容性例外明确保留：不存在证券/年份的存在性探测、旧池全局 `asset_type` 缺失的 metadata-only schema 探测（证明不存在可能遍历全部 footer，协调者明确接受）、无 min/max 统计的日期列回退、旧式单文件整读/重写及完整替换/递归计算保守历史。没有删除重复键/非法值检查，也没有普通调用自动拆分或生产写入。DG-03 评估 schema metadata index 与完整增长后端；DG-05/06 继续处理字段依赖、递归收敛及公开逻辑版本，而非把这次入口收敛记作这些任务已完成。
 
 ### DG-03：完整候选后端与架构决策
 
-2026-09-27 独立 worktree 的实现与证据见 [DG-03 架构决策](architecture-decision.md)。全局 DuckDB 完整 42 列/主键/索引、公开 35 字段与 1×/2×/5× 实验已实现，5× 正常全市场单事务提交在既定 1 GB SQL 预算失败；按月完整 Parquet 备选已实现并验证公开读取、原子发布与恢复，同配置近期读取已改善，但单证券退化与整 catalog 写放大阻止生产准入。本任务完成候选评估不代表 DG07 切换门槛通过；保留现有已验证后端，未修改生产池或 DG04 代码。
+2026-09-27 独立 worktree 的实现与证据见 [DG-03 架构决策](../design/architecture-decision.md)。全局 DuckDB 完整 42 列/主键/索引、公开 35 字段与 1×/2×/5× 实验已实现，5× 正常全市场单事务提交在既定 1 GB SQL 预算失败；按月完整 Parquet 备选已实现并验证公开读取、原子发布与恢复，同配置近期读取已改善，但单证券退化与整 catalog 写放大阻止生产准入。本任务完成候选评估不代表 DG07 切换门槛通过；保留现有已验证后端，未修改生产池或 DG04 代码。
 
 在独立数据目录构建 DuckDB 日线事实候选。保存全部既有必需字段、日期事实及来源语义，明确原始扩展字段的保留方式；主键约束、索引和查询计划属于候选的一部分。候选只接收确定来源快照及同一变更集合，不成为第二个独立权威写入入口。
 
@@ -121,7 +121,7 @@ DG-02 feature `6c85113` 已实现具体 Parquet 日线入口；公开 daily/rese
 
 ### DG-04：修复存量数据并重新发布派生
 
-2026-09-27 执行结果：[DG-04 实施证据](data_remediation_dg04_implementation.md)。当前事实审计与逐项处置、两阶段授权生产修复、一次固定计划五批顺序/可恢复发布及 Fundwise 真实 30 日 + 60 日预热消费验证已完成；目标/全池 stale=0，结构/计数/真实缺行及 IPO 边界检查通过。基础未知/非法与 22 日消费 partial 保留，非全池独立认证或默认五年消费者重算；运行源码 `9308d55`、新非空前史测试 `13d627c`，详见版本与范围证据。
+2026-09-27 执行结果：[DG-04 实施证据](dg04_implementation.md)。当前事实审计与逐项处置、两阶段授权生产修复、一次固定计划五批顺序/可恢复发布及 Fundwise 真实 30 日 + 60 日预热消费验证已完成；目标/全池 stale=0，结构/计数/真实缺行及 IPO 边界检查通过。基础未知/非法与 22 日消费 partial 保留，非全池独立认证或默认五年消费者重算；运行源码 `9308d55`、新非空前史测试 `13d627c`，详见版本与范围证据。
 
 DG-00 重新确定实际 stale 与缺口，调查此前 605 日 stale、522 条候选行情与来源冲突的来源和现状。逐项给出补入、否决、延期或无法确认的结论，不按历史观测值直接执行固定范围任务。
 
@@ -165,7 +165,7 @@ Fundwise 改为同一快照读取日线/限价/汇总，按依赖日期的更新
 
 ### DG-08：恢复点退役与例行维护
 
-沿用 [保留方案](regime_data_retention_plan.md) 的逐对象用途清单，并补充当前发布、保留恢复点、变更重放链、运行任务、未结问题引用。恢复目标和证据价值决定保留期，固定天数只能作为附加条件。
+沿用 [保留方案](../design/regime_data_retention_plan.md) 的逐对象用途清单，并补充当前发布、保留恢复点、变更重放链、运行任务、未结问题引用。恢复目标和证据价值决定保留期，固定天数只能作为附加条件。
 
 普通无引用且可再生的报告可独立整理；旧日线归档、v7 库、迁移前后基线和未结来源证据分别满足退役条件。一个新的正确快照不自动替代修复前原始证据。
 
@@ -208,11 +208,11 @@ Fundwise 改为同一快照读取日线/限价/汇总，按依赖日期的更新
 
 ## 7. 第一轮可直接执行的工作包
 
-DG-00 已补齐 [data-contract.md](data-contract.md)、[consumer-inventory.md](consumer-inventory.md)、[recovery-plan.md](recovery-plan.md)，既有恢复点与当前源逐文件哈希一致。DG-01 首批修复与隔离证据见 [实施记录](data_remediation_progress_20260927.md)，剩余入口/前滚协议/成本实现见 [本轮完整记录](data_remediation_dg01_implementation.md)，当前判定见 [独立恢复审查](data_remediation_dg01_review.md)；独立审查已通过且 `5b42c52` 已集成 main；DG-02 feature `6c85113` 完成旧后端访问封装，最终验收见 [实施报告](data_remediation_dg02_implementation.md)。生产修复前仍需判断恢复点是否覆盖最新输入，不为文档补齐重复复制全池；两项共同触及写入/存储入口，默认顺序推进。
+DG-00 已补齐 [data-contract.md](../design/data-contract.md)、[consumer-inventory.md](../design/consumer-inventory.md)、[recovery-plan.md](../recovery-plan.md)，既有恢复点与当前源逐文件哈希一致。DG-01 首批修复与隔离证据见 [实施记录](remediation_progress_20260927.md)，剩余入口/前滚协议/成本实现见 [本轮完整记录](dg01_implementation.md)，当前判定见 [独立恢复审查](dg01_review.md)；独立审查已通过且 `5b42c52` 已集成 main；DG-02 feature `6c85113` 完成旧后端访问封装，最终验收见 [实施报告](dg02_implementation.md)。生产修复前仍需判断恢复点是否覆盖最新输入，不为文档补齐重复复制全池；两项共同触及写入/存储入口，默认顺序推进。
 
 第一轮结束应能回答：哪些数据有问题、每次究竟改了什么、影响了哪里、发生失败可以回到哪一版，以及哪些入口仍依赖物理文件。此时可推进 DG-04 的存量修复和 DG-03 的完整候选验证，不需要先等待全量架构迁移。
 
-DG-00～02 的工程集成与 DG-04 的具体授权修复/重发布已完成；DG-03 完整评估已完成，工程准入未通过；下一包为[月度事务 manifest 与有界比较整改](data_remediation_dg03_followup.md)。工具链验证本身不授权生产切换或删除。
+DG-00～02 的工程集成与 DG-04 的具体授权修复/重发布已完成；DG-03 完整评估已完成，工程准入未通过；下一包为[月度事务 manifest 与有界比较整改](dg03_followup.md)。工具链验证本身不授权生产切换或删除。
 
 ## 8. Orca 配合方式
 

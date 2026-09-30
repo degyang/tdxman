@@ -72,7 +72,7 @@ ROOT/reports/index-sync/<run-id>.json
 
 ## 读取方式
 
-本阶段指数维护仅在 sync 增加分支，现有股票 DataPool API/query 不混入指数。Fundwise 使用新增 `DataPool.list_indices()` 和 `DataPool.read_index_daily()`，详见 [aspool API](aspool_api.md)。以下 DuckDB 示例仅供维护核验：
+本阶段指数维护仅在 sync 增加分支，现有股票 DataPool API/query 不混入指数。Fundwise 使用新增 `DataPool.list_indices()` 和 `DataPool.read_index_daily()`，详见 [aspool API](design/aspool_api.md)。以下 DuckDB 示例仅供维护核验：
 
 ```python
 from pathlib import Path

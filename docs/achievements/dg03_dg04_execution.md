@@ -39,7 +39,7 @@ DG-04 于 `2026-09-27T10:04:35Z` 完成当前源核验：catalog/lake/change-sta
 
 ### 生产定点修复与重发布门槛
 
-独立 Astra/high 审查任务 `task_c34f15539dbd` 接受修复计划，否决旧重发布计划：初始前序连板状态未绑定，隔离复现证明前序从 1 改为 99 后仍会发布错误的 100。证据见 [审查报告](evidence/data-remediation/20260927-dg04-gate-review/review.md)。仅针对新发现的缺口补验证，没有重复既有测试。审查终端完成后已释放；后续新版本另做局部审查。
+独立 Astra/high 审查任务 `task_c34f15539dbd` 接受修复计划，否决旧重发布计划：初始前序连板状态未绑定，隔离复现证明前序从 1 改为 99 后仍会发布错误的 100。证据见 [审查报告](../evidence/data-remediation/20260927-dg04-gate-review/review.md)。仅针对新发现的缺口补验证，没有重复既有测试。审查终端完成后已释放；后续新版本另做局部审查。
 
 修复执行冻结于 `a410d735a26b77b72650a6b26930eaea86922080`，批准计划 `13414aedffc0ad72e3e33e6cc0f1faea8e9b4fe24e818461505932a364819641`。唯一生产 writer 按每批至多 8 个证券完成 4 批、30 个证券：465 条可信新日线、122 条已存在日线的缺失可选字段及 7 条停牌日期事实处置，连同有限派生传播实际改变 748 行和 594 条事实；87,240 条既有 OHLCV 保持精确不变。7 条停牌状态已有依据，不能记作 7 条新确认状态。
 
@@ -65,14 +65,14 @@ DG-04 对新取得的独立资料形成 2,506 条可选字段/日期事实补数
 
 复用首次审计并按实际变更核对差异后：日线 6,230,110 行、9,670 条缺行情（483 条停牌、9,187 条未确认）、3,693 条 ST 未知、39 条前收价/涨跌幅未知、11 条换手率缺失。非法 OHLC 与上市依据未知没有被擅自修正。上述统计不代替历史证券总体完整性证明。
 
-独立复审读取实际权威 ledger、完整初始前序及最新 812 个恢复增量对象（997,684,831 字节）后，明确批准最终计划 `36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5`。计划绑定同一实际输入、4,372 项前序签名和本轮源码，见[复审定稿](evidence/data-remediation/20260927-dg04-gate-review/tdxman-dg04-gate-followup-review.md)与[实际绑定核对](evidence/data-remediation/20260927-dg04-gate-review/actual-publication-gate-result.json)。复审任务成功结案并已 release，归档 transcript。
+独立复审读取实际权威 ledger、完整初始前序及最新 812 个恢复增量对象（997,684,831 字节）后，明确批准最终计划 `36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5`。计划绑定同一实际输入、4,372 项前序签名和本轮源码，见[复审定稿](../evidence/data-remediation/20260927-dg04-gate-review/tdxman-dg04-gate-followup-review.md)与[实际绑定核对](evidence/data-remediation/20260927-dg04-gate-review/actual-publication-gate-result.json)。复审任务成功结案并已 release，归档 transcript。
 
 协调者签发[最终发布批准](evidence/data-remediation/20260927-dg04-gate-review/coordinator-publication-approval.json)，放行 1,213 日（2021-09-24～2026-09-24），每批最多 256 日，共 5 批顺序执行。运行源码为 `9308d55`，`13d627c` 新增测试、`4bb7484` 仅补数文档证据，不改变运行实现。首批实际 `11:08:07.483057Z`～`11:10:09.618288Z` 完成 256 日，122.14 秒、峰值 RSS 642.77 MiB，无错误；后续发布及实际消费尚待全部完成后验收，不以首批成功宣告任务完成。
 
 
 ### DG-04 最终验收与集成
 
-Agent 最终提交 `75442bdea5670646f7f197c7ee5b21714c4cd39c`，成功结案消息 `msg_408ca0376e20`。协调者读取并接受[实施报告](data_remediation_dg04_implementation.md)、[执行源码与验证绑定](evidence/data-remediation/20260927-dg04/final-validation-linkage.json)、[实际发布回执](evidence/data-remediation/20260927-dg04/production-publication-execution.json)和[生产核验摘要](evidence/data-remediation/20260927-dg04/production-validation-summary.json)。五批共 1,213 日全部完成、pending=NULL，目标及全池 stale=0；发布进程累计 673.41 秒，峰值 RSS 706.17 MiB。实际产物包括 170,845 events、15,664 exceptions、1,019 gap states、115 IPO boundaries；四个真实证券的 224 events/7 exceptions/5 gaps/2 boundaries 与固定输入保守参考精确一致。目标内 derived references=0，健康前缀及非空专项证据另列，不虚称目标非空参考已验证。
+Agent 最终提交 `75442bdea5670646f7f197c7ee5b21714c4cd39c`，成功结案消息 `msg_408ca0376e20`。协调者读取并接受[实施报告](dg04_implementation.md)、[执行源码与验证绑定](evidence/data-remediation/20260927-dg04/final-validation-linkage.json)、[实际发布回执](evidence/data-remediation/20260927-dg04/production-publication-execution.json)和[生产核验摘要](evidence/data-remediation/20260927-dg04/production-validation-summary.json)。五批共 1,213 日全部完成、pending=NULL，目标及全池 stale=0；发布进程累计 673.41 秒，峰值 RSS 706.17 MiB。实际产物包括 170,845 events、15,664 exceptions、1,019 gap states、115 IPO boundaries；四个真实证券的 224 events/7 exceptions/5 gaps/2 boundaries 与固定输入保守参考精确一致。目标内 derived references=0，健康前缀及非空专项证据另列，不虚称目标非空参考已验证。
 
 [Fundwise 实际窗口](evidence/data-remediation/20260927-dg04/fundwise-window-validation.json)在未修改源码、隔离缓存上完成 22 个会话、354,337 投影行、1,400 涨停事件，金额无缺失，耗时 39.39 秒、RSS 1,425.96 MiB。22 日仍为 partial，阶段分类确实执行但因必要驱动未知返回 unknown；完整主线排名未运行。现存真实板块缓存超过 24 小时有效门槛，没有伪造时间或联网刷新；[管线边界证据](evidence/data-remediation/20260927-dg04/fundwise-pipeline-boundary.json)将新鲜日期成分快照及真实排名联调列为 DG-07 依赖。
 
@@ -83,7 +83,7 @@ Agent 最终提交 `75442bdea5670646f7f197c7ee5b21714c4cd39c`，成功结案消�
 
 真实 2×/5× 原始历史分别为 35,724,774 / 89,311,935 行；全部原始字段、主键和证券索引保留。整份及按年追加在 SQL 1 GB 提交时失败，最终固定 128 证券集合、同事务进度、逐批闭连接续跑成功；最终续跑 498.63 秒、RSS 1,293,754,368 字节。初次整份失败仅日志及已提交 2× 前缀保留，后续按年失败另存完整部分库；不补造首次失败字节快照。
 
-独立只读 Astra/high 审查 `task_1ef9487d36e2 / ctx_0ce55fe1c106` 发现联合崩溃断言与真实并发握手两项 P2 证明缺口，未发现已证实的 P0/P1 实现损坏。见[报告](evidence/data-remediation/20260927-dg03-review/review.md)。原 owner 在 `f170efa` 补齐 before/after COMMIT SIGKILL 的 raw/facts/coverage/stale/revision/audit 六域、原有 raw 不变、受控锁释放/争用探针、读读重叠及六次 writer 提交；新增局部测试通过，协调者只读核对，未重跑测试。审查任务成功结案并 release，transcript 已归档。
+独立只读 Astra/high 审查 `task_1ef9487d36e2 / ctx_0ce55fe1c106` 发现联合崩溃断言与真实并发握手两项 P2 证明缺口，未发现已证实的 P0/P1 实现损坏。见[报告](../evidence/data-remediation/20260927-dg03-review/review.md)。原 owner 在 `f170efa` 补齐 before/after COMMIT SIGKILL 的 raw/facts/coverage/stale/revision/audit 六域、原有 raw 不变、受控锁释放/争用探针、读读重叠及六次 writer 提交；新增局部测试通过，协调者只读核对，未重跑测试。审查任务成功结案并 release，transcript 已归档。
 
 日期事实独立 1×/2×/5× 最初扫描量为 410,467 / 820,934 / 2,052,335，虽数值一致仍不满足冷历史裁剪。`9f39f64` 加实际返回日期范围，并保持全 NULL 字符串/状态的原类型；新受影响验证和真实 30 行参考价窗口严格等值。修复后扫描量统一 410,467、日期过滤输出 63,076，三个规模的纯 API 60 日读取中位 0.815 / 0.789 / 0.772 秒。该扫描量仍包含原基线粗粒度行组，不能称只扫描返回的 63,076 条事实；计时区分纯 API 与逐字段断言。
 
@@ -100,14 +100,14 @@ Agent 最终提交 `75442bdea5670646f7f197c7ee5b21714c4cd39c`，成功结案消�
 
 `97fd0ef` 保留原始 COMMIT 错误，新增事务已自动终止的局部验证通过。实际失败的 5× 库与 prepared 输入对照：raw 仍为 89,311,935 行、新日期零行；facts/coverage/stale/revision/audit 差异均为零，没有半提交。完整原生 catalog 恢复已实测 before/after COMMIT SIGKILL、原生锁冲突、四种受控 flock 时序和六次顺序 writer 提交；4,881,295,773 字节副本恢复逐字节一致，12.11 秒。完整 42 列增长扫描也已完成；这些结果接受 agent 证据，不在协调层重跑。
 
-月度草稿独立审查 `task_a2bb0a670f92 / ctx_6f47249c6704` 实际请求/生效为 Astra/high，启动 ready、turnStart observed。见[绑定源码哈希的只读报告](evidence/data-remediation/20260927-dg03-monthly-review/review.md)。审查未运行测试、连接数据池或改动 tracked 文件；发现跨月删除 coverage 丢失及事件金额仍绑定全局表两项 P1、ETF 错误包装及混合批次重写无变化月份两项 P2。全部交由原 owner 修复，新增对应局部证据及真实月度发布恢复验证待验收；完整 catalog 拷贝费用、绝对路径恢复与孤儿文件边界必须披露。
+月度草稿独立审查 `task_a2bb0a670f92 / ctx_6f47249c6704` 实际请求/生效为 Astra/high，启动 ready、turnStart observed。见[绑定源码哈希的只读报告](../evidence/data-remediation/20260927-dg03-monthly-review/review.md)。审查未运行测试、连接数据池或改动 tracked 文件；发现跨月删除 coverage 丢失及事件金额仍绑定全局表两项 P1、ETF 错误包装及混合批次重写无变化月份两项 P2。全部交由原 owner 修复，新增对应局部证据及真实月度发布恢复验证待验收；完整 catalog 拷贝费用、绝对路径恢复与孤儿文件边界必须披露。
 
 审查成功结案消息 `msg_e670ae5572a9` 已接受，随后立即 release：`state=released, processAction=closed_agent_terminal`，transcript captured。审查完成不等于实现验收，也没有批准生产切换。
 
 
 ### DG-03 最终评估验收、main 集成与下一包
 
-实际 Orca owner `task_43714f545a49 / ctx_eaf6fc0a6fb8` 在 `2026-09-27T13:13:47Z` 成功结案，消息 `msg_19a98d5ce204`，最终 feature `6d47e175aeb5529b9e886f9c5c7d114c9cc949fb`、工作树干净。协调者接受[架构决策](architecture-decision.md)、[源码/证据 inventory](evidence/data-remediation/20260927-dg03/inventory.json)、[月度最终指标](evidence/data-remediation/20260927-dg03/monthly-final-metrics.json)及原始失败/恢复记录。Agent 已复核 189 份归档与 25 个源码哈希，24 项新增测试按改动增量验证，相关 Ruff 和最终指标断言通过；不把这些表述为在最终 HEAD 一次全量重跑。
+实际 Orca owner `task_43714f545a49 / ctx_eaf6fc0a6fb8` 在 `2026-09-27T13:13:47Z` 成功结案，消息 `msg_19a98d5ce204`，最终 feature `6d47e175aeb5529b9e886f9c5c7d114c9cc949fb`、工作树干净。协调者接受[架构决策](../design/architecture-decision.md)、[源码/证据 inventory](evidence/data-remediation/20260927-dg03/inventory.json)、[月度最终指标](evidence/data-remediation/20260927-dg03/monthly-final-metrics.json)及原始失败/恢复记录。Agent 已复核 189 份归档与 25 个源码哈希，24 项新增测试按改动增量验证，相关 Ruff 和最终指标断言通过；不把这些表述为在最终 HEAD 一次全量重跑。
 
 月度完整 42 列三倍率分别 17,862,387 / 35,724,774 / 89,311,935 行，原 18 catalog 表/约束保留；实际三倍率全市场新增、12 轮修订/no-op、删除/两月回补和 checkpoint 全部通过，新增 7,266 行完整字段精确等值、冷月文件与 manifest 保持不变。公开 35 字段的原双线程/512 MB 60 日中位为 0.821/0.807/0.865 秒；单证券全史为 1.214/2.172/6.134 秒。独立月度五年事件读 82,772 行、258 批、金额无 NULL、33 个原金额抽核、完成/关闭/临时清理通过，RSS 212,905,984 字节（203.04 MiB），36.918 秒。该金额路径保持其已验证的实际 1 线程，daily 配置修补没有改变已成功的 ETF/事件配置，所以没有重跑 P0。
 
@@ -115,6 +115,6 @@ Agent 最终提交 `75442bdea5670646f7f197c7ee5b21714c4cd39c`，成功结案消�
 
 月度原型全市场新增约 63.6/69.0/68.1 秒，写量约 990 MB；单行修订写量中位约 963 MB，其中每次复制 catalog 933,507,072 字节。三倍率各 15 次有效提交合计内核写约 14.51/14.55/14.54 GB，目录因历史 catalog 留存各增长约 14.15 GB。全市场无变化虽零写仍约 24 秒。此结果否决当前月度发布协议的生产准入，不能从冷月零重写推导整体成本有界；未来日期 facts/derived/catalog 增长及月方案更多证券压力仍是未验证门。
 
-裁决为**候选评估完成、DG-03 工程准入未通过**，保留现有生产后端。两个原型都不会因近期读取变快而自动切换。下一包[事务 manifest 与 TEMP 索引整改](data_remediation_dg03_followup.md)明确事务核心、文件 fsync 与 catalog COMMIT、WAL 首次只读恢复、六域 SIGKILL、并发/版本、旧版本引用以及 1×/2×/5× 成本门。DG-05/06 可继续依托当前存储边界，DG-07 还需真实新鲜成分及完整阶段/主线结果，DG-08 退役须等待恢复与切换验收。
+裁决为**候选评估完成、DG-03 工程准入未通过**，保留现有生产后端。两个原型都不会因近期读取变快而自动切换。下一包[事务 manifest 与 TEMP 索引整改](dg03_followup.md)明确事务核心、文件 fsync 与 catalog COMMIT、WAL 首次只读恢复、六域 SIGKILL、并发/版本、旧版本引用以及 1×/2×/5× 成本门。DG-05/06 可继续依托当前存储边界，DG-07 还需真实新鲜成分及完整阶段/主线结果，DG-08 退役须等待恢复与切换验收。
 
 合并提交 `87e6811`，只解决任务状态文档冲突并保留 DG-04 已完成事实；三个模块、所有 DG-03 脚本及测试与接受的 owner 提交零差异。协调者没有重跑成功测试或旧数据验证。结案后立即 worker-release；Orca 返回 `retained / user_takeover / processAction=none`，尊重用户已接管终端的保留边界。两个实现工作区均已合并，独立审查终端均已 release，工作区和实验数据保留作证据。

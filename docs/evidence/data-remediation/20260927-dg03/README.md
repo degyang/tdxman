@@ -17,7 +17,7 @@
 
 `operator_rows_scanned` 是算子计数；日期 row-group 上界不等于实际设备读取；`read_bytes/write_bytes` 是 Linux 进程内核 I/O；`maxrss_bytes` 是进程历史高水位，`peak_sampled_rss` 是当前操作采样峰值；100ms磁盘采样可能漏短峰值。备份/恢复是本机进程崩溃和完整文件副本，不证明断电或异机灾备，也不同于旧 Parquet 后端回退。
 
-最终裁决见 [architecture-decision.md](../../../architecture-decision.md)：两种原型均不批准生产迁移。任务交付是可运行实现与完整评估，不把迁移准入失败编码成全部门槛通过。
+最终裁决见 [architecture-decision.md](../../../design/architecture-decision.md)：两种原型均不批准生产迁移。任务交付是可运行实现与完整评估，不把迁移准入失败编码成全部门槛通过。
 
 新增备选证据：
 

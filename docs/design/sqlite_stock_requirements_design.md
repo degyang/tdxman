@@ -1,6 +1,6 @@
 # 股票四表：详细需求与设计
 
-日期：2026-09-28。状态：四表迁移、日派生及显式新根公开接口已实现；尚未生产切换。周/月和多模型执行待实现。进展见[FW-04](fw04_sqlite_public_api_execution.md)。审核结论见[审核记录](sqlite_design_review.md)。
+日期：2026-09-28。状态：四表迁移、日派生及显式新根公开接口已实现；尚未生产切换。周/月和多模型执行待实现。进展见[FW-04](../achievements/fw04_sqlite_public_api_execution.md)。审核结论见[审核记录](sqlite_design_review.md)。
 
 这是[实施计划](sqlite_four_table_implementation_plan.md)的详细规格。范围为 tdxman/aspool 股票域及 Fundwise 消费接口；不改 ETF、指数、分钟的现有存储。此前评估中未确定的字段和算法，以本文及 [DDL](design/stocks_schema.sql)为本轮细化结果。业务库只有四表，不增加批次、发布、覆盖、异常、任务或模型结果表。
 

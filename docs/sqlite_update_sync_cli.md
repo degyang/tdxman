@@ -1,8 +1,8 @@
 # SQLite 日线统一命令
 
-2026-09-28。CLI 合同。真实执行记录见 [首次日更](aspool_update_20260928_execution.md)；名单优先与事件修订设计见 [日更名单、状态与修订处理](sqlite_daily_directory_update.md)。
+2026-09-28。CLI 合同。真实执行记录见 [首次日更](achievements/aspool_update_20260928_execution.md)；名单优先与事件修订设计见 [日更名单、状态与修订处理](sqlite_daily_directory_update.md)。
 
-所有生产数据块的输入、落点、输出和 CLI 唯一登记见[生产数据流与 CLI 契约](production_data_flow_contract.md)，也可执行 `aspool contract --format json` 检查。
+所有生产数据块的输入、落点、输出和 CLI 唯一登记见[生产数据流与 CLI 契约](design/production_data_flow_contract.md)，也可执行 `aspool contract --format json` 检查。
 
 当前生产验收见 [`evidence/production_data_cli_20260928.json`](evidence/production_data_cli_20260928.json)：股票、指数、ETF、财务快照及日级派生已更新至 2026-09-28；股票目录 5,578 只、指数 865 只、ETF 1,732 只均完成，零散缺失为 0。
 

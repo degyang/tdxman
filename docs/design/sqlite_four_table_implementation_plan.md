@@ -1,6 +1,6 @@
 # 四表 SQLite 落地计划
 
-日期：2026-09-28。当前进展见[FW-04 执行记录](fw04_sqlite_public_api_execution.md)；Jakarta 新派生成品已全量同步安装并经 Fundwise 验收，见[异机结果](fw04_jakarta_full_copy_acceptance.md)。已开始实施隔离 SQLite 核心及事实迁移，生产数据未改动。用户最新优先级：**数据迁移与其他 VPS 开发数据准备 → 核心派生 → 同步更新接口 → 先跑通 Fundwise 日频工作流**。迁移/异机执行入口见[数据先行开发说明](vps_development_data.md)。此文件替代旧 DG-03 月文件补做和 DG-06 发布代次扩建。详细依据见[数据迁移与接口评估](sqlite_migration_api_assessment.md)。执行规格见[详细需求与设计](sqlite_stock_requirements_design.md)，附[四表 DDL](design/stocks_schema.sql)和[完整模型模板](design/market_four_dimensions.v1.json)。
+日期：2026-09-28。当前进展见[FW-04 执行记录](../achievements/fw04_sqlite_public_api_execution.md)；Jakarta 新派生成品已全量同步安装并经 Fundwise 验收，见[异机结果](../achievements/fw04_jakarta_full_copy_acceptance.md)。已开始实施隔离 SQLite 核心及事实迁移，生产数据未改动。用户最新优先级：**数据迁移与其他 VPS 开发数据准备 → 核心派生 → 同步更新接口 → 先跑通 Fundwise 日频工作流**。迁移/异机执行入口见[数据先行开发说明](../vps_development_data.md)。此文件替代旧 DG-03 月文件补做和 DG-06 发布代次扩建。详细依据见[数据迁移与接口评估](sqlite_migration_api_assessment.md)。执行规格见[详细需求与设计](sqlite_stock_requirements_design.md)，附[四表 DDL](design/stocks_schema.sql)和[完整模型模板](design/market_four_dimensions.v1.json)。
 
 新版权威根固定为本主项目 `data/`，股票主库 `data/stocks.sqlite`；迁移暂存与恢复材料现统一在 `.local/`，不放入运行 data。旧 `~/.aspool` 只作为源/恢复材料。所有工作包遵循[路径契约](sqlite_stock_requirements_design.md#0-新版数据根tdxmandata)。
 
@@ -19,10 +19,10 @@
 | --- | --- | --- | --- |
 | S0 | 需求交叉审核、修正、工作包 | 本轮[审核记录](sqlite_design_review.md)；区分设计通过与待实证事项 | 本轮完成 |
 | S1 | 四表存储核心、规范化、兼容日线读取 | FW-01；仅显式隔离目标 | schema/连接及显式新根公开读路由已实现 |
-| **S3a 提前** | **完整历史原始事实迁移** | FW-02；先样本后全量，原始日线/日期事实/全部来源事件因子逐字段对账 | 已完成全部5,586只股票事实迁移、逐值比较和完整性校验；见[M0执行记录](sqlite_migration_m0_execution.md) |
-| **M0 开发数据** | **其他 VPS 可获取迁入事实与必要公共域** | 封闭工件同步、远端完整性与基础读取；tmux保护任务 | 已完成JakartaVPS数据复制与哈希/结构/计数/读取验收；完整性复用源端结果；见[M0执行记录](sqlite_migration_m0_execution.md) |
-| **S2-D** | **逐股派生 + 日频市场汇总** | FW-03；从已迁入事实重建 daily_features、D汇总，局部更新等价参考重建 | 已实现局部writer与日派生，真实在线/缺补闭环通过；全库历史派生与完整校验通过；新日因子/日历衔接集成通过，Jakarta成品已全量同步并安装，见[执行记录](fw03_daily_update_execution.md) |
-| **S4-D** | **对外接口 + Fundwise日频接入** | FW-04/FW-05；环境评分、周期/梯队、主线一并闭环 | 日频公开接口及 Fundwise 汇总消费已实现，全历史日评分已算；周期输入不足；真实主线已计算 21,617 条，明确为已知样本 partial。Jakarta SDK/HTTP 消费验收通过。见[FW-04](fw04_sqlite_public_api_execution.md) |
+| **S3a 提前** | **完整历史原始事实迁移** | FW-02；先样本后全量，原始日线/日期事实/全部来源事件因子逐字段对账 | 已完成全部5,586只股票事实迁移、逐值比较和完整性校验；见[M0执行记录](../achievements/sqlite_migration_m0_execution.md) |
+| **M0 开发数据** | **其他 VPS 可获取迁入事实与必要公共域** | 封闭工件同步、远端完整性与基础读取；tmux保护任务 | 已完成JakartaVPS数据复制与哈希/结构/计数/读取验收；完整性复用源端结果；见[M0执行记录](../achievements/sqlite_migration_m0_execution.md) |
+| **S2-D** | **逐股派生 + 日频市场汇总** | FW-03；从已迁入事实重建 daily_features、D汇总，局部更新等价参考重建 | 已实现局部writer与日派生，真实在线/缺补闭环通过；全库历史派生与完整校验通过；新日因子/日历衔接集成通过，Jakarta成品已全量同步并安装，见[执行记录](../achievements/fw03_daily_update_execution.md) |
+| **S4-D** | **对外接口 + Fundwise日频接入** | FW-04/FW-05；环境评分、周期/梯队、主线一并闭环 | 日频公开接口及 Fundwise 汇总消费已实现，全历史日评分已算；周期输入不足；真实主线已计算 21,617 条，明确为已知样本 partial。Jakarta SDK/HTTP 消费验收通过。见[FW-04](../achievements/fw04_sqlite_public_api_execution.md) |
 | S5-D | 首个可交付工作流和生产前核心验收 | FW-06；实际日更/历史回算/补数、五年RSS、故障/恢复/回退 | 待实施 |
 | S6-D | 日频能力维护窗口切换 | FW-07；核心验收通过，不等待周月/复制，但明确能力边界 | 待实施，不是当前已获验收 |
 | S2-WM / S4-Models | 周/月公共特征、多模型模板扩展 | FW-08；复用已完成D与存储，不重迁原始历史 | 后续必交，不阻塞首个日频里程碑 |
@@ -144,7 +144,7 @@ v3 不制造 batch_id/stale=False 来欺骗旧消费者。旧应用在旧后端�
 
 主路径：`FW-01 → FW-02 → FW-03 → FW-04 → FW-05 → FW-06（M1） → FW-07`。FW-04 的契约/读实现、FW-05 的消费者适配可对接固定样例提前推进，但只有接入真实迁入数据才计完成。FW-03 内按“因子/参考价 → 限价/连板/MA20 → D汇总 → 局部writer → 历史回填”组织审查小提交，最后必须做一次集成闭环验证。
 
-提交按实际包交付，不一次性堆成大PR：`storage: add SQLite stock store`、`migration: import stock facts`、`derived: compute daily stock features`、`api: expose SQLite daily summaries`、Fundwise仓库的`regime: consume aspool daily features`，后续包单独提交。跨仓库发布记录绑定 tdxman/Fundwise 的具体提交与API契约；实现与事实迁移提交 `0191721` 已推送；后续按实际完成包继续提交，见[M0执行记录](sqlite_migration_m0_execution.md)。
+提交按实际包交付，不一次性堆成大PR：`storage: add SQLite stock store`、`migration: import stock facts`、`derived: compute daily stock features`、`api: expose SQLite daily summaries`、Fundwise仓库的`regime: consume aspool daily features`，后续包单独提交。跨仓库发布记录绑定 tdxman/Fundwise 的具体提交与API契约；实现与事实迁移提交 `0191721` 已推送；后续按实际完成包继续提交，见[M0执行记录](../achievements/sqlite_migration_m0_execution.md)。
 
 ## 10. 首个里程碑 M1：先支撑 Fundwise
 

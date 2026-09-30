@@ -130,7 +130,7 @@ except DataPoolError as exc:
 `attrs` 声明 `scope='SH,SZ'`、`source='baostock'`、`point_in_time=False`。
 能力开关为 `security_daily/security_info/stored_trading_calendar=True`；这不代表完整历史股票池、
 跨市场日历与回测交易状态契约已经实现，原 `calendar/trading_status` 扩展开关仍为 False。
-来源和合并规则见 [BaoStock 补充数据源](baostock.md)。
+来源和合并规则见 [BaoStock 补充数据源](../baostock.md)。
 
 ## 3. Backtest 扩展需求：尚未实现
 
@@ -245,7 +245,7 @@ aspool sync --type ex --category ETF --source tdx --period daily
 ETF 不含 `up_count/down_count`，不能传给 `read_index_daily()`。
 
 扩展资产类别由 `DataPool.describe()["ex_categories"]` 发现，完整规划见
-[aspool ex 扩展资产域设计](aspool_ex_design.md)。只有 `status=implemented` 的类别允许进入
+[aspool ex 扩展资产域设计](../aspool_ex_design.md)。只有 `status=implemented` 的类别允许进入
 数据同步；当前为 `ETF`，港股、美股和大宗期货仍是规划项。
 
 ## 8. 连板跨缺行口径（v7）

@@ -2,7 +2,7 @@
 
 日期：2026-09-29。状态：实施中。需求基线见
 [数据域分层需求](data_platform_v2_requirements.md)。本文说明物理结构、表职责、一致性和迁移方案；
-实际完成范围见 [实施记录](data_platform_v2_execution.md)，当前生产库不能只按文件存在就推断为
+实际完成范围见 [实施记录](../achievements/platform_v2_execution.md)，当前生产库不能只按文件存在就推断为
 已激活。
 
 ## 1. 设计决策
@@ -367,7 +367,7 @@ iter_limit_events_with_amount
 
 指数/ETF 稳定 Enriched、独立 derive 命令、W/M writer 和按需 snapshot 命令尚未实现；
 `snapshots.sqlite` 当前只建立了 schema。跨设备增量同步仍不在本轮范围。精确执行证据和测试前提见
-[实施记录](data_platform_v2_execution.md)。
+[实施记录](../achievements/platform_v2_execution.md)。
 
 ## 8. 跨设备同步备忘（非当前计划）
 

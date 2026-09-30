@@ -2,7 +2,7 @@
 
 2026-09-28：本文是旧后端的兼容性基线，不是新统计目标。用户已指定缺数据与停牌同统计、取消业务批次；新四表与日周月模型契约见[迁移/API 评估](sqlite_migration_api_assessment.md)和[模板设计](regime_model_template_design.md)。迁移需区分保留的原始数据语义与明确改变的统计口径。
 
-日期：2026-09-27。依据 tdxman 基线 `5083dbb` 与 Fundwise `1b25658` 的代码；这是兼容性基线，不是全市场数据完整性证明。整改状态以 [推进方案](data_remediation_execution_plan.md) 为准。
+日期：2026-09-27。依据 tdxman 基线 `5083dbb` 与 Fundwise `1b25658` 的代码；这是兼容性基线，不是全市场数据完整性证明。整改状态以 [推进方案](../achievements/remediation_execution_plan.md) 为准。
 
 ## 键、范围与单位
 
@@ -43,7 +43,7 @@ Fundwise 环境读取：`symbol,market,code,date,close,pre_close,pct_chg,amount,
 |---|---|
 | 既有 605 日 stale、来源冲突与 522 条候选记录 | 重新核验后的基线见 [证据](evidence/data-remediation/20260927-dg00/baseline-verification.json)；DG-04 逐项处理，不沿用历史数量直接批量覆盖 |
 | 日期事实仅覆盖一部分证券/日期；27 种物理 schema | 保留 NULL 和来源；DG-04 做按证券/日期/字段缺口核验。现有行数不证明覆盖完整 |
-| 分年布局兼容 | DG-02 feature 已统一旧式/分年入口及 status/ETF；实际验收见 [报告](data_remediation_dg02_implementation.md)。混存与错误分区拒绝；不自动拆分，完整迁移仍归 DG-03/DG-07 |
+| 分年布局兼容 | DG-02 feature 已统一旧式/分年入口及 status/ETF；实际验收见 [报告](../achievements/dg02_implementation.md)。混存与错误分区拒绝；不自动拆分，完整迁移仍归 DG-03/DG-07 |
 | 无公开逻辑 revision；Fundwise 使用文件统计兜底 | DG-01 记录真实变化，DG-06 再建立公开版本契约，期间保留保守缓存失效 |
 | 撤销、删除、来源优先级更改缺少统一写入契约 | DG-01/03 显式设计并测试；本轮增量合并不推断删除 |
 | 历史名称、ST/板块有效期不完备 | 本期按现行快照语义，PIT 能力另立需求 |

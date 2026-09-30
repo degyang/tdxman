@@ -6,9 +6,9 @@
 
 | 工作包 | 最终代码与证据 | 已验收结果 |
 |---|---|---|
-| DG-00 / DG-01 首批审查 | `f949dbc` / `30870a5` / `981ab5f`；[审查](data_remediation_first_batch_review.md) | 原四项基线失败逐项结案；556 passed、4 skipped、18 subtests |
-| 完整 DG-01 实现与独立恢复修复 | `c3c45f9` / `9db1718` / `bbb50b0` / `5b42c52`；[实施](data_remediation_dg01_implementation.md)、[独立审查](data_remediation_dg01_review.md) | 真实变更/no-op、旁路、持久恢复、内部修订/覆盖日志与成本；最终 640 passed、4 skipped、18 subtests |
-| DG-02 统一旧后端访问 | `6c85113` / `3bfc857`；[实施与入口清单](data_remediation_dg02_implementation.md) | 股票/research/ETF/status/事件金额/维护兼容，跨年预热、冷年解码禁令；666 passed、2 skipped、18 subtests |
+| DG-00 / DG-01 首批审查 | `f949dbc` / `30870a5` / `981ab5f`；[审查](remediation_first_batch_review.md) | 原四项基线失败逐项结案；556 passed、4 skipped、18 subtests |
+| 完整 DG-01 实现与独立恢复修复 | `c3c45f9` / `9db1718` / `bbb50b0` / `5b42c52`；[实施](dg01_implementation.md)、[独立审查](dg01_review.md) | 真实变更/no-op、旁路、持久恢复、内部修订/覆盖日志与成本；最终 640 passed、4 skipped、18 subtests |
+| DG-02 统一旧后端访问 | `6c85113` / `3bfc857`；[实施与入口清单](dg02_implementation.md) | 股票/research/ETF/status/事件金额/维护兼容，跨年预热、冷年解码禁令；666 passed、2 skipped、18 subtests |
 
 DG-01 的 4 个跳过是 2 项未启用联网集成测试及 2 项未配置外部 TickStockPanel host 测试；DG-02 执行完整 unit 范围，2 个跳过均为后者。两次套件范围不同，不将跳过数量变化称为测试覆盖增加。
 
@@ -39,4 +39,4 @@ Run：`run_9d4b546218b4`。同一工作区 `/home/ubuntu/orca/workspaces/tdxman/
 2. **DG-04 数据可用性路径。** 可以先只读重新核实覆盖、字段缺口、来源冲突及实际 stale；历史 605 日和 522 条候选不是当前执行范围。形成逐项补入/否决/延期清单和分批重算计划，生产修改前核实恢复点是否覆盖最新输入，并确定唯一维护写入者。该路径不等待新后端，但候选实验不直接改变生产事实。
 3. **DG-05/06 → DG-07 → DG-08。** 在可靠变化和统一入口上建立字段依赖、递归收敛及公开修订，随后做 Fundwise 配套、同输入影子与故障切换/回退；最后按恢复链、当前发布和未结引用决定退役。生产恢复目标未知项未被工程测试代替，不提前清 stale、切换或删除旧证据。
 
-本轮关闭的是 DG-00 工程基线及 DG-01/DG-02 工程工作包，不是全部数据整治计划。后续状态仍以 [推进方案](data_remediation_execution_plan.md) 为唯一看板。
+本轮关闭的是 DG-00 工程基线及 DG-01/DG-02 工程工作包，不是全部数据整治计划。后续状态仍以 [推进方案](remediation_execution_plan.md) 为唯一看板。

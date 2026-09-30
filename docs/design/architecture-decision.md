@@ -148,7 +148,7 @@
 
 ## 同一月后端的具体后续任务
 
-具体执行顺序、调遣与验收见[DG-03 补做任务卡](data_remediation_dg03_followup.md)。本轮候选评估已完成，工程准入门槛仍未通过。
+具体执行顺序、调遣与验收见[DG-03 补做任务卡](../achievements/dg03_followup.md)。本轮候选评估已完成，工程准入门槛仍未通过。
 
 可行的下一步是让 live catalog 的一个事务同时拥有 manifest/facts/coverage/stale/revision/audit，用有PK/索引的TEMP表暂存触碰月，先完成新immutable parts的fsync，再提交catalog事务；全no-op用批量或索引比较，避免逐行无索引查询。这样可移除每次933.5MB catalog复制，但不是把一行shutil.copy换掉：现有共用apply拥有锁、连接、BEGIN/COMMIT和异常清理，必须抽出由调用者拥有的事务核心，改变native与monthly两条路径的提交责任。
 
@@ -179,6 +179,6 @@
 
 ## 原始证据与复现
 
-小型完整证据在 [20260927-dg03](evidence/data-remediation/20260927-dg03/README.md)，包括 append-only samples、逐轮日志、完整查询 profiles、失败状态、版本/源码哈希、定向测试日志和汇总。大文件及 source-schema.json 留在固定 LAB，证据 inventory 提供路径/大小/哈希或构造清单；仓库不提交 89M 行数据库。每个阶段 provenance 的 git_head 与源码 SHA 是测试绑定，不因最终文档提交自动宣称所有旧阶段在最终 HEAD 重跑。
+小型完整证据在 [20260927-dg03](../evidence/data-remediation/20260927-dg03/README.md)，包括 append-only samples、逐轮日志、完整查询 profiles、失败状态、版本/源码哈希、定向测试日志和汇总。大文件及 source-schema.json 留在固定 LAB，证据 inventory 提供路径/大小/哈希或构造清单；仓库不提交 89M 行数据库。每个阶段 provenance 的 git_head 与源码 SHA 是测试绑定，不因最终文档提交自动宣称所有旧阶段在最终 HEAD 重跑。
 
-脚本入口及预算见 [scripts/dg03/README.md](../scripts/dg03/README.md)。测试只运行 DG03 新增或本次明确受影响的路径；DG00–02 已通过的基线没有重跑。失败构造、被取消的重复轮、nullable 修补失败、5× 宽行/提交失败与 monthly 初始慢路径都保留，summary 不只挑最好一轮。
+脚本入口及预算见 [scripts/dg03/README.md](../../scripts/dg03/README.md)。测试只运行 DG03 新增或本次明确受影响的路径；DG00–02 已通过的基线没有重跑。失败构造、被取消的重复轮、nullable 修补失败、5× 宽行/提交失败与 monthly 初始慢路径都保留，summary 不只挑最好一轮。

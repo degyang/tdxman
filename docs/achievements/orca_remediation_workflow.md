@@ -1,8 +1,8 @@
 # Orca 配合 Aspool 整改的执行约定
 
-日期：2026-09-27。适用范围：Windows Orca + Ubuntu-24.04 WSL 中的 tdxman 开发与隔离验证。整改依赖及验收以 [推进方案](data_remediation_execution_plan.md) 为准。
+日期：2026-09-27。适用范围：Windows Orca + Ubuntu-24.04 WSL 中的 tdxman 开发与隔离验证。整改依赖及验收以 [推进方案](remediation_execution_plan.md) 为准。
 
-当前执行更新：本轮已实际完成四个受监督 Orca worker 任务，并将 DG-01/DG-02 集成 main；模型/effort 均核验且不高于 high。任务、证据复用、终端保留原因和下一工作包见 [集成记录](data_remediation_integration_20260927.md)。下文工具链准备阶段的“尚未启动”描述保留为历史验证边界，不代表当前运行状态。
+当前执行更新：本轮已实际完成四个受监督 Orca worker 任务，并将 DG-01/DG-02 集成 main；模型/effort 均核验且不高于 high。任务、证据复用、终端保留原因和下一工作包见 [集成记录](remediation_integration_20260927.md)。下文工具链准备阶段的“尚未启动”描述保留为历史验证边界，不代表当前运行状态。
 
 ## 1. 已验证的工具链（准备阶段记录）
 
