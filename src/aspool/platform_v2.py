@@ -509,6 +509,8 @@ def _ensure_layout_metadata(root):
 def prepare_platform_v2(root):
     """Copy target stores under the writer lock without switching public reads."""
     root = Path(root).expanduser().resolve()
+    if layout_version(root) == 3:
+        return {"layout_version": 3, "activated": True, "verification": verify_platform_v2(root)}
     for required in ("catalog.duckdb", "stocks.sqlite", "indices.sqlite", "etfs.sqlite"):
         if not (root / required).is_file():
             raise FileNotFoundError(root / required)
@@ -561,6 +563,21 @@ def require_current_mirror(root):
     explicitly; a later, unrelated slice cannot certify its missing rows.
     """
     root = Path(root).resolve()
+    if layout_version(root) == 3:
+        from .sqlite_publication import assert_published
+        from .storage_verify import assert_coherent
+
+        assert_published(root)
+        with sqlite3.connect((root / "stocks.sqlite").as_uri() + "?mode=ro", uri=True) as conn:
+            for alias, file in (
+                ("features", "features.sqlite"),
+                ("adjustments", "adjustments.sqlite"),
+            ):
+                conn.execute(
+                    f'ATTACH DATABASE ? AS "{alias}"', ((root / file).as_uri() + "?mode=ro",)
+                )
+            assert_coherent(conn)
+        return
     if not (root / "features.sqlite").is_file():
         return
     with (
@@ -597,6 +614,9 @@ def require_current_mirror(root):
 def mirror_platform_v2(root, *, symbols, dates, raw_revision, previous_raw_revision=None):
     """Serialize source reads and target commits, including direct maintenance calls."""
     with pool_lock(root, write=True):
+        if layout_version(root) == 3:
+            require_current_mirror(root)
+            return {"mirrored": False, "reason": "canonical storage has no mirror"}
         return _mirror_platform_v2(
             root,
             symbols=symbols,
@@ -781,6 +801,8 @@ def activate_platform_v2(root):
     """Atomically switch public reads only after row and revision verification."""
     root = Path(root).expanduser().resolve()
     with pool_lock(root, write=True):
+        if layout_version(root) == 3:
+            return verify_platform_v2(root)
         check = verify_platform_v2(root, deep=True)
         if not check["ready"]:
             raise ValueError("Platform v2 verification has not passed")
@@ -815,6 +837,10 @@ def activate_platform_v2(root):
 def reconcile_platform_v2(root):
     """Rebuild feature and adjustment mirrors from authoritative local stores."""
     root = Path(root).expanduser().resolve()
+    if layout_version(root) == 3:
+        raise DataPoolError(
+            "MIRROR_RETIRED", "Canonical storage has no mirror; use platform recover"
+        )
     for required in ("stocks.sqlite", "etfs.sqlite", "adjustments.sqlite", "features.sqlite"):
         if not (root / required).is_file():
             raise FileNotFoundError(root / required)
@@ -829,6 +855,10 @@ def rollback_platform_v2(root):
     """Route public reads back to layout 1 while retaining all shadow files."""
     root = Path(root).expanduser().resolve()
     with pool_lock(root, write=True):
+        if layout_version(root) == 3:
+            raise DataPoolError(
+                "LAYOUT_RETIRED", "Restore a verified recovery point; old tables are retired"
+            )
         _set_layout_version(root, 1)
     return platform_status(root)
 
@@ -845,17 +875,47 @@ def _set_layout_version(root, version):
 
 
 def layout_version(root):
-    path = Path(root).expanduser().resolve() / "catalog.duckdb"
+    root = Path(root).expanduser().resolve()
+    path = root / "catalog.duckdb"
+    raw_schema = 1
+    raw_path = root / "stocks.sqlite"
+    if raw_path.is_file():
+        try:
+            with sqlite3.connect(raw_path.as_uri() + "?mode=ro", uri=True) as raw:
+                raw_schema = raw.execute("PRAGMA user_version").fetchone()[0]
+        except sqlite3.Error as exc:
+            raise DataPoolError("LAYOUT_INVALID", "Cannot identify the stock store schema") from exc
     if not path.is_file():
+        if raw_schema >= 3:
+            raise DataPoolError("LAYOUT_INVALID", "Canonical layout catalog is missing")
         return 1
     try:
         with duckdb.connect(str(path), read_only=True) as catalog:
+            metadata = catalog.execute(
+                "SELECT 1 FROM information_schema.tables WHERE table_name='pool_metadata'"
+            ).fetchone()
+            if metadata is None:
+                if raw_schema >= 3:
+                    raise DataPoolError("LAYOUT_INVALID", "Canonical layout metadata is missing")
+                return 1
             row = catalog.execute(
                 "SELECT value FROM pool_metadata WHERE key='layout_version'"
             ).fetchone()
-    except duckdb.Error:
+    except duckdb.Error as exc:
+        raise DataPoolError("LAYOUT_UNAVAILABLE", "Cannot read the pool layout") from exc
+    if row is None:
+        if raw_schema >= 3:
+            raise DataPoolError("LAYOUT_INVALID", "Canonical layout version is missing")
         return 1
-    return int(row[0]) if row else 1
+    try:
+        version = int(row[0])
+    except (TypeError, ValueError) as exc:
+        raise DataPoolError("LAYOUT_INVALID", "Invalid pool layout version") from exc
+    if version not in {1, 2, 3}:
+        raise DataPoolError("LAYOUT_INVALID", "Unsupported pool layout version")
+    if raw_schema >= 3 and version != 3:
+        raise DataPoolError("LAYOUT_INVALID", "Retired layout cannot select canonical storage")
+    return version
 
 
 def verify_platform_v2(root, *, deep=False):
@@ -869,6 +929,10 @@ def verify_platform_v2(root, *, deep=False):
 
 def _verify_platform_v2(root, *, deep=False):
     root = Path(root).expanduser().resolve()
+    if layout_version(root) == 3:
+        from .storage_verify import verify_canonical
+
+        return verify_canonical(root, deep=deep)
     required = [
         "catalog.duckdb",
         "stocks.sqlite",

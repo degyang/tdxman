@@ -1,0 +1,76 @@
+{
+  "root": "/home/ubuntu/aspool-labs/single-authority-20260930/pool",
+  "recovery": "/home/ubuntu/aspool-recovery/single-authority-20260930/snapshot",
+  "from_layout": 2,
+  "layout": 3,
+  "stock_daily_features": {
+    "source": {
+      "rows": 16367332,
+      "sha256": "73cdf244556175bc769349f474580f9d267057b6578b089418c6b7c7f24164ae"
+    },
+    "target_before": {
+      "rows": 16367332,
+      "sha256": "e926be07fd216e88862d6c4225d6b2a787f157c394697b06707ded1ab51fb067"
+    },
+    "target_after": {
+      "rows": 16367332,
+      "sha256": "73cdf244556175bc769349f474580f9d267057b6578b089418c6b7c7f24164ae"
+    },
+    "copied_rows": 292,
+    "deleted_rows": 0
+  },
+  "market_regime_features": {
+    "source": {
+      "rows": 12964,
+      "sha256": "474e36dd8c7b1b57675528cd324435147875cfc2d1da7d74a96f75d558fe8cb9"
+    },
+    "target_before": {
+      "rows": 12964,
+      "sha256": "474e36dd8c7b1b57675528cd324435147875cfc2d1da7d74a96f75d558fe8cb9"
+    },
+    "target_after": {
+      "rows": 12964,
+      "sha256": "474e36dd8c7b1b57675528cd324435147875cfc2d1da7d74a96f75d558fe8cb9"
+    },
+    "copied_rows": 0,
+    "deleted_rows": 0
+  },
+  "references": {
+    "stock_adjustment_factors": 57476,
+    "stock_factor_anchors": 57391,
+    "etf_adjustment_factors": 1286
+  },
+  "source_event_rows": 186644,
+  "verification": {
+    "layout_version": 3,
+    "activated": true,
+    "ready": true,
+    "verification_level": "shallow",
+    "publication_pending": false,
+    "ownership": {
+      "stocks.sqlite": {
+        "missing_tables": [],
+        "retired_tables_present": [],
+        "schema": 3
+      },
+      "features.sqlite": {
+        "missing_tables": [],
+        "retired_tables_present": [],
+        "schema": 3
+      },
+      "adjustments.sqlite": {
+        "missing_tables": [],
+        "retired_tables_present": [],
+        "schema": 3
+      },
+      "etfs.sqlite": {
+        "missing_tables": [],
+        "retired_tables_present": [],
+        "schema": 1
+      }
+    },
+    "source_events_only": true
+  },
+  "seconds": 232.35639120200358,
+  "environment": "full production clone; not production cutover"
+}

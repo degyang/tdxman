@@ -75,6 +75,14 @@ def sync_daily_source(
 
         def mirror(applied, symbols):
             applied["mirror_elapsed_ms"] = 0
+            from .platform_v2 import layout_version
+
+            if layout_version(root) == 3:
+                applied["platform_v2"] = {
+                    "mirrored": False,
+                    "reason": "canonical storage has no mirror",
+                }
+                return
             if not (Path(root) / "features.sqlite").is_file():
                 return
             if applied["raw_revision"] == applied.get("previous_raw_revision"):
@@ -167,9 +175,7 @@ def sync_daily_source(
                 **applied,
                 raw_writer_elapsed_ms=applied["elapsed_ms"],
                 factor_writer_elapsed_ms=0,
-                factor_success=[
-                    e["symbol"] for e in inline_extensions if e["symbol"] in remaining
-                ],
+                factor_success=[e["symbol"] for e in inline_extensions if e["symbol"] in remaining],
             )
 
             # Adjacent quote-proven no-event extensions share a transaction so

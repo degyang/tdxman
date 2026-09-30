@@ -1,5 +1,7 @@
 # asPool 数据域分层设计
 
+> 2026-09-30 存储整改：当前布局 3 的唯一物理所有权、一致发布和旧表退役以 [单一权威存储整改](../implements/single_authority_storage.md) 为准。本文旧镜像迁移步骤仅用于解释历史设计，不能据此新建第二套生产表。
+
 日期：2026-09-29。状态：实施中。需求基线见
 [数据域分层需求](data_platform_v2_requirements.md)。本文说明物理结构、表职责、一致性和迁移方案；
 实际完成范围见 [实施记录](../implements/platform_v2_execution.md)，当前生产库不能只按文件存在就推断为

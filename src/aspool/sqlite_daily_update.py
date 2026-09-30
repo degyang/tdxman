@@ -14,6 +14,7 @@ from collections import defaultdict
 from datetime import date
 
 from .api_contract import DataPoolError
+from .sqlite_canonical import canonical_writer
 from .sqlite_daily_derived import (
     DERIVED_COLUMNS,
     _factor_at,
@@ -131,6 +132,7 @@ def _write(conn, table, key, fields, old):
     return set(delta) if old else set(fields) | {"_insert"}
 
 
+@canonical_writer("daily_update")
 def apply_daily_changes(
     conn: sqlite3.Connection,
     *,

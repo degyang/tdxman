@@ -46,6 +46,8 @@ commands 层不依赖 transport，可独立单测。修改 codec 或 commands �
 6. **按恢复能力决定保留与清理。** 生产修复、迁移前建立一致恢复点并验证恢复。删除前核对当前发布、保留恢复链、运行任务及未结问题引用；保留必要的唯一来源证据。文件年龄、版本号、SHA 校验或连续若干日成功，均不能单独证明可以删除。
 7. **用正确性和增长负载验收演进。** 同一输入、规则与维度口径下，增量须与完整参考计算一致。存储选型同时验证近期全市场、单证券历史、修订写入、增长、并发和恢复；不以小文件数量直接决定拆分，也不将窄表微基准当作完整迁移验收。保持公开 API，覆盖股票、ETF 和既有消费者。
 
+存储设计变更必须列出每类数据的唯一物理所有者、所有读写入口、迁移与恢复方案、旧对象退役及公共契约测试。接口兼容通过适配层维持，不能据此保留两套可写生产权威。布局 3 的日更和汇总维护使用共同发布机制；多 WAL 库提交必须有持久化意图及中断恢复，池锁或 ATTACH 本身不构成崩溃原子性。布局识别失败明确报错，禁止按文件存在猜测或回退。恢复材料保留在池外；代码和布局须配套部署。详见 [单一权威存储整改](docs/implements/single_authority_storage.md)。
+
 按需查阅：[治理研究](docs/design/data_management_principles.md)、[存储专项评估](docs/audit/daily_storage_architecture_assessment.md)、[落地推进与验收](docs/achievements/remediation_execution_plan.md)。工程状态以推进方案及实际证据为准，不把计划或评估写成已实现。
 
 在 Orca 中执行整改时按 [工作区与验证约定](docs/implements/orca_remediation_workflow.md) 准备提交基线、独立 Python 环境及数据根目录；worktree 只隔离代码，不隔离默认生产池。安装 orchestration 技能不等于授权启动多 agent。
@@ -54,7 +56,7 @@ Codex 默认实施使用 `gpt-6-sol / high`；复杂存储/依赖设计和关键
 
 ## 新版运行数据目录
 
-新版 `tdxman/data/` 包含公共目录库 `catalog.duckdb`、三个原始行情库 `stocks.sqlite`、`indices.sqlite`、`etfs.sqlite`，以及分层布局的 `fundamentals.sqlite`（`stock_financial_reports`、`stock_shareholder_counts`）、`adjustments.sqlite`（复权因子与锚点）、`features.sqlite`（派生镜像）、`snapshots.sqlite`（按需缓存 schema）（运行时可有数据库 WAL/SHM）。当前生产池已退役全部 `lake/` 分区：个股、指数、ETF 均从对应 SQLite 读写，基本面报告和股东人数在 `fundamentals.sqlite`，catalog 的 `fundamental_snapshots` 仅为遗留审计表；不能因旧命令重新生成 Parquet 或采集缓存。指数保留 `aspool sync --type index`，ETF 保留 `aspool sync --type ex --category ETF`。迁移源和恢复材料放 `.local/recovery/`，运行日志、传输清单和详细验证放 `.local/reports/`；小型交付证据进 `docs/evidence/`。临时测试库不得留在运行数据目录，也不参与复制。迁移验收必须列全数据域及其读写入口，不能以股票或指数迁移代替整个池完成。先完成 Jakarta 的关闭工件全量复制、哈希验收和受控安装，再考虑增量同步；不能将初始 M0 副本冒充最新派生成品。
+新版 `tdxman/data/` 包含公共目录库 `catalog.duckdb`、三个原始行情库 `stocks.sqlite`、`indices.sqlite`、`etfs.sqlite`，以及分层布局的 `fundamentals.sqlite`（`stock_financial_reports`、`stock_shareholder_counts`）、`adjustments.sqlite`（复权因子与锚点）、`features.sqlite`（唯一派生存储）、`snapshots.sqlite`（按需缓存 schema）（运行时可有数据库 WAL/SHM）。当前生产池已退役全部 `lake/` 分区：个股、指数、ETF 均从对应 SQLite 读写，基本面报告和股东人数在 `fundamentals.sqlite`，catalog 的 `fundamental_snapshots` 仅为遗留审计表；不能因旧命令重新生成 Parquet 或采集缓存。指数保留 `aspool sync --type index`，ETF 保留 `aspool sync --type ex --category ETF`。迁移源和恢复材料放 `.local/recovery/`，运行日志、传输清单和详细验证放 `.local/reports/`；小型交付证据进 `docs/evidence/`。临时测试库不得留在运行数据目录，也不参与复制。迁移验收必须列全数据域及其读写入口，不能以股票或指数迁移代替整个池完成。先完成 Jakarta 的关闭工件全量复制、哈希验收和受控安装，再考虑增量同步；不能将初始 M0 副本冒充最新派生成品。
 
 ## 协议编解码注意事项
 

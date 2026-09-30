@@ -808,12 +808,28 @@ def fundamentals(
 @cli.command("platform", cls=AspoolCommand)
 @click.argument(
     "action",
-    type=click.Choice(["prepare", "reconcile", "verify", "status", "activate", "rollback"]),
+    type=click.Choice(
+        [
+            "prepare",
+            "reconcile",
+            "verify",
+            "status",
+            "activate",
+            "rollback",
+            "consolidate",
+            "recover",
+            "restore",
+        ]
+    ),
 )
 @click.option("--root", type=click.Path(path_type=Path))
 @click.option("--deep", is_flag=True, help="仅用于 verify：逐字段比对全部派生内容。")
-def platform(action: str, root: Path | None, deep: bool) -> None:
+@click.option(
+    "--recovery", type=click.Path(path_type=Path), help="consolidate/restore 的已验证池外恢复点。"
+)
+def platform(action: str, root: Path | None, deep: bool, recovery: Path | None) -> None:
     """准备、核验或检查分层数据布局；prepare 不切换公开读取。"""
+    from .api_contract import DataPoolError
     from .platform_v2 import (
         activate_platform_v2,
         platform_status,
@@ -822,10 +838,14 @@ def platform(action: str, root: Path | None, deep: bool) -> None:
         rollback_platform_v2,
         verify_platform_v2,
     )
+    from .sqlite_publication import recover_publication
+    from .storage_migration import consolidate_storage, restore_migration
 
     target = _root(root) if root else Path("data").resolve()
     if deep and action != "verify":
         raise click.UsageError("--deep 仅用于 platform verify")
+    if (action in {"consolidate", "restore"}) != (recovery is not None):
+        raise click.UsageError("consolidate/restore 必须显式提供 --recovery；其他动作不接受该参数")
     try:
         result = {
             "prepare": prepare_platform_v2,
@@ -834,8 +854,20 @@ def platform(action: str, root: Path | None, deep: bool) -> None:
             "status": platform_status,
             "activate": activate_platform_v2,
             "rollback": rollback_platform_v2,
-        }[action](target, **({"deep": deep} if action == "verify" else {}))
-    except (OSError, ValueError) as exc:
+            "consolidate": consolidate_storage,
+            "recover": recover_publication,
+            "restore": restore_migration,
+        }[action](
+            target,
+            **(
+                {"deep": deep}
+                if action == "verify"
+                else {"recovery": recovery}
+                if recovery is not None
+                else {}
+            ),
+        )
+    except (OSError, ValueError, DataPoolError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(json.dumps(result, ensure_ascii=False, indent=2))
     if action == "verify" and not result["ready"]:
@@ -1286,10 +1318,10 @@ def query(
             with duckdb.connect(str(target / "catalog.duckdb"), read_only=True) as conn:
                 frame = conn.execute(sql, params).fetchdf()
         else:
-            from .sqlite_etf_store import connection as etf_connection
+            from .sqlite_etf_store import factor_connection
             from .sqlite_stock_store import stock_connection
 
-            db = stock_connection if dataset == "corporate-actions" else etf_connection
+            db = stock_connection if dataset == "corporate-actions" else factor_connection
             table_name = (
                 "corporate_actions" if dataset == "corporate-actions" else "adjustment_factors"
             )

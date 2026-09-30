@@ -276,6 +276,9 @@ def pending(root):
 
 
 def assert_readable(root):
+    from .sqlite_publication import assert_published
+
+    assert_published(root)
     if pending(root):
         from .api_contract import DataPoolError
 

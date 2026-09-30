@@ -114,7 +114,8 @@ class StockSnapshot:
         self.conn = self._connection.__enter__()
         from .platform_v2 import layout_version
 
-        if layout_version(self.root) >= 2:
+        version = layout_version(self.root)
+        if version == 2:
             uri = (self.root / "features.sqlite").resolve().as_uri() + "?mode=ro"
             self.conn.execute("ATTACH DATABASE ? AS features", (uri,))
             adjustment_uri = (self.root / "adjustments.sqlite").resolve().as_uri() + "?mode=ro"
@@ -122,7 +123,12 @@ class StockSnapshot:
             self.feature_table = "features.stock_daily_features"
             self.summary_table = "features.market_regime_features"
             self.factor_table = "adjustments.stock_adjustment_factors"
-        self.conn.execute("BEGIN")
+        elif version == 3:
+            self.feature_table = "features.stock_daily_features"
+            self.summary_table = "features.market_regime_features"
+            self.factor_table = "adjustments.stock_adjustment_factors"
+        if not self.conn.in_transaction:
+            self.conn.execute("BEGIN")
         self.conn.execute("SELECT name FROM sqlite_master LIMIT 1").fetchone()
         if self.feature_table != "daily_features":
             raw = self.conn.execute(
