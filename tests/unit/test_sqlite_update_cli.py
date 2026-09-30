@@ -1,6 +1,8 @@
 """Quote/K-line separation, finite source retries and metric dependency updates."""
 
+import json
 from datetime import date, datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import duckdb
@@ -827,3 +829,31 @@ def test_sync_repairs_only_missing_summaries_without_network(tmp_path, monkeypat
     assert result["summary_repair"] == {"dates": days[-2:], "changed_rows": 4}
     repeated = run_update(tmp_path, mode="sync", now=NOW, count=2)
     assert repeated["summary_repair"] == {"dates": [], "changed_rows": 0}
+
+
+def test_dated_sync_cli_reaches_real_writer_without_count(tmp_path, monkeypatch):
+    days = store(tmp_path)
+    with stock_connection(tmp_path, read_only=False) as conn:
+        conn.execute(
+            "INSERT INTO corporate_actions(symbol,effective_date,record_kind,source,source_key,"
+            "cumulative_factor,valid_from,valid_through,factor_basis,updated_at) "
+            "VALUES ('000001.SZ',?,'factor','fixture','selected',1,?,?,"
+            "'source_cumulative_factor:source_anchor:fixture',1)",
+            (days[0], days[0], days[-1]),
+        )
+        conn.commit()
+
+    def network_forbidden(**kwargs):
+        raise AssertionError("A complete dated window must not contact the source")
+
+    monkeypatch.setattr(MacClient, "from_best_host", network_forbidden)
+    result = CliRunner().invoke(
+        cli,
+        ["sync", "--root", str(tmp_path), "--start", days[-2], "--end", days[-1]],
+    )
+    assert result.exit_code == 0, result.output
+    report_path = Path(result.output.split("报告：", 1)[1].strip())
+    report = json.loads(report_path.read_text())
+    assert report["status"] == "ok"
+    assert report["requested"] == 0
+    assert report["summary_repair"] == {"dates": days[-2:], "changed_rows": 4}

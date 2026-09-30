@@ -336,7 +336,9 @@ def run_update(
         raise ValueError("Unsupported status filter")
     if max_consecutive_failures < 1:
         raise ValueError("max_consecutive_failures must be positive")
-    if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 60:
+    if count is not None and (
+        isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 60
+    ):
         raise ValueError("count must be between 1 and 60")
     if mode == "sync" and ((start is None) != (end is None)):
         raise ValueError("Specify both --start and --end")
@@ -350,7 +352,7 @@ def run_update(
                 for row in calendar.execute(
                     "SELECT trade_date FROM security_calendar WHERE is_open AND trade_date<=? "
                     "ORDER BY trade_date DESC LIMIT ?",
-                    [day, count],
+                    [day, 10 if count is None else count],
                 ).fetchall()
             ]
         if not recent:
