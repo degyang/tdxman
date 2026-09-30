@@ -876,6 +876,16 @@ def _set_layout_version(root, version):
 
 def layout_version(root):
     root = Path(root).expanduser().resolve()
+    if not root.is_dir():
+        return _read_layout_version(root)
+    # Catalog writers hold the pool lock. Wait for their commit before opening
+    # DuckDB; access errors must still fail closed, never select an old layout.
+    with pool_lock(root):
+        return _read_layout_version(root)
+
+
+def _read_layout_version(root):
+    root = Path(root).expanduser().resolve()
     path = root / "catalog.duckdb"
     raw_schema = 1
     raw_path = root / "stocks.sqlite"

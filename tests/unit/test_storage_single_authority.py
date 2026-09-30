@@ -477,3 +477,45 @@ def test_historical_event_revision_updates_single_reference_and_feature_owners(c
             "SELECT DISTINCT record_kind FROM main.corporate_actions"
         ).fetchall() == [("event",)]
     assert verify_platform_v2(canonical)["ready"]
+
+
+def _hold_catalog_write_lock(root, ready, release):
+    from aspool.pool import pool_lock
+
+    with pool_lock(root, write=True), duckdb.connect(str(root / "catalog.duckdb")):
+        ready.set()
+        assert release.wait(10)
+
+
+def test_layout_reader_waits_for_catalog_writer_in_another_process(canonical):
+    import multiprocessing
+    import threading
+
+    context = multiprocessing.get_context("spawn")
+    ready, release = context.Event(), context.Event()
+
+    worker = context.Process(target=_hold_catalog_write_lock, args=(canonical, ready, release))
+    worker.start()
+    assert ready.wait(10)
+    started, finished = threading.Event(), threading.Event()
+    result = []
+
+    def reader():
+        started.set()
+        try:
+            result.append(layout_version(canonical))
+        except Exception as error:
+            result.append(error)
+        finally:
+            finished.set()
+
+    thread = threading.Thread(target=reader)
+    thread.start()
+    try:
+        assert started.wait(10)
+        assert not finished.wait(0.1)
+    finally:
+        release.set()
+        thread.join(10)
+        worker.join(10)
+    assert worker.exitcode == 0 and result == [3]
