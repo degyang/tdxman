@@ -121,9 +121,7 @@ def existing_tables(root: Path) -> set[str]:
     """只读列出已有的表；目录/库不存在时返回空集。"""
     try:
         with read_only_catalog(root) as conn:
-            rows = conn.execute(
-                "select table_name from information_schema.tables"
-            ).fetchall()
+            rows = conn.execute("select table_name from information_schema.tables").fetchall()
     except (FileNotFoundError, duckdb.Error):
         return set()
     return {row[0] for row in rows}
@@ -206,11 +204,22 @@ def record_coverages(root: Path, entries: list[tuple]) -> None:
                 if table == "coverage":
                     from .change_protocol import coverage_change
 
-                    coverage_change(conn, table,
-                                    ["symbol", "market", "start_date", "end_date", "row_count",
-                                     "source", "updated_at"],
-                                    [symbol, market, start, end, rows, source, now], ["symbol"],
-                                    reason="coverage_extent_refresh")
+                    coverage_change(
+                        conn,
+                        table,
+                        [
+                            "symbol",
+                            "market",
+                            "start_date",
+                            "end_date",
+                            "row_count",
+                            "source",
+                            "updated_at",
+                        ],
+                        [symbol, market, start, end, rows, source, now],
+                        ["symbol"],
+                        reason="coverage_extent_refresh",
+                    )
                     continue
                 conn.execute(
                     f"""
