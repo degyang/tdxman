@@ -384,7 +384,7 @@ def test_reconcile_rebuilds_features_and_adjustments(tmp_path):
             "9,0,9.9,8.1,0,0,0,0,0,0,1,1)"
         )
         conn.commit()
-    verify = verify_platform_v2(tmp_path)
+    verify = verify_platform_v2(tmp_path, deep=True)
     assert verify["ready"] is False
     # EXCEPT detects both the missing row and the extra stale row
     sdf = verify["counts"]["stock_daily_features"]
@@ -429,7 +429,7 @@ def test_verify_detects_feature_content_mismatch(tmp_path):
             "WHERE symbol='000001.SZ' AND trade_date='2026-09-28'"
         )
         conn.commit()
-    result = verify_platform_v2(tmp_path)
+    result = verify_platform_v2(tmp_path, deep=True)
     assert result["ready"] is False
     sdf = result["counts"]["stock_daily_features"]
     assert sdf["source"] == sdf["target"]  # same row count

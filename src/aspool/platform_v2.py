@@ -353,26 +353,30 @@ def _reconcile_features(root):
             )
         target.execute("DELETE FROM stock_daily_features")
         target.execute("DELETE FROM market_regime_features")
-        columns = [row[1] for row in source.execute("PRAGMA table_info(daily_features)")]
-        projection = ",".join('"' + name + '"' for name in columns)
-        rows = source.execute(f"SELECT {projection} FROM daily_features").fetchall()
-        target.executemany(
-            f"INSERT INTO stock_daily_features({projection}) VALUES ("
-            + ",".join("?" for _ in columns)
-            + ")",
-            rows,
-        )
-        feature_rows = len(rows)
-        mkt_columns = [row[1] for row in source.execute("PRAGMA table_info(market_daily_summary)")]
-        mkt_projection = ",".join('"' + name + '"' for name in mkt_columns)
-        mkt_rows = source.execute(f"SELECT {mkt_projection} FROM market_daily_summary").fetchall()
-        target.executemany(
-            f"INSERT INTO market_regime_features({mkt_projection}) VALUES ("
-            + ",".join("?" for _ in mkt_columns)
-            + ")",
-            mkt_rows,
-        )
-        summary_rows = len(mkt_rows)
+        # ATTACH source: INSERT SELECT runs inside SQLite, no Python-side row materialisation.
+        target.execute("ATTACH DATABASE ? AS _recon_src", (str(root / "stocks.sqlite"),))
+        try:
+            columns = [row[1] for row in source.execute("PRAGMA table_info(daily_features)")]
+            projection = ",".join('"' + name + '"' for name in columns)
+            target.execute(
+                f"INSERT INTO stock_daily_features({projection}) "
+                f"SELECT {projection} FROM _recon_src.daily_features"
+            )
+            feature_rows = target.execute("SELECT changes()").fetchone()[0]
+            mkt_columns = [
+                row[1] for row in source.execute("PRAGMA table_info(market_daily_summary)")
+            ]
+            mkt_projection = ",".join('"' + name + '"' for name in mkt_columns)
+            target.execute(
+                f"INSERT INTO market_regime_features({mkt_projection}) "
+                f"SELECT {mkt_projection} FROM _recon_src.market_daily_summary"
+            )
+            summary_rows = target.execute("SELECT changes()").fetchone()[0]
+        finally:
+            try:
+                target.execute("DETACH DATABASE _recon_src")
+            except sqlite3.OperationalError:
+                pass  # locked by active transaction; auto-detached on commit
         _create_renamed_indexes(source, target, "daily_features", "stock_daily_features")
         _ensure_covering_event_index(target)
         _create_renamed_indexes(source, target, "market_daily_summary", "market_regime_features")
@@ -693,7 +697,7 @@ def activate_platform_v2(root):
     """Atomically switch public reads only after row and revision verification."""
     root = Path(root).expanduser().resolve()
     with pool_lock(root, write=True):
-        check = verify_platform_v2(root)
+        check = verify_platform_v2(root, deep=True)
         if not check["ready"]:
             raise ValueError("Platform v2 verification has not passed")
         with (
@@ -733,7 +737,7 @@ def reconcile_platform_v2(root):
     with pool_lock(root, write=True):
         adjustments = _prepare_adjustments(root)
         features = _reconcile_features(root)
-        verification = verify_platform_v2(root)
+        verification = verify_platform_v2(root, deep=True)
     return {"adjustments": adjustments, "features": features, "verification": verification}
 
 
@@ -770,7 +774,7 @@ def layout_version(root):
     return int(row[0]) if row else 1
 
 
-def verify_platform_v2(root):
+def verify_platform_v2(root, *, deep=False):
     root = Path(root).expanduser().resolve()
     required = [
         "catalog.duckdb",
@@ -792,35 +796,36 @@ def verify_platform_v2(root):
     ):
         if new.execute("PRAGMA user_version").fetchone()[0] != 1:
             result["ready"] = False
-        # Attach source DB so EXCEPT can compare across databases.
+        # Row-count comparison (always, fast) + optional full EXCEPT (deep, slow).
         source_path = (root / "stocks.sqlite").resolve()
-        new.execute("ATTACH DATABASE ? AS _verify_src", (str(source_path),))
-        try:
-            for source, target in (
-                ("daily_features", "stock_daily_features"),
-                ("market_daily_summary", "market_regime_features"),
-            ):
-                source_count = old.execute(f"SELECT count(*) FROM {source}").fetchone()[0]
-                target_count = new.execute(f"SELECT count(*) FROM {target}").fetchone()[0]
-                extra = new.execute(
-                    f"SELECT count(*) FROM "
-                    f"(SELECT * FROM {target} EXCEPT SELECT * FROM _verify_src.{source})"
-                ).fetchone()[0]
-                missing_rows = new.execute(
-                    f"SELECT count(*) FROM "
-                    f"(SELECT * FROM _verify_src.{source} EXCEPT SELECT * FROM {target})"
-                ).fetchone()[0]
+        for source, target in (
+            ("daily_features", "stock_daily_features"),
+            ("market_daily_summary", "market_regime_features"),
+        ):
+            source_count = old.execute(f"SELECT count(*) FROM {source}").fetchone()[0]
+            target_count = new.execute(f"SELECT count(*) FROM {target}").fetchone()[0]
+            entry = {"source": source_count, "target": target_count}
+            if deep:
+                new.execute("ATTACH DATABASE ? AS _verify_src", (str(source_path),))
+                try:
+                    extra = new.execute(
+                        f"SELECT count(*) FROM "
+                        f"(SELECT * FROM {target} EXCEPT SELECT * FROM _verify_src.{source})"
+                    ).fetchone()[0]
+                    missing_rows = new.execute(
+                        f"SELECT count(*) FROM "
+                        f"(SELECT * FROM _verify_src.{source} EXCEPT SELECT * FROM {target})"
+                    ).fetchone()[0]
+                finally:
+                    new.execute("DETACH DATABASE _verify_src")
+                entry["extra"] = extra
+                entry["missing"] = missing_rows
                 content_equal = extra == 0 and missing_rows == 0
-                result["counts"][target] = {
-                    "source": source_count,
-                    "target": target_count,
-                    "extra": extra,
-                    "missing": missing_rows,
-                    "content_equal": content_equal,
-                }
-                result["ready"] = result["ready"] and content_equal
-        finally:
-            new.execute("DETACH DATABASE _verify_src")
+            else:
+                content_equal = source_count == target_count
+            entry["content_equal"] = content_equal
+            result["counts"][target] = entry
+            result["ready"] = result["ready"] and content_equal
         event_index = new.execute(
             "SELECT sql FROM sqlite_master WHERE type='index' "
             "AND name='stock_daily_features_events'"
