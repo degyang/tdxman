@@ -249,7 +249,8 @@ def consolidate_storage(root, *, recovery):
             conn.execute("ALTER TABLE main.corporate_actions RENAME TO _retired_actions")
             conn.execute(EVENT_DDL)
             event_columns = (
-                "symbol,effective_date,record_kind,source,source_key,category,payload_json,updated_at"
+                "symbol,effective_date,record_kind,source,source_key,"
+                "category,payload_json,updated_at"
             )
             before = conn.execute(
                 f"SELECT {event_columns} FROM _retired_actions WHERE record_kind='event' "

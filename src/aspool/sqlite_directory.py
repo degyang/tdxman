@@ -10,6 +10,7 @@ from tdxman.exceptions import TdxError
 from tdxman.mac.enums import Category, SortOrder, SortType
 from tdxman.models.enums import Market
 
+from .pool import pool_lock
 from .source_retry import EmptySourceResponse
 
 
@@ -121,7 +122,7 @@ def listing_metadata(root, symbols, session, *, day, report):
         updates.append((listed, datetime.combine(day, datetime.min.time()), symbol))
         report["fetched"].append(symbol)
     if updates:
-        with duckdb.connect(str(root / "catalog.duckdb")) as conn:
+        with pool_lock(root, write=True), duckdb.connect(str(root / "catalog.duckdb")) as conn:
             conn.execute("BEGIN")
             conn.executemany(
                 "UPDATE securities SET listing_date=?,updated_at=? "

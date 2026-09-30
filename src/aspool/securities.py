@@ -7,6 +7,8 @@ from pathlib import Path
 
 import duckdb
 
+from .pool import pool_lock
+
 DDL = """
 CREATE TABLE IF NOT EXISTS securities (
     symbol VARCHAR PRIMARY KEY,
@@ -44,7 +46,7 @@ def ensure_securities(root: Path) -> dict[str, int]:
     path = Path(root).resolve() / "catalog.duckdb"
     path.parent.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).replace(tzinfo=None)
-    with duckdb.connect(str(path)) as conn:
+    with pool_lock(root, write=True), duckdb.connect(str(path)) as conn:
         conn.execute("BEGIN")
         try:
             tables = _tables(conn)
@@ -146,7 +148,10 @@ def publish_directory(
         raise ValueError("Empty directory cannot be published")
     ensure_securities(root)
     complete_markets = complete_markets or {row[1] for row in normalized.values()}
-    with duckdb.connect(str(Path(root).resolve() / "catalog.duckdb")) as conn:
+    with (
+        pool_lock(root, write=True),
+        duckdb.connect(str(Path(root).resolve() / "catalog.duckdb")) as conn,
+    ):
         conn.execute("BEGIN")
         try:
             previous = {
@@ -188,8 +193,9 @@ def publish_directory(
         except BaseException:
             conn.execute("ROLLBACK")
             raise
-    return dict(listed=len(normalized), added=added, changed=changed,
-                unchanged=unchanged, inactive=inactive)
+    return dict(
+        listed=len(normalized), added=added, changed=changed, unchanged=unchanged, inactive=inactive
+    )
 
 
 def active_securities(root: Path, asset_type: str, markets: set[str] | None = None):
@@ -243,7 +249,10 @@ def publish_index_directory(
         raise ValueError("Empty index directory cannot be published")
     ensure_securities(root)
     benchmark_symbols = benchmark_symbols or set()
-    with duckdb.connect(str(Path(root).resolve() / "catalog.duckdb")) as conn:
+    with (
+        pool_lock(root, write=True),
+        duckdb.connect(str(Path(root).resolve() / "catalog.duckdb")) as conn,
+    ):
         conn.execute("BEGIN")
         try:
             previous = {

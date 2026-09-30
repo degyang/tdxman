@@ -618,7 +618,7 @@ def refresh_source_calendar(root, *, client, start, end):
         observed[day] = flag
     if observed.keys() != expected:
         raise ValueError("Incomplete calendar response")
-    with duckdb.connect(str(Path(root) / "catalog.duckdb")) as catalog:
+    with pool_lock(root, write=True), duckdb.connect(str(Path(root) / "catalog.duckdb")) as catalog:
         catalog.execute("BEGIN")
         try:
             known = {

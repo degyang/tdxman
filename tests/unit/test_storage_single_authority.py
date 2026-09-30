@@ -519,3 +519,28 @@ def test_layout_reader_waits_for_catalog_writer_in_another_process(canonical):
         thread.join(10)
         worker.join(10)
     assert worker.exitcode == 0 and result == [3]
+
+
+def test_quote_calendar_writer_holds_pool_lock_for_catalog_lifetime(canonical, monkeypatch):
+    from types import SimpleNamespace
+
+    from aspool.pool import _holds_write_lock
+    from aspool.sqlite_update_cli import _quote_calendar
+
+    with duckdb.connect(str(canonical / "catalog.duckdb")) as conn:
+        conn.execute(
+            "CREATE TABLE security_calendar(trade_date DATE PRIMARY KEY,"
+            "is_open BOOLEAN,source VARCHAR)"
+        )
+    original = duckdb.connect
+
+    def guarded(path, **options):
+        if not options.get("read_only", False):
+            assert _holds_write_lock(canonical)
+        return original(path, **options)
+
+    monkeypatch.setattr(duckdb, "connect", guarded)
+    quotes = SimpleNamespace(rows={"000001.SH": {}}, fetch=lambda symbols: None)
+    _quote_calendar(canonical, quotes, "2026-09-29")
+    with original(str(canonical / "catalog.duckdb"), read_only=True) as conn:
+        assert conn.execute("SELECT is_open FROM security_calendar").fetchall() == [(True,)]

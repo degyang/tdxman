@@ -18,6 +18,7 @@ from tdxman.exceptions import TdxError
 from tdxman.models.enums import Market
 
 from .fundamentals import _quote_bar, _quote_date, quote_update_allowed
+from .pool import pool_lock
 from .source_retry import EmptySourceResponse, read_with_retry
 from .sqlite_daily_sync import (
     fetch_tdx_action_interval,
@@ -277,7 +278,7 @@ def _quote_calendar(root, quotes, day):
     quotes.fetch(["000001.SH"])
     if "000001.SH" not in quotes.rows:
         raise EmptySourceResponse("No current Shanghai index quote to confirm the trading session")
-    with duckdb.connect(str(root / "catalog.duckdb")) as conn:
+    with pool_lock(root, write=True), duckdb.connect(str(root / "catalog.duckdb")) as conn:
         existing = conn.execute(
             "SELECT is_open FROM security_calendar WHERE trade_date=?", [day]
         ).fetchone()
@@ -575,7 +576,7 @@ def run_update(
                 raise EmptySourceResponse("No index sessions in the requested sync window")
             if len(index) > 60:
                 raise ValueError("Expected at most 60 input sessions")
-            with duckdb.connect(str(root / "catalog.duckdb")) as conn:
+            with pool_lock(root, write=True), duckdb.connect(str(root / "catalog.duckdb")) as conn:
                 conn.execute("BEGIN")
                 for d in index["date"]:
                     old = conn.execute(
@@ -606,6 +607,7 @@ def run_update(
 
         def action_fetcher(symbol, first, last):
             nonlocal action_elapsed_ms
+
             def fetch(connection):
                 try:
                     return fetch_tdx_action_interval(connection, symbol, first, last)

@@ -157,9 +157,12 @@ def sync_indices(
                 report["success"].append(result)
                 if item["market"] == "SH" and item["code"] == "000001":
                     days = sorted({str(row["date"])[:10] for row in rows})
-                    with duckdb.connect(str(root / "catalog.duckdb")) as catalog:
+                    with (
+                        pool_lock(root, write=True),
+                        duckdb.connect(str(root / "catalog.duckdb")) as catalog,
+                    ):
                         catalog.execute(
-                            "CREATE TABLE IF NOT EXISTS security_calendar(" 
+                            "CREATE TABLE IF NOT EXISTS security_calendar("
                             "trade_date DATE PRIMARY KEY,is_open BOOLEAN,source VARCHAR)"
                         )
                         catalog.execute(
