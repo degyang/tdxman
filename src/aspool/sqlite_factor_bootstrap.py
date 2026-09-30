@@ -238,6 +238,15 @@ def publish_bootstrap(conn, evidence, *, maintenance=False):
     feature_budget_used = 0
     deadline = time.monotonic() + (1800 if maintenance else 60)
     conn.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
+    caches = {}
+    if maintenance:
+        # Historical market slices revisit the same stock pages. Bound caches
+        # explicitly to avoid thousands of tiny reads on mounted filesystems.
+        aliases = {row[1] for row in conn.execute("PRAGMA database_list")}
+        for alias, kib in (("main", 131072), ("features", 131072), ("adjustments", 16384)):
+            if alias in aliases:
+                caches[alias] = conn.execute(f"PRAGMA {alias}.cache_size").fetchone()[0]
+                conn.execute(f"PRAGMA {alias}.cache_size=-{kib}")
     try:
         conn.execute("BEGIN IMMEDIATE")
         for item in items:
@@ -358,6 +367,8 @@ def publish_bootstrap(conn, evidence, *, maintenance=False):
         raise
     finally:
         conn.set_progress_handler(None, 0)
+        for alias, size in caches.items():
+            conn.execute(f"PRAGMA {alias}.cache_size={size}")
     return result
 
 

@@ -42,11 +42,12 @@ def prepare(conn, item):
     conn.commit()
 
 
-def test_cash_per_share_full_ma_and_repeat_noop(tmp_path):
+@pytest.mark.parametrize("maintenance", [False, True])
+def test_cash_per_share_full_ma_and_repeat_noop(tmp_path, maintenance):
     item, _, _ = evidence()
     with stock_connection(tmp_path, create=True, read_only=False) as conn:
         prepare(conn, item)
-        result = publish_bootstrap(conn, [item])
+        result = publish_bootstrap(conn, [item], maintenance=maintenance)
         assert result == dict(symbols=1, factors=2, feature_rows=6, summary_rows=12)
         factor = conn.execute(
             "SELECT cumulative_factor FROM corporate_actions WHERE record_kind='factor' "
@@ -58,7 +59,7 @@ def test_cash_per_share_full_ma_and_repeat_noop(tmp_path):
         ).fetchone()[0]
         assert ma == pytest.approx((19 * 9.5 + 10) / 20)
         before = list(conn.iterdump())
-        assert publish_bootstrap(conn, [item])["symbols"] == 0
+        assert publish_bootstrap(conn, [item], maintenance=maintenance)["symbols"] == 0
         assert list(conn.iterdump()) == before
 
 
@@ -162,7 +163,7 @@ def test_canonical_bootstrap_recovers_interrupted_publication(canonical, monkeyp
     monkeypatch.setattr(publication, "_fault", fail)
     with stock_connection(canonical, read_only=False) as conn:
         with pytest.raises(RuntimeError, match="injected bootstrap"):
-            publish_bootstrap(conn, [item])
+            publish_bootstrap(conn, [item], maintenance=True)
     with pytest.raises(DataPoolError, match="recover"):
         with stock_connection(canonical):
             pass
@@ -170,7 +171,7 @@ def test_canonical_bootstrap_recovers_interrupted_publication(canonical, monkeyp
     assert publication.recover_publication(canonical)["recovered"]
     assert verify_platform_v2(canonical)["ready"]
     with stock_connection(canonical, read_only=False) as conn:
-        assert publish_bootstrap(conn, [item])["symbols"] == 0
+        assert publish_bootstrap(conn, [item], maintenance=True)["symbols"] == 0
         assert conn.execute(
             "SELECT ma20 FROM daily_features WHERE symbol=? AND trade_date=?", (SYMBOL, DAYS[20])
         ).fetchone()[0] == pytest.approx(9.525)
