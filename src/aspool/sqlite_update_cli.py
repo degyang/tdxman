@@ -417,6 +417,7 @@ def run_update(
             and (lifecycle[s][1] is None or lifecycle[s][1] > first_day)
         )
     ]
+    summary_repair = None
     gap_filtered = source == "tdx" and mode == "sync" and not symbols and not status_filter
     if gap_filtered:
         with duckdb.connect(str(root / "catalog.duckdb"), read_only=True) as calendar:
@@ -428,6 +429,9 @@ def run_update(
                     [date.fromisoformat(start), date.fromisoformat(end)],
                 ).fetchall()
             ]
+        from .sqlite_summary_repair import repair_missing_market_summaries
+
+        summary_repair = repair_missing_market_summaries(root, requested_sessions)
         selected = _sync_candidates(root, selected, requested_sessions, lifecycle)
         if not selected:
             report = report if report is not None else {}
@@ -449,10 +453,13 @@ def run_update(
                 remaining_block=[],
                 status="ok",
                 reason="requested window is already complete",
+                summary_repair=summary_repair,
             )
             return report
     report = report if report is not None else {}
     report.update(source=source, requested=len(selected), retries=[])
+    if summary_repair is not None:
+        report["summary_repair"] = summary_repair
     status_selected = set(selected) if status_filter else None
     with ExitStack() as stack:
 

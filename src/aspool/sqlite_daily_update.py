@@ -337,6 +337,8 @@ def apply_daily_changes(
                     stats = merge_recent_events(conn, **extension)
                 else:
                     stats = advance_factor_coverage(conn, **extension)
+            except DataPoolError:
+                raise
             except ValueError as exc:
                 # Factor data is scoped to one security.  The source adapter
                 # can therefore retain a valid raw bar and quarantine only the
@@ -500,6 +502,7 @@ def apply_daily_changes(
         conn.execute(f"PRAGMA busy_timeout={old_timeout}")
     return dict(
         result,
+        previous_raw_revision=state[0] if state else 0,
         raw_revision=revision,
         affected_sessions=sorted(affected),
         elapsed_ms=round((time.monotonic() - started) * 1000),

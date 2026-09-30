@@ -790,10 +790,16 @@ def fundamentals(
         retry_delay=retry_delay,
         max_consecutive_failures=max_consecutive_failures,
     )
+    from uuid import uuid4
+
+    from .index_lists import atomic_json
+
+    report_path = target.parent / ".local/reports/fundamentals" / (uuid4().hex + ".json")
+    atomic_json(report_path, report)
     click.echo(
         f"基本面：状态 {report['status']}；成功 {len(report['success'])}，"
         f"失败 {len(report['failed'])}；财报变化 {report['changed']['financial_reports']}，"
-        f"股东人数变化 {report['changed']['shareholder_counts']}"
+        f"股东人数变化 {report['changed']['shareholder_counts']}；报告：{report_path}"
     )
     if report["status"] != "ok":
         raise click.ClickException("部分基本面未更新，请重试失败证券")
@@ -805,7 +811,8 @@ def fundamentals(
     type=click.Choice(["prepare", "reconcile", "verify", "status", "activate", "rollback"]),
 )
 @click.option("--root", type=click.Path(path_type=Path))
-def platform(action: str, root: Path | None) -> None:
+@click.option("--deep", is_flag=True, help="仅用于 verify：逐字段比对全部派生内容。")
+def platform(action: str, root: Path | None, deep: bool) -> None:
     """准备、核验或检查分层数据布局；prepare 不切换公开读取。"""
     from .platform_v2 import (
         activate_platform_v2,
@@ -817,6 +824,8 @@ def platform(action: str, root: Path | None) -> None:
     )
 
     target = _root(root) if root else Path("data").resolve()
+    if deep and action != "verify":
+        raise click.UsageError("--deep 仅用于 platform verify")
     try:
         result = {
             "prepare": prepare_platform_v2,
@@ -825,7 +834,7 @@ def platform(action: str, root: Path | None) -> None:
             "status": platform_status,
             "activate": activate_platform_v2,
             "rollback": rollback_platform_v2,
-        }[action](target)
+        }[action](target, **({"deep": deep} if action == "verify" else {}))
     except (OSError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(json.dumps(result, ensure_ascii=False, indent=2))

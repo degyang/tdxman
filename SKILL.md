@@ -56,15 +56,21 @@ After 15:30 Asia/Shanghai, run:
 bash scripts/ops/run_daily_data_pipeline.sh
 ```
 
+Both shell entry points (`run_daily_data_pipeline.sh`, `repair_recent_data_gaps.sh`) resolve and enter the project root first, set a shared environment (`TZ` defaults to Asia/Shanghai in the pipeline, `UV_CACHE_DIR` under `.local/`), and run the Python orchestrator with `.venv/bin/python` when present, else `uv run --frozen`. The data root defaults to the project `data/`; override it with the `ASPOOL_ROOT` environment variable or `--root`.
+
 Use `--with-fundamentals` only when refreshing the latest financial-report and shareholder-count snapshots. These are low-frequency latest snapshots, not point-in-time financial history.
 
 The normal daily path is fixed:
 
 1. Publish complete current stock, ETF and index directories.
-2. `update --type stock`: write validated unadjusted quotes, names and trading state first; then reconcile bounded corporate-action/factor suffixes per symbol. A factor failure retains the valid raw bar and leaves factor-dependent features incomplete with an explicit report entry.
+2. `update --type stock`: write validated unadjusted quotes, names and trading state first; then reconcile bounded corporate-action/factor suffixes per symbol. A factor failure retains the valid raw bar and leaves factor-dependent features incomplete with an explicit report entry. Factor suffixes commit in bounded small batches under the same pool write lock as their mirror copy.
 3. `update --type index`: update index K-lines and the trading calendar.
 4. `update --type etf`: update unadjusted ETF K-lines; preserve source-confirmed `NO_TRADE` without making a zero-price bar.
 5. Optionally refresh fundamentals, then audit all production data blocks.
+
+Before each bounded write the writer verifies the previous mirror commit is complete. An incomplete mirror rejects the write with `DERIVED_NOT_READY` and requires an explicit `aspool platform reconcile`; later partial updates must not overwrite pending-recovery state, and the daily path never auto-rebuilds mirrors in full.
+
+The pipeline receipt aggregates each stage's persisted sub-report. A single-security failure marks that stage `partial` instead of `failed`: independent later stages still run, while the overall run status becomes `partial`. `factor_unavailable` items (for example `no_verified_anchor`) are counted and reported separately (`factor_quality`) and are not mixed into failure lists.
 
 Do not place `sync` in the normal daily path. `sync` is a bounded historical-repair operation, not a second daily fetch.
 
@@ -76,7 +82,7 @@ Check before writing:
 bash scripts/ops/repair_recent_data_gaps.sh --count 10
 ```
 
-The checker reads persisted state only. It checks exact current-stock terminal-state closure on the latest session; older stock sessions only for whole-day absence or explicit `MISSING`/`INVALID`; the Shanghai Composite calendar anchor; entirely absent ETF market days; and whether daily Regime public rows follow stock features. It intentionally does not enforce per-security historical completeness. It prints the exact bounded repair commands.
+The checker is read-only and uses the persisted trading calendar only. It checks exact current-stock terminal-state closure on the latest session; older stock sessions only for whole-day absence or explicit `MISSING`/`INVALID`; the Shanghai Composite calendar anchor; entirely absent ETF market days; and whether daily Regime public rows follow stock features. It intentionally does not enforce per-security historical completeness. It cannot prove the stored calendar is fresh — a missed daily run also leaves the calendar stale — and the receipt states that limit. It prints the exact bounded repair commands.
 
 Only when it reports a gap, run:
 
@@ -84,7 +90,7 @@ Only when it reports a gap, run:
 bash scripts/ops/repair_recent_data_gaps.sh --count 30 --repair
 ```
 
-It runs `aspool sync --type stock|index|etf --count N` only for affected domains. Default `count` is 10 and the maximum is 60. Use explicit `--start/--end` only for a known historical incident. Use BaoStock only as an explicit fallback for remaining stock `MISSING` values:
+`--repair` first runs a bounded `aspool sync --type index` to refresh the trading calendar (never infer holidays from weekdays), re-detects gaps, then repairs only affected domains with `aspool sync --type stock|etf --count N` (index is not re-run). Missing daily market summaries are recomputed locally per date inside the stock sync, without re-fetching complete daily lines. It finishes with a recheck and exits non-zero whenever residual gaps remain or any operation failed. Default `count` is 10 and the maximum is 60. Use explicit `--start/--end` only for a known historical incident. Use BaoStock only as an explicit fallback for remaining stock `MISSING` values:
 
 ```bash
 aspool sync --type stock --source baostock --status missing
@@ -99,6 +105,7 @@ BaoStock does not support BJ. Leave unavailable BJ data as `MISSING`; do not tur
 - A single-symbol factor error must not roll back its valid raw quote or stop independent market blocks. Database/transaction failures still stop the stage; source failures stop after the configured consecutive-failure threshold.
 - `NO_TRADE` is a successful source response with no trade. Stale, failed or invalid responses remain `MISSING`/`INVALID`; none creates a synthetic bar. BJ is excluded from limit-up/down and streak statistics.
 - ETF factors are reviewed reference data, not an online TDX daily feed. Report their range separately from ETF daily-bar freshness.
+- `aspool platform verify` is a read-only check: the default shallow level compares row counts and mirror state only, and `content_equal=null` means content was not verified, not that it is equal. `aspool platform verify --deep` performs the full-content comparison.
 - Daily stock derived output includes Enriched base fields and `market_regime_features`. Weekly/monthly writers and Fundwise scoring/cache remain separate consumer responsibilities.
 
 Read `.local/reports/daily-pipeline/*.json`, then verify the public contract and coverage:
@@ -108,7 +115,7 @@ aspool contract --format json
 aspool status --root data --format json
 ```
 
-Require all 12 contract blocks, including `stock-factors` and `etf-factors`. Acceptance compares the exact active-stock set on the target trading day, factor coverage for traded symbols, and the daily market summary; a maximum date or equal row count alone is insufficient. An event-driven factor table having an older maximum effective date is not by itself a stale-data failure. See `docs/daily_data_pipeline.md` and `docs/production_data_flow_contract.md` for command details.
+Require all 12 contract blocks, including `stock-factors` and `etf-factors`. Acceptance compares the exact active-stock set on the target trading day, factor coverage for traded symbols, and the daily market summary; a maximum date or equal row count alone is insufficient. An event-driven factor table having an older maximum effective date is not by itself a stale-data failure. See `docs/design/daily_data_pipeline.md` and `docs/design/production_data_flow_contract.md` for command details.
 
 ## Legacy aspool daily workflow
 
@@ -132,7 +139,7 @@ This is a daily workflow, not an `aspool daily` command. For routine daily updat
 
 - Stock online sync fetches from the latest page back to a five-stored-bar overlap, paging across longer gaps. It combines K lines with stored low-frequency fields and calculated ratios. Every seven days it refreshes the A-share directory; new active symbols bootstrap their longest available history, and symbols with no server K lines remain pending for the next sync. Run `aspool universe` to refresh and inspect this directory manually.
 - Update refreshes the current day's stock record and low-frequency snapshots from quotes, then supplements incomplete Shanghai/Shenzhen stock data over the last 30 trading days using BaoStock. Configure `aspool.baostock.enabled/lookback`, or use `--no-baostock` / `--lookback N`. It has no `--type` or `--period` option. Its TongDaXin stage supports `--async` and `--workers 1..8` (default 4); BaoStock uses one serial session. Update rejects weekdays 09:00–15:30 inclusive using Asia/Shanghai time; this is a weekday guard, not a holiday calendar. Prefer running after 16:00, since the supplement excludes the current day before that hour.
-- Use `aspool sync --source baostock --start YYYY-MM-DD --end YYYY-MM-DD` for explicit historical repairs. It fills raw daily prices, dated ST/reference-price fields, trading status and listing metadata, preserves valid primary values and reports conflicts. Missing rows are not suspensions. Beijing stocks are not covered. Consecutive limits remain unknown if the requested history has no reliable boundary. Inspect both price-limit and consecutive-limit coverage. See `docs/baostock.md` for local read APIs and reports.
+- Use `aspool sync --source baostock --start YYYY-MM-DD --end YYYY-MM-DD` for explicit historical repairs. It fills raw daily prices, dated ST/reference-price fields, trading status and listing metadata, preserves valid primary values and reports conflicts. Missing rows are not suspensions. Beijing stocks are not covered. Consecutive limits remain unknown if the requested history has no reliable boundary. Inspect both price-limit and consecutive-limit coverage. See `docs/ops/baostock.md` for local read APIs and reports.
 - Index sync reads all available history **only for initial creation or a newly added index**. Existing indices fetch incremental data with a five-stored-bar overlap to replace incomplete bars and recent revisions. Requests use 30-row pages and continue across longer gaps until reaching the overlap; do not reload the entire history for daily maintenance. Only `--source tdx --period daily` is supported. Online sync supports `--async`; offline reads only vipdoc and cannot guarantee online freshness.
 - Sync can run intraday and save an incomplete current-day bar. For daily closed-data consumption, run after close and select an explicitly confirmed closed trading date.
 - Stale, undated, future-dated and invalid quote records are rejected without overwriting existing bars. Unchanged files are not rewritten. Stock reports are in `ROOT/reports/maintenance/`; distinguish missing quotes from failures.
@@ -170,9 +177,9 @@ etfs = pool.list_etfs()
 etf_frame = pool.read_etf_daily(symbols='SZ.159366', end='2026-09-16', lookback=120)
 ```
 
-For Fundwise integration, read [aspool API](docs/aspool_api.md). Use the public stock, ETF and index APIs instead of internal fundamental snapshots. Index data contains OHLCV, amount and up_count/down_count; absent breadth is stored as zero, not proof of no advancing/declining securities. ETF data uses stock-style shares, amount and turnover and does not expose breadth counts. Index volume uses source units, unlike stock shares. Current APIs do not guarantee immutable versions or point-in-time historical constituents.
+For Fundwise integration, read [aspool API](docs/design/aspool_api.md). Use the public stock, ETF and index APIs instead of internal fundamental snapshots. Index data contains OHLCV, amount and up_count/down_count; absent breadth is stored as zero, not proof of no advancing/declining securities. ETF data uses stock-style shares, amount and turnover and does not expose breadth counts. Index volume uses source units, unlike stock shares. Current APIs do not guarantee immutable versions or point-in-time historical constituents.
 
-See [README daily workflow](README.md#daily-工作流每日收盘后同步股票etf和指数) for the user-facing procedure, [index design](docs/aspool_index_design.md), and [ETF design](docs/aspool_etf_design.md) for storage and synchronization details.
+See [README daily workflow](README.md#daily-工作流每日收盘后同步股票etf-和指数) for the user-facing procedure, [index design](docs/design/aspool_index_design.md), and [ETF design](docs/design/aspool_etf_design.md) for storage and synchronization details.
 
 ## Commands
 

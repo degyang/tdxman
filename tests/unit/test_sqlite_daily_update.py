@@ -851,3 +851,24 @@ def test_calendar_refresh_is_finite_noop_and_rejects_conflicting_history(tmp_pat
         ).fetchone() == (True, 2)
     with pytest.raises(ValueError, match="natural days"):
         refresh_source_calendar(tmp_path, client=client, start=DAYS[0], end=DAYS[60])
+
+
+def test_factor_budget_error_preserves_code_and_rolls_back(tmp_path, monkeypatch):
+    import aspool.sqlite_event_update as events
+
+    def exceeded(*args, **kwargs):
+        raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "test suffix budget")
+
+    monkeypatch.setattr(events, "merge_recent_events", exceeded)
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        prepare(conn)
+        before = dump(conn)
+        with pytest.raises(DataPoolError) as error:
+            apply(
+                conn,
+                bars=[row(DAYS[60])],
+                factor_extensions=[{"symbol": SYMBOL}],
+                merge_event_revisions=True,
+            )
+        assert error.value.code == "LOCAL_UPDATE_BUDGET_EXCEEDED"
+        assert dump(conn) == before

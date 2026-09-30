@@ -803,3 +803,27 @@ def test_status_etf_factors_fallback_survives_missing_table(tmp_path):
 
     rows = _dataset_status(tmp_path)
     assert "etf-factors" not in {row["dataset"] for row in rows}
+
+
+def test_sync_repairs_only_missing_summaries_without_network(tmp_path, monkeypatch):
+    days = store(tmp_path)
+    with stock_connection(tmp_path, read_only=False) as conn:
+        conn.execute(
+            "INSERT INTO corporate_actions(symbol,effective_date,record_kind,source,source_key,"
+            "cumulative_factor,valid_from,valid_through,factor_basis,updated_at) "
+            "VALUES ('000001.SZ',?,'factor','fixture','selected',1,?,?,"
+            "'source_cumulative_factor:source_anchor:fixture',1)",
+            (days[0], days[0], days[-1]),
+        )
+        conn.commit()
+
+    def network_forbidden(**kwargs):
+        raise AssertionError("Summary-only repair must not contact a source")
+
+    monkeypatch.setattr(MacClient, "from_best_host", network_forbidden)
+    result = run_update(tmp_path, mode="sync", now=NOW, count=2)
+    assert result["status"] == "ok"
+    assert result["requested"] == 0
+    assert result["summary_repair"] == {"dates": days[-2:], "changed_rows": 4}
+    repeated = run_update(tmp_path, mode="sync", now=NOW, count=2)
+    assert repeated["summary_repair"] == {"dates": [], "changed_rows": 0}

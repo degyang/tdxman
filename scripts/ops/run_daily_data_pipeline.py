@@ -22,6 +22,8 @@ from typing import Any
 
 import duckdb
 
+from aspool.operation_report import operation_outcome, run_command
+
 
 @dataclass(frozen=True)
 class Stage:
@@ -151,11 +153,10 @@ def _feature_closure(root: Path, active_stocks: int | None) -> dict[str, Any]:
                 (target,),
             )
         }
-        summary_table = _sqlite_table(path, ("market_regime_features",))
+        summary_table = _sqlite_table(path, ("market_regime_features", "market_daily_summary"))
         summary_rows = (
             conn.execute(
-                f"SELECT count(*) FROM {summary_table} "
-                "WHERE frequency='D' AND period_key=?",
+                f"SELECT count(*) FROM {summary_table} WHERE frequency='D' AND period_key=?",
                 (target,),
             ).fetchone()[0]
             if summary_table
@@ -271,13 +272,18 @@ def collect_audit(root: Path, run_aspool) -> dict[str, Any]:
         "datasets": datasets,
         "missing_required_datasets": missing,
         "stock_feature_closure": closure,
-        "ready": len(flows) == 12 and not missing and closure.get("closed", False),
+        "ready": bool(flows) and not missing and closure.get("closed", False),
     }
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path("data"), help="aspool 数据根目录")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path(os.environ.get("ASPOOL_ROOT", Path(__file__).resolve().parents[2] / "data")),
+        help="aspool 数据根目录（默认项目 data，可用 ASPOOL_ROOT 覆盖）",
+    )
     parser.add_argument("--workers", type=int, default=4, choices=range(1, 9), metavar="1..8")
     parser.add_argument(
         "--with-fundamentals", action="store_true", help="纳入手动低频基本面快照更新"
@@ -323,11 +329,7 @@ def main(argv: list[str] | None = None) -> int:
     save_report()
 
     def run_aspool(command: tuple[str, ...], *, capture: bool = False):
-        return subprocess.run(
-            [str(aspool), *command], cwd=project, env=env, text=True,
-            stdout=subprocess.PIPE if capture else None,
-            stderr=subprocess.PIPE if capture else None, check=True,
-        )
+        return run_command(aspool, command, cwd=project, env=env, capture=capture)
 
     try:
         for stage in stages:
@@ -343,8 +345,11 @@ def main(argv: list[str] | None = None) -> int:
             report["stages"].append(entry)
             save_report()
             try:
-                run_aspool(stage.command)
-                entry["status"] = "ok"
+                completed = run_aspool(stage.command)
+                entry.update(operation_outcome(completed, require_report=stage.name != "directory"))
+                entry["exit_code"] = completed.returncode
+                if entry["status"] == "failed":
+                    raise subprocess.CalledProcessError(completed.returncode or 1, stage.command)
             except subprocess.CalledProcessError as exc:
                 entry.update(status="failed", exit_code=exc.returncode)
                 entry["finished_at"] = datetime.now(timezone.utc).isoformat()

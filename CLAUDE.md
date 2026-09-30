@@ -54,7 +54,7 @@ Codex 默认实施使用 `gpt-6-sol / high`；复杂存储/依赖设计和关键
 
 ## 新版运行数据目录
 
-新版 `tdxman/data/` 只保留 `stocks.sqlite`、`indices.sqlite`、`etfs.sqlite` 和公共目录库 `catalog.duckdb`（运行时可有数据库 WAL/SHM）。当前生产池已退役全部 `lake/` 分区：个股、指数、ETF 均从对应 SQLite 读写，基本面快照在 catalog 的 `fundamental_snapshots` 表；不能因旧命令重新生成 Parquet 或采集缓存。指数保留 `aspool sync --type index`，ETF 保留 `aspool sync --type ex --category ETF`。迁移源和恢复材料放 `.local/recovery/`，运行日志、传输清单和详细验证放 `.local/reports/`；小型交付证据进 `docs/evidence/`。临时测试库不得留在运行数据目录，也不参与复制。迁移验收必须列全数据域及其读写入口，不能以股票或指数迁移代替整个池完成。先完成 Jakarta 的关闭工件全量复制、哈希验收和受控安装，再考虑增量同步；不能将初始 M0 副本冒充最新派生成品。
+新版 `tdxman/data/` 包含公共目录库 `catalog.duckdb`、三个原始行情库 `stocks.sqlite`、`indices.sqlite`、`etfs.sqlite`，以及分层布局的 `fundamentals.sqlite`（`stock_financial_reports`、`stock_shareholder_counts`）、`adjustments.sqlite`（复权因子与锚点）、`features.sqlite`（派生镜像）、`snapshots.sqlite`（按需缓存 schema）（运行时可有数据库 WAL/SHM）。当前生产池已退役全部 `lake/` 分区：个股、指数、ETF 均从对应 SQLite 读写，基本面报告和股东人数在 `fundamentals.sqlite`，catalog 的 `fundamental_snapshots` 仅为遗留审计表；不能因旧命令重新生成 Parquet 或采集缓存。指数保留 `aspool sync --type index`，ETF 保留 `aspool sync --type ex --category ETF`。迁移源和恢复材料放 `.local/recovery/`，运行日志、传输清单和详细验证放 `.local/reports/`；小型交付证据进 `docs/evidence/`。临时测试库不得留在运行数据目录，也不参与复制。迁移验收必须列全数据域及其读写入口，不能以股票或指数迁移代替整个池完成。先完成 Jakarta 的关闭工件全量复制、哈希验收和受控安装，再考虑增量同步；不能将初始 M0 副本冒充最新派生成品。
 
 ## 协议编解码注意事项
 
@@ -77,7 +77,7 @@ Codex 默认实施使用 `gpt-6-sol / high`；复杂存储/依赖设计和关键
 tdxman ping --timeout 3
 ```
 
-`ping` 只展示候选服务器的测速结果，不会保存最佳地址。`TdxClient.from_best_host()`、`MacClient.from_best_host()` 等 Python 工厂方法会选择最低延迟的可用服务器，并将最佳地址保存到 `~/.tdxman/config.json`。候选 IP 池默认维护在 `config.py`；本地配置文件或 `TDXMAN_KNOWN_HOSTS` 可覆盖标准行情候选池。
+`ping` 只展示候选服务器的测速结果，不会保存排名。候选端点池维护在 `settings/allip.json`（按 standard/mac/ex 协议），`tdxman bestip` 用真实行情请求验证候选，并把本机可用排名写入 `settings/bestip.json`。`TdxClient.from_best_host()`、`MacClient.from_best_host()` 等 Python 工厂方法默认直接采用本机排名取最优端点，`refresh=True` 时才重新测速选取。`TDXMAN_KNOWN_HOSTS`、`TDXMAN_HOST` 等环境变量或 `~/.tdxman/config.json`（含手工 `save_best_host()`）可覆盖标准行情候选池；`config.py` 仅保留内嵌兜底列表与上述配置的读写入口。
 
 ### 行业板块与行业日 K
 
