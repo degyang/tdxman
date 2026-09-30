@@ -12,6 +12,10 @@
   `fundamentals.sqlite`，股东人数保存为独立历史序列；无业务变化不增加 revision。
 - `aspool platform prepare|verify|status|activate|rollback`：按证券分批复制 1,600 万级股票派生，迁移
   Regime 日汇总、股票/ETF 因子和因子锚点。prepare 可断点继续，且不会切换公开读取。
+- `verify` 分浅层（默认，行数比对 + feature_state 状态检查）和深层（`deep=True`，全表 EXCEPT 内容比对）。
+  日更路径使用浅层；`reconcile` 和 `activate` 使用深层。
+- `reconcile` 使用 `ATTACH + INSERT SELECT` 从 `stocks.sqlite` 全量重建 `features.sqlite`，不经过
+  Python 内存（16M 行原 ~3.8GB Python 占用降至近乎为零）。
 - `features.feature_state` 同时记录原始行情 revision 和因子 revision。局部更新先标记 `DIRTY`，
   因子与派生均完成后才标记 `READY`；版本不一致时公开派生读取返回
   `DERIVED_NOT_READY`。
@@ -25,7 +29,7 @@
 
 `aspool platform activate` 只有在以下条件全部满足时才把布局标记从 1 改为 2：
 
-1. `stock_daily_features` 和 `market_regime_features` 与旧布局行数一致；
+1. `stock_daily_features` 和 `market_regime_features` 与来源表全内容一致（深层 EXCEPT 比对）；
 2. 股票因子、因子锚点和 ETF 因子行数与来源一致；
 3. 两个稳定派生数据集均为 `READY`；
 4. 派生的 `raw_revision` 等于 `stocks.dataset_state`，`factor_revision` 等于

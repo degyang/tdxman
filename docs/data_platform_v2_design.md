@@ -250,6 +250,29 @@ SQLite WAL 不提供这些独立文件之间可依赖的跨库原子性。读取
 - 股票截面变化：对应 scope 的 Regime 行。
 - 基本面变化：只使显式依赖该报告或股东人数的快照失效。
 
+### 3.1 校验分层
+
+`verify_platform_v2(root, deep=False)` 提供两级校验：
+
+- **浅层**（默认，毫秒级）：行数比对 + `feature_state` 状态/revision 一致性检查。日更路径
+  `mirror`、`prepare`、`activate` 使用此级别。
+- **深层**（`deep=True`，秒~分钟级）：在浅层基础上增加 `ATTACH + EXCEPT` 全表内容比对。
+  `reconcile` 和 `activate` 使用此级别做完整验收。
+
+日常增量更新只影响数千行（7000 股 × 1 天），浅层行数比对足以检测遗漏或重复；深层
+EXCEPT 用于灾难恢复后的完整性验收。
+
+### 3.2 恢复路径
+
+`reconcile_platform_v2(root)` 是灾难恢复入口，顺序执行：
+
+1. 重建 `adjustments.sqlite`（从 `stocks.sqlite.corporate_actions` 重新计算）。
+2. 重建 `features.sqlite`（`ATTACH + INSERT SELECT` 全量复制，不经过 Python 内存）。
+3. 运行深层 `verify` 做完整内容验收。
+
+镜像中断时 `feature_state` 保持 `DIRTY`，`reconcile` 可识别并修复。恢复后公开读取自动通过
+revision 匹配返回最新派生结果。
+
 ## 4. CLI 编排
 
 日常 `update --type all` 的目标顺序：
