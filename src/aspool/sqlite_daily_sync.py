@@ -6,16 +6,19 @@ import math
 from collections import Counter
 from datetime import date, timedelta
 from pathlib import Path
+from time import perf_counter
 
 import pandas as pd
 
 from tdxman.models.enums import Market
 
+from .platform_v2 import require_current_mirror
 from .pool import pool_lock
 from .sqlite_daily_update import apply_daily_changes, daily_window
 from .sqlite_stock_store import stock_connection
 
 _FACTOR_WRITE_BATCH_SIZE = 32
+_INLINE_FACTOR_BATCH_SIZE = 128
 
 
 def sync_daily_source(
@@ -71,37 +74,70 @@ def sync_daily_source(
         consecutive_failures = 0
 
         def mirror(applied, symbols):
+            applied["mirror_elapsed_ms"] = 0
+            from .platform_v2 import layout_version
+
+            if layout_version(root) == 3:
+                applied["platform_v2"] = {
+                    "mirrored": False,
+                    "reason": "canonical storage has no mirror",
+                }
+                return
             if not (Path(root) / "features.sqlite").is_file():
+                return
+            if applied["raw_revision"] == applied.get("previous_raw_revision"):
+                # The predecessor was checked under this same write lock. No
+                # source change needs a second factor copy or mirror commit.
+                applied["platform_v2"] = {"mirrored": False, "reason": "no actual changes"}
                 return
             from .platform_v2 import mirror_platform_v2
 
+            tick = perf_counter()
             applied["platform_v2"] = mirror_platform_v2(
                 root,
                 symbols=symbols,
                 dates=applied["affected_sessions"],
                 raw_revision=applied["raw_revision"],
+                previous_raw_revision=applied.get("previous_raw_revision"),
             )
+            applied["mirror_elapsed_ms"] = round((perf_counter() - tick) * 1000)
 
         def flush():
             if not pending_symbols:
                 return
             from .sqlite_event_update import SymbolUpdateError
 
-            # Commit validated raw observations first.  A later factor problem
-            # must not discard valid OHLCV, names, trading state or limit data.
+            fast_extensions, revision_extensions = [], []
+            for pending in pending_extensions:
+                extension = dict(pending)
+                merge_revision = extension.pop("merge_event_revisions")
+                (revision_extensions if merge_revision else fast_extensions).append(extension)
+            inline_extensions = fast_extensions[:_INLINE_FACTOR_BATCH_SIZE]
+            fast_extensions = fast_extensions[_INLINE_FACTOR_BATCH_SIZE:]
+
+            # Proven adjacent no-event suffixes share the raw transaction and
+            # one derived cross-section. A rejected factor is removed and the
+            # transaction retried with its valid raw observations still present.
+            # Historical event revisions remain isolated after the raw commit.
             remaining = set(pending_symbols)
             while remaining:
                 try:
                     with pool_lock(root, write=True):
+                        require_current_mirror(root)
                         applied = apply_daily_changes(
                             conn,
                             bars=[r for r in pending_bars if r["symbol"] in remaining],
                             dated_facts=[r for r in pending_facts if r["symbol"] in remaining],
+                            factor_extensions=[
+                                dict(extension, merge_event_revisions=False)
+                                for extension in inline_extensions
+                                if extension["symbol"] in remaining
+                            ],
                             market_sessions=sessions,
                             listed_days=listed_days,
                             fill_missing_metrics=source != "tdxman:quote",
-                            # Reuse the existing per-symbol validation wrapper;
-                            # there are no factor extensions in this transaction.
+                            # Raw validation still reports the responsible stock;
+                            # each factor declares its own event-merge semantics.
                             merge_event_revisions=True,
                         )
                         mirror(applied, remaining)
@@ -110,6 +146,16 @@ def sync_daily_source(
                     # invalid input; never retry database/transaction deadline failures.
                     if exc.symbol not in remaining:
                         raise
+                    if exc.phase == "factor":
+                        if not any(e["symbol"] == exc.symbol for e in inline_extensions):
+                            raise
+                        failure = dict(symbol=exc.symbol, error=str(exc), phase="factor")
+                        result["factor_failed"].append(failure)
+                        result["failed"].append(failure)
+                        inline_extensions = [
+                            e for e in inline_extensions if e["symbol"] != exc.symbol
+                        ]
+                        continue
                     remaining.remove(exc.symbol)
                     result["failed"].append(
                         dict(symbol=exc.symbol, error=str(exc), phase="validation")
@@ -124,26 +170,32 @@ def sync_daily_source(
                 pending_extensions.clear()
                 return
 
-            batch = dict(symbols=sorted(remaining), **applied, factor_success=[])
+            batch = dict(
+                symbols=sorted(remaining),
+                **applied,
+                raw_writer_elapsed_ms=applied["elapsed_ms"],
+                factor_writer_elapsed_ms=0,
+                factor_success=[e["symbol"] for e in inline_extensions if e["symbol"] in remaining],
+            )
+
             # Adjacent quote-proven no-event extensions share a transaction so
             # the same market cross-section is not recomputed once per stock.
             # Authoritative historical event reads remain isolated per symbol.
-            factor_mirror_symbols = set()
-            factor_mirror_dates = set()
-            factor_revision = None
-
             def record_factor_success(factor_applied, symbols):
-                nonlocal factor_revision
                 batch["factor_success"].extend(symbols)
-                factor_mirror_symbols.update(symbols)
-                factor_mirror_dates.update(factor_applied["affected_sessions"])
-                factor_revision = factor_applied["raw_revision"]
+                batch["factor_writer_elapsed_ms"] += factor_applied["elapsed_ms"]
+                batch["elapsed_ms"] += factor_applied["elapsed_ms"]
+                batch["mirror_elapsed_ms"] += factor_applied["mirror_elapsed_ms"]
+                if "platform_v2" in factor_applied:
+                    batch.setdefault("factor_platform_v2", []).append(factor_applied["platform_v2"])
                 for name in (
                     "changed_factor_rows",
                     "recomputed_feature_rows",
                     "changed_feature_rows",
                     "summary_rows",
                     "read_rows",
+                    "feature_elapsed_ms",
+                    "summary_elapsed_ms",
                 ):
                     batch[name] += factor_applied[name]
                 batch["affected_sessions"] = sorted(
@@ -151,14 +203,8 @@ def sync_daily_source(
                 )
                 batch["raw_revision"] = factor_applied["raw_revision"]
 
-            fast_extensions = []
-            revision_extensions = []
-            for pending in pending_extensions:
-                if pending["symbol"] not in remaining:
-                    continue
-                extension = dict(pending)
-                merge_revision = extension.pop("merge_event_revisions")
-                (revision_extensions if merge_revision else fast_extensions).append(extension)
+            fast_extensions = [e for e in fast_extensions if e["symbol"] in remaining]
+            revision_extensions = [e for e in revision_extensions if e["symbol"] in remaining]
 
             for offset in range(0, len(fast_extensions), _FACTOR_WRITE_BATCH_SIZE):
                 extensions = fast_extensions[offset : offset + _FACTOR_WRITE_BATCH_SIZE]
@@ -166,6 +212,7 @@ def sync_daily_source(
                     symbols = [item["symbol"] for item in extensions]
                     try:
                         with pool_lock(root, write=True):
+                            require_current_mirror(root)
                             factor_applied = apply_daily_changes(
                                 conn,
                                 factor_extensions=extensions,
@@ -173,15 +220,14 @@ def sync_daily_source(
                                 listed_days=listed_days,
                                 merge_event_revisions=False,
                             )
+                            mirror(factor_applied, symbols)
                     except SymbolUpdateError as exc:
                         if exc.symbol not in symbols:
                             raise
                         failure = dict(symbol=exc.symbol, error=str(exc), phase="factor")
                         result["factor_failed"].append(failure)
                         result["failed"].append(failure)
-                        extensions = [
-                            item for item in extensions if item["symbol"] != exc.symbol
-                        ]
+                        extensions = [item for item in extensions if item["symbol"] != exc.symbol]
                         continue
                     record_factor_success(factor_applied, symbols)
                     break
@@ -190,6 +236,7 @@ def sync_daily_source(
                 symbol = extension["symbol"]
                 try:
                     with pool_lock(root, write=True):
+                        require_current_mirror(root)
                         factor_applied = apply_daily_changes(
                             conn,
                             factor_extensions=[extension],
@@ -197,19 +244,13 @@ def sync_daily_source(
                             listed_days=listed_days,
                             merge_event_revisions=True,
                         )
+                        mirror(factor_applied, [symbol])
                 except SymbolUpdateError as exc:
                     failure = dict(symbol=symbol, error=str(exc), phase="factor")
                     result["factor_failed"].append(failure)
                     result["failed"].append(failure)
                     continue
                 record_factor_success(factor_applied, [symbol])
-            if factor_mirror_symbols:
-                factor_mirror = {
-                    "affected_sessions": sorted(factor_mirror_dates),
-                    "raw_revision": factor_revision,
-                }
-                mirror(factor_mirror, factor_mirror_symbols)
-                batch["factor_platform_v2"] = factor_mirror.get("platform_v2")
             result["success"].append(batch)
             pending_symbols.clear()
             pending_bars.clear()
@@ -220,6 +261,7 @@ def sync_daily_source(
             if not pending_state_symbols:
                 return
             with pool_lock(root, write=True):
+                require_current_mirror(root)
                 applied = apply_daily_changes(
                     conn,
                     dated_facts=pending_state_facts,
@@ -241,8 +283,12 @@ def sync_daily_source(
                 result["missing"].append(symbol)
                 pending_state_symbols.append(symbol)
                 pending_state_facts.extend(
-                    dict(symbol=symbol, trade_date=day, trading_status="MISSING",
-                         trading_status_source=source)
+                    dict(
+                        symbol=symbol,
+                        trade_date=day,
+                        trading_status="MISSING",
+                        trading_status_source=source,
+                    )
                     for day in window
                 )
                 continue
@@ -259,8 +305,12 @@ def sync_daily_source(
                 result["missing"].append(symbol)
                 pending_state_symbols.append(symbol)
                 pending_state_facts.extend(
-                    dict(symbol=symbol, trade_date=day, trading_status="MISSING",
-                         trading_status_source=source)
+                    dict(
+                        symbol=symbol,
+                        trade_date=day,
+                        trading_status="MISSING",
+                        trading_status_source=source,
+                    )
                     for day in window
                 )
                 consecutive_failures += 1
@@ -274,8 +324,12 @@ def sync_daily_source(
                 result["missing"].append(symbol)
                 pending_state_symbols.append(symbol)
                 pending_state_facts.extend(
-                    dict(symbol=symbol, trade_date=day, trading_status="MISSING",
-                         trading_status_source=source)
+                    dict(
+                        symbol=symbol,
+                        trade_date=day,
+                        trading_status="MISSING",
+                        trading_status_source=source,
+                    )
                     for day in window
                 )
                 consecutive_failures += 1
@@ -299,8 +353,12 @@ def sync_daily_source(
                 result["invalid"].append(dict(symbol=symbol, error=str(exc)))
                 pending_state_symbols.append(symbol)
                 pending_state_facts.extend(
-                    dict(symbol=symbol, trade_date=day, trading_status="INVALID",
-                         trading_status_source=source)
+                    dict(
+                        symbol=symbol,
+                        trade_date=day,
+                        trading_status="INVALID",
+                        trading_status_source=source,
+                    )
                     for day in window
                 )
                 consecutive_failures += 1
@@ -560,7 +618,7 @@ def refresh_source_calendar(root, *, client, start, end):
         observed[day] = flag
     if observed.keys() != expected:
         raise ValueError("Incomplete calendar response")
-    with duckdb.connect(str(Path(root) / "catalog.duckdb")) as catalog:
+    with pool_lock(root, write=True), duckdb.connect(str(Path(root) / "catalog.duckdb")) as catalog:
         catalog.execute("BEGIN")
         try:
             known = {

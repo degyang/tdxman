@@ -78,13 +78,15 @@ def catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
         yield active[1]
         return
     from .change_protocol import _mkdir_durable
+    from .pool import pool_lock
 
-    _mkdir_durable(root)
-    conn = duckdb.connect(root / "catalog.duckdb")
-    try:
-        yield conn
-    finally:
-        conn.close()
+    with pool_lock(root, write=True):
+        _mkdir_durable(root)
+        conn = duckdb.connect(root / "catalog.duckdb")
+        try:
+            yield conn
+        finally:
+            conn.close()
 
 
 @contextmanager
@@ -105,20 +107,21 @@ def read_only_catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
     path = root / "catalog.duckdb"
     if not path.is_file():
         raise FileNotFoundError(f"aspool catalog not found: {path}")
-    conn = duckdb.connect(str(path), read_only=True)
-    try:
-        yield conn
-    finally:
-        conn.close()
+    from .pool import pool_lock
+
+    with pool_lock(root):
+        conn = duckdb.connect(str(path), read_only=True)
+        try:
+            yield conn
+        finally:
+            conn.close()
 
 
 def existing_tables(root: Path) -> set[str]:
     """只读列出已有的表；目录/库不存在时返回空集。"""
     try:
         with read_only_catalog(root) as conn:
-            rows = conn.execute(
-                "select table_name from information_schema.tables"
-            ).fetchall()
+            rows = conn.execute("select table_name from information_schema.tables").fetchall()
     except (FileNotFoundError, duckdb.Error):
         return set()
     return {row[0] for row in rows}
@@ -201,11 +204,22 @@ def record_coverages(root: Path, entries: list[tuple]) -> None:
                 if table == "coverage":
                     from .change_protocol import coverage_change
 
-                    coverage_change(conn, table,
-                                    ["symbol", "market", "start_date", "end_date", "row_count",
-                                     "source", "updated_at"],
-                                    [symbol, market, start, end, rows, source, now], ["symbol"],
-                                    reason="coverage_extent_refresh")
+                    coverage_change(
+                        conn,
+                        table,
+                        [
+                            "symbol",
+                            "market",
+                            "start_date",
+                            "end_date",
+                            "row_count",
+                            "source",
+                            "updated_at",
+                        ],
+                        [symbol, market, start, end, rows, source, now],
+                        ["symbol"],
+                        reason="coverage_extent_refresh",
+                    )
                     continue
                 conn.execute(
                     f"""

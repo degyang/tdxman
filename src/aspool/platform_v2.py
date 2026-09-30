@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import sqlite3
 import time
+from contextlib import closing
 from pathlib import Path
 
 import duckdb
 
+from .api_contract import DataPoolError
 from .fundamentals_store import fundamentals_connection
 from .pool import pool_lock
 
@@ -507,6 +509,8 @@ def _ensure_layout_metadata(root):
 def prepare_platform_v2(root):
     """Copy target stores under the writer lock without switching public reads."""
     root = Path(root).expanduser().resolve()
+    if layout_version(root) == 3:
+        return {"layout_version": 3, "activated": True, "verification": verify_platform_v2(root)}
     for required in ("catalog.duckdb", "stocks.sqlite", "indices.sqlite", "etfs.sqlite"):
         if not (root / required).is_file():
             raise FileNotFoundError(root / required)
@@ -552,7 +556,77 @@ def prepare_platform_v2(root):
     }
 
 
-def mirror_platform_v2(root, *, symbols, dates, raw_revision):
+def require_current_mirror(root):
+    """Check the previous commit before starting another bounded source write.
+
+    Call while holding the pool write lock. A failed mirror must be recovered
+    explicitly; a later, unrelated slice cannot certify its missing rows.
+    """
+    root = Path(root).resolve()
+    if layout_version(root) == 3:
+        from .sqlite_publication import assert_published
+        from .storage_verify import assert_coherent
+
+        assert_published(root)
+        with sqlite3.connect((root / "stocks.sqlite").as_uri() + "?mode=ro", uri=True) as conn:
+            for alias, file in (
+                ("features", "features.sqlite"),
+                ("adjustments", "adjustments.sqlite"),
+            ):
+                conn.execute(
+                    f'ATTACH DATABASE ? AS "{alias}"', ((root / file).as_uri() + "?mode=ro",)
+                )
+            assert_coherent(conn)
+        return
+    if not (root / "features.sqlite").is_file():
+        return
+    with (
+        closing(sqlite3.connect((root / "stocks.sqlite").as_uri() + "?mode=ro", uri=True)) as raw,
+        closing(
+            sqlite3.connect((root / "features.sqlite").as_uri() + "?mode=ro", uri=True)
+        ) as features,
+        closing(
+            sqlite3.connect((root / "adjustments.sqlite").as_uri() + "?mode=ro", uri=True)
+        ) as factors,
+    ):
+        revision = raw.execute(
+            "SELECT revision FROM dataset_state WHERE dataset='stock_raw'"
+        ).fetchone()
+        factor = factors.execute(
+            "SELECT revision FROM adjustment_state WHERE dataset='stock_adjustment_factors'"
+        ).fetchone()
+        states = features.execute(
+            "SELECT dataset,raw_revision,factor_revision,status FROM feature_state "
+            "WHERE scope_key='all'"
+        ).fetchall()
+    if (
+        revision is None
+        or factor is None
+        or {row[0] for row in states} != {"stock_daily_features", "market_regime_features"}
+        or any(row[1:] != (revision[0], factor[0], "READY") for row in states)
+    ):
+        raise DataPoolError(
+            "DERIVED_NOT_READY",
+            "Previous mirror is incomplete; run aspool platform reconcile --root " + str(root),
+        )
+
+
+def mirror_platform_v2(root, *, symbols, dates, raw_revision, previous_raw_revision=None):
+    """Serialize source reads and target commits, including direct maintenance calls."""
+    with pool_lock(root, write=True):
+        if layout_version(root) == 3:
+            require_current_mirror(root)
+            return {"mirrored": False, "reason": "canonical storage has no mirror"}
+        return _mirror_platform_v2(
+            root,
+            symbols=symbols,
+            dates=dates,
+            raw_revision=raw_revision,
+            previous_raw_revision=previous_raw_revision,
+        )
+
+
+def _mirror_platform_v2(root, *, symbols, dates, raw_revision, previous_raw_revision):
     """Copy only rows affected by one committed stock update into shadow stores."""
     root = Path(root).expanduser().resolve()
     feature_path = root / "features.sqlite"
@@ -568,6 +642,35 @@ def mirror_platform_v2(root, *, symbols, dates, raw_revision):
     target = _connect(feature_path)
     adjustments = _connect(root / "adjustments.sqlite")
     try:
+        advance_unchanged = (
+            not dates
+            and previous_raw_revision is not None
+            and raw_revision != previous_raw_revision
+        )
+        if dates or advance_unchanged:
+            source_revision = source.execute(
+                "SELECT revision FROM dataset_state WHERE dataset='stock_raw'"
+            ).fetchone()
+            states = target.execute(
+                "SELECT dataset,raw_revision,status FROM feature_state WHERE scope_key='all'"
+            ).fetchall()
+            # Legacy direct callers may mirror one new revision or retry a no-op.
+            # Writers supply the exact predecessor recorded in their transaction.
+            predecessors = (
+                {previous_raw_revision}
+                if previous_raw_revision is not None
+                else {raw_revision, raw_revision - 1}
+            )
+            if (
+                source_revision != (raw_revision,)
+                or {row[0] for row in states} != {"stock_daily_features", "market_regime_features"}
+                or any(row[1] not in predecessors or row[2] != "READY" for row in states)
+            ):
+                raise DataPoolError(
+                    "DERIVED_NOT_READY",
+                    "Mirror predecessor is incomplete; run aspool platform reconcile --root "
+                    + str(root),
+                )
         target.execute("BEGIN IMMEDIATE")
         feature_rows = summary_rows = 0
         if symbols and dates:
@@ -662,7 +765,7 @@ def mirror_platform_v2(root, *, symbols, dates, raw_revision):
             ("stock_daily_features", feature_rows),
             ("market_regime_features", summary_rows),
         ):
-            if rows > 0:
+            if rows > 0 or (dataset == "stock_daily_features" and not symbols and summary_rows):
                 target.execute(
                     "UPDATE feature_state SET raw_revision=?,factor_revision=?,"
                     "status='READY',updated_at=? WHERE dataset=? AND scope_key='all'",
@@ -670,9 +773,10 @@ def mirror_platform_v2(root, *, symbols, dates, raw_revision):
                 )
             else:
                 target.execute(
-                    "UPDATE feature_state SET factor_revision=?,updated_at=? "
+                    "UPDATE feature_state SET factor_revision=?,updated_at=?,"
+                    "raw_revision=CASE WHEN ? THEN ? ELSE raw_revision END "
                     "WHERE dataset=? AND scope_key='all'",
-                    (factor_revision, stamp, dataset),
+                    (factor_revision, stamp, advance_unchanged, raw_revision, dataset),
                 )
         target.commit()
     except BaseException:
@@ -697,6 +801,8 @@ def activate_platform_v2(root):
     """Atomically switch public reads only after row and revision verification."""
     root = Path(root).expanduser().resolve()
     with pool_lock(root, write=True):
+        if layout_version(root) == 3:
+            return verify_platform_v2(root)
         check = verify_platform_v2(root, deep=True)
         if not check["ready"]:
             raise ValueError("Platform v2 verification has not passed")
@@ -731,6 +837,10 @@ def activate_platform_v2(root):
 def reconcile_platform_v2(root):
     """Rebuild feature and adjustment mirrors from authoritative local stores."""
     root = Path(root).expanduser().resolve()
+    if layout_version(root) == 3:
+        raise DataPoolError(
+            "MIRROR_RETIRED", "Canonical storage has no mirror; use platform recover"
+        )
     for required in ("stocks.sqlite", "etfs.sqlite", "adjustments.sqlite", "features.sqlite"):
         if not (root / required).is_file():
             raise FileNotFoundError(root / required)
@@ -745,6 +855,10 @@ def rollback_platform_v2(root):
     """Route public reads back to layout 1 while retaining all shadow files."""
     root = Path(root).expanduser().resolve()
     with pool_lock(root, write=True):
+        if layout_version(root) == 3:
+            raise DataPoolError(
+                "LAYOUT_RETIRED", "Restore a verified recovery point; old tables are retired"
+            )
         _set_layout_version(root, 1)
     return platform_status(root)
 
@@ -761,21 +875,74 @@ def _set_layout_version(root, version):
 
 
 def layout_version(root):
-    path = Path(root).expanduser().resolve() / "catalog.duckdb"
+    root = Path(root).expanduser().resolve()
+    if not root.is_dir():
+        return _read_layout_version(root)
+    # Catalog writers hold the pool lock. Wait for their commit before opening
+    # DuckDB; access errors must still fail closed, never select an old layout.
+    with pool_lock(root):
+        return _read_layout_version(root)
+
+
+def _read_layout_version(root):
+    root = Path(root).expanduser().resolve()
+    path = root / "catalog.duckdb"
+    raw_schema = 1
+    raw_path = root / "stocks.sqlite"
+    if raw_path.is_file():
+        try:
+            with sqlite3.connect(raw_path.as_uri() + "?mode=ro", uri=True) as raw:
+                raw_schema = raw.execute("PRAGMA user_version").fetchone()[0]
+        except sqlite3.Error as exc:
+            raise DataPoolError("LAYOUT_INVALID", "Cannot identify the stock store schema") from exc
     if not path.is_file():
+        if raw_schema >= 3:
+            raise DataPoolError("LAYOUT_INVALID", "Canonical layout catalog is missing")
         return 1
     try:
         with duckdb.connect(str(path), read_only=True) as catalog:
+            metadata = catalog.execute(
+                "SELECT 1 FROM information_schema.tables WHERE table_name='pool_metadata'"
+            ).fetchone()
+            if metadata is None:
+                if raw_schema >= 3:
+                    raise DataPoolError("LAYOUT_INVALID", "Canonical layout metadata is missing")
+                return 1
             row = catalog.execute(
                 "SELECT value FROM pool_metadata WHERE key='layout_version'"
             ).fetchone()
-    except duckdb.Error:
+    except duckdb.Error as exc:
+        raise DataPoolError("LAYOUT_UNAVAILABLE", "Cannot read the pool layout") from exc
+    if row is None:
+        if raw_schema >= 3:
+            raise DataPoolError("LAYOUT_INVALID", "Canonical layout version is missing")
         return 1
-    return int(row[0]) if row else 1
+    try:
+        version = int(row[0])
+    except (TypeError, ValueError) as exc:
+        raise DataPoolError("LAYOUT_INVALID", "Invalid pool layout version") from exc
+    if version not in {1, 2, 3}:
+        raise DataPoolError("LAYOUT_INVALID", "Unsupported pool layout version")
+    if raw_schema >= 3 and version != 3:
+        raise DataPoolError("LAYOUT_INVALID", "Retired layout cannot select canonical storage")
+    return version
 
 
 def verify_platform_v2(root, *, deep=False):
+    """Verify a stable pool view while excluding concurrent canonical writers."""
     root = Path(root).expanduser().resolve()
+    if not root.is_dir():
+        return _verify_platform_v2(root, deep=deep)
+    with pool_lock(root):
+        return _verify_platform_v2(root, deep=deep)
+
+
+def _verify_platform_v2(root, *, deep=False):
+    root = Path(root).expanduser().resolve()
+    if layout_version(root) == 3:
+        from .storage_verify import verify_canonical
+
+        return verify_canonical(root, deep=deep)
     required = [
         "catalog.duckdb",
         "stocks.sqlite",
@@ -787,7 +954,12 @@ def verify_platform_v2(root, *, deep=False):
         "snapshots.sqlite",
     ]
     missing = [name for name in required if not (root / name).is_file()]
-    result = {"ready": not missing, "missing": missing, "counts": {}}
+    result = {
+        "ready": not missing,
+        "missing": missing,
+        "counts": {},
+        "verification_level": "deep" if deep else "shallow",
+    }
     if missing:
         return result
     with (
@@ -822,10 +994,13 @@ def verify_platform_v2(root, *, deep=False):
                 entry["missing"] = missing_rows
                 content_equal = extra == 0 and missing_rows == 0
             else:
-                content_equal = source_count == target_count
+                content_equal = None
+            entry["count_equal"] = source_count == target_count
             entry["content_equal"] = content_equal
             result["counts"][target] = entry
-            result["ready"] = result["ready"] and content_equal
+            result["ready"] = (
+                result["ready"] and entry["count_equal"] and content_equal is not False
+            )
         event_index = new.execute(
             "SELECT sql FROM sqlite_master WHERE type='index' "
             "AND name='stock_daily_features_events'"

@@ -70,6 +70,39 @@
 筛选事件、258 批、最大 512 行/批，全部与独立事件读取一致，成交额缺失 0；读取与对账 14.057 秒，
 进程峰值 RSS 307,908,608 字节（约 293.6 MiB），低于 2 GiB，结束后文件描述符和线程数恢复基线。
 
+## 运行整改（2026-09-30）
+
+主线实现与定向验证已完成：五个相关测试模块合计 84 个用例通过（不重复计数，其中新增 13 个），
+受影响范围的 Ruff、`git diff --check` 与两个脚本的 `bash -n` 通过。生产只读 `aspool platform verify`
+返回 `ready=true`、`verification_level=shallow`：`stock_daily_features` 16,361,755/16,361,755、
+`market_regime_features` 12,962/12,962，`content_equal=null`（浅层未证明内容全等）；三张因子表
+内容比较通过，`feature_state` 为 READY 且 revision 对齐。`repair_recent_data_gaps` 默认只读
+`--count 10` 返回 `gaps=[]`、`calendar_through=2026-09-29`，收据注明 freshness 只覆盖已存日历。
+截至本文记录时点（9/30 收盘前）未运行今日生产日更，未运行生产全量 `verify --deep`/`reconcile`，
+业务数据未写。以下行为同时经工作区代码逐项只读核对。Fundwise 公开接口保持不变。
+
+- **校验分层**：`aspool platform verify --deep` 提供全内容只读校验（ATTACH + 双向 EXCEPT，给出
+  `extra`/`missing` 与 `content_equal`）；浅层 `content_equal=null` 表示未校验而非一致，浅层结果
+  不能充当全内容一致的证据。
+- **写入前镜像门闩**：每次有界写入在池锁内先检查上一提交镜像完整（`feature_state` 全 `READY`
+  且 revision 对齐），不完整以 `DERIVED_NOT_READY` 拒绝并要求显式 `aspool platform reconcile`；
+  后续局部更新不得抹掉待恢复状态，日更路径不自动全量重建镜像。无日期的纯镜像补跑不会把 `DIRTY`
+  改成 `READY`；日更内部无派生变化事务在精确 `previous_raw_revision` 且旧状态 `READY`、版本匹配时
+  允许只推进 revision。
+- **因子小批提交**：无事件因子后缀按有界小批（最多 32 只共享一次市场截面）提交，权威事件读取
+  逐只隔离；每个小批与分层镜像在同一池写锁内完成。
+- **流水线子报告汇总**：`run_daily_data_pipeline` 汇总各阶段持久化子报告；单证券失败把阶段标为
+  `partial`，后续独立阶段继续执行，总状态为 `partial`；`factor_unavailable`（如 `no_verified_anchor`）
+  单独计数并经 `factor_quality` 报告，不与失败混列。
+- **shell 入口统一**：`run_daily_data_pipeline.sh` 与 `repair_recent_data_gaps.sh` 统一项目 cwd 与
+  环境（均设 `UV_CACHE_DIR`、优先 `.venv`；`TZ=Asia/Shanghai` 缺省仅流水线入口设置），数据根可用
+  `ASPOOL_ROOT` 或 `--root` 覆盖，缺省项目 `data/`。
+- **尾部修补语义**：`repair_recent_data_gaps` 默认只读检查已存交易日历内的缺口，不能证明日历新鲜
+  （收据 `freshness` 注明）；`--repair` 先执行有界 index sync 刷新交易日历，再重新检测并只修股票、
+  ETF 与缺失汇总，最后复查，残留缺口非零或操作未达 `ok` 时非零退出。
+- **缺失汇总本地重算**：仅对已有股票派生的日期按日期本地重算缺失的市场日汇总（`recompute_daily_summary`，
+  上限 60 会话），不重抓完整日线；该路径在股票 `sync` 的有界窗口内执行。
+
 ## 当前未纳入本次切换
 
 指数/ETF 稳定 Enriched、W/M Regime writer、按需 snapshot 计算/清理命令仍需后续实现。

@@ -25,7 +25,7 @@ pip install -e ".[dev]"
 
 ## CLI 参考
 
-CLI 帮助页面遵循 [CLI 帮助风格规范](docs/cli_help_style.md)。
+CLI 帮助页面遵循 [CLI 帮助风格规范](docs/design/cli_help_style.md)。
 
 `tdxman` 默认将 JSON 输出到标准输出。使用 `--format json|table|csv` 选择格式；`table`
 在终端保持网格表格显示。使用 `--output` 将结果写入文件或目录：未指定 `--format` 时
@@ -570,21 +570,21 @@ commands 层不依赖 transport，可独立单测。
 `settings/config.yaml` 的 `aspool.free_stockdb.root` 是 **free-stockdb 导入源目录**，
 `offline.vipdoc` 是通达信本地行情目录，都不是数据池输出路径。
 
-Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](docs/aspool_api.md)。
+Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](docs/design/aspool_api.md)。
 数据域分层需求与物理设计见
-[数据域分层需求](docs/data_platform_v2_requirements.md)和
-[数据域分层设计](docs/data_platform_v2_design.md)。当前已提供可恢复的影子迁移、核验和显式激活，
-执行状态见 [数据域分层实施记录](docs/data_platform_v2_execution.md)；生产运行方式仍以
-[生产数据流契约](docs/production_data_flow_contract.md)为准。
+[数据域分层需求](docs/design/data_platform_v2_requirements.md)和
+[数据域分层设计](docs/design/data_platform_v2_design.md)。当前已提供可恢复的影子迁移、核验和显式激活，
+执行状态见 [数据域分层实施记录](docs/implements/platform_v2_execution.md)；生产运行方式仍以
+[生产数据流契约](docs/design/production_data_flow_contract.md)为准。
 新版项目数据统一位于 `data/`：股票使用 `stocks.sqlite`，指数使用独立的
 `indices.sqlite`，ETF 使用 `etfs.sqlite`；分层布局另使用 `fundamentals.sqlite`、
 `adjustments.sqlite`、`features.sqlite` 和 `snapshots.sqlite`。公开读取只通过 `DataPool`，
 由 `catalog.duckdb:pool_metadata.layout_version` 选择完整布局。
-当前项目生产池已全部退役 `lake/` 分区，见 [ETF 与辅助数据迁移验收](docs/etf_reference_sqlite_migration.md)。
+当前项目生产池已全部退役 `lake/` 分区，见 [ETF 与辅助数据迁移验收](docs/ops/etf_reference_sqlite_migration.md)。
 指数保留 `aspool update|sync --type index` 和 `read_index_daily` /
-`list_indices` 接口；迁移步骤、增量边界与验收见 [指数 SQLite 迁移](docs/index_sqlite_migration.md)。
+`list_indices` 接口；迁移步骤、增量边界与验收见 [指数 SQLite 迁移](docs/ops/index_sqlite_migration.md)。
 五年涨停事件及当日成交额使用 `DataPool.iter_limit_events_with_amount()` 分批读取；
-接口、缓存示例和资源边界见 [aspool API](docs/aspool_api.md#9-已发布事件与当日成交额的有界读取)。
+接口、缓存示例和资源边界见 [aspool API](docs/design/aspool_api.md#9-已发布事件与当日成交额的有界读取)。
 
 ### 首次准备（已有数据池可跳过）
 
@@ -633,7 +633,7 @@ aspool status
 4. ETF 增量同步到独立 `etfs.sqlite`；K 线为空时用带日期报价确认无交易，不制造零值日线。
 5. 输出统一报告。基本面已从每日 `all` 流程移除，只由 `aspool fundamentals update` 手动维护；
    BaoStock 仅由 `--source baostock` 显式选择，不自动切源。详见
-   [完整数据与 CLI 契约](docs/production_data_flow_contract.md)。
+   [完整数据与 CLI 契约](docs/design/production_data_flow_contract.md)。
 
 股票漏更或需要修补时，再先执行：
 
@@ -664,7 +664,7 @@ aspool platform rollback --root data
 不传 `adjust` 时继续返回未复权价格。
 
 股票日线 `sync` 同时补齐日期股本、参考价、收盘量比、换手率和市值，再重算涨跌停和连板。
-BaoStock 用于冲突样本的只读算法校对；详见 [日线字段补齐](docs/daily_enrichment.md)。
+BaoStock 用于冲突样本的只读算法校对；详见 [日线字段补齐](docs/design/daily_enrichment.md)。
 旧文件池的 `--enrich-only` 不适用于新版 SQLite；较长历史由 ops 分窗维护。
 可手动运行 `aspool directory --type stock|etf` 刷新目录；`aspool universe` 仅保留为隐藏兼容别名。
 
@@ -681,7 +681,7 @@ aspool sync --root data --type stock --source baostock --status missing \
 新版 `aspool update --source baostock` 显式选择备用源，不再读取配置自动追加 BaoStock；
 `--retries 2 --retry-delay 1` 控制单标的有限读取重试；连续三只重试耗尽后默认熔断，可用 `--max-consecutive-failures` 调整。建议16:00后运行，并核对源端实际数据日期。
 BaoStock 只支持沪深 A 股，首次串行补齐可能较慢；缺失会话、源间冲突和连板未知都会保留在报告中。
-详见 [BaoStock 数据源、合并规则和覆盖边界](docs/baostock.md)。
+详见 [BaoStock 数据源、合并规则和覆盖边界](docs/ops/baostock.md)。
 
 新版 update 报价默认使用4个独立连接；`--workers 1` 为串行，最多8个连接。
 SQLite 股票历史 sync 与 BaoStock 固定串行；两条路径的写事务串行执行。旧文件池 sync 的异步选项不适用于新版 SQLite 股票路径；指数 SQLite sync 支持异步读取，写事务仍串行执行。
@@ -731,8 +731,8 @@ aspool sync --type index --source tdx --tdx-mode offline --period daily
 # 在线日线 sync 和 update 均支持 --async / --workers；update 仍只维护日线
 aspool sync --type index --source tdx --period daily --async
 
-# 手动维护低频快照；日常 update 已同步刷新，无需额外每天重复执行
-aspool fundamentals
+# 按需刷新低频快照；日常行情 update 不自动刷新基本面
+aspool fundamentals update --root data
 
 # 只有需要重新校准股票完整历史时才使用 free-stockdb
 aspool sync --type stock --source free-stockdb --period daily
@@ -742,9 +742,10 @@ aspool sync --type stock --source free-stockdb --period daily
 排除名称以“昨日”开头的记录；名单脚本默认预览新增、删除、变化，`--write` 才更新配置。
 名单删除不删除已存历史，目录 API 返回实际保存的指数。
 
-股票原始 K 线不复权；复权因子独立保存。指数日线存放于 `lake/indices/daily`，与股票池隔离。
-详见 [指数设计](docs/aspool_index_design.md)、[验收报告](docs/aspool_index_validation.md)
-及 [Fundwise 指数接口](docs/aspool_api.md#6-指数读取接口已实现)。同步与异步的实测对比见 [性能验证报告](docs/aspool_performance.md)。
+股票原始 K 线不复权；复权因子独立保存。新版指数日线存放于独立的 `indices.sqlite`；
+`lake/indices/daily` 仅用于尚未迁移的旧文件池。
+详见 [指数设计](docs/design/aspool_index_design.md)、[验收报告](docs/design/aspool_index_validation.md)
+及 [Fundwise 指数接口](docs/design/aspool_api.md#6-指数读取接口已实现)。同步与异步的实测对比见 [性能验证报告](docs/audit/aspool_performance.md)。
 
 ## 开发
 

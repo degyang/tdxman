@@ -3,7 +3,7 @@
 import math
 import sqlite3
 import time
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from datetime import date, datetime
 from pathlib import Path
 
@@ -258,3 +258,26 @@ def read(root, *, requested, start, end, lookback, selected, listing):
         dataset_version=None,
     )
     return frame
+
+
+@contextmanager
+def factor_connection(root):
+    """Expose the historical ETF factor columns from their unique owner."""
+    from .platform_v2 import layout_version
+    from .pool import pool_lock
+
+    root = Path(root).resolve()
+    with pool_lock(root):
+        if layout_version(root) < 3:
+            with connection(root) as conn:
+                yield conn
+            return
+        path = root / "adjustments.sqlite"
+        with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as conn:
+            conn.execute(
+                "CREATE TEMP VIEW adjustment_factors AS SELECT symbol, "
+                "effective_date AS trade_date,cumulative_factor,source "
+                "FROM main.etf_adjustment_factors"
+            )
+            conn.execute("PRAGMA query_only=ON")
+            yield conn

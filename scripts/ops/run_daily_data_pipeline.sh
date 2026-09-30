@@ -3,10 +3,11 @@
 set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$project_dir"
 export TZ="${TZ:-Asia/Shanghai}"
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$project_dir/.local/uv-cache}"
 
-echo "daily pipeline: starting; project=$project_dir; root=${ASPOOL_ROOT:-data}"
+echo "daily pipeline: starting; project=$project_dir"
 
 # The repository venv is the normal operational environment.  Reuse it directly
 # so a stale uv cache lock cannot make a scheduled run wait without any output.

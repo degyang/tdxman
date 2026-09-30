@@ -182,6 +182,13 @@ def derive_symbol(conn, symbol, *, calendar, listing=None):
 
 def run(root, report, symbols=(), resume=False):
     root, report = Path(root).resolve(), Path(report).resolve()
+    from aspool.platform_v2 import layout_version
+
+    if layout_version(root) >= 2:
+        raise ValueError(
+            "Legacy development derive is retired for production layouts; "
+            "use the canonical update/sync writer or an explicit storage migration"
+        )
     report.parent.mkdir(parents=True, exist_ok=True)
     if report.exists() and not resume:
         raise ValueError("Report exists; choose a new path or explicitly resume")

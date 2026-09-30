@@ -1,11 +1,6 @@
 # asPool 完整数据与 CLI 落地契约
 
-日期：2026-09-28。状态：实施基线。本文冻结生产数据块、数据状态、在线更新、历史补齐、读取和验收命令。实现不得自行增加批次、发布、覆盖或异常业务表；完整迁移和全历史重建仍放在 `scripts/ops/`。
-
-> 本文记录当前已经运行的生产结构。2026-09-29 冻结的下一阶段目标见
-> [数据域分层需求](data_platform_v2_requirements.md)与
-> [数据域分层设计](data_platform_v2_design.md)。目标文档将原始行情、复权因子、稳定 Enriched、
-> Regime、基本面和按需快照分层；在迁移验收完成前，不用目标路径推断当前生产状态。
+日期：2026-09-30。布局 3 的唯一存储职责及一致发布见 [单一权威存储整改](../implements/single_authority_storage.md)。公共 API 的逻辑数据名保持不变，不表示旧物理表仍存在。布局 2 仅作为迁移输入，恢复材料在生产池外。
 
 ## 1. 数据根和十个生产数据块
 
@@ -13,21 +8,14 @@
 
 ```text
 data/
-├── catalog.duckdb
-│   ├── securities
-│   ├── index_memberships
-│   ├── security_calendar
-│   └── fundamental_snapshots
-├── stocks.sqlite
-│   ├── daily_bars
-│   ├── corporate_actions
-│   ├── daily_features
-│   └── market_daily_summary
-├── indices.sqlite
-│   └── daily_bars
-└── etfs.sqlite
-    ├── daily_bars
-    └── adjustment_factors
+├── catalog.duckdb          # securities / index_memberships / security_calendar
+├── stocks.sqlite          # daily_bars / corporate_actions (source events only)
+├── adjustments.sqlite     # stock_adjustment_factors / stock_factor_anchors / etf_adjustment_factors
+├── features.sqlite        # stock_daily_features / market_regime_features
+├── fundamentals.sqlite    # stock_financial_reports / stock_shareholder_counts
+├── indices.sqlite         # daily_bars
+├── etfs.sqlite            # daily_bars
+└── snapshots.sqlite       # optional cache
 ```
 
 运行报告、断点和恢复材料放在 `tdxman/.local/`，不进入运行数据根。
@@ -39,11 +27,11 @@ data/
 | `fundamental_snapshots` | TDX quote 基本面字段 | `fundamentals`；`--type all` 复用/补取当前 quote | 最新股本及估值基础快照 |
 | `stocks.daily_bars` | TDX 当日 quote；TDX/BaoStock 历史 K 线 | 股票 `update/sync` | 未复权股票日线 |
 | `stocks.corporate_actions` | TDX 除权事件 | 股票 `update/sync` | 参考昨收和稀疏复权因子输入 |
-| `stocks.daily_features` | 股票日线、事件、名称/ST、交易状态 | 与股票事实同一事务 | `TRADED/NO_TRADE/MISSING/INVALID`、涨跌停、连板、MA20 |
-| `stocks.market_daily_summary` | 当日逐股事实和派生 | 与股票事实同一事务 | D 公共市场特征及 Regime 输入；W/M 使用同表预留契约 |
+| `features.stock_daily_features` | 股票日线、事件、名称/ST、交易状态 | 与股票事实通过共同发布机制提交 | `TRADED/NO_TRADE/MISSING/INVALID`、涨跌停、连板、MA20 |
+| `features.market_regime_features` | 当日逐股事实和派生 | 与股票事实通过共同发布机制提交 | D 公共市场特征及 Regime 输入；W/M 使用同表预留契约 |
 | `indices.daily_bars` | catalog 当前有效指数目录和 TDX 指数日 K 线 | 指数 `update/sync` | 指数 OHLCVA 和可用的上涨/下跌家数 |
 | `etfs.daily_bars` | 当日 ETF 完整目录和 TDX ETF 日 K 线 | ETF `update/sync` | 未复权 ETF 日线 |
-| `etfs.adjustment_factors` | 已审核迁移源；后续明确的在线因子源 | ops 迁移/维护 | ETF 复权参考；不伪装成已在线更新 |
+| `adjustments.etf_adjustment_factors` | 已审核迁移源；后续明确的在线因子源 | ops 迁移/维护 | ETF 复权参考；不伪装成已在线更新 |
 
 Regime 模型模板和评分结果归 Fundwise；asPool 提供日级 `market_daily_summary`、指数日线和有界事件金额读取。W/M 字段与读取签名已经冻结，但当前生产池没有 W/M 行，读取会明确返回 `FREQUENCY_NOT_READY`；后续周期 writer 只聚合受影响周/月。
 

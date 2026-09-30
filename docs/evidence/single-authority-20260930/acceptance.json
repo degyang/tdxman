@@ -1,0 +1,337 @@
+{
+  "date": "2026-09-30",
+  "runtime_code_commit": "de71bb6",
+  "production_layout": 3,
+  "migration_receipt": "production-migration.json",
+  "public_contract_check": {
+    "status": "passed",
+    "same_values_types_attrs": {
+      "stock_none": 42,
+      "stock_qfq": 42,
+      "stock_hfq": 42,
+      "etf_none": 21,
+      "etf_qfq": 21,
+      "etf_hfq": 21,
+      "summary": 21
+    }
+  },
+  "public_check_ran_concurrently_with_pipeline": true,
+  "production_pipeline": {
+    "status": "ok",
+    "elapsed_ms": 136061,
+    "stage_statuses": {
+      "directory": "ok",
+      "stock_update": "ok",
+      "index_update": "ok",
+      "etf_update": "ok"
+    },
+    "stock_performance": {
+      "total_elapsed_ms": 41283,
+      "quote_confirm_and_fetch_elapsed_ms": 3924,
+      "action_fetch_elapsed_ms": 0,
+      "writer_elapsed_ms": 4187,
+      "feature_elapsed_ms": 0,
+      "summary_elapsed_ms": 0,
+      "mirror_elapsed_ms": 0
+    },
+    "stock_closure": {
+      "available": true,
+      "table": "features.sqlite:stock_daily_features",
+      "date": "2026-09-30",
+      "latest_date": "2026-09-30",
+      "rows": 5577,
+      "calc_status": {
+        "NO_TRADE": 17,
+        "TRADED": 5560
+      },
+      "trading_status": {
+        "NO_TRADE": 17,
+        "TRADING": 5560
+      },
+      "active_stock_count": 5577,
+      "missing_symbol_count": 0,
+      "missing_symbol_sample": [],
+      "extra_symbol_count": 0,
+      "extra_symbol_sample": [],
+      "factor_missing_count": 155,
+      "factor_missing_sample": [
+        "001232.SZ",
+        "001237.SZ",
+        "001239.SZ",
+        "001246.SZ",
+        "001248.SZ",
+        "001330.SZ",
+        "001365.SZ",
+        "001393.SZ",
+        "001399.SZ",
+        "301292.SZ",
+        "301531.SZ",
+        "301565.SZ",
+        "301583.SZ",
+        "301599.SZ",
+        "301655.SZ",
+        "301666.SZ",
+        "301669.SZ",
+        "301677.SZ",
+        "301686.SZ",
+        "301688.SZ"
+      ],
+      "factor_store_available": true,
+      "factor_ready": false,
+      "summary_rows": 2,
+      "summary_quality": {
+        "trading_count": 5560,
+        "valid_return_count": 5560,
+        "invalid_return_count": 0,
+        "limit_unknown_count": 0,
+        "limit_invalid_count": 0,
+        "streak_unknown_count": 0,
+        "ma20_valid_count": 5110
+      },
+      "core_quality_ready": true,
+      "closed": true
+    }
+  },
+  "idempotence": {
+    "same": true,
+    "scope": "Includes every column, proof payload, timestamp and state revision in the listed queries; recent raw/features and complete factor/anchor stores, not all cold raw history",
+    "before": {
+      "raw_recent": {
+        "rows": 11119,
+        "sha256": "0791899b9054c6d6b98c491632551e46b61e298431267dbac918af6230de8215"
+      },
+      "raw_state": {
+        "rows": 1,
+        "sha256": "d3df17a0773b67e748673bdc9a88863513ca8856a09f11ccc600030264a15e98"
+      },
+      "events_recent": {
+        "rows": 900,
+        "sha256": "b156541322dd4f360e02f5fd362265b9703ab8eb5b6f141039fd16dc12a0d645"
+      },
+      "features_recent": {
+        "rows": 11155,
+        "sha256": "3aa708f88531e8e786cf77682f2a8faae3950ad3d97d9adf4a0a6263c42ddd9e"
+      },
+      "summary_recent": {
+        "rows": 4,
+        "sha256": "bbbecf21e28d8a3b5960763e68090e5fd17545b804b2d683dce1c54eb40ca0e7"
+      },
+      "feature_state": {
+        "rows": 2,
+        "sha256": "3e6a65b51f15f107c950922972a391c16b7f5e70b1a7c4f122fc7d8ac3fc684d"
+      },
+      "factors_all": {
+        "rows": 57476,
+        "sha256": "c1918514a546400d14e120478d6b2d84d2a5e1f6b759813595149f6bf406ed98"
+      },
+      "anchors_all": {
+        "rows": 57391,
+        "sha256": "5ae308acd615c811757a5179029968a2509594941f1756cc3129644f02e4e778"
+      },
+      "etf_factors_all": {
+        "rows": 1286,
+        "sha256": "0e30c9f9975d0d5c55b40b00139de507dedccf0130f307bdbd7513564635819e"
+      },
+      "factor_state": {
+        "rows": 2,
+        "sha256": "e5d129d126ba0ddedbaf1a2c898c3d844a946008a5aa29d67fc1061fa8eaf979"
+      },
+      "index_recent": {
+        "rows": 858,
+        "sha256": "ee326fcaa92e974145af0ae17d88aa722253e7745fbeb1bf397ebcc1a9157a7c"
+      },
+      "etf_recent": {
+        "rows": 1697,
+        "sha256": "bf8691511e6209311f877050004938d97b8004b461166016b28fe2b9bdba7238"
+      }
+    },
+    "after": {
+      "raw_recent": {
+        "rows": 11119,
+        "sha256": "0791899b9054c6d6b98c491632551e46b61e298431267dbac918af6230de8215"
+      },
+      "raw_state": {
+        "rows": 1,
+        "sha256": "d3df17a0773b67e748673bdc9a88863513ca8856a09f11ccc600030264a15e98"
+      },
+      "events_recent": {
+        "rows": 900,
+        "sha256": "b156541322dd4f360e02f5fd362265b9703ab8eb5b6f141039fd16dc12a0d645"
+      },
+      "features_recent": {
+        "rows": 11155,
+        "sha256": "3aa708f88531e8e786cf77682f2a8faae3950ad3d97d9adf4a0a6263c42ddd9e"
+      },
+      "summary_recent": {
+        "rows": 4,
+        "sha256": "bbbecf21e28d8a3b5960763e68090e5fd17545b804b2d683dce1c54eb40ca0e7"
+      },
+      "feature_state": {
+        "rows": 2,
+        "sha256": "3e6a65b51f15f107c950922972a391c16b7f5e70b1a7c4f122fc7d8ac3fc684d"
+      },
+      "factors_all": {
+        "rows": 57476,
+        "sha256": "c1918514a546400d14e120478d6b2d84d2a5e1f6b759813595149f6bf406ed98"
+      },
+      "anchors_all": {
+        "rows": 57391,
+        "sha256": "5ae308acd615c811757a5179029968a2509594941f1756cc3129644f02e4e778"
+      },
+      "etf_factors_all": {
+        "rows": 1286,
+        "sha256": "0e30c9f9975d0d5c55b40b00139de507dedccf0130f307bdbd7513564635819e"
+      },
+      "factor_state": {
+        "rows": 2,
+        "sha256": "e5d129d126ba0ddedbaf1a2c898c3d844a946008a5aa29d67fc1061fa8eaf979"
+      },
+      "index_recent": {
+        "rows": 858,
+        "sha256": "ee326fcaa92e974145af0ae17d88aa722253e7745fbeb1bf397ebcc1a9157a7c"
+      },
+      "etf_recent": {
+        "rows": 1697,
+        "sha256": "bf8691511e6209311f877050004938d97b8004b461166016b28fe2b9bdba7238"
+      }
+    }
+  },
+  "tests": {
+    "current_flow_passed": 211,
+    "new_canonical_cases": 23,
+    "legacy_protocol_baseline_commit": "777dcd2",
+    "legacy_protocol_baseline_failed": 22,
+    "legacy_protocol_final_failed": 21,
+    "new_legacy_failures": [],
+    "existing_legacy_failure_ids": [
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[calendar]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[direct]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[enrichment]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[facts]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[free-stockdb]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[index]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[lifecycle]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[merge]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[offline]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[online]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[quote]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[snapshot]",
+      "tests/unit/test_change_protocol.py::test_each_entry_fault_is_detectable_and_retry_matches_clean_reference[universe]",
+      "tests/unit/test_change_protocol.py::test_every_entry_replay_has_zero_business_change[offline]",
+      "tests/unit/test_change_protocol.py::test_every_entry_replay_has_zero_business_change[online]",
+      "tests/unit/test_change_protocol.py::test_every_entry_replay_has_zero_business_change[quote]",
+      "tests/unit/test_change_protocol.py::test_online_command_empty_and_failed_fetch_preserve_facts",
+      "tests/unit/test_change_protocol.py::test_quote_after_catalog_commit_failure_reports_actual_changed_rows",
+      "tests/unit/test_change_protocol.py::test_quote_full_command_noop_skips_compute_and_source_outage_preserves_data",
+      "tests/unit/test_change_protocol.py::test_real_lock_contention_is_accounted",
+      "tests/unit/test_change_protocol.py::test_universe_omissions_and_empty_source_preserve_facts_and_ttl"
+    ]
+  },
+  "synthetic_bounded_replay": {
+    "scenario": "synthetic fixture on disposable full-history clone; no network, not an actual exchange session or whole-market SLA",
+    "root": "/home/ubuntu/aspool-labs/single-authority-20260930/pool",
+    "symbols": 384,
+    "batch_size": 128,
+    "results": [
+      {
+        "repeat": false,
+        "seconds": 1.9236787240006379,
+        "batches": [
+          {
+            "changed_rows": 256,
+            "changed_factor_rows": 128,
+            "changed_feature_rows": 128,
+            "summary_rows": 2,
+            "elapsed_ms": 1117,
+            "read_rows": 3456
+          },
+          {
+            "changed_rows": 256,
+            "changed_factor_rows": 128,
+            "changed_feature_rows": 128,
+            "summary_rows": 2,
+            "elapsed_ms": 413,
+            "read_rows": 3584
+          },
+          {
+            "changed_rows": 256,
+            "changed_factor_rows": 128,
+            "changed_feature_rows": 128,
+            "summary_rows": 2,
+            "elapsed_ms": 390,
+            "read_rows": 3712
+          }
+        ]
+      },
+      {
+        "repeat": true,
+        "seconds": 0.06049246500333538,
+        "batches": [
+          {
+            "changed_rows": 0,
+            "changed_factor_rows": 0,
+            "changed_feature_rows": 0,
+            "summary_rows": 0,
+            "elapsed_ms": 21,
+            "read_rows": 0
+          },
+          {
+            "changed_rows": 0,
+            "changed_factor_rows": 0,
+            "changed_feature_rows": 0,
+            "summary_rows": 0,
+            "elapsed_ms": 19,
+            "read_rows": 0
+          },
+          {
+            "changed_rows": 0,
+            "changed_factor_rows": 0,
+            "changed_feature_rows": 0,
+            "summary_rows": 0,
+            "elapsed_ms": 19,
+            "read_rows": 0
+          }
+        ]
+      }
+    ]
+  },
+  "final_ownership_verification": {
+    "layout_version": 3,
+    "activated": true,
+    "ready": true,
+    "verification_level": "shallow",
+    "publication_pending": false,
+    "ownership": {
+      "stocks.sqlite": {
+        "missing_tables": [],
+        "retired_tables_present": [],
+        "schema": 3
+      },
+      "features.sqlite": {
+        "missing_tables": [],
+        "retired_tables_present": [],
+        "schema": 3
+      },
+      "adjustments.sqlite": {
+        "missing_tables": [],
+        "retired_tables_present": [],
+        "schema": 3
+      },
+      "etfs.sqlite": {
+        "missing_tables": [],
+        "retired_tables_present": [],
+        "schema": 1
+      }
+    },
+    "source_events_only": true
+  },
+  "limits": [
+    "homevps not deployed or migrated",
+    "155 traded stocks lack trusted factor coverage",
+    "ETF factors not automatically refreshed; index/ETF stable Enriched not implemented",
+    "Financial/shareholder data not refreshed in this run",
+    "No whole-repository passing claim; legacy Parquet protocol failures reproduced on baseline",
+    "Synthetic replay is on Linux storage, no network; not a new-day whole-market Windows SLA",
+    "Cron not installed; recovery point retained outside production; synthetic lab is not a new recovery point"
+  ]
+}

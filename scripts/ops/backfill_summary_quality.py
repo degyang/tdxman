@@ -7,9 +7,11 @@ import time
 from datetime import date
 from pathlib import Path
 
+from aspool.platform_v2 import layout_version
 from aspool.sqlite_market_summary import recompute_daily_summary
 from aspool.sqlite_stock_store import stock_connection
 from aspool.sqlite_summary_quality import QUALITY_FIELDS, quality_columns, upgrade_quality_columns
+from aspool.sqlite_summary_repair import apply_summary_changes
 
 
 def backfill(root, *, start, end, upgrade_schema=False):
@@ -25,9 +27,15 @@ def backfill(root, *, start, end, upgrade_schema=False):
     )
     with stock_connection(root, read_only=False) as conn:
         if upgrade_schema:
-            with conn:
-                conn.execute("BEGIN IMMEDIATE")
-                upgrade_quality_columns(conn)
+            if layout_version(root) == 3:
+                if not set(QUALITY_FIELDS) <= quality_columns(conn):
+                    raise ValueError(
+                        "Canonical schema changes require an explicit storage migration"
+                    )
+            else:
+                with conn:
+                    conn.execute("BEGIN IMMEDIATE")
+                    upgrade_quality_columns(conn)
         elif not set(QUALITY_FIELDS) <= quality_columns(conn):
             raise ValueError("Quality columns absent; explicit --upgrade-schema is required")
         days = [
@@ -41,9 +49,12 @@ def backfill(root, *, start, end, upgrade_schema=False):
         if not days:
             raise ValueError("No precomputed market sessions in this window")
         for day in days:
-            with conn:
-                conn.execute("BEGIN IMMEDIATE")
-                stats = recompute_daily_summary(conn, trade_date=day)
+            if layout_version(root) == 3:
+                stats = apply_summary_changes(conn, day=day)
+            else:
+                with conn:
+                    conn.execute("BEGIN IMMEDIATE")
+                    stats = recompute_daily_summary(conn, trade_date=day)
             result["days"] += 1
             result["changed_rows"] += stats["changed_rows"]
             result["read_rows"] += stats["read_rows"]

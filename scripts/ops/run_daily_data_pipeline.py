@@ -9,18 +9,23 @@ semantics remain the same for an operator, cron, and a future service runner.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import shutil
 import sqlite3
 import subprocess
 import sys
+from contextlib import ExitStack, contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 import duckdb
+
+from aspool.operation_report import operation_outcome, run_command
 
 
 @dataclass(frozen=True)
@@ -32,7 +37,7 @@ class Stage:
     purpose: str
 
 
-def pipeline_stages(root: Path, *, workers: int, fundamentals: bool) -> list[Stage]:
+def pipeline_stages(root: Path, *, workers: int) -> list[Stage]:
     """Return the complete daily sequence without running it."""
     common = (
         "--root",
@@ -56,6 +61,11 @@ def pipeline_stages(root: Path, *, workers: int, fundamentals: bool) -> list[Sta
             "写入当日未复权 quote 与直接派生，再逐证券处理除权事件和因子后缀",
         ),
         Stage(
+            "factor_bootstrap",
+            ("factors-bootstrap", "--root", str(root)),
+            "验证新上市股票的完整事件链并初始化缺失因子（最多 60 行/证券）",
+        ),
+        Stage(
             "index_update",
             ("update", "--type", "index", *common),
             "以指数日 K 更新交易日历和指数原始行情",
@@ -66,23 +76,22 @@ def pipeline_stages(root: Path, *, workers: int, fundamentals: bool) -> list[Sta
             "更新 ETF 未复权日线；源端确认无交易时保留 NO_TRADE",
         ),
     ]
-    if fundamentals:
-        stages.append(
-            Stage(
+    stages.append(
+        Stage(
+            "fundamentals",
+            (
                 "fundamentals",
-                (
-                    "fundamentals",
-                    "update",
-                    "--root",
-                    str(root),
-                    "--retries",
-                    "2",
-                    "--retry-delay",
-                    "1",
-                ),
-                "刷新最新财报和股东人数快照（不倒填历史）",
-            )
+                "update",
+                "--root",
+                str(root),
+                "--retries",
+                "2",
+                "--retry-delay",
+                "1",
+            ),
+            "刷新最新财报和股东人数快照（不倒填历史）",
         )
+    )
     return stages
 
 
@@ -151,11 +160,10 @@ def _feature_closure(root: Path, active_stocks: int | None) -> dict[str, Any]:
                 (target,),
             )
         }
-        summary_table = _sqlite_table(path, ("market_regime_features",))
+        summary_table = _sqlite_table(path, ("market_regime_features", "market_daily_summary"))
         summary_rows = (
             conn.execute(
-                f"SELECT count(*) FROM {summary_table} "
-                "WHERE frequency='D' AND period_key=?",
+                f"SELECT count(*) FROM {summary_table} WHERE frequency='D' AND period_key=?",
                 (target,),
             ).fetchone()[0]
             if summary_table
@@ -271,30 +279,62 @@ def collect_audit(root: Path, run_aspool) -> dict[str, Any]:
         "datasets": datasets,
         "missing_required_datasets": missing,
         "stock_feature_closure": closure,
-        "ready": len(flows) == 12 and not missing and closure.get("closed", False),
+        "ready": bool(flows) and not missing and closure.get("closed", False),
     }
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path("data"), help="aspool 数据根目录")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path(os.environ.get("ASPOOL_ROOT", Path(__file__).resolve().parents[2] / "data")),
+        help="aspool 数据根目录（默认项目 data，可用 ASPOOL_ROOT 覆盖）",
+    )
     parser.add_argument("--workers", type=int, default=4, choices=range(1, 9), metavar="1..8")
     parser.add_argument(
-        "--with-fundamentals", action="store_true", help="纳入手动低频基本面快照更新"
+        "--with-fundamentals", action="store_true", help="兼容旧调用；基本面现已默认每天更新"
     )
     parser.add_argument("--dry-run", action="store_true", help="仅显示计划，不写入数据")
     return parser.parse_args(argv)
+
+
+@contextmanager
+def pipeline_lock(root: Path):
+    """Keep complete runs for one canonical data root from interleaving.
+
+    Children inherit the descriptor so killing only the orchestrator does not
+    release its lock while a public aspool command is still writing.
+    """
+    directory = root.parent / ".local" / "locks"
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / f"{root.name}.daily-pipeline.lock").open("a") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield handle.fileno()
+    # Closing the last inherited descriptor releases flock. Never unlink the
+    # file: a replaced inode would let another process bypass the active lock.
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
     root = args.root.expanduser().resolve()
     project = Path(__file__).resolve().parents[2]
-    stages = pipeline_stages(root, workers=args.workers, fundamentals=args.with_fundamentals)
+    stages = pipeline_stages(root, workers=args.workers)
     if args.dry_run:
         print(json.dumps([asdict(stage) for stage in stages], ensure_ascii=False, indent=2))
         return 0
 
+    with ExitStack() as stack:
+        try:
+            lock_fd = stack.enter_context(pipeline_lock(root))
+        except BlockingIOError:
+            print(f"daily pipeline: already running for {root}", file=sys.stderr, flush=True)
+            return 75
+        return run_pipeline(args, root, project, stages, lock_fd)
+
+
+def run_pipeline(args, root: Path, project: Path, stages: list[Stage], lock_fd: int) -> int:
+    tick = perf_counter()
     report_dir = project / ".local" / "reports" / "daily-pipeline"
     report_dir.mkdir(parents=True, exist_ok=True)
 
@@ -311,11 +351,11 @@ def main(argv: list[str] | None = None) -> int:
         "started_at": datetime.now(timezone.utc).isoformat(),
         "options": {
             "workers": args.workers,
-            "fundamentals": args.with_fundamentals,
+            "fundamentals": True,
         },
         "stages": [],
     }
-    path = report_dir / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + ".json")
+    path = report_dir / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + ".json")
 
     def save_report() -> None:
         path.write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n")
@@ -323,14 +363,13 @@ def main(argv: list[str] | None = None) -> int:
     save_report()
 
     def run_aspool(command: tuple[str, ...], *, capture: bool = False):
-        return subprocess.run(
-            [str(aspool), *command], cwd=project, env=env, text=True,
-            stdout=subprocess.PIPE if capture else None,
-            stderr=subprocess.PIPE if capture else None, check=True,
+        return run_command(
+            aspool, command, cwd=project, env=env, capture=capture, pass_fds=(lock_fd,)
         )
 
     try:
         for stage in stages:
+            stage_tick = perf_counter()
             started = datetime.now(timezone.utc).isoformat()
             print(f"daily pipeline: starting {stage.name}；{stage.purpose}", flush=True)
             entry: dict[str, Any] = {
@@ -343,11 +382,15 @@ def main(argv: list[str] | None = None) -> int:
             report["stages"].append(entry)
             save_report()
             try:
-                run_aspool(stage.command)
-                entry["status"] = "ok"
+                completed = run_aspool(stage.command)
+                entry.update(operation_outcome(completed, require_report=stage.name != "directory"))
+                entry["exit_code"] = completed.returncode
+                if entry["status"] == "failed":
+                    raise subprocess.CalledProcessError(completed.returncode or 1, stage.command)
             except subprocess.CalledProcessError as exc:
                 entry.update(status="failed", exit_code=exc.returncode)
                 entry["finished_at"] = datetime.now(timezone.utc).isoformat()
+                entry["elapsed_ms"] = round((perf_counter() - stage_tick) * 1000)
                 save_report()
                 print(
                     f"daily pipeline: failed {stage.name}；exit={exc.returncode}",
@@ -355,9 +398,12 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 raise
             entry["finished_at"] = datetime.now(timezone.utc).isoformat()
+            entry["elapsed_ms"] = round((perf_counter() - stage_tick) * 1000)
             save_report()
             print(f"daily pipeline: finished {stage.name}", flush=True)
+        audit_tick = perf_counter()
         report["audit"] = collect_audit(root, run_aspool)
+        report["audit_elapsed_ms"] = round((perf_counter() - audit_tick) * 1000)
         all_stages_ok = all(stage["status"] == "ok" for stage in report["stages"])
         report["status"] = "ok" if all_stages_ok and report["audit"]["ready"] else "partial"
     except subprocess.CalledProcessError as exc:
@@ -368,6 +414,7 @@ def main(argv: list[str] | None = None) -> int:
         report.update(status="failed", error=str(exc))
     finally:
         report["finished_at"] = datetime.now(timezone.utc).isoformat()
+        report["elapsed_ms"] = round((perf_counter() - tick) * 1000)
         save_report()
     print(f"daily pipeline: {report['status']}；报告：{path}")
     return 0 if report["status"] == "ok" else 130 if report["status"] == "interrupted" else 1

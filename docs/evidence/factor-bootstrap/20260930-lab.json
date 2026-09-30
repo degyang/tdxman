@@ -1,0 +1,140 @@
+{
+  "baseline": "337f31e7c06a6d44910e311435acd824830099bb",
+  "root": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/pool",
+  "recovery": "/home/ubuntu/aspool-recovery/factor-bootstrap-20260930/pool",
+  "bootstrap": {
+    "as_of": "2026-09-30",
+    "method": "listing-event-bootstrap-v1",
+    "symbols": 155,
+    "factors": 171,
+    "feature_rows": 58686,
+    "summary_rows": 3204,
+    "failed": [],
+    "deferred": [],
+    "evidence_path": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/.local/reports/factor-bootstrap/20260930T160745204813Z-evidence.json",
+    "seconds": 170.11167074999685
+  },
+  "audit": {
+    "symbols": 155,
+    "bars": 68784,
+    "factors": 171,
+    "ma_rows": 58686,
+    "latest_ma_valid": 93,
+    "latest_ma_missing_bj": 53,
+    "latest_ma_missing_short": 9,
+    "price_events": 16,
+    "public_adjusted_rows": 137568,
+    "existing_factors_unchanged": true,
+    "verification": true,
+    "latest_closure": {
+      "available": true,
+      "table": "features.sqlite:stock_daily_features",
+      "date": "2026-09-30",
+      "latest_date": "2026-09-30",
+      "rows": 5577,
+      "calc_status": {
+        "NO_TRADE": 17,
+        "TRADED": 5560
+      },
+      "trading_status": {
+        "NO_TRADE": 17,
+        "TRADING": 5560
+      },
+      "active_stock_count": 5577,
+      "missing_symbol_count": 0,
+      "missing_symbol_sample": [],
+      "extra_symbol_count": 0,
+      "extra_symbol_sample": [],
+      "factor_missing_count": 0,
+      "factor_missing_sample": [],
+      "factor_store_available": true,
+      "factor_ready": true,
+      "summary_rows": 2,
+      "summary_quality": {
+        "trading_count": 5560,
+        "valid_return_count": 5560,
+        "invalid_return_count": 0,
+        "limit_unknown_count": 0,
+        "limit_invalid_count": 0,
+        "streak_unknown_count": 0,
+        "ma20_valid_count": 5203
+      },
+      "core_quality_ready": true,
+      "closed": true
+    },
+    "seconds": 10.04222874599509
+  },
+  "raw_repair": {
+    "raw_rows": 5,
+    "feature_rows": 911,
+    "summary_rows": 1506,
+    "metric_rows": 6,
+    "patches": [
+      {
+        "symbol": "920223.BJ",
+        "trade_date": "2023-08-23",
+        "values": {
+          "open": 2.8599998951,
+          "high": 2.8599998951,
+          "low": 2.8099999428,
+          "close": 2.8199999332,
+          "ohlcv_source": "tdxman:kline",
+          "volume": 65723.0,
+          "amount": 184802.421875,
+          "float_share": 80163750.0,
+          "float_share_source": "tdxman:kline"
+        }
+      },
+      {
+        "symbol": "920493.BJ",
+        "trade_date": "2026-07-24",
+        "values": {
+          "low": 106.5100021362,
+          "close": 106.5100021362,
+          "ohlcv_source": "tdxman:kline"
+        }
+      },
+      {
+        "symbol": "920578.BJ",
+        "trade_date": "2026-07-24",
+        "values": {
+          "close": 15.25,
+          "ohlcv_source": "tdxman:kline"
+        }
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-06",
+        "values": {
+          "close": 7.2100000381,
+          "ohlcv_source": "tdxman:kline"
+        }
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-24",
+        "values": {
+          "close": 6.2399997711,
+          "ohlcv_source": "tdxman:kline"
+        }
+      }
+    ],
+    "affected_sessions": 753,
+    "seconds": 88.28372683400084
+  },
+  "raw_repeat": {
+    "raw_rows": 0,
+    "feature_rows": 0,
+    "summary_rows": 0,
+    "metric_rows": 0,
+    "patches": [],
+    "affected_sessions": 0,
+    "seconds": 0.032471825994434766
+  },
+  "unit_tests": 99,
+  "ruff": "passed",
+  "limitations": [
+    "Public adjustment remains scalar factor ratios, not vendor affine prices.",
+    "Production write pending at this code commit; lab validation complete."
+  ]
+}

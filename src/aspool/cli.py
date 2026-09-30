@@ -790,10 +790,16 @@ def fundamentals(
         retry_delay=retry_delay,
         max_consecutive_failures=max_consecutive_failures,
     )
+    from uuid import uuid4
+
+    from .index_lists import atomic_json
+
+    report_path = target.parent / ".local/reports/fundamentals" / (uuid4().hex + ".json")
+    atomic_json(report_path, report)
     click.echo(
         f"基本面：状态 {report['status']}；成功 {len(report['success'])}，"
         f"失败 {len(report['failed'])}；财报变化 {report['changed']['financial_reports']}，"
-        f"股东人数变化 {report['changed']['shareholder_counts']}"
+        f"股东人数变化 {report['changed']['shareholder_counts']}；报告：{report_path}"
     )
     if report["status"] != "ok":
         raise click.ClickException("部分基本面未更新，请重试失败证券")
@@ -802,11 +808,30 @@ def fundamentals(
 @cli.command("platform", cls=AspoolCommand)
 @click.argument(
     "action",
-    type=click.Choice(["prepare", "reconcile", "verify", "status", "activate", "rollback"]),
+    type=click.Choice(
+        [
+            "prepare",
+            "reconcile",
+            "verify",
+            "status",
+            "activate",
+            "rollback",
+            "consolidate",
+            "recover",
+            "restore",
+        ]
+    ),
 )
 @click.option("--root", type=click.Path(path_type=Path))
-def platform(action: str, root: Path | None) -> None:
-    """准备、核验或检查分层数据布局；prepare 不切换公开读取。"""
+@click.option(
+    "--deep", is_flag=True, help="仅用于 verify：布局 3 检查库完整性；旧布局比对派生内容。"
+)
+@click.option(
+    "--recovery", type=click.Path(path_type=Path), help="consolidate/restore 的已验证池外恢复点。"
+)
+def platform(action: str, root: Path | None, deep: bool, recovery: Path | None) -> None:
+    """核验、迁移或恢复数据布局；consolidate 退役旧生产副本。"""
+    from .api_contract import DataPoolError
     from .platform_v2 import (
         activate_platform_v2,
         platform_status,
@@ -815,8 +840,14 @@ def platform(action: str, root: Path | None) -> None:
         rollback_platform_v2,
         verify_platform_v2,
     )
+    from .sqlite_publication import recover_publication
+    from .storage_migration import consolidate_storage, restore_migration
 
     target = _root(root) if root else Path("data").resolve()
+    if deep and action != "verify":
+        raise click.UsageError("--deep 仅用于 platform verify")
+    if (action in {"consolidate", "restore"}) != (recovery is not None):
+        raise click.UsageError("consolidate/restore 必须显式提供 --recovery；其他动作不接受该参数")
     try:
         result = {
             "prepare": prepare_platform_v2,
@@ -825,8 +856,20 @@ def platform(action: str, root: Path | None) -> None:
             "status": platform_status,
             "activate": activate_platform_v2,
             "rollback": rollback_platform_v2,
-        }[action](target)
-    except (OSError, ValueError) as exc:
+            "consolidate": consolidate_storage,
+            "recover": recover_publication,
+            "restore": restore_migration,
+        }[action](
+            target,
+            **(
+                {"deep": deep}
+                if action == "verify"
+                else {"recovery": recovery}
+                if recovery is not None
+                else {}
+            ),
+        )
+    except (OSError, ValueError, DataPoolError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(json.dumps(result, ensure_ascii=False, indent=2))
     if action == "verify" and not result["ready"]:
@@ -1277,10 +1320,10 @@ def query(
             with duckdb.connect(str(target / "catalog.duckdb"), read_only=True) as conn:
                 frame = conn.execute(sql, params).fetchdf()
         else:
-            from .sqlite_etf_store import connection as etf_connection
+            from .sqlite_etf_store import factor_connection
             from .sqlite_stock_store import stock_connection
 
-            db = stock_connection if dataset == "corporate-actions" else etf_connection
+            db = stock_connection if dataset == "corporate-actions" else factor_connection
             table_name = (
                 "corporate_actions" if dataset == "corporate-actions" else "adjustment_factors"
             )
@@ -1467,3 +1510,33 @@ def _render_query(table, fmt: str) -> None:
                     str(row.get(column, "")).ljust(width) for column, width in zip(columns, widths)
                 )
             )
+
+
+@cli.command("factors-bootstrap", cls=AspoolCommand)
+@click.option("--root", type=click.Path(path_type=Path))
+@click.option("--as-of", type=click.DateTime(formats=["%Y-%m-%d"]))
+@click.option("--symbol", "symbols", multiple=True)
+@click.option("--maintenance", is_flag=True, help="显式初始化最多 200 个标的的完整上市历史。")
+def factors_bootstrap(root, as_of, symbols, maintenance):
+    """校验除权事件及前后复权行情，初始化缺失的因子和 MA20。"""
+    from .sqlite_factor_bootstrap import bootstrap_factors
+
+    result = bootstrap_factors(
+        _root(root),
+        as_of=as_of.date().isoformat() if as_of else None,
+        symbols=symbols,
+        maintenance=maintenance,
+    )
+    from datetime import datetime, timezone
+
+    from .index_lists import atomic_json
+
+    result["status"] = "partial" if result["failed"] or result["deferred"] else "ok"
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    report = _root(root).parent / ".local/reports/factor-bootstrap" / (stamp + ".json")
+    report.parent.mkdir(parents=True, exist_ok=True)
+    atomic_json(report, result)
+    click.echo(json.dumps(result, ensure_ascii=False))
+    click.echo(f"报告：{report}")
+    if result["failed"] or result["deferred"]:
+        raise click.ClickException("部分因子初始化尚未完成，详见 failed/deferred。")

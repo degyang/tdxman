@@ -8,10 +8,11 @@ import json
 import os
 import shutil
 import sqlite3
-import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+from aspool.operation_report import operation_outcome, run_command
 
 
 @dataclass(frozen=True)
@@ -104,13 +105,34 @@ def detect_recent_gaps(root: Path, count: int) -> list[Gap]:
             str(row[0]) for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
         if regime in tables:
-            latest_feature = conn.execute(f"SELECT max(trade_date) FROM {features}").fetchone()[0]
-            latest_market = conn.execute(
-                f"SELECT max(period_key) FROM {regime} WHERE frequency='D'"
-            ).fetchone()[0]
-            if expected_latest and latest_feature != latest_market:
+            columns = {row[1] for row in conn.execute(f"PRAGMA table_info({regime})")}
+            missing_summary = []
+            for day in sessions:
+                if not conn.execute(
+                    f"SELECT 1 FROM {features} WHERE trade_date=? LIMIT 1", (day,)
+                ).fetchone():
+                    continue
+                if "scope" in columns:
+                    scopes = {
+                        row[0]
+                        for row in conn.execute(
+                            f"SELECT scope FROM {regime} WHERE frequency='D' AND period_key=?",
+                            (day,),
+                        )
+                    }
+                    covered = {"all_stocks", "exclude_known_st"} <= scopes
+                else:
+                    covered = (
+                        conn.execute(
+                            f"SELECT 1 FROM {regime} WHERE frequency='D' AND period_key=?", (day,)
+                        ).fetchone()
+                        is not None
+                    )
+                if not covered:
+                    missing_summary.append(day)
+            if missing_summary:
                 gaps.append(
-                    Gap("stock", "日级 Regime 公共特征没有跟随股票派生", (str(latest_feature),))
+                    Gap("stock", "日级 Regime 公共特征没有跟随股票派生", tuple(missing_summary))
                 )
         else:
             gaps.append(Gap("stock", "日级 Regime 公共特征表不存在", ()))
@@ -174,7 +196,10 @@ def repair_commands(root: Path, gaps: list[Gap], count: int, workers: int) -> li
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path("data"))
+    project = Path(__file__).resolve().parents[2]
+    parser.add_argument(
+        "--root", type=Path, default=Path(os.environ.get("ASPOOL_ROOT", project / "data"))
+    )
     parser.add_argument("--count", type=int, default=10, choices=range(1, 61), metavar="1..60")
     parser.add_argument("--workers", type=int, default=4, choices=range(1, 9), metavar="1..8")
     parser.add_argument("--repair", action="store_true", help="发现缺口后执行对应的 aspool sync")
@@ -183,18 +208,63 @@ def main(argv: list[str] | None = None) -> int:
     gaps = detect_recent_gaps(root, args.count)
     commands = repair_commands(root, gaps, args.count, args.workers)
     receipt = {"gaps": [asdict(gap) for gap in gaps], "commands": [list(cmd) for cmd in commands]}
+    import duckdb
+
+    with duckdb.connect(str(root / "catalog.duckdb"), read_only=True) as catalog:
+        last_day = catalog.execute(
+            "SELECT max(trade_date) FROM security_calendar WHERE is_open"
+        ).fetchone()[0]
+    receipt["calendar_through"] = str(last_day) if last_day else None
+    receipt["freshness"] = "仅检查已存交易日；不证明日历已更新，--repair 会先刷新指数日历"
     print(json.dumps(receipt, ensure_ascii=False, indent=2))
-    if not args.repair or not commands:
+    if not args.repair:
         return 0
-    uv = shutil.which("uv")
-    if uv is None:
-        raise SystemExit("未找到 uv；请安装 uv 后重试")
-    project = Path(__file__).resolve().parents[2]
+    aspool = Path(sys.executable).with_name("aspool")
+    if not aspool.is_file():
+        resolved = shutil.which("aspool")
+        if resolved is None:
+            raise SystemExit("当前 Python 环境中未找到 aspool")
+        aspool = Path(resolved)
     env = os.environ.copy()
-    env.setdefault("UV_CACHE_DIR", str(project / ".local" / "uv-cache"))
+    outcomes = []
+
+    def execute(command):
+        completed = run_command(aspool, command, cwd=project, env=env)
+        outcome = operation_outcome(completed, require_report=True)
+        outcomes.append(dict(command=list(command), **outcome))
+        return outcome["status"] != "failed"
+
+    # Missed daily runs also leave the calendar stale. Refresh it before choosing
+    # the stock/ETF repair window; never infer market holidays from weekdays.
+    calendar_command = repair_commands(
+        root, [Gap("index", "刷新交易日历", ())], args.count, args.workers
+    )[0]
+    if not execute(calendar_command):
+        print(
+            json.dumps({"status": "failed", "operations": outcomes}, ensure_ascii=False, indent=2)
+        )
+        return 1
+    gaps = detect_recent_gaps(root, args.count)
+    commands = repair_commands(root, gaps, args.count, args.workers)
     for command in commands:
-        subprocess.run([uv, "run", "aspool", *command], cwd=project, env=env, check=True)
-    return 0
+        if command[2] == "index":
+            continue  # Already attempted once; the final recheck reports remaining gaps.
+        if not execute(command):
+            break
+    remaining = detect_recent_gaps(root, args.count)
+    ready = not remaining and all(row["status"] == "ok" for row in outcomes)
+    print(
+        json.dumps(
+            {
+                "status": "ok" if ready else "partial",
+                "operations": outcomes,
+                "remaining_gaps": [asdict(gap) for gap in remaining],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0 if ready else 1
 
 
 if __name__ == "__main__":

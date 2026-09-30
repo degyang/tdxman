@@ -1,0 +1,627 @@
+{
+  "status": "verified",
+  "as_of": "2026-09-30",
+  "execution_date": "2026-10-01 Asia/Shanghai",
+  "runtime_code": "87044a7ec815e0fd84d840ce066e66d41f13f931",
+  "root": "/mnt/d/workstation/services/tdxman/data",
+  "recovery": "/home/ubuntu/aspool-recovery/factor-bootstrap-20260930/pool",
+  "lab": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/pool",
+  "bootstrap_batches": [
+    {
+      "as_of": "2026-09-30",
+      "method": "listing-event-bootstrap-v1",
+      "symbols": 149,
+      "factors": 165,
+      "feature_rows": 55446,
+      "summary_rows": 3204,
+      "failed": [
+        {
+          "symbol": "301655.SZ",
+          "error": "连接被服务器关闭"
+        },
+        {
+          "symbol": "301669.SZ",
+          "error": "连接被服务器关闭"
+        },
+        {
+          "symbol": "301697.SZ",
+          "error": "连接被服务器关闭"
+        },
+        {
+          "symbol": "688316.SH",
+          "error": "连接被服务器关闭"
+        },
+        {
+          "symbol": "688322.SH",
+          "error": "连接被服务器关闭"
+        },
+        {
+          "symbol": "688343.SH",
+          "error": "连接被服务器关闭"
+        }
+      ],
+      "deferred": [],
+      "evidence_path": "/mnt/d/workstation/services/tdxman/.local/reports/factor-bootstrap/20260930T162441541819Z-evidence.json",
+      "status": "partial"
+    },
+    {
+      "as_of": "2026-09-30",
+      "method": "listing-event-bootstrap-v1",
+      "symbols": 6,
+      "factors": 6,
+      "feature_rows": 3240,
+      "summary_rows": 2656,
+      "failed": [],
+      "deferred": [],
+      "evidence_path": "/mnt/d/workstation/services/tdxman/.local/reports/factor-bootstrap/20260930T163156029743Z-evidence.json",
+      "status": "ok"
+    }
+  ],
+  "audit": {
+    "symbols": 155,
+    "bars": 68784,
+    "factors": 171,
+    "ma_rows": 58686,
+    "latest_ma_valid": 93,
+    "latest_ma_missing_bj": 53,
+    "latest_ma_missing_short": 9,
+    "price_events": 16,
+    "public_adjusted_rows": 137568,
+    "existing_factors_unchanged": true,
+    "verification": true,
+    "latest_closure": {
+      "available": true,
+      "table": "features.sqlite:stock_daily_features",
+      "date": "2026-09-30",
+      "latest_date": "2026-09-30",
+      "rows": 5577,
+      "calc_status": {
+        "NO_TRADE": 17,
+        "TRADED": 5560
+      },
+      "trading_status": {
+        "NO_TRADE": 17,
+        "TRADING": 5560
+      },
+      "active_stock_count": 5577,
+      "missing_symbol_count": 0,
+      "missing_symbol_sample": [],
+      "extra_symbol_count": 0,
+      "extra_symbol_sample": [],
+      "factor_missing_count": 0,
+      "factor_missing_sample": [],
+      "factor_store_available": true,
+      "factor_ready": true,
+      "summary_rows": 2,
+      "summary_quality": {
+        "trading_count": 5560,
+        "valid_return_count": 5560,
+        "invalid_return_count": 0,
+        "limit_unknown_count": 0,
+        "limit_invalid_count": 0,
+        "streak_unknown_count": 0,
+        "ma20_valid_count": 5203
+      },
+      "core_quality_ready": true,
+      "closed": true
+    },
+    "seconds": 40.568775065999944
+  },
+  "no_op": {
+    "result": {
+      "as_of": "2026-09-30",
+      "method": "listing-event-bootstrap-v1",
+      "symbols": 0,
+      "factors": 0,
+      "feature_rows": 0,
+      "summary_rows": 0,
+      "failed": [],
+      "deferred": [],
+      "evidence_path": null,
+      "status": "ok"
+    },
+    "elapsed_seconds": 9.170530067000072,
+    "business_and_state_fingerprints_unchanged": true,
+    "fingerprints": {
+      "dataset_state": [
+        [
+          "stock_raw",
+          1790601749221574,
+          "2026-09-30",
+          1790786398136785
+        ]
+      ],
+      "feature_state": [
+        [
+          "market_regime_features",
+          "all",
+          1790601749221574,
+          1790764591853171,
+          "legacy-v1",
+          "READY",
+          "2026-09-30",
+          "2026-09-30",
+          1790786398138030
+        ],
+        [
+          "stock_daily_features",
+          "all",
+          1790601749221574,
+          1790764591853171,
+          "legacy-v1",
+          "READY",
+          "2026-09-30",
+          "2026-09-30",
+          1790786398138030
+        ]
+      ],
+      "adjustment_state": [
+        [
+          "etf_adjustment_factors",
+          0,
+          "2026-09-11",
+          1790693534086320
+        ],
+        [
+          "stock_adjustment_factors",
+          1790764591853171,
+          "2026-09-30",
+          1790786174536437
+        ]
+      ],
+      "daily_features": {
+        "rows": 68788,
+        "sha256": "f4ae117c2305152ce4407b5e3555cfd1cb0cdb81750e58874c18fdac8689312a"
+      },
+      "daily_bars": {
+        "rows": 68784,
+        "sha256": "a86c9b515f4977e0bcd3be33039bebcee430e380a55d1400dbea686c8b86ecd5"
+      },
+      "corporate_actions": {
+        "rows": 1617,
+        "sha256": "f3324907c301bf5f1eb6eb4138018c70a0b5cae237132c18bc92cb2b600bdbf9"
+      },
+      "market_daily_summary": {
+        "rows": 12964,
+        "sha256": "f7f32dc02083dcea4139f514f7bf21708adb8e0a6203b3cc401b06d7d37671d0"
+      }
+    },
+    "stdout": "{\"as_of\": \"2026-09-30\", \"method\": \"listing-event-bootstrap-v1\", \"symbols\": 0, \"factors\": 0, \"feature_rows\": 0, \"summary_rows\": 0, \"failed\": [], \"deferred\": [], \"evidence_path\": null, \"status\": \"ok\"}\n报告：/mnt/d/workstation/services/tdxman/.local/reports/factor-bootstrap/20260930T164205916838Z.json\n"
+  },
+  "raw_repair": {
+    "raw_rows": 5,
+    "feature_rows": 911,
+    "summary_rows": 1506,
+    "metric_rows": 6,
+    "patches": [
+      {
+        "symbol": "920223.BJ",
+        "trade_date": "2023-08-23",
+        "values": {
+          "open": 2.8599998951,
+          "high": 2.8599998951,
+          "low": 2.8099999428,
+          "close": 2.8199999332,
+          "ohlcv_source": "tdxman:kline",
+          "volume": 65723.0,
+          "amount": 184802.421875,
+          "float_share": 80163750.0,
+          "float_share_source": "tdxman:kline"
+        }
+      },
+      {
+        "symbol": "920493.BJ",
+        "trade_date": "2026-07-24",
+        "values": {
+          "low": 106.5100021362,
+          "close": 106.5100021362,
+          "ohlcv_source": "tdxman:kline"
+        }
+      },
+      {
+        "symbol": "920578.BJ",
+        "trade_date": "2026-07-24",
+        "values": {
+          "close": 15.25,
+          "ohlcv_source": "tdxman:kline"
+        }
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-06",
+        "values": {
+          "close": 7.2100000381,
+          "ohlcv_source": "tdxman:kline"
+        }
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-24",
+        "values": {
+          "close": 6.2399997711,
+          "ohlcv_source": "tdxman:kline"
+        }
+      }
+    ],
+    "affected_sessions": 753,
+    "seconds": 232.03268390400626
+  },
+  "price_dependencies": {
+    "result": {
+      "changed_rows": 20,
+      "changed_metric_rows": 0,
+      "changed_factor_rows": 0,
+      "affected_sessions": [
+        "2023-08-23",
+        "2023-08-24",
+        "2026-07-06",
+        "2026-07-07",
+        "2026-07-24",
+        "2026-07-27"
+      ],
+      "recomputed_feature_rows": 911,
+      "changed_feature_rows": 10,
+      "summary_rows": 12,
+      "read_rows": 33416,
+      "feature_elapsed_ms": 42,
+      "summary_elapsed_ms": 21261,
+      "previous_raw_revision": 1790601749221573,
+      "raw_revision": 1790601749221574,
+      "elapsed_ms": 21382
+    },
+    "expected": [
+      {
+        "symbol": "920223.BJ",
+        "trade_date": "2023-08-23",
+        "pre_close": 2.84,
+        "pct_chg": -0.7042277042253464,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 1.7605617007042211,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 226061769.6450615,
+        "float_mv_source": "derived:close_times_float_share"
+      },
+      {
+        "symbol": "920223.BJ",
+        "trade_date": "2023-08-24",
+        "pre_close": 2.8199999332,
+        "pct_chg": 2.368794382867634e-06,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 2.8368794998239566,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 226061775.0,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 443543700.0,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920493.BJ",
+        "trade_date": "2026-07-24",
+        "pre_close": 116.18,
+        "pct_chg": -8.323289605611983,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 6.446890913926665,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 4754279892.42373,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 6452583956.758919,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920493.BJ",
+        "trade_date": "2026-07-27",
+        "pre_close": 106.5100021362,
+        "pct_chg": 1.586703436207726,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 3.5207960987595097,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 4829716214.84375,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 6554967328.125,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920578.BJ",
+        "trade_date": "2026-07-24",
+        "pre_close": 16.16,
+        "pct_chg": -5.631188118811881,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 4.084158415841585,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 541390525.5126915,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 1166306224.365242,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920578.BJ",
+        "trade_date": "2026-07-27",
+        "pre_close": 15.25,
+        "pct_chg": 1.2459016393442601,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 2.754098360655737,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 548135718.9453086,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 1180837252.7343829,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-06",
+        "pre_close": 7.16,
+        "pct_chg": 0.6983245544692762,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 2.0949720670390986,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 863804123.2169673,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 1105920289.926076,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-07",
+        "pre_close": 7.2100000381,
+        "pct_chg": -0.8321780552418723,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 3.6061026161730196,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 856615734.8632812,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 1096717063.9648438,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-24",
+        "pre_close": 6.33,
+        "pct_chg": -1.421804563981044,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 3.4755134281200593,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 747591886.6388159,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 957134857.0772152,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-27",
+        "pre_close": 6.2399997711,
+        "pct_chg": 3.365388407105363,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 4.647436067916366,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 772751257.3242188,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 989346162.5976562,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      }
+    ],
+    "public_api_rows_verified": 10
+  },
+  "price_dependencies_repeat": {
+    "result": {
+      "changed_rows": 0,
+      "changed_metric_rows": 0,
+      "changed_factor_rows": 0,
+      "affected_sessions": [],
+      "recomputed_feature_rows": 0,
+      "changed_feature_rows": 0,
+      "summary_rows": 0,
+      "read_rows": 0,
+      "feature_elapsed_ms": 0,
+      "summary_elapsed_ms": 0,
+      "previous_raw_revision": 1790601749221574,
+      "raw_revision": 1790601749221574,
+      "elapsed_ms": 18
+    },
+    "expected": [
+      {
+        "symbol": "920223.BJ",
+        "trade_date": "2023-08-23",
+        "pre_close": 2.84,
+        "pct_chg": -0.7042277042253464,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 1.7605617007042211,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 226061769.6450615,
+        "float_mv_source": "derived:close_times_float_share"
+      },
+      {
+        "symbol": "920223.BJ",
+        "trade_date": "2023-08-24",
+        "pre_close": 2.8199999332,
+        "pct_chg": 2.368794382867634e-06,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 2.8368794998239566,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 226061775.0,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 443543700.0,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920493.BJ",
+        "trade_date": "2026-07-24",
+        "pre_close": 116.18,
+        "pct_chg": -8.323289605611983,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 6.446890913926665,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 4754279892.42373,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 6452583956.758919,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920493.BJ",
+        "trade_date": "2026-07-27",
+        "pre_close": 106.5100021362,
+        "pct_chg": 1.586703436207726,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 3.5207960987595097,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 4829716214.84375,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 6554967328.125,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920578.BJ",
+        "trade_date": "2026-07-24",
+        "pre_close": 16.16,
+        "pct_chg": -5.631188118811881,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 4.084158415841585,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 541390525.5126915,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 1166306224.365242,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920578.BJ",
+        "trade_date": "2026-07-27",
+        "pre_close": 15.25,
+        "pct_chg": 1.2459016393442601,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 2.754098360655737,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 548135718.9453086,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 1180837252.7343829,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-06",
+        "pre_close": 7.16,
+        "pct_chg": 0.6983245544692762,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 2.0949720670390986,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 863804123.2169673,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 1105920289.926076,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-07",
+        "pre_close": 7.2100000381,
+        "pct_chg": -0.8321780552418723,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 3.6061026161730196,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 856615734.8632812,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 1096717063.9648438,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-24",
+        "pre_close": 6.33,
+        "pct_chg": -1.421804563981044,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 3.4755134281200593,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 747591886.6388159,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 957134857.0772152,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      },
+      {
+        "symbol": "920873.BJ",
+        "trade_date": "2026-07-27",
+        "pre_close": 6.2399997711,
+        "pct_chg": 3.365388407105363,
+        "pct_chg_source": "derived:close_pre_close",
+        "amplitude": 4.647436067916366,
+        "amplitude_source": "derived:high_low_pre_close",
+        "float_mv": 772751257.3242188,
+        "float_mv_source": "derived:tdx:xdxr_capital",
+        "total_mv": 989346162.5976562,
+        "total_mv_source": "derived:tdx:xdxr_capital"
+      }
+    ]
+  },
+  "source_proofs": [
+    {
+      "path": "/mnt/d/workstation/services/tdxman/.local/reports/factor-bootstrap/20260930T162441541819Z-evidence.json",
+      "bytes": 35889505,
+      "sha256": "002be58b75ba28b611594ac34fb35ccd1c787ef020393ff1eb1ad5617480fb89",
+      "symbols": 149
+    },
+    {
+      "path": "/mnt/d/workstation/services/tdxman/.local/reports/factor-bootstrap/20260930T163156029743Z-evidence.json",
+      "bytes": 1810471,
+      "sha256": "5db973c4181328afade1207d7e326c0dbc3c5d955ff5d9abfe19b32b3dff1537",
+      "symbols": 6
+    }
+  ],
+  "source_proofs_equal_lab": true,
+  "operational_scripts": [
+    {
+      "path": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/repair-factor-inputs-maintenance.py",
+      "sha256": "039921db8000d005aff9b546557857f9a375c7cbb0c0da50637bcf4a63c9c90c"
+    },
+    {
+      "path": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/repair-price-dependencies.py",
+      "sha256": "3fb1bf98693146f8092dd4bcbb4b28669aa8179c632da907ae357237da57c276"
+    },
+    {
+      "path": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/audit-factor-bootstrap.py",
+      "sha256": "1e0b022b70b235152f382b1d9d66913461d328b61fd0b190bb9cf539e60e049f"
+    },
+    {
+      "path": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/prepare-factor-evidence.py",
+      "sha256": "a74cb2c137fb35993e19e698219550b166dc361dbc20785fb2521e2880e1b48e"
+    },
+    {
+      "path": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/run-factor-bootstrap-lab.py",
+      "sha256": "e271a5da1d94fbe09590a5b0117fe8fe6ef1bb1b57db0297c952384a9ace64e2"
+    },
+    {
+      "path": "/home/ubuntu/aspool-labs/factor-bootstrap-20260930/check-bootstrap-noop.py",
+      "sha256": "f754b53ab394ff480b7ea012a0d1a4b3285a6149893a4bf7db589c367a9ded04"
+    }
+  ],
+  "validation": {
+    "affected_suite_passed": 99,
+    "cache_change_targeted_retest_passed": 12,
+    "ruff": "passed",
+    "format": "passed",
+    "git_diff_check": "passed",
+    "full_repository_suite_rerun": false
+  },
+  "source_retry": {
+    "initial_failed_symbols": [
+      "301655.SZ",
+      "301669.SZ",
+      "301697.SZ",
+      "688316.SH",
+      "688322.SH",
+      "688343.SH"
+    ],
+    "reason": "Primary standard server closed connections; verified backup host used only for the retry command",
+    "primary_standard_host": "101.42.240.54",
+    "retry_standard_host": "82.156.174.84",
+    "global_host_config_changed": false
+  },
+  "rollback_exercise": {
+    "context": "Windows maintenance cache diagnosis",
+    "interrupted_before_commit": true,
+    "pending_publication": false,
+    "all_three_states_equal_recovery_after_rollback": true
+  },
+  "boundaries": [
+    "Local pool only; homevps not deployed.",
+    "Public QFQ/HFQ keep scalar factor semantics; vendor affine prices validate source events.",
+    "BJ MA20 remains unavailable by existing contract; SH/SZ need 20 valid trading observations.",
+    "No full holiday daily pipeline was run on 2026-10-01; the new stage and final closure were verified directly.",
+    "PR remains open; worktree, recovery and lab retained for review and recovery."
+  ]
+}

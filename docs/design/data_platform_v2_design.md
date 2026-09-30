@@ -1,8 +1,10 @@
 # asPool 数据域分层设计
 
+> 2026-09-30 存储整改：当前布局 3 的唯一物理所有权、一致发布和旧表退役以 [单一权威存储整改](../implements/single_authority_storage.md) 为准。本文旧镜像迁移步骤仅用于解释历史设计，不能据此新建第二套生产表。
+
 日期：2026-09-29。状态：实施中。需求基线见
 [数据域分层需求](data_platform_v2_requirements.md)。本文说明物理结构、表职责、一致性和迁移方案；
-实际完成范围见 [实施记录](../achievements/platform_v2_execution.md)，当前生产库不能只按文件存在就推断为
+实际完成范围见 [实施记录](../implements/platform_v2_execution.md)，当前生产库不能只按文件存在就推断为
 已激活。
 
 ## 1. 设计决策
@@ -240,7 +242,15 @@ snapshot_rows
 
 SQLite WAL 不提供这些独立文件之间可依赖的跨库原子性。读取端先比较来源库、因子库和
 `feature_state` 的当前 revision：完全匹配才返回派生结果。原始提交后进程中断时，原始数据仍可读，
-派生接口返回 `DERIVED_NOT_READY`；续跑 `derive` 恢复。
+派生接口返回 `DERIVED_NOT_READY`；显式运行 `aspool platform reconcile` 从本地权威库恢复。
+
+因子后缀在有界小批内提交（快路径多只共享一次市场截面，权威事件读取逐只隔离），每个小批与
+对应的分层镜像在同一池写锁内完成。写入路径在锁内先检查上一次镜像提交完整（`feature_state`
+全部 `READY` 且 revision 对齐），不完整则以 `DERIVED_NOT_READY` 拒绝本次有界写入并提示
+`aspool platform reconcile`；后续局部更新不得把待恢复状态改写为已完成，也不能用不相关切片
+证明缺失行已恢复。无日期的纯镜像补跑不会把 `DIRTY` 改成 `READY`；日更内部刚提交的无派生变化
+事务（如非价格类公司行为）在给出精确 `previous_raw_revision` 且旧状态为 `READY`、版本匹配时，
+允许只把新 revision 带入镜像状态而不改变 status。日更路径不自动全量重建镜像。
 
 受影响范围至少满足：
 
@@ -252,15 +262,19 @@ SQLite WAL 不提供这些独立文件之间可依赖的跨库原子性。读取
 
 ### 3.1 校验分层
 
-`verify_platform_v2(root, deep=False)` 提供两级校验：
+`aspool platform verify`（`verify_platform_v2(root, deep=False)`）是不修改数据的只读校验，
+提供两级：
 
-- **浅层**（默认，毫秒级）：行数比对 + `feature_state` 状态/revision 一致性检查。日更路径
-  `mirror`、`prepare`、`activate` 使用此级别。
-- **深层**（`deep=True`，秒~分钟级）：在浅层基础上增加 `ATTACH + EXCEPT` 全表内容比对。
-  `reconcile` 和 `activate` 使用此级别做完整验收。
+- **浅层**（默认，毫秒级）：行数比对 + `feature_state` 状态/revision 一致性检查。浅层不做内容
+  比对，报告中的 `content_equal=null` 表示未校验，而不是内容一致；`prepare`、`status` 返回此级别，
+  日更镜像路径的写入门闩使用同一套状态/revision 检查。
+- **深层**（`aspool platform verify --deep`，秒~分钟级）：在浅层基础上增加 `ATTACH + EXCEPT`
+  全表内容比对（只读），给出 `extra`/`missing` 行数与布尔 `content_equal`。`reconcile` 和
+  `activate` 的门槛使用此级别做完整验收。
 
-日常增量更新只影响数千行（7000 股 × 1 天），浅层行数比对足以检测遗漏或重复；深层
-EXCEPT 用于灾难恢复后的完整性验收。
+日常增量更新只影响数千行（7000 股 × 1 天），浅层适合作为快速冒烟检查，但行数相等可以由
+遗漏行与多余行相互抵消，不能证明内容正确；内容完整性只能靠深层 EXCEPT 验收（如灾难恢复后）。
+浅层结果不能充当全内容一致的证据。
 
 ### 3.2 恢复路径
 
@@ -270,8 +284,10 @@ EXCEPT 用于灾难恢复后的完整性验收。
 2. 重建 `features.sqlite`（`ATTACH + INSERT SELECT` 全量复制，不经过 Python 内存）。
 3. 运行深层 `verify` 做完整内容验收。
 
-镜像中断时 `feature_state` 保持 `DIRTY`，`reconcile` 可识别并修复。恢复后公开读取自动通过
-revision 匹配返回最新派生结果。
+镜像中断时保留最后一次已提交状态：可能停在 `DIRTY`，也可能停留在旧 revision 的 `READY`
+（状态滞后），`reconcile` 按 revision 对齐识别并修复。恢复必须由显式
+`aspool platform reconcile` 触发：写入前的镜像完整性检查会拦住后续有界写入，等待恢复期间
+局部更新不能覆盖待恢复状态。恢复后公开读取自动通过 revision 匹配返回最新派生结果。
 
 ## 4. CLI 编排
 
@@ -367,7 +383,7 @@ iter_limit_events_with_amount
 
 指数/ETF 稳定 Enriched、独立 derive 命令、W/M writer 和按需 snapshot 命令尚未实现；
 `snapshots.sqlite` 当前只建立了 schema。跨设备增量同步仍不在本轮范围。精确执行证据和测试前提见
-[实施记录](../achievements/platform_v2_execution.md)。
+[实施记录](../implements/platform_v2_execution.md)。
 
 ## 8. 跨设备同步备忘（非当前计划）
 

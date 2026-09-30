@@ -46,9 +46,9 @@ def _build_features(root: Path, rows: list[tuple], table: str = "stock_daily_fea
             [(sym, day, "TRADED", "TRADED") for sym, day in rows],
         )
         conn.execute("CREATE TABLE market_regime_features(frequency TEXT, period_key TEXT)")
-        conn.execute(
+        conn.executemany(
             "INSERT INTO market_regime_features VALUES ('D',?)",
-            (max((day for _, day in rows), default=DAYS[-1]),),
+            [(day,) for day in sorted({day for _, day in rows})],
         )
 
 
@@ -252,3 +252,65 @@ def test_gap_detector_regime_follows_feature_table_fallback(tmp_path):
 
     gaps = MODULE.detect_recent_gaps(root, count=5)
     assert any("Regime" in gap.reason for gap in gaps)
+
+
+def test_repair_refreshes_calendar_then_rechecks_and_repairs_new_days(tmp_path, monkeypatch):
+    import json
+    import subprocess
+
+    _build_catalog(tmp_path, stocks=[("A.SH", "2020-01-01", None, True)], indices=["000001.SH"])
+    _build_features(tmp_path, [("A.SH", day) for day in DAYS])
+    _build_index_bars(tmp_path, [("000001.SH", day) for day in DAYS])
+    _build_etf_bars(tmp_path, DAYS)
+    assert MODULE.detect_recent_gaps(tmp_path, 5) == []
+    new_day = "2026-09-21"
+    calls = []
+
+    def run(executable, command, **kwargs):
+        asset = command[2]
+        calls.append(asset)
+        if asset == "index":
+            with duckdb.connect(str(tmp_path / "catalog.duckdb")) as c:
+                c.execute("INSERT INTO security_calendar VALUES (?,true)", [new_day])
+            with sqlite3.connect(tmp_path / "indices.sqlite") as c:
+                c.execute("INSERT INTO daily_bars VALUES ('000001.SH',?)", (new_day,))
+        elif asset == "stock":
+            with sqlite3.connect(tmp_path / "features.sqlite") as c:
+                c.execute(
+                    "INSERT INTO stock_daily_features VALUES ('A.SH',?,'TRADED','TRADING')",
+                    (new_day,),
+                )
+                c.execute("INSERT INTO market_regime_features VALUES ('D',?)", (new_day,))
+        else:
+            with sqlite3.connect(tmp_path / "etfs.sqlite") as c:
+                c.execute("INSERT INTO daily_bars VALUES ('510000.SH',?)", (new_day,))
+        path = tmp_path / f"{asset}.json"
+        path.write_text(json.dumps({"status": "ok"}))
+        return subprocess.CompletedProcess(command, 0, f"报告：{path}\n")
+
+    monkeypatch.setattr(MODULE, "run_command", run)
+    assert MODULE.main(["--root", str(tmp_path), "--repair"]) == 0
+    assert calls == ["index", "stock", "etf"]
+    assert MODULE.detect_recent_gaps(tmp_path, 5) == []
+
+
+def test_successful_repair_command_does_not_hide_remaining_gap(tmp_path, monkeypatch):
+    import json
+    import subprocess
+
+    _build_catalog(tmp_path, stocks=[("A.SH", "2020-01-01", None, True)], indices=["000001.SH"])
+    _build_features(tmp_path, [("A.SH", day) for day in DAYS[:-1]])
+    _build_index_bars(tmp_path, [("000001.SH", day) for day in DAYS])
+    _build_etf_bars(tmp_path, DAYS)
+    path = tmp_path / "empty-success.json"
+    path.write_text(json.dumps({"status": "ok"}))
+    monkeypatch.setattr(
+        MODULE,
+        "run_command",
+        lambda *a, **k: subprocess.CompletedProcess(
+            [],
+            0,
+            f"报告：{path}\n",
+        ),
+    )
+    assert MODULE.main(["--root", str(tmp_path), "--repair"]) == 1
