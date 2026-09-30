@@ -379,3 +379,101 @@ def test_etf_factor_cli_reads_unique_owner_with_preserved_columns(canonical):
     assert result.exit_code == 0, result.output
     rows = json.loads(result.output)
     assert rows and set(rows[0]) == {"symbol", "trade_date", "cumulative_factor", "source"}
+
+
+def test_no_trade_state_and_summary_share_canonical_publication(canonical):
+    options = dict(
+        dated_facts=[
+            dict(
+                symbol="000001.SZ",
+                trade_date="2026-09-29",
+                trading_status="NO_TRADE",
+                trading_status_source="tdxman:quote",
+            )
+        ],
+        market_sessions=["2026-09-27", "2026-09-28", "2026-09-29"],
+    )
+    with stock_connection(canonical, read_only=False) as conn:
+        result = apply_daily_changes(conn, **options)
+        assert result["changed_rows"] > 0
+        assert (
+            conn.execute(
+                "SELECT count(*) FROM daily_bars WHERE trade_date='2026-09-29'"
+            ).fetchone()[0]
+            == 0
+        )
+        assert (
+            conn.execute(
+                "SELECT calc_status FROM daily_features WHERE trade_date='2026-09-29'"
+            ).fetchone()[0]
+            == "NO_TRADE"
+        )
+        assert apply_daily_changes(conn, **options)["changed_feature_rows"] == 0
+    assert verify_platform_v2(canonical)["ready"]
+
+
+def test_summary_maintenance_publishes_to_unique_store_and_replay_is_noop(canonical):
+    from aspool.sqlite_summary_repair import apply_summary_changes
+
+    with stock_connection(canonical, read_only=False) as conn:
+        raw = conn.execute("SELECT * FROM daily_bars ORDER BY symbol,trade_date").fetchall()
+        assert apply_summary_changes(conn, day="2026-09-28")["changed_rows"] > 0
+        first = conn.execute("SELECT * FROM features.feature_state ORDER BY dataset").fetchall()
+        assert apply_summary_changes(conn, day="2026-09-28")["changed_rows"] == 0
+        assert conn.execute("SELECT * FROM daily_bars ORDER BY symbol,trade_date").fetchall() == raw
+        assert (
+            conn.execute("SELECT * FROM features.feature_state ORDER BY dataset").fetchall()
+            == first
+        )
+    assert verify_platform_v2(canonical)["ready"]
+
+
+def test_historical_event_revision_updates_single_reference_and_feature_owners(canonical):
+    event = dict(
+        effective_date="2026-09-28",
+        category=1,
+        source_key="dividend",
+        cash_dividend_per_share=1,
+        bonus_shares_per_share=0,
+        rights_shares_per_share=0,
+        rights_price=0,
+    )
+    options = dict(
+        factor_extensions=[
+            dict(
+                symbol="000001.SZ",
+                verified_start="2026-09-28",
+                verified_end="2026-09-28",
+                events=[event],
+                source="tdx:xdxr",
+            )
+        ],
+        merge_event_revisions=True,
+        market_sessions=["2026-09-27", "2026-09-28"],
+    )
+    with stock_connection(canonical, read_only=False) as conn:
+        assert apply_daily_changes(conn, **options)["changed_factor_rows"] > 0
+        assert (
+            conn.execute(
+                "SELECT pre_close FROM daily_features WHERE trade_date='2026-09-28'"
+            ).fetchone()[0]
+            == 9
+        )
+        state = conn.execute("SELECT * FROM features.feature_state ORDER BY dataset").fetchall()
+        assert apply_daily_changes(conn, **options)["changed_factor_rows"] == 0
+        assert (
+            conn.execute("SELECT * FROM features.feature_state ORDER BY dataset").fetchall()
+            == state
+        )
+        event["cash_dividend_per_share"] = 2
+        assert apply_daily_changes(conn, **options)["changed_factor_rows"] > 0
+        assert (
+            conn.execute(
+                "SELECT pre_close FROM daily_features WHERE trade_date='2026-09-28'"
+            ).fetchone()[0]
+            == 8
+        )
+        assert conn.native.execute(
+            "SELECT DISTINCT record_kind FROM main.corporate_actions"
+        ).fetchall() == [("event",)]
+    assert verify_platform_v2(canonical)["ready"]

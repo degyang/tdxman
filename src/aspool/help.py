@@ -62,9 +62,14 @@ _REFERENCES: dict[str, HelpRows] = {
     "aspool platform": (
         (
             "ACTION",
-            "prepare 创建影子库；verify/status 检查；activate 切换；rollback 回到布局1",
+            "verify/status 检查；consolidate 迁移到唯一存储；"
+            "recover 恢复未完成发布；restore 恢复迁移",
         ),
-        ("切换规则", "prepare 不改变 layout_version，不切换 Fundwise 公开读取"),
+        (
+            "切换规则",
+            "consolidate/restore 需池外已验证 --recovery；"
+            "prepare/activate/reconcile/rollback 仅用于旧布局",
+        ),
     ),
     "aspool status": (
         ("--dataset", "检查全部或指定生产数据块；不触发写入"),

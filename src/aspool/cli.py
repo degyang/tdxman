@@ -823,12 +823,14 @@ def fundamentals(
     ),
 )
 @click.option("--root", type=click.Path(path_type=Path))
-@click.option("--deep", is_flag=True, help="仅用于 verify：逐字段比对全部派生内容。")
+@click.option(
+    "--deep", is_flag=True, help="仅用于 verify：布局 3 检查库完整性；旧布局比对派生内容。"
+)
 @click.option(
     "--recovery", type=click.Path(path_type=Path), help="consolidate/restore 的已验证池外恢复点。"
 )
 def platform(action: str, root: Path | None, deep: bool, recovery: Path | None) -> None:
-    """准备、核验或检查分层数据布局；prepare 不切换公开读取。"""
+    """核验、迁移或恢复数据布局；consolidate 退役旧生产副本。"""
     from .api_contract import DataPoolError
     from .platform_v2 import (
         activate_platform_v2,

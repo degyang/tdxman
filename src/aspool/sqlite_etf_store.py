@@ -3,7 +3,7 @@
 import math
 import sqlite3
 import time
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from datetime import date, datetime
 from pathlib import Path
 
@@ -273,7 +273,7 @@ def factor_connection(root):
                 yield conn
             return
         path = root / "adjustments.sqlite"
-        with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as conn:
+        with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as conn:
             conn.execute(
                 "CREATE TEMP VIEW adjustment_factors AS SELECT symbol, "
                 "effective_date AS trade_date,cumulative_factor,source "
