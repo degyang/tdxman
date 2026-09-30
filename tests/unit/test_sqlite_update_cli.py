@@ -105,6 +105,8 @@ def test_update_quotes_keep_vendor_metrics_and_compute_limits(tmp_path, monkeypa
     monkeypatch.setattr(MacClient, "from_best_host", lambda **kwargs: FakeMac())
     result = run_update(tmp_path, symbols=["000001.SZ"], now=NOW, retry_delay=0)
     assert result["status"] == "ok"
+    assert result["factor_unavailable"] == [{"symbol": "000001.SZ", "reason": "no_verified_anchor"}]
+    assert result["factor_quality"] == {"ready": False, "unavailable": 1}
     with stock_connection(tmp_path) as conn:
         row = conn.execute(
             "SELECT volume,vol_ratio,turnover_rate,vol_ratio_source,turnover_rate_source "
@@ -153,11 +155,22 @@ def test_quote_pre_close_extends_factor_without_full_event_request(tmp_path, mon
     monkeypatch.setattr(TdxClient, "from_best_host", lambda **kwargs: NoActions())
     report = run_update(tmp_path, symbols=["000001.SZ"], now=NOW, retry_delay=0)
     assert report["status"] == "ok"
+    assert "factor_quality" not in report
     with stock_connection(tmp_path) as conn:
-        assert conn.execute(
-            "SELECT max(valid_through) FROM corporate_actions "
-            "WHERE symbol='000001.SZ' AND record_kind='factor'"
-        ).fetchone()[0] == "2026-09-28"
+        assert (
+            conn.execute(
+                "SELECT max(valid_through) FROM corporate_actions "
+                "WHERE symbol='000001.SZ' AND record_kind='factor'"
+            ).fetchone()[0]
+            == "2026-09-28"
+        )
+        payload = conn.execute(
+            "SELECT payload_json FROM corporate_actions WHERE symbol='000001.SZ' "
+            "AND record_kind='factor' AND valid_through='2026-09-28'"
+        ).fetchone()[0]
+    import json
+
+    assert json.loads(payload)["fw03_advance"]["source"] == "tdx:xdxr"
 
 
 def test_quote_partial_retry_only_requests_missing_and_supports_bj():
@@ -184,6 +197,7 @@ def test_bj_quote_is_stored_but_excluded_from_limit_statistics(tmp_path, monkeyp
     monkeypatch.setattr(MacClient, "from_best_host", lambda **kwargs: FakeMac())
     report = run_update(tmp_path, symbols=["920011.BJ"], now=NOW, retry_delay=0)
     assert report["status"] == "ok"
+    assert report["factor_quality"]["unavailable"] == 1
     with stock_connection(tmp_path) as conn:
         assert conn.execute(
             "SELECT calc_status,limit_status,close_limit_up,consecutive_up "
@@ -279,6 +293,7 @@ def test_sync_uses_kline_and_fills_missing_metrics(tmp_path, monkeypatch):
         retry_delay=0,
     )
     assert result["status"] == "ok"
+    assert result["factor_quality"]["unavailable"] == 1
     with stock_connection(tmp_path) as conn:
         assert conn.execute(
             "SELECT volume,float_share,vol_ratio,turnover_rate FROM daily_bars "
@@ -482,8 +497,15 @@ def test_sync_count_defaults_to_ten_and_conflicts_with_explicit_range(tmp_path, 
     result = runner.invoke(
         cli,
         [
-            "sync", "--root", str(tmp_path), "--count", "30",
-            "--start", "2026-09-01", "--end", "2026-09-28",
+            "sync",
+            "--root",
+            str(tmp_path),
+            "--count",
+            "30",
+            "--start",
+            "2026-09-01",
+            "--end",
+            "2026-09-28",
         ],
     )
     assert result.exit_code == 2
@@ -602,6 +624,7 @@ def test_update_rejects_history_and_sync_infers_recent_window(tmp_path, monkeypa
     store(tmp_path)
     with pytest.raises(ValueError, match="historical K lines"):
         run_update(tmp_path, now=NOW, start="2026-09-23", end="2026-09-24")
+
     class EmptyKline(FakeMac):
         def get_stock_kline(self, *args, **kwargs):
             return pd.DataFrame()
@@ -675,7 +698,9 @@ def test_directory_st_changes_without_fabricating_no_trade_bars(tmp_path, monkey
     for name, st in [("*ST测试", 1), ("测试股份", 0)]:
         current_name[0] = name
         report = run_update(tmp_path, symbols=["000001.SZ"], now=NOW, retry_delay=0)
-        assert report["status"] == "ok" and report["no_trade"] == ["000001.SZ"]
+        assert report["status"] == "ok"
+        assert report["factor_quality"]["unavailable"] == 1
+        assert report["no_trade"] == ["000001.SZ"]
         assert not report["retries"]
         with stock_connection(tmp_path) as conn:
             assert conn.execute("SELECT count(*) FROM daily_bars").fetchone()[0] == 6
@@ -721,6 +746,7 @@ def test_directory_new_listing_and_future_listing_filter(tmp_path, monkeypatch):
     monkeypatch.setattr(TdxClient, "from_best_host", lambda **kwargs: Finance())
     report = run_update(tmp_path, now=NOW, retry_delay=0)
     assert report["status"] == "ok"
+    assert not report["factor_quality"]["ready"]
     assert report["not_listed"] == ["301999.SZ"]
     with stock_connection(tmp_path) as conn:
         assert conn.execute(
@@ -754,3 +780,26 @@ def test_failed_directory_market_does_not_publish_partial_pages():
         session.close()
     assert set(names) == {"600001.SH", "920011.BJ"}
     assert report["failed"][0]["market"] == "SZ" and len(events) == 2
+
+
+def test_status_etf_factors_fallback_survives_missing_table(tmp_path):
+    """Pre-layered ETF fallback must not crash when adjustment_factors is absent."""
+    import sqlite3
+
+    import duckdb
+
+    with duckdb.connect(str(tmp_path / "catalog.duckdb")) as conn:
+        conn.execute(
+            "CREATE TABLE securities(symbol VARCHAR, asset_type VARCHAR, "
+            "listing_date DATE, delisting_date DATE, active BOOLEAN)"
+        )
+        conn.execute("CREATE TABLE security_calendar(trade_date DATE, is_open BOOLEAN)")
+        conn.execute("INSERT INTO security_calendar VALUES ('2026-09-29', true)")
+    with sqlite3.connect(tmp_path / "etfs.sqlite") as conn:
+        conn.execute("CREATE TABLE daily_bars(symbol TEXT, trade_date TEXT)")
+        conn.execute("INSERT INTO daily_bars VALUES ('510000.SH', '2026-09-29')")
+
+    from aspool.cli import _dataset_status
+
+    rows = _dataset_status(tmp_path)
+    assert "etf-factors" not in {row["dataset"] for row in rows}

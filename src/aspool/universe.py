@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
@@ -101,9 +102,32 @@ def _publish_universe(root, entries):
         for e in entries
     ]
     result = publish_directory(root, rows, asset_type=kind)
-    with catalog(root) as conn:
-        covered = {row[0] for row in conn.execute("SELECT symbol FROM coverage").fetchall()}
-    added = [entry for entry in entries if entry["symbol"] not in covered]
+    sqlite_path = Path(root) / ("etfs.sqlite" if kind == "etf" else "stocks.sqlite")
+    if sqlite_path.is_file():
+        with sqlite3.connect(sqlite_path.as_uri() + "?mode=ro", uri=True) as conn:
+            # The primary key begins with symbol. Key seeks enumerate covered
+            # securities without scanning every historical daily bar.
+            covered = set()
+            last = ""
+            while True:
+                row = conn.execute(
+                    "SELECT symbol FROM daily_bars WHERE symbol>? ORDER BY symbol LIMIT 1",
+                    (last,),
+                ).fetchone()
+                if row is None:
+                    break
+                last = row[0]
+                covered.add(last)
+        added = [
+            entry
+            for entry in entries
+            if f"{entry['symbol']}.{entry['market']}" not in covered
+        ]
+    else:
+        # Compatibility for legacy pools that have not migrated daily bars.
+        with catalog(root) as conn:
+            covered = {row[0] for row in conn.execute("SELECT symbol FROM coverage").fetchall()}
+        added = [entry for entry in entries if entry["symbol"] not in covered]
     return {
         "listed": len(entries),
         "added": added,

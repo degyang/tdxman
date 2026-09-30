@@ -13,6 +13,7 @@ from aspool.daily_storage import build_field_quality_report, merge_daily
 from aspool.fetch import client_factory, fetch_async, fetch_sync
 from aspool.free_stockdb import _write_daily
 from aspool.fundamentals import _quote_bar, update_from_quotes
+from aspool.sqlite_stock_store import stock_connection
 from aspool.store import bars_path, catalog, catalog_session, initialize, record_coverage
 from aspool.tdx_online import _stock_records, _stock_records_async
 from aspool.universe import _publish_universe
@@ -296,6 +297,24 @@ def test_universe_preserves_omitted_securities_and_coverage(tmp_path):
         assert conn.execute("select count(*) from coverage").fetchone() == (1,)
 
 
+def test_sqlite_universe_reports_only_symbols_without_daily_bars(tmp_path):
+    initialize(tmp_path)
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        conn.execute(
+            "INSERT INTO daily_bars(symbol,trade_date,open,high,low,close,updated_at) "
+            "VALUES ('000001.SZ','2026-09-29',10,10,10,10,1)"
+        )
+        conn.commit()
+    result = _publish_universe(
+        tmp_path,
+        [
+            {"symbol": "000001", "market": "SZ", "name": "甲"},
+            {"symbol": "600519", "market": "SH", "name": "乙"},
+        ],
+    )
+    assert [item["symbol"] for item in result["added"]] == ["600519"]
+
+
 def test_sync_workers_are_bounded_and_connections_never_shared():
     lock = threading.Lock()
     active = maximum = 0
@@ -458,5 +477,36 @@ def test_new_stock_bootstrap_uses_longest_available_history(asynchronous):
         asyncio.run(_stock_records_async(Async(), ("000001", None)))
         if asynchronous
         else _stock_records(Sync(), ("000001", None))
+    )
+    assert len(rows) == 900 and calls == [(0, 800), (800, 800)]
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+def test_explicit_long_history_range_uses_large_pages(asynchronous):
+    days = pd.date_range("2024-01-01", periods=900)[::-1]
+    calls = []
+
+    def frame(start, count):
+        calls.append((start, count))
+        return pd.DataFrame(
+            [
+                dict(datetime=d, vol=100, open=10, high=11, low=9, close=10, amount=1000)
+                for d in days[start : start + count]
+            ]
+        )
+
+    class Sync:
+        def get_stock_kline(self, *args, **kwargs):
+            return frame(kwargs["start"], kwargs["count"])
+
+    class Async:
+        async def get_stock_kline(self, *args, **kwargs):
+            return frame(kwargs["start"], kwargs["count"])
+
+    since = date(2024, 1, 1)
+    rows = (
+        asyncio.run(_stock_records_async(Async(), ("000001", since)))
+        if asynchronous
+        else _stock_records(Sync(), ("000001", since))
     )
     assert len(rows) == 900 and calls == [(0, 800), (800, 800)]

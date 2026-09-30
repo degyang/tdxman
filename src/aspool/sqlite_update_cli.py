@@ -26,6 +26,7 @@ from .sqlite_daily_sync import (
 from .sqlite_stock_store import stock_connection
 
 _HOST_SELECTION_LOCK = Lock()
+_SQLITE_WRITE_BATCH_SIZE = 128
 
 
 class SourceSession:
@@ -348,7 +349,8 @@ def run_update(
                 row[0]
                 for row in calendar.execute(
                     "SELECT trade_date FROM security_calendar WHERE is_open AND trade_date<=? "
-                    "ORDER BY trade_date DESC LIMIT ?", [day, count]
+                    "ORDER BY trade_date DESC LIMIT ?",
+                    [day, count],
                 ).fetchall()
             ]
         if not recent:
@@ -364,11 +366,13 @@ def run_update(
         selected = list(dict.fromkeys(symbols))
         if not selected and status_filter:
             where = (
-                "trading_status='MISSING'" if status_filter == "missing"
+                "trading_status='MISSING'"
+                if status_filter == "missing"
                 else "(trading_status='INVALID' OR calc_status='INVALID')"
             )
             selected = [
-                row[0] for row in conn.execute(
+                row[0]
+                for row in conn.execute(
                     f"SELECT DISTINCT symbol FROM daily_features WHERE {where} "
                     "AND trade_date BETWEEN ? AND ? ORDER BY symbol",
                     (start or day.isoformat(), end or day.isoformat()),
@@ -399,8 +403,7 @@ def run_update(
         lifecycle = {
             s: (a, b)
             for s, a, b in conn.execute(
-                "SELECT symbol,listing_date,delisting_date FROM securities "
-                "WHERE asset_type='stock'"
+                "SELECT symbol,listing_date,delisting_date FROM securities WHERE asset_type='stock'"
             ).fetchall()
         }
     target_day = date.fromisoformat(end) if end else day
@@ -437,6 +440,7 @@ def run_update(
                 failed=[],
                 unsupported=[],
                 factor_unavailable=[],
+                factor_failed=[],
                 traded=[],
                 no_trade=[],
                 missing=[],
@@ -615,6 +619,7 @@ def run_update(
             listed_days=ages,
             event_refresh_start=event_start if source == "tdx" and mode == "sync" else None,
             max_consecutive_failures=max_consecutive_failures,
+            max_symbols_per_write=_SQLITE_WRITE_BATCH_SIZE,
         )
         report.update(result)
         if source == "tdx" and mode == "update":
@@ -632,6 +637,9 @@ def run_update(
         report["status"] = "completed_with_missing"
     else:
         report["status"] = "ok"
+    factor_unavail = report.get("factor_unavailable")
+    if factor_unavail:
+        report["factor_quality"] = {"ready": False, "unavailable": len(factor_unavail)}
     return report
 
 

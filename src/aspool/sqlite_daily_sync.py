@@ -15,6 +15,8 @@ from .pool import pool_lock
 from .sqlite_daily_update import apply_daily_changes, daily_window
 from .sqlite_stock_store import stock_connection
 
+_FACTOR_WRITE_BATCH_SIZE = 32
+
 
 def sync_daily_source(
     root,
@@ -59,6 +61,7 @@ def sync_daily_source(
         no_trade=[],
         missing=[],
         invalid=[],
+        factor_failed=[],
         aborted=False,
         remaining_block=[],
     )
@@ -84,6 +87,8 @@ def sync_daily_source(
                 return
             from .sqlite_event_update import SymbolUpdateError
 
+            # Commit validated raw observations first.  A later factor problem
+            # must not discard valid OHLCV, names, trading state or limit data.
             remaining = set(pending_symbols)
             while remaining:
                 try:
@@ -92,13 +97,12 @@ def sync_daily_source(
                             conn,
                             bars=[r for r in pending_bars if r["symbol"] in remaining],
                             dated_facts=[r for r in pending_facts if r["symbol"] in remaining],
-                            factor_extensions=[
-                                r for r in pending_extensions if r["symbol"] in remaining
-                            ],
                             market_sessions=sessions,
                             listed_days=listed_days,
                             fill_missing_metrics=source != "tdxman:quote",
-                            merge_event_revisions=event_refresh_start is not None,
+                            # Reuse the existing per-symbol validation wrapper;
+                            # there are no factor extensions in this transaction.
+                            merge_event_revisions=True,
                         )
                         mirror(applied, remaining)
                 except SymbolUpdateError as exc:
@@ -111,8 +115,102 @@ def sync_daily_source(
                         dict(symbol=exc.symbol, error=str(exc), phase="validation")
                     )
                     continue
-                result["success"].append(dict(symbols=sorted(remaining), **applied))
                 break
+
+            if not remaining:
+                pending_symbols.clear()
+                pending_bars.clear()
+                pending_facts.clear()
+                pending_extensions.clear()
+                return
+
+            batch = dict(symbols=sorted(remaining), **applied, factor_success=[])
+            # Adjacent quote-proven no-event extensions share a transaction so
+            # the same market cross-section is not recomputed once per stock.
+            # Authoritative historical event reads remain isolated per symbol.
+            factor_mirror_symbols = set()
+            factor_mirror_dates = set()
+            factor_revision = None
+
+            def record_factor_success(factor_applied, symbols):
+                nonlocal factor_revision
+                batch["factor_success"].extend(symbols)
+                factor_mirror_symbols.update(symbols)
+                factor_mirror_dates.update(factor_applied["affected_sessions"])
+                factor_revision = factor_applied["raw_revision"]
+                for name in (
+                    "changed_factor_rows",
+                    "recomputed_feature_rows",
+                    "changed_feature_rows",
+                    "summary_rows",
+                    "read_rows",
+                ):
+                    batch[name] += factor_applied[name]
+                batch["affected_sessions"] = sorted(
+                    set(batch["affected_sessions"]) | set(factor_applied["affected_sessions"])
+                )
+                batch["raw_revision"] = factor_applied["raw_revision"]
+
+            fast_extensions = []
+            revision_extensions = []
+            for pending in pending_extensions:
+                if pending["symbol"] not in remaining:
+                    continue
+                extension = dict(pending)
+                merge_revision = extension.pop("merge_event_revisions")
+                (revision_extensions if merge_revision else fast_extensions).append(extension)
+
+            for offset in range(0, len(fast_extensions), _FACTOR_WRITE_BATCH_SIZE):
+                extensions = fast_extensions[offset : offset + _FACTOR_WRITE_BATCH_SIZE]
+                while extensions:
+                    symbols = [item["symbol"] for item in extensions]
+                    try:
+                        with pool_lock(root, write=True):
+                            factor_applied = apply_daily_changes(
+                                conn,
+                                factor_extensions=extensions,
+                                market_sessions=sessions,
+                                listed_days=listed_days,
+                                merge_event_revisions=False,
+                            )
+                    except SymbolUpdateError as exc:
+                        if exc.symbol not in symbols:
+                            raise
+                        failure = dict(symbol=exc.symbol, error=str(exc), phase="factor")
+                        result["factor_failed"].append(failure)
+                        result["failed"].append(failure)
+                        extensions = [
+                            item for item in extensions if item["symbol"] != exc.symbol
+                        ]
+                        continue
+                    record_factor_success(factor_applied, symbols)
+                    break
+
+            for extension in revision_extensions:
+                symbol = extension["symbol"]
+                try:
+                    with pool_lock(root, write=True):
+                        factor_applied = apply_daily_changes(
+                            conn,
+                            factor_extensions=[extension],
+                            market_sessions=sessions,
+                            listed_days=listed_days,
+                            merge_event_revisions=True,
+                        )
+                except SymbolUpdateError as exc:
+                    failure = dict(symbol=symbol, error=str(exc), phase="factor")
+                    result["factor_failed"].append(failure)
+                    result["failed"].append(failure)
+                    continue
+                record_factor_success(factor_applied, [symbol])
+            if factor_mirror_symbols:
+                factor_mirror = {
+                    "affected_sessions": sorted(factor_mirror_dates),
+                    "raw_revision": factor_revision,
+                }
+                mirror(factor_mirror, factor_mirror_symbols)
+                batch["factor_platform_v2"] = factor_mirror.get("platform_v2")
+            result["success"].append(batch)
             pending_symbols.clear()
             pending_bars.clear()
             pending_facts.clear()
@@ -301,52 +399,84 @@ def sync_daily_source(
                 )
             elif through > tail or event_refresh_start is not None:
                 if action_fetcher is None:
-                    result["failed"].append(
-                        dict(
-                            symbol=symbol,
-                            error="Verified action fetcher required to advance factor coverage",
-                        )
-                    )
-                    continue
-                first = (date.fromisoformat(tail) + timedelta(days=1)).isoformat()
-                if event_refresh_start is not None:
-                    first = min(first, event_refresh_start)
-                events = None
-                if source == "tdxman:quote" and event_refresh_start is None:
-                    quoted_pre_close = next(
-                        (fact.get("source_pre_close") for fact in facts
-                         if fact["trade_date"] == through),
-                        None,
-                    )
-                    prior = conn.execute(
-                        "SELECT close FROM daily_bars WHERE symbol=? AND trade_date<? "
-                        "ORDER BY trade_date DESC LIMIT 1", (symbol, through)
-                    ).fetchone()
-                    if (
-                        quoted_pre_close is not None
-                        and prior is not None
-                        and math.isclose(float(quoted_pre_close), float(prior[0]),
-                                         rel_tol=0.0005, abs_tol=0.011)
-                    ):
-                        # A dated quote whose pre-close agrees with the last real close
-                        # verifies that no corporate action changed the reference price.
-                        events = []
-                if events is None:
-                    try:
-                        events = action_fetcher(symbol, first, through)
-                    except Exception as exc:
-                        result["failed"].append(dict(symbol=symbol, error=str(exc)))
-                        continue
-                pending_extensions.append(
-                    dict(
+                    failure = dict(
                         symbol=symbol,
-                        verified_start=first,
-                        verified_end=through,
-                        events=events,
-                        source=("tdxman:quote-pre-close" if not events and source == "tdxman:quote"
-                                else "tdx:xdxr"),
+                        error="Verified action fetcher required to advance factor coverage",
+                        phase="factor_fetch",
                     )
-                )
+                    result["factor_failed"].append(failure)
+                    result["failed"].append(failure)
+                else:
+                    first = (date.fromisoformat(tail) + timedelta(days=1)).isoformat()
+                    if event_refresh_start is not None:
+                        first = min(first, event_refresh_start)
+                    events = None
+                    action_interval_read = False
+                    # A quote pre-close only proves the immediately preceding
+                    # trading interval.  Older gaps and persisted event dates
+                    # require an authoritative bounded event read.
+                    has_intervening_session = any(tail < day < through for day in sessions)
+                    has_persisted_events = (
+                        conn.execute(
+                            "SELECT 1 FROM corporate_actions WHERE symbol=? "
+                            "AND record_kind='event' AND effective_date BETWEEN ? AND ? LIMIT 1",
+                            (symbol, first, through),
+                        ).fetchone()
+                        is not None
+                    )
+                    if (
+                        source == "tdxman:quote"
+                        and event_refresh_start is None
+                        and not has_intervening_session
+                        and not has_persisted_events
+                    ):
+                        quoted_pre_close = next(
+                            (
+                                fact.get("source_pre_close")
+                                for fact in facts
+                                if fact["trade_date"] == through
+                            ),
+                            None,
+                        )
+                        prior = conn.execute(
+                            "SELECT close FROM daily_bars WHERE symbol=? AND trade_date<? "
+                            "ORDER BY trade_date DESC LIMIT 1",
+                            (symbol, through),
+                        ).fetchone()
+                        if (
+                            quoted_pre_close is not None
+                            and prior is not None
+                            and math.isclose(
+                                float(quoted_pre_close),
+                                float(prior[0]),
+                                rel_tol=0.0005,
+                                abs_tol=0.011,
+                            )
+                        ):
+                            events = []
+                    if events is None:
+                        try:
+                            events = action_fetcher(symbol, first, through)
+                            action_interval_read = True
+                        except Exception as exc:
+                            failure = dict(
+                                symbol=symbol,
+                                error=str(exc),
+                                phase="factor_fetch",
+                            )
+                            result["factor_failed"].append(failure)
+                            result["failed"].append(failure)
+                    if events is not None:
+                        pending_extensions.append(
+                            dict(
+                                symbol=symbol,
+                                verified_start=first,
+                                verified_end=through,
+                                events=events,
+                                source="tdx:xdxr",
+                                merge_event_revisions=action_interval_read,
+                            )
+                        )
             pending_symbols.append(symbol)
             pending_bars.extend(bars)
             pending_facts.extend(facts)

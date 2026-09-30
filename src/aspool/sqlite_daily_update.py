@@ -332,13 +332,16 @@ def apply_daily_changes(
         # Extend factors after raw writes so new ex-dates can use prior new bars,
         # but before references/MA calculations; every dependency commits together.
         for extension in extensions:
-            if merge_event_revisions:
-                try:
+            try:
+                if merge_event_revisions:
                     stats = merge_recent_events(conn, **extension)
-                except ValueError as exc:
-                    raise SymbolUpdateError(extension["symbol"], exc) from exc
-            else:
-                stats = advance_factor_coverage(conn, **extension)
+                else:
+                    stats = advance_factor_coverage(conn, **extension)
+            except ValueError as exc:
+                # Factor data is scoped to one security.  The source adapter
+                # can therefore retain a valid raw bar and quarantine only the
+                # rejected factor suffix without hiding the responsible symbol.
+                raise SymbolUpdateError(extension["symbol"], exc) from exc
             result["changed_factor_rows"] += stats["changed_rows"]
             if not stats["changed_rows"] or stats["affected_from"] is None:
                 continue

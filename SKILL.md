@@ -44,7 +44,75 @@ tdxman tick SH 600519 --days 5 --format table
 
 CLI output normalizes numeric presentation: prices, amounts, market caps, finance amounts, and fund-flow amounts use two decimal places; quantities and counts use integers; other ratios retain up to four decimal places. JSON values remain numeric, so insignificant trailing zeroes may not appear.
 
-## aspool daily workflow
+## Current aspool production operations
+
+This section is authoritative for the SQLite production root `tdxman/data/` and supersedes the legacy daily workflow below. Keep reports, logs and receipts in `.local/`, never in `data/`.
+
+### Daily post-close update
+
+After 15:30 Asia/Shanghai, run:
+
+```bash
+bash scripts/ops/run_daily_data_pipeline.sh
+```
+
+Use `--with-fundamentals` only when refreshing the latest financial-report and shareholder-count snapshots. These are low-frequency latest snapshots, not point-in-time financial history.
+
+The normal daily path is fixed:
+
+1. Publish complete current stock, ETF and index directories.
+2. `update --type stock`: write validated unadjusted quotes, names and trading state first; then reconcile bounded corporate-action/factor suffixes per symbol. A factor failure retains the valid raw bar and leaves factor-dependent features incomplete with an explicit report entry.
+3. `update --type index`: update index K-lines and the trading calendar.
+4. `update --type etf`: update unadjusted ETF K-lines; preserve source-confirmed `NO_TRADE` without making a zero-price bar.
+5. Optionally refresh fundamentals, then audit all production data blocks.
+
+Do not place `sync` in the normal daily path. `sync` is a bounded historical-repair operation, not a second daily fetch.
+
+### Tail-gap repair
+
+Check before writing:
+
+```bash
+bash scripts/ops/repair_recent_data_gaps.sh --count 10
+```
+
+The checker reads persisted state only. It checks exact current-stock terminal-state closure on the latest session; older stock sessions only for whole-day absence or explicit `MISSING`/`INVALID`; the Shanghai Composite calendar anchor; entirely absent ETF market days; and whether daily Regime public rows follow stock features. It intentionally does not enforce per-security historical completeness. It prints the exact bounded repair commands.
+
+Only when it reports a gap, run:
+
+```bash
+bash scripts/ops/repair_recent_data_gaps.sh --count 30 --repair
+```
+
+It runs `aspool sync --type stock|index|etf --count N` only for affected domains. Default `count` is 10 and the maximum is 60. Use explicit `--start/--end` only for a known historical incident. Use BaoStock only as an explicit fallback for remaining stock `MISSING` values:
+
+```bash
+aspool sync --type stock --source baostock --status missing
+```
+
+BaoStock does not support BJ. Leave unavailable BJ data as `MISSING`; do not turn it into a no-trade bar.
+
+### Data and acceptance invariants
+
+- `stocks.sqlite`, `indices.sqlite` and `etfs.sqlite` contain unadjusted bars. Read adjusted prices from raw bars plus sparse factors in `adjustments.sqlite`.
+- Corporate-action or factor changes recompute only affected stock suffixes. Do not add a whole-history adjustment pass to daily runs.
+- A single-symbol factor error must not roll back its valid raw quote or stop independent market blocks. Database/transaction failures still stop the stage; source failures stop after the configured consecutive-failure threshold.
+- `NO_TRADE` is a successful source response with no trade. Stale, failed or invalid responses remain `MISSING`/`INVALID`; none creates a synthetic bar. BJ is excluded from limit-up/down and streak statistics.
+- ETF factors are reviewed reference data, not an online TDX daily feed. Report their range separately from ETF daily-bar freshness.
+- Daily stock derived output includes Enriched base fields and `market_regime_features`. Weekly/monthly writers and Fundwise scoring/cache remain separate consumer responsibilities.
+
+Read `.local/reports/daily-pipeline/*.json`, then verify the public contract and coverage:
+
+```bash
+aspool contract --format json
+aspool status --root data --format json
+```
+
+Require all 12 contract blocks, including `stock-factors` and `etf-factors`. Acceptance compares the exact active-stock set on the target trading day, factor coverage for traded symbols, and the daily market summary; a maximum date or equal row count alone is insufficient. An event-driven factor table having an older maximum effective date is not by itself a stale-data failure. See `docs/daily_data_pipeline.md` and `docs/production_data_flow_contract.md` for command details.
+
+## Legacy aspool daily workflow
+
+The following legacy commands remain as historical or compatibility reference. Do not use them for the current SQLite production workflow.
 
 Use `aspool` for persistent data maintenance and `tdxman` for individual queries. Run from the repository root. The pool defaults to `~/.aspool`; use the same `--root PATH` on every command when selecting another pool. In `settings/config.yaml`, `aspool.free_stockdb.root` is the import source, and `offline.vipdoc` is the local TongDaXin source, not the pool destination.
 

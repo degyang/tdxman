@@ -24,6 +24,7 @@ from .store import (
 )
 
 ETF_HISTORY_START = date(2010, 1, 1)
+LONG_HISTORY_PAGE_DAYS = 120
 
 
 def _fundamentals(root: Path) -> dict[str, dict[str, object]]:
@@ -234,6 +235,7 @@ def _stock_records(client, job):
     Adjust, Period = enums
     symbol, since, asset_type = _job_spec(job)
     floor = ETF_HISTORY_START if asset_type == "etf" and since is None else None
+    page_size = 800 if since is None or (date.today() - since).days > LONG_HISTORY_PAGE_DAYS else 30
     offset, oldest, rows = 0, None, []
     while offset < 64000:
         frame = client.get_stock_kline(
@@ -241,7 +243,7 @@ def _stock_records(client, job):
             symbol,
             Period.DAILY,
             start=offset,
-            count=30 if since is not None else 800,
+            count=page_size,
             adjust=Adjust.NONE,
         )
         page, minimum, size = _bar_page(frame, symbol, since, floor)
@@ -252,7 +254,7 @@ def _stock_records(client, job):
         rows.extend(page)
         if since is not None and minimum <= since:
             return rows
-        if since is None and (size < 800 or (floor is not None and minimum <= floor)):
+        if size < page_size or (floor is not None and minimum <= floor):
             return rows
         offset += size
         oldest = minimum
@@ -264,6 +266,7 @@ async def _stock_records_async(client, job):
     Adjust, Period = enums
     symbol, since, asset_type = _job_spec(job)
     floor = ETF_HISTORY_START if asset_type == "etf" and since is None else None
+    page_size = 800 if since is None or (date.today() - since).days > LONG_HISTORY_PAGE_DAYS else 30
     offset, oldest, rows = 0, None, []
     while offset < 64000:
         frame = await client.get_stock_kline(
@@ -271,7 +274,7 @@ async def _stock_records_async(client, job):
             symbol,
             Period.DAILY,
             start=offset,
-            count=30 if since is not None else 800,
+            count=page_size,
             adjust=Adjust.NONE,
         )
         page, minimum, size = _bar_page(frame, symbol, since, floor)
@@ -282,7 +285,7 @@ async def _stock_records_async(client, job):
         rows.extend(page)
         if since is not None and minimum <= since:
             return rows
-        if since is None and (size < 800 or (floor is not None and minimum <= floor)):
+        if size < page_size or (floor is not None and minimum <= floor):
             return rows
         offset += size
         oldest = minimum

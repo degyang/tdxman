@@ -664,7 +664,8 @@ def test_source_sync_verifies_action_tail_before_writing_new_day(tmp_path):
         listed_days=AGES,
     )
     refused = sync_baostock_daily(**options)
-    assert refused["failed"] and not refused["success"]
+    assert refused["failed"] and refused["success"]
+    assert refused["failed"][0]["phase"] == "factor_fetch"
     calls = []
 
     def fetcher(symbol, start, end):
@@ -787,9 +788,24 @@ def test_recent_update_isolates_bad_security_but_not_database_failure(tmp_path):
             )
         ],
     )
-    assert report["failed"][0]["symbol"] == SYMBOL
-    assert report["success"][0]["symbols"] == [other]
+    assert report["factor_failed"][0]["symbol"] == SYMBOL
+    assert report["factor_failed"][0]["phase"] == "factor"
+    assert report["success"][0]["symbols"] == [SYMBOL, other]
     with stock_connection(tmp_path) as conn:
+        assert (
+            conn.execute(
+                "SELECT count(*) FROM daily_bars WHERE symbol IN (?,?) AND trade_date=?",
+                (SYMBOL, other, DAYS[59]),
+            ).fetchone()[0]
+            == 2
+        )
+        assert (
+            conn.execute(
+                "SELECT calc_status FROM daily_features WHERE symbol=? AND trade_date=?",
+                (SYMBOL, DAYS[59]),
+            ).fetchone()[0]
+            == "TRADED"
+        )
         assert (
             conn.execute("SELECT count(*) FROM daily_bars WHERE symbol=?", (other,)).fetchone()[0]
             == 1

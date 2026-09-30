@@ -24,6 +24,14 @@ from .sqlite_update_cli import SourceSession
 from .tdx_online import _stock_records, _stock_records_async
 
 
+def _row_date(row):
+    """Return the normalized date carried by an online or offline ETF row."""
+    value = row.get("trade_date", row.get("date", row.get("datetime")))
+    if value is None:
+        raise ValueError("ETF row has no trade date")
+    return str(value)[:10]
+
+
 def online_items(*, retries, retry_delay, events):
     session = SourceSession(
         lambda: MacClient.from_best_host(heartbeat_interval=0, auto_reconnect=False, timeout=10),
@@ -193,9 +201,9 @@ def sync_etfs(
             else:
                 try:
                     if window_start:
-                        rows = [r for r in rows if str(r["date"])[:10] >= window_start]
+                        rows = [r for r in rows if _row_date(r) >= window_start]
                     if end:
-                        rows = [r for r in rows if str(r["date"])[:10] <= end]
+                        rows = [r for r in rows if _row_date(r) <= end]
                     if not rows:
                         report["failed"].append(
                             dict(**item, error="No ETF rows in requested window")
