@@ -1,0 +1,338 @@
+{
+  "date": "2026-09-30",
+  "host": "homevps",
+  "project": "/home/ubuntu/Services/tdxman",
+  "source_code_sha": "29cdd83f0970d955ca6a071879a05eea8de349a3",
+  "tested_code_sha": "8a461f21100e6da16928b58e0c4a1adbd21ee8c2",
+  "python": "3.12.14",
+  "dependencies": "uv sync --frozen; lockfile unchanged by dated-sync fix",
+  "replica": {
+    "bytes": 14131707904,
+    "files": [
+      {
+        "path": "adjustments.sqlite",
+        "bytes": 26398720,
+        "sha256": "90a8bc52776385c54ab328a0a51068fa6d8c9a45382f08b464980d721ba3e026"
+      },
+      {
+        "path": "catalog.duckdb",
+        "bytes": 9449472,
+        "sha256": "e72f7c3720351adf46b1c9c62970733a3aed44bd72439e50da64ec9a9a89a6c2"
+      },
+      {
+        "path": "etfs.sqlite",
+        "bytes": 380936192,
+        "sha256": "fee2318fb4bb60ff82759d1f0da27d35d8c919a36bf063a899ceb14ac08a8171"
+      },
+      {
+        "path": "features.sqlite",
+        "bytes": 3995287552,
+        "sha256": "700a5fbf009aef269b11487411884930c9517dd41669fc10b9a034780ad4078e"
+      },
+      {
+        "path": "features.sqlite?mode=ro",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "fundamentals.sqlite",
+        "bytes": 27172864,
+        "sha256": "11d941505ff1f80b6159545907589d6175a837e7da7774e12c80b25b3fbca775"
+      },
+      {
+        "path": "indices.sqlite",
+        "bytes": 464486400,
+        "sha256": "663e58a205222e6107ab7c6091e9042dd04e14f6f359b95c5497c81bf2cce1da"
+      },
+      {
+        "path": "snapshots.sqlite",
+        "bytes": 16384,
+        "sha256": "c8f59a3ac010ff99ced4072771fa0673b42f3e8b3f8c4d9ee68c830ca91647f5"
+      },
+      {
+        "path": "stocks.sqlite",
+        "bytes": 9227960320,
+        "sha256": "e458f35fc61f612db4270e72676d06b1ed2e89ab27c868a4b450d495f23cbb0c"
+      }
+    ],
+    "manifest_sha256": "452fd09527b45ce9b30ea676887213cf208a71a0d0cebd85d70824c2b108fcb4",
+    "all_file_hashes_passed": true,
+    "transfer_exit_code": 0,
+    "installed_root": "/home/ubuntu/Services/tdxman/data",
+    "original_received_replica_business_data_unchanged": true,
+    "sqlite_checks": {
+      "adjustments.sqlite": {
+        "quick_check": "ok",
+        "tables": [
+          "adjustment_state",
+          "etf_adjustment_factors",
+          "stock_adjustment_factors",
+          "stock_factor_anchors"
+        ],
+        "seconds": 0.05
+      },
+      "etfs.sqlite": {
+        "quick_check": "ok",
+        "tables": [
+          "adjustment_factors",
+          "daily_bars"
+        ],
+        "seconds": 0.76
+      },
+      "features.sqlite": {
+        "quick_check": "ok",
+        "tables": [
+          "feature_state",
+          "market_regime_features",
+          "migration_state",
+          "stock_daily_features"
+        ],
+        "seconds": 6.87
+      },
+      "fundamentals.sqlite": {
+        "quick_check": "ok",
+        "tables": [
+          "dataset_state",
+          "stock_financial_reports",
+          "stock_shareholder_counts"
+        ],
+        "seconds": 0.02
+      },
+      "indices.sqlite": {
+        "quick_check": "ok",
+        "tables": [
+          "daily_bars"
+        ],
+        "seconds": 0.99
+      },
+      "snapshots.sqlite": {
+        "quick_check": "ok",
+        "tables": [
+          "snapshot_catalog",
+          "snapshot_rows"
+        ],
+        "seconds": 0.0
+      },
+      "stocks.sqlite": {
+        "quick_check": "ok",
+        "tables": [
+          "corporate_actions",
+          "daily_bars",
+          "daily_features",
+          "dataset_state",
+          "market_daily_summary"
+        ],
+        "seconds": 209.71
+      }
+    }
+  },
+  "public_api_comparison": {
+    "etfs": {
+      "rows": 2,
+      "equal": true
+    },
+    "features": {
+      "rows": 2,
+      "equal": true
+    },
+    "fundamentals": {
+      "rows": 2,
+      "equal": true
+    },
+    "indices": {
+      "rows": 2,
+      "equal": true
+    },
+    "market": {
+      "rows": 1,
+      "equal": true
+    },
+    "shareholders": {
+      "rows": 2,
+      "equal": true
+    },
+    "stocks": {
+      "rows": 4,
+      "equal": true
+    }
+  },
+  "initial_gap_check": {
+    "count": 10,
+    "gaps": [],
+    "calendar_through": "2026-09-29",
+    "does_not_prove_calendar_freshness": true
+  },
+  "isolated_updates": {
+    "root": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/data",
+    "date": "2026-09-29",
+    "stock_injected_gaps": [
+      "000001.SZ",
+      "000002.SZ"
+    ],
+    "network": "MAC through temporary SSH loopback forward via WSL; standard endpoint direct via homevps ranking",
+    "prewarm": {
+      "stocks.sqlite:daily_bars": {
+        "date": "2026-09-29",
+        "rows": 5559,
+        "seconds": 0.07
+      },
+      "stocks.sqlite:daily_features": {
+        "date": "2026-09-29",
+        "rows": 5578,
+        "seconds": 7.54
+      },
+      "features.sqlite:stock_daily_features": {
+        "date": "2026-09-29",
+        "rows": 5578,
+        "seconds": 34.45
+      }
+    },
+    "prewarm_physical_scan_bound_verified": false,
+    "stages": [
+      {
+        "name": "stock-sync",
+        "exit_code": 0,
+        "seconds": 12.51,
+        "receipt": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/.local/reports/sqlite-sync-20260930T071249421664Z.json",
+        "status": "ok",
+        "requested": 2,
+        "summary_repair": {
+          "dates": [],
+          "changed_rows": 0
+        },
+        "changed_raw_rows": 2,
+        "writer_elapsed_ms": 393
+      },
+      {
+        "name": "stock-sync-repeat",
+        "exit_code": 0,
+        "seconds": 0.71,
+        "receipt": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/.local/reports/sqlite-sync-20260930T071301909635Z.json",
+        "status": "ok",
+        "requested": 0,
+        "summary_repair": {
+          "dates": [],
+          "changed_rows": 0
+        }
+      },
+      {
+        "name": "summary-repair",
+        "exit_code": 0,
+        "seconds": 1.15,
+        "receipt": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/.local/reports/sqlite-sync-20260930T071302775070Z.json",
+        "status": "ok",
+        "requested": 0,
+        "summary_repair": {
+          "dates": [
+            "2026-09-29"
+          ],
+          "changed_rows": 1
+        }
+      },
+      {
+        "name": "index-sync",
+        "exit_code": 0,
+        "seconds": 2.0,
+        "receipt": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/.local/reports/index-sync/e80ea1c34d2e40b3a6cee5b4d47e99a6.json",
+        "status": "ok",
+        "requested": 3,
+        "bars": {
+          "added": 0,
+          "changed": 0,
+          "unchanged": 3
+        }
+      },
+      {
+        "name": "index-sync-repeat",
+        "exit_code": 0,
+        "seconds": 1.74,
+        "receipt": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/.local/reports/index-sync/602a8b13d88f4dc59b985314e485f0fa.json",
+        "status": "ok",
+        "requested": 3,
+        "bars": {
+          "added": 0,
+          "changed": 0,
+          "unchanged": 3
+        }
+      },
+      {
+        "name": "etf-sync",
+        "exit_code": 0,
+        "seconds": 2.83,
+        "receipt": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/.local/reports/etf-sync/ef5269bb7d994b5184732f8dc5c5fb07.json",
+        "status": "ok",
+        "requested": 3,
+        "bars": {
+          "added": 0,
+          "changed": 1,
+          "unchanged": 2
+        }
+      },
+      {
+        "name": "etf-sync-repeat",
+        "exit_code": 0,
+        "seconds": 1.98,
+        "receipt": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/.local/reports/etf-sync/0c10376e4f2a49ff8e466c8560522f77.json",
+        "status": "ok",
+        "requested": 3,
+        "bars": {
+          "added": 0,
+          "changed": 0,
+          "unchanged": 3
+        }
+      },
+      {
+        "name": "platform-after",
+        "exit_code": 0,
+        "seconds": 50.01
+      }
+    ]
+  },
+  "mirror_content": {
+    "inherited_baseline_differences": 292,
+    "date": "2026-09-29",
+    "fields": [
+      "ma20",
+      "above_ma20",
+      "updated_at"
+    ],
+    "new_differences_from_sync": 0,
+    "scoped_lab_repair": {
+      "mirrored": true,
+      "feature_rows": 292,
+      "summary_rows": 2,
+      "factor_rows": 2216,
+      "anchor_rows": 2215,
+      "lab_root": "/home/ubuntu/Services/tdxman/.local/labs/homevps-20260930/data",
+      "date": "2026-09-29",
+      "symbols": 292,
+      "seconds": 2.67,
+      "scope": "Only inherited differences; canonical stocks and original received replica unchanged"
+    },
+    "lab_keys_compared": 5578,
+    "lab_differences_after_repair": 0,
+    "baseline_differences_remain": 292,
+    "full_history_deep_verification_performed": false
+  },
+  "failures_and_limits": [
+    "Native MAC: 0/3 endpoints passed handshake; identical local probes passed 3/3. Native standard 1/77 passed. Autonomous homevps daily updates are not accepted.",
+    "Cold historical repair exceeded the existing 30-second writer budget and rolled back. Warm run passed; budget was not increased or disabled.",
+    "Explicit dated stock sync rejected count=None: fixed in 8a461f2 and regression tested.",
+    "Inherited MA20 mirror differences repaired only in lab, not the original received replica or local authoritative pool.",
+    "No real 2026-09-30 daily pipeline, full repository suite, or whole-history deep comparison was run."
+  ],
+  "local_validation": {
+    "command": ".venv/bin/python -m pytest tests/unit/test_sqlite_update_cli.py -q",
+    "passed": 27,
+    "new_regression_tests": 1,
+    "ruff": "passed",
+    "diff_check": "passed"
+  },
+  "reports": ".local/reports/homevps-20260930/ on both hosts; lab receipts also .local/labs/homevps-20260930/.local/reports/ on homevps",
+  "resources": {
+    "temporary_ssh_forward": "closed after acceptance",
+    "snapshots_and_lab": "retained for recovery and audit",
+    "scheduled_tasks_created": false,
+    "jakarta_modified": false
+  }
+}
