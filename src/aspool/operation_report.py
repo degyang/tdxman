@@ -5,10 +5,12 @@ import subprocess
 from pathlib import Path
 
 
-def run_command(executable, command, *, cwd, env, capture=False):
+def run_command(executable, command, *, cwd, env, capture=False, pass_fds=()):
     args = [str(executable), *command]
     if capture:
-        return subprocess.run(args, cwd=cwd, env=env, text=True, capture_output=True, check=True)
+        return subprocess.run(
+            args, cwd=cwd, env=env, text=True, capture_output=True, check=True, pass_fds=pass_fds
+        )
     lines = []
     with subprocess.Popen(
         args,
@@ -17,6 +19,7 @@ def run_command(executable, command, *, cwd, env, capture=False):
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        pass_fds=pass_fds,
     ) as process:
         assert process.stdout is not None
         for line in process.stdout:
@@ -63,9 +66,12 @@ def operation_outcome(completed, *, require_report=False):
         status = "ok"
     else:
         status = "failed"
-    return {
+    outcome = {
         "status": status,
         "source_status": source_status,
         "source_report": str(path),
         "source_counts": counts,
     }
+    if isinstance(report.get("performance"), dict):
+        outcome["source_performance"] = report["performance"]
+    return outcome

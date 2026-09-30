@@ -600,7 +600,112 @@ def test_factor_commits_and_mirrors_hold_one_writer_lock(tmp_path, monkeypatch):
         action_fetcher=lambda *a: [],
     )
     assert not result["failed"]
-    assert calls == [True, True]
+    assert calls == [True]
+    assert result["success"][0]["factor_success"] == ["000001.SZ"]
+    assert result["success"][0]["recomputed_feature_rows"] == 1
+    assert result["success"][0]["summary_rows"] == 2
+    assert verify_platform_v2(tmp_path, deep=True)["ready"]
+
+    before = {}
+    for database in ("stocks", "features", "adjustments"):
+        with sqlite3.connect(tmp_path / f"{database}.sqlite") as conn:
+            before[database] = list(conn.iterdump())
+    calls.clear()
+    repeated = sync_daily_source(
+        tmp_path,
+        client=Quote(),
+        symbols=["000001.SZ"],
+        source="tdxman:quote",
+        market_sessions=["2026-09-27", "2026-09-28", "2026-09-29"],
+        as_of="2026-09-29",
+        start="2026-09-29",
+        end="2026-09-29",
+        action_fetcher=lambda *a: [],
+    )
+    assert calls == []
+    assert repeated["success"][0]["changed_rows"] == 0
+    assert repeated["success"][0]["platform_v2"]["mirrored"] is False
+    for database, expected in before.items():
+        with sqlite3.connect(tmp_path / f"{database}.sqlite") as conn:
+            assert list(conn.iterdump()) == expected
+
+
+def test_inline_bad_factor_retains_valid_raw_and_mirror(tmp_path, monkeypatch):
+    from datetime import date
+
+    import pandas as pd
+    import pytest
+
+    import aspool.sqlite_reference_factors as factors
+    from aspool.api_contract import DataPoolError
+    from aspool.sqlite_daily_sync import sync_daily_source
+
+    seed(tmp_path)
+    with sqlite3.connect(tmp_path / "stocks.sqlite") as conn:
+        conn.execute(
+            "UPDATE corporate_actions "
+            "SET factor_basis='source_cumulative_factor:source_anchor:test'"
+        )
+    prepare_platform_v2(tmp_path)
+
+    class Quote:
+        def get_daily(self, *args, **kwargs):
+            return pd.DataFrame(
+                [
+                    dict(
+                        symbol="000001.SZ",
+                        date=date(2026, 9, 29),
+                        open=11,
+                        high=12,
+                        low=11,
+                        close=12,
+                        volume=100,
+                        amount=1200,
+                        pre_close=11,
+                        is_st=False,
+                        trading_status="TRADING",
+                    )
+                ]
+            )
+
+    def run():
+        return sync_daily_source(
+            tmp_path,
+            client=Quote(),
+            symbols=["000001.SZ"],
+            source="tdxman:quote",
+            market_sessions=["2026-09-27", "2026-09-28", "2026-09-29"],
+            as_of="2026-09-29",
+            start="2026-09-29",
+            end="2026-09-29",
+            action_fetcher=lambda *a: [],
+        )
+
+    def fail_budget(*args, **kwargs):
+        raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "writer deadline")
+
+    monkeypatch.setattr(factors, "advance_factor_coverage", fail_budget)
+    with sqlite3.connect(tmp_path / "stocks.sqlite") as conn:
+        before = list(conn.iterdump())
+    with pytest.raises(DataPoolError, match="writer deadline"):
+        run()
+    with sqlite3.connect(tmp_path / "stocks.sqlite") as conn:
+        assert list(conn.iterdump()) == before
+
+    def fail_security(*args, **kwargs):
+        raise ValueError("rejected factor anchor")
+
+    monkeypatch.setattr(factors, "advance_factor_coverage", fail_security)
+    result = run()
+    assert result["factor_failed"][0]["phase"] == "factor"
+    assert result["success"][0]["factor_success"] == []
+    with sqlite3.connect(tmp_path / "stocks.sqlite") as conn:
+        assert conn.execute(
+            "SELECT close FROM daily_bars WHERE symbol='000001.SZ' AND trade_date='2026-09-29'"
+        ).fetchone() == (12,)
+        assert conn.execute(
+            "SELECT max(valid_through) FROM corporate_actions WHERE record_kind='factor'"
+        ).fetchone() == ("2026-09-28",)
     assert verify_platform_v2(tmp_path, deep=True)["ready"]
 
 

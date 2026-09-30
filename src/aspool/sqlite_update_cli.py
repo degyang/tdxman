@@ -7,6 +7,7 @@ from contextlib import ExitStack, suppress
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from threading import Lock
+from time import perf_counter
 from zoneinfo import ZoneInfo
 
 import duckdb
@@ -311,6 +312,8 @@ def run_update(
     count=10,
 ):
     """Use quotes for TDX update; historical K-line maintenance belongs to sync."""
+    tick = perf_counter()
+    quote_elapsed_ms = action_elapsed_ms = 0
     from tdxman.baostock import BaostockClient
     from tdxman.client import TdxClient
     from tdxman.mac.client import MacClient
@@ -456,6 +459,7 @@ def run_update(
                 status="ok",
                 reason="requested window is already complete",
                 summary_repair=summary_repair,
+                performance={"total_elapsed_ms": round((perf_counter() - tick) * 1000)},
             )
             return report
     report = report if report is not None else {}
@@ -538,8 +542,10 @@ def run_update(
                 workers=workers,
                 names=fresh_names,
             )
+            quote_tick = perf_counter()
             _quote_calendar(root, quote, day)
             quote.fetch(selected)
+            quote_elapsed_ms = round((perf_counter() - quote_tick) * 1000)
             client = quote
             start = end = day.isoformat()
         elif source == "baostock":
@@ -599,6 +605,7 @@ def run_update(
         ages = listing_ages(lifecycle, sessions, start=event_start, end=end)
 
         def action_fetcher(symbol, first, last):
+            nonlocal action_elapsed_ms
             def fetch(connection):
                 try:
                     return fetch_tdx_action_interval(connection, symbol, first, last)
@@ -607,10 +614,11 @@ def run_update(
                         raise EmptySourceResponse(str(exc)) from exc
                     raise
 
-            return actions.read(
-                fetch,
-                label="actions:" + symbol,
-            )
+            action_tick = perf_counter()
+            try:
+                return actions.read(fetch, label="actions:" + symbol)
+            finally:
+                action_elapsed_ms += round((perf_counter() - action_tick) * 1000)
 
         result = sync_daily_source(
             root,
@@ -649,6 +657,16 @@ def run_update(
     factor_unavail = report.get("factor_unavailable")
     if factor_unavail:
         report["factor_quality"] = {"ready": False, "unavailable": len(factor_unavail)}
+    batches = [*report.get("success", []), *report.get("state_writes", [])]
+    report["performance"] = {
+        "total_elapsed_ms": round((perf_counter() - tick) * 1000),
+        "quote_confirm_and_fetch_elapsed_ms": quote_elapsed_ms,
+        "action_fetch_elapsed_ms": action_elapsed_ms,
+        "writer_elapsed_ms": sum(batch.get("elapsed_ms", 0) for batch in batches),
+        "feature_elapsed_ms": sum(batch.get("feature_elapsed_ms", 0) for batch in batches),
+        "summary_elapsed_ms": sum(batch.get("summary_elapsed_ms", 0) for batch in batches),
+        "mirror_elapsed_ms": sum(batch.get("mirror_elapsed_ms", 0) for batch in batches),
+    }
     return report
 
 

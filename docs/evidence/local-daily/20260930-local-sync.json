@@ -1,0 +1,577 @@
+{
+  "date": "2026-09-30",
+  "host": "local WSL",
+  "root": "/mnt/d/workstation/services/tdxman/data",
+  "head_before_task": "8a18cf77dcbceba0897994504b166ed5dbeb85b0",
+  "source_sha256": {
+    "scripts/ops/run_daily_data_pipeline.py": "22bc12b8d1ad0930025c6dbf615b669decc699a10bfd5bc54e2701f6686ed290",
+    "src/aspool/operation_report.py": "3cd96ea1116936a8202ebf1d3c45c5cd29b1e0f5b480ec935da116e2b08cc349",
+    "src/aspool/sqlite_daily_sync.py": "a76883cacaacc68cc72ff8b8fda3287ff51776ae34cc1385df30d18face9ac5f",
+    "src/aspool/sqlite_daily_update.py": "dbfb662ff6264883856eceb9bbc2f857440d072bafff7e66af3b83cc4ad413e2",
+    "src/aspool/sqlite_event_update.py": "3671e3447a4d53ffc8d2cd5a04d718c702628317906f58090117db97d072d7ad",
+    "src/aspool/sqlite_update_cli.py": "020c27765782c43ccc040c19be040a0d1717b0d1cce15a0c8c138096c949c71c",
+    "src/aspool/universe.py": "d1e3dd302c5d31c1d51481a43b0505c1f204e8196f44ea7533e99cf005273910"
+  },
+  "initial_production": {
+    "receipt": ".local/reports/daily-pipeline/20260930T102537Z.json",
+    "status": "ok",
+    "wall_seconds": 715.39,
+    "peak_rss_kib": 217580,
+    "stock_feature_closure": {
+      "available": true,
+      "table": "features.sqlite:stock_daily_features",
+      "date": "2026-09-30",
+      "latest_date": "2026-09-30",
+      "rows": 5577,
+      "calc_status": {
+        "NO_TRADE": 17,
+        "TRADED": 5560
+      },
+      "trading_status": {
+        "NO_TRADE": 17,
+        "TRADING": 5560
+      },
+      "active_stock_count": 5577,
+      "missing_symbol_count": 0,
+      "missing_symbol_sample": [],
+      "extra_symbol_count": 0,
+      "extra_symbol_sample": [],
+      "factor_missing_count": 155,
+      "factor_missing_sample": [
+        "001232.SZ",
+        "001237.SZ",
+        "001239.SZ",
+        "001246.SZ",
+        "001248.SZ",
+        "001330.SZ",
+        "001365.SZ",
+        "001393.SZ",
+        "001399.SZ",
+        "301292.SZ",
+        "301531.SZ",
+        "301565.SZ",
+        "301583.SZ",
+        "301599.SZ",
+        "301655.SZ",
+        "301666.SZ",
+        "301669.SZ",
+        "301677.SZ",
+        "301686.SZ",
+        "301688.SZ"
+      ],
+      "factor_store_available": true,
+      "factor_ready": false,
+      "summary_rows": 2,
+      "summary_quality": {
+        "trading_count": 5560,
+        "valid_return_count": 5560,
+        "invalid_return_count": 0,
+        "limit_unknown_count": 0,
+        "limit_invalid_count": 0,
+        "streak_unknown_count": 0,
+        "ma20_valid_count": 5110
+      },
+      "core_quality_ready": true,
+      "closed": true
+    },
+    "stock_profile": {
+      "aspool.sqlite_update_cli.SourceSession.read": {
+        "calls": 127,
+        "seconds": 22.780462247996184,
+        "max_seconds": 1.7806395500010694
+      },
+      "aspool.sqlite_update_cli.QuoteSource.fetch": {
+        "calls": 72,
+        "seconds": 21.864208252023673,
+        "max_seconds": 4.380023788995459
+      },
+      "aspool.sqlite_reference_factors.update_reference_factors": {
+        "calls": 10993,
+        "seconds": 0.6607617206900613,
+        "max_seconds": 0.0039285370003199205
+      },
+      "aspool.sqlite_daily_update.recompute_symbol_features": {
+        "calls": 10993,
+        "seconds": 6.439246087080392,
+        "max_seconds": 0.012951039003382903
+      },
+      "aspool.sqlite_daily_update.recompute_daily_summary": {
+        "calls": 264,
+        "seconds": 417.5449735819493,
+        "max_seconds": 5.078051133998088
+      },
+      "aspool.sqlite_daily_sync.apply_daily_changes": {
+        "calls": 264,
+        "seconds": 457.4224503339501,
+        "max_seconds": 5.138222397996287
+      },
+      "aspool.platform_v2.mirror_platform_v2": {
+        "calls": 264,
+        "seconds": 148.6883051219993,
+        "max_seconds": 1.4408762120001484
+      },
+      "aspool.sqlite_reference_factors.advance_factor_coverage": {
+        "calls": 5370,
+        "seconds": 2.798345474206144,
+        "max_seconds": 0.007631199994648341
+      },
+      "aspool.sqlite_update_cli.run_update": {
+        "calls": 1,
+        "seconds": 640.7447163070028,
+        "max_seconds": 640.7447163070028
+      }
+    },
+    "timing_note": "Inclusive nested times overlap. SourceSession.read also includes concurrent worker times; do not sum as wall time."
+  },
+  "bounded_replay": {
+    "date": "2026-09-30",
+    "scope": "384 no-event stocks; complete 16M-row history, ~5.6K-stock current market, same prepared state restored per run",
+    "root": "/mnt/d/workstation/services/tdxman/.local/labs/local-daily-20260930/data",
+    "production_written": false,
+    "order": [
+      "before",
+      "after",
+      "after",
+      "before"
+    ],
+    "runs": [
+      {
+        "index": 0,
+        "mode": "before",
+        "wall_seconds": 65.60014266800135,
+        "timings": {
+          "stock_features": {
+            "calls": 768,
+            "seconds": 0.6186728059547022,
+            "max_seconds": 0.00738556500436971
+          },
+          "market_summary": {
+            "calls": 15,
+            "seconds": 48.868816351983696,
+            "max_seconds": 4.0034397629933665
+          },
+          "writer": {
+            "calls": 15,
+            "seconds": 51.359427178009355,
+            "max_seconds": 4.073417193998466
+          },
+          "mirror": {
+            "calls": 15,
+            "seconds": 12.4785857920142,
+            "max_seconds": 1.930097789998399
+          }
+        },
+        "counts": {
+          "changed_rows": 768,
+          "changed_factor_rows": 384,
+          "recomputed_feature_rows": 768,
+          "summary_rows": 30,
+          "read_rows": 97479
+        },
+        "business_result": {
+          "daily_bars": {
+            "rows": 5560,
+            "sha256": "5cb0dd7238b3fdf0f20cfabb2dd2d9dde67d76373135bed432b69c2525a30de1"
+          },
+          "daily_features": {
+            "rows": 5577,
+            "sha256": "7b444e9d0980f8fc686ce62176702ecd712b616f6885aec0d7552578361aea8c"
+          },
+          "market_daily_summary": {
+            "rows": 2,
+            "sha256": "6b960b05b508547baf85d829a28550e50b5ddeed0be635ff3980c1adb0265807"
+          },
+          "corporate_actions": {
+            "rows": 20573,
+            "sha256": "c4415b7f39779a9cd2cd44da7aac34da22e7adedb30c1cb42cc6b37ea6c0db33"
+          }
+        }
+      },
+      {
+        "index": 1,
+        "mode": "after",
+        "wall_seconds": 15.926512895995984,
+        "timings": {
+          "stock_features": {
+            "calls": 384,
+            "seconds": 0.2363691929494962,
+            "max_seconds": 0.002910447998146992
+          },
+          "market_summary": {
+            "calls": 3,
+            "seconds": 8.94861816199409,
+            "max_seconds": 3.06418789899908
+          },
+          "writer": {
+            "calls": 3,
+            "seconds": 10.136833111995657,
+            "max_seconds": 3.6777182270016056
+          },
+          "mirror": {
+            "calls": 3,
+            "seconds": 4.529946940005175,
+            "max_seconds": 1.7951758500057622
+          }
+        },
+        "counts": {
+          "changed_rows": 768,
+          "changed_factor_rows": 384,
+          "recomputed_feature_rows": 384,
+          "summary_rows": 6,
+          "read_rows": 24411
+        },
+        "business_result": {
+          "daily_bars": {
+            "rows": 5560,
+            "sha256": "5cb0dd7238b3fdf0f20cfabb2dd2d9dde67d76373135bed432b69c2525a30de1"
+          },
+          "daily_features": {
+            "rows": 5577,
+            "sha256": "7b444e9d0980f8fc686ce62176702ecd712b616f6885aec0d7552578361aea8c"
+          },
+          "market_daily_summary": {
+            "rows": 2,
+            "sha256": "6b960b05b508547baf85d829a28550e50b5ddeed0be635ff3980c1adb0265807"
+          },
+          "corporate_actions": {
+            "rows": 20573,
+            "sha256": "c4415b7f39779a9cd2cd44da7aac34da22e7adedb30c1cb42cc6b37ea6c0db33"
+          }
+        }
+      },
+      {
+        "index": 2,
+        "mode": "after",
+        "wall_seconds": 14.794398420999642,
+        "timings": {
+          "stock_features": {
+            "calls": 384,
+            "seconds": 0.21696006201091222,
+            "max_seconds": 0.001182073996460531
+          },
+          "market_summary": {
+            "calls": 3,
+            "seconds": 8.358737779002695,
+            "max_seconds": 2.946558458999789
+          },
+          "writer": {
+            "calls": 3,
+            "seconds": 9.436319765009102,
+            "max_seconds": 3.491398461999779
+          },
+          "mirror": {
+            "calls": 3,
+            "seconds": 4.074676609991002,
+            "max_seconds": 1.5423537339956965
+          }
+        },
+        "counts": {
+          "changed_rows": 768,
+          "changed_factor_rows": 384,
+          "recomputed_feature_rows": 384,
+          "summary_rows": 6,
+          "read_rows": 24411
+        },
+        "business_result": {
+          "daily_bars": {
+            "rows": 5560,
+            "sha256": "5cb0dd7238b3fdf0f20cfabb2dd2d9dde67d76373135bed432b69c2525a30de1"
+          },
+          "daily_features": {
+            "rows": 5577,
+            "sha256": "7b444e9d0980f8fc686ce62176702ecd712b616f6885aec0d7552578361aea8c"
+          },
+          "market_daily_summary": {
+            "rows": 2,
+            "sha256": "6b960b05b508547baf85d829a28550e50b5ddeed0be635ff3980c1adb0265807"
+          },
+          "corporate_actions": {
+            "rows": 20573,
+            "sha256": "c4415b7f39779a9cd2cd44da7aac34da22e7adedb30c1cb42cc6b37ea6c0db33"
+          }
+        }
+      },
+      {
+        "index": 3,
+        "mode": "before",
+        "wall_seconds": 61.60769873599929,
+        "timings": {
+          "stock_features": {
+            "calls": 768,
+            "seconds": 0.4750720661104424,
+            "max_seconds": 0.0048509330008528195
+          },
+          "market_summary": {
+            "calls": 15,
+            "seconds": 46.160002450007596,
+            "max_seconds": 3.3665757959970506
+          },
+          "writer": {
+            "calls": 15,
+            "seconds": 48.495659392014204,
+            "max_seconds": 3.6628638780020992
+          },
+          "mirror": {
+            "calls": 15,
+            "seconds": 11.47746469402773,
+            "max_seconds": 1.582582907001779
+          }
+        },
+        "counts": {
+          "changed_rows": 768,
+          "changed_factor_rows": 384,
+          "recomputed_feature_rows": 768,
+          "summary_rows": 30,
+          "read_rows": 97479
+        },
+        "business_result": {
+          "daily_bars": {
+            "rows": 5560,
+            "sha256": "5cb0dd7238b3fdf0f20cfabb2dd2d9dde67d76373135bed432b69c2525a30de1"
+          },
+          "daily_features": {
+            "rows": 5577,
+            "sha256": "7b444e9d0980f8fc686ce62176702ecd712b616f6885aec0d7552578361aea8c"
+          },
+          "market_daily_summary": {
+            "rows": 2,
+            "sha256": "6b960b05b508547baf85d829a28550e50b5ddeed0be635ff3980c1adb0265807"
+          },
+          "corporate_actions": {
+            "rows": 20573,
+            "sha256": "c4415b7f39779a9cd2cd44da7aac34da22e7adedb30c1cb42cc6b37ea6c0db33"
+          }
+        }
+      }
+    ],
+    "medians": {
+      "before": 63.60392070200032,
+      "after": 15.360455658497813
+    },
+    "all_business_fields_equal_excluding_updated_at": true,
+    "today_mirror_equal_including_updated_at": true,
+    "noop": {
+      "seconds": 1.5621119909992558,
+      "physical_file_hashes_unchanged": true,
+      "mirror_calls": 0
+    },
+    "limitation": "Two samples per variant; hot working set; replay excludes network and historical event revisions; not a full-market new-day SLA",
+    "speedup": 4.140757417363003
+  },
+  "cron_environment_repeat": {
+    "receipt": ".local/reports/daily-pipeline/20260930T110922920586Z.json",
+    "cwd": "/tmp",
+    "environment": "env -i PATH=/usr/bin:/bin; shell sets TZ=Asia/Shanghai",
+    "status": "ok",
+    "wall_seconds": 96.3,
+    "peak_rss_kib": 205904,
+    "stages": [
+      {
+        "name": "directory",
+        "purpose": "发布股票、ETF 和指数的当前有效目录",
+        "command": [
+          "directory",
+          "--type",
+          "all",
+          "--root",
+          "/mnt/d/Workstation/Services/tdxman/data"
+        ],
+        "started_at": "2026-09-30T11:09:22.922101+00:00",
+        "status": "ok",
+        "exit_code": 0,
+        "finished_at": "2026-09-30T11:09:33.588861+00:00",
+        "elapsed_ms": 10667
+      },
+      {
+        "name": "stock_update",
+        "purpose": "写入当日未复权 quote 与直接派生，再逐证券处理除权事件和因子后缀",
+        "command": [
+          "update",
+          "--type",
+          "stock",
+          "--root",
+          "/mnt/d/Workstation/Services/tdxman/data",
+          "--workers",
+          "4",
+          "--retries",
+          "2",
+          "--retry-delay",
+          "1"
+        ],
+        "started_at": "2026-09-30T11:09:33.590698+00:00",
+        "status": "ok",
+        "source_status": "ok",
+        "source_report": "/mnt/d/Workstation/Services/tdxman/.local/reports/sqlite-update-20260930T110936764635Z.json",
+        "source_counts": {
+          "failed": 0,
+          "factor_failed": 0,
+          "missing": 0,
+          "invalid": 0,
+          "empty": 0,
+          "stale": 0,
+          "factor_unavailable": 161,
+          "remaining_block": 0
+        },
+        "source_performance": {
+          "total_elapsed_ms": 24593,
+          "quote_confirm_and_fetch_elapsed_ms": 3850,
+          "action_fetch_elapsed_ms": 0,
+          "writer_elapsed_ms": 1600,
+          "feature_elapsed_ms": 0,
+          "summary_elapsed_ms": 0,
+          "mirror_elapsed_ms": 0
+        },
+        "exit_code": 0,
+        "finished_at": "2026-09-30T11:10:01.439162+00:00",
+        "elapsed_ms": 27848
+      },
+      {
+        "name": "index_update",
+        "purpose": "以指数日 K 更新交易日历和指数原始行情",
+        "command": [
+          "update",
+          "--type",
+          "index",
+          "--root",
+          "/mnt/d/Workstation/Services/tdxman/data",
+          "--workers",
+          "4",
+          "--retries",
+          "2",
+          "--retry-delay",
+          "1"
+        ],
+        "started_at": "2026-09-30T11:10:01.440765+00:00",
+        "status": "ok",
+        "source_status": "ok",
+        "source_report": "/mnt/d/Workstation/Services/tdxman/.local/reports/index-sync/c3a6e1fab01a406ebef9d50e0628878c.json",
+        "source_counts": {
+          "failed": 0,
+          "factor_failed": 0,
+          "missing": 0,
+          "invalid": 0,
+          "empty": 0,
+          "stale": 0,
+          "factor_unavailable": 0,
+          "remaining_block": 0
+        },
+        "exit_code": 0,
+        "finished_at": "2026-09-30T11:10:14.215393+00:00",
+        "elapsed_ms": 12775
+      },
+      {
+        "name": "etf_update",
+        "purpose": "更新 ETF 未复权日线；源端确认无交易时保留 NO_TRADE",
+        "command": [
+          "update",
+          "--type",
+          "etf",
+          "--root",
+          "/mnt/d/Workstation/Services/tdxman/data",
+          "--workers",
+          "4",
+          "--retries",
+          "2",
+          "--retry-delay",
+          "1"
+        ],
+        "started_at": "2026-09-30T11:10:14.217128+00:00",
+        "status": "ok",
+        "source_status": "ok",
+        "source_report": "/mnt/d/Workstation/Services/tdxman/.local/reports/etf-sync/7f99b7028cdc4586879f538bd4c7c574.json",
+        "source_counts": {
+          "failed": 0,
+          "factor_failed": 0,
+          "missing": 0,
+          "invalid": 0,
+          "empty": 0,
+          "stale": 0,
+          "factor_unavailable": 0,
+          "remaining_block": 0
+        },
+        "exit_code": 0,
+        "finished_at": "2026-09-30T11:10:34.473290+00:00",
+        "elapsed_ms": 20256
+      }
+    ],
+    "audit_elapsed_ms": 22181,
+    "checked_tables": 13,
+    "changed_tables": [],
+    "comparison_includes_timestamps_and_versions": true
+  },
+  "today_content_check": {
+    "daily_features": {
+      "extra": 0,
+      "missing": 0
+    },
+    "market_daily_summary": {
+      "extra": 0,
+      "missing": 0
+    }
+  },
+  "stock_directory_fix": {
+    "symbol": "689009.SH",
+    "change": "Include SH 689 prefix in A-share directory filter; prevents deactivate/reactivate between directory and quote update.",
+    "live_check": "stock 目录：5577 个；待初始化 5 个；标记非活跃 0 个；重新活跃 0 个",
+    "state_check": {
+      "before": {
+        "rows": 5915,
+        "sha256": "a575f57f241aade4a48aae2465d27a287bd87189fd870a9e2a6b66831f416aaa"
+      },
+      "after": {
+        "rows": 5915,
+        "sha256": "a575f57f241aade4a48aae2465d27a287bd87189fd870a9e2a6b66831f416aaa"
+      },
+      "unchanged_including_timestamps": true
+    },
+    "final_stock_code_sha256": "d1e3dd302c5d31c1d51481a43b0505c1f204e8196f44ea7533e99cf005273910"
+  },
+  "validation": {
+    "distinct_unit_tests_passed": 95,
+    "commands": [
+      ".venv/bin/python -m pytest tests/unit/test_platform_v2.py tests/unit/test_sqlite_daily_update.py tests/unit/test_sqlite_update_cli.py tests/unit/test_sqlite_summary_quality.py tests/unit/test_daily_data_pipeline_script.py tests/unit/test_repair_recent_data_gaps.py -q (94 passed)",
+      ".venv/bin/python -m pytest tests/unit/test_stock_directory.py tests/unit/test_daily_data_pipeline_script.py -q (11 passed; 10 overlap)",
+      "ruff affected files: passed",
+      "git diff --check: passed",
+      "bash -n daily and gap entry points: passed"
+    ]
+  },
+  "operational_changes": [
+    "Whole-run same-root flock; conflicting run exits75, child inherits descriptor.",
+    "Inline <=128 quote-proven adjacent no-event factor extensions with raw observations; historical revisions remain isolated, leftover SDK extensions retain32 batching.",
+    "Factor validation quarantines only factor input while preserving valid raw; database/deadline errors propagate with rollback.",
+    "No-op batch skips mirror only after predecessor readiness check under same pool lock.",
+    "Monotonic stage/audit/total and stock quote/action/writer/feature/summary/mirror times are persisted."
+  ],
+  "limits": [
+    "384-stock replay has two samples per variant; excludes network and event revisions; not a full-market future-new-day SLA.",
+    "Existing 30s transaction budget unchanged; maximum successful replay transaction <=4.08s.",
+    "155 traded stocks lack trusted factor coverage on target day; MA20 valid denominator5110.",
+    "Fundamentals not refreshed this run; latest snapshots through2026-09-28. ETF reference factors are not automatically advanced by TDX.",
+    "Index/ETF stable Enriched are existing unimplemented roadmap scope.",
+    "Inherited292 stock MA20/above_ma20/updated_at mirror differences on2026-09-29 remain; today equality is not whole-history equality.",
+    "Cron entry prepared and tested, not installed; holidays without verified current-session quote exit nonzero, rather than accepting stale data.",
+    "Full repository suite, full-history deep verification and real next trading-day full-market performance not rerun."
+  ],
+  "resources": {
+    "reports": ".local/reports/local-daily-20260930",
+    "lab": ".local/labs/local-daily-20260930/data",
+    "lab_retained": true,
+    "lab_promotion_allowed": false,
+    "remote_data_modified": false,
+    "cron_installed": false
+  },
+  "source_sha256_note": "Final implementation fingerprint. Initial stock profile used pre-task HEAD plus non-semantic wall-time probes. Replay freezes the pre-task orchestrator; both variants use the writer with additive timing metadata.",
+  "python_version": "3.12.14",
+  "measurement_sha256": {
+    ".local/reports/local-daily-20260930/benchmark_replay.py": "8a7c5bc535a739b7022c68da202c7b648a48caca21bdbfb21a141954404aa8d7",
+    ".local/reports/local-daily-20260930/baseline_sqlite_daily_sync.py": "a8b6ab63831c796e600ad873f8580a7c6264e9299efaf2e4376da161b64eed14",
+    ".local/reports/local-daily-20260930/instrumentation/sitecustomize.py": "e49f420bcb00e4c4823a1b83bbe3a93cc3b354a0848e1957d2a4695a20dd27e5"
+  },
+  "final_recent_gap_check": {
+    "gaps": [],
+    "commands": [],
+    "calendar_through": "2026-09-30",
+    "freshness": "仅检查已存交易日；不证明日历已更新，--repair 会先刷新指数日历"
+  }
+}

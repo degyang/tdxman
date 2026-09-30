@@ -172,6 +172,8 @@ def apply_daily_changes(
         changed_feature_rows=0,
         summary_rows=0,
         read_rows=0,
+        feature_elapsed_ms=0,
+        summary_elapsed_ms=0,
     )
     if not keys and not extensions:
         return dict(result, elapsed_ms=0)
@@ -333,17 +335,19 @@ def apply_daily_changes(
         # but before references/MA calculations; every dependency commits together.
         for extension in extensions:
             try:
-                if merge_event_revisions:
-                    stats = merge_recent_events(conn, **extension)
+                options = dict(extension)
+                merge_revision = options.pop("merge_event_revisions", merge_event_revisions)
+                if merge_revision:
+                    stats = merge_recent_events(conn, **options)
                 else:
-                    stats = advance_factor_coverage(conn, **extension)
+                    stats = advance_factor_coverage(conn, **options)
             except DataPoolError:
                 raise
             except ValueError as exc:
                 # Factor data is scoped to one security.  The source adapter
                 # can therefore retain a valid raw bar and quarantine only the
                 # rejected factor suffix without hiding the responsible symbol.
-                raise SymbolUpdateError(extension["symbol"], exc) from exc
+                raise SymbolUpdateError(extension["symbol"], exc, phase="factor") from exc
             result["changed_factor_rows"] += stats["changed_rows"]
             if not stats["changed_rows"] or stats["affected_from"] is None:
                 continue
@@ -363,6 +367,7 @@ def apply_daily_changes(
             affected.update(row[0] for row in rows)
             ma_dependencies.add(symbol)
 
+        feature_tick = time.monotonic()
         for symbol, days in derived.items():
             # Reference withdrawal must not transiently violate KNOWN's
             # constraints. Dependents are restored before commit or rolled back.
@@ -453,10 +458,12 @@ def apply_daily_changes(
                             (changed_day, following[0] if following else "9999-12-31"),
                         )
                     )
+        result["feature_elapsed_ms"] = round((time.monotonic() - feature_tick) * 1000)
         if len(affected) > 60 or not affected <= sessions:
             raise DataPoolError(
                 "LOCAL_UPDATE_BUDGET_EXCEEDED", "Affected dates exceed supplied calendar"
             )
+        summary_tick = time.monotonic()
         for day in sorted(affected):
             if conn.execute(
                 "SELECT 1 FROM market_daily_summary WHERE frequency IN ('W','M') "
@@ -469,6 +476,7 @@ def apply_daily_changes(
             stats = recompute_daily_summary(conn, trade_date=day, inputs_changed=True)
             result["summary_rows"] += stats["changed_rows"]
             result["read_rows"] += stats["read_rows"]
+        result["summary_elapsed_ms"] = round((time.monotonic() - summary_tick) * 1000)
         if time.monotonic() >= deadline:
             raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Writer deadline exceeded")
         state = conn.execute(

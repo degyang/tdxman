@@ -9,15 +9,18 @@ semantics remain the same for an operator, cron, and a future service runner.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import shutil
 import sqlite3
 import subprocess
 import sys
+from contextlib import ExitStack, contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 import duckdb
@@ -292,6 +295,22 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+@contextmanager
+def pipeline_lock(root: Path):
+    """Keep complete runs for one canonical data root from interleaving.
+
+    Children inherit the descriptor so killing only the orchestrator does not
+    release its lock while a public aspool command is still writing.
+    """
+    directory = root.parent / ".local" / "locks"
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / f"{root.name}.daily-pipeline.lock").open("a") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield handle.fileno()
+    # Closing the last inherited descriptor releases flock. Never unlink the
+    # file: a replaced inode would let another process bypass the active lock.
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
     root = args.root.expanduser().resolve()
@@ -301,6 +320,17 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps([asdict(stage) for stage in stages], ensure_ascii=False, indent=2))
         return 0
 
+    with ExitStack() as stack:
+        try:
+            lock_fd = stack.enter_context(pipeline_lock(root))
+        except BlockingIOError:
+            print(f"daily pipeline: already running for {root}", file=sys.stderr, flush=True)
+            return 75
+        return run_pipeline(args, root, project, stages, lock_fd)
+
+
+def run_pipeline(args, root: Path, project: Path, stages: list[Stage], lock_fd: int) -> int:
+    tick = perf_counter()
     report_dir = project / ".local" / "reports" / "daily-pipeline"
     report_dir.mkdir(parents=True, exist_ok=True)
 
@@ -321,7 +351,7 @@ def main(argv: list[str] | None = None) -> int:
         },
         "stages": [],
     }
-    path = report_dir / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + ".json")
+    path = report_dir / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + ".json")
 
     def save_report() -> None:
         path.write_text(json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n")
@@ -329,10 +359,13 @@ def main(argv: list[str] | None = None) -> int:
     save_report()
 
     def run_aspool(command: tuple[str, ...], *, capture: bool = False):
-        return run_command(aspool, command, cwd=project, env=env, capture=capture)
+        return run_command(
+            aspool, command, cwd=project, env=env, capture=capture, pass_fds=(lock_fd,)
+        )
 
     try:
         for stage in stages:
+            stage_tick = perf_counter()
             started = datetime.now(timezone.utc).isoformat()
             print(f"daily pipeline: starting {stage.name}；{stage.purpose}", flush=True)
             entry: dict[str, Any] = {
@@ -353,6 +386,7 @@ def main(argv: list[str] | None = None) -> int:
             except subprocess.CalledProcessError as exc:
                 entry.update(status="failed", exit_code=exc.returncode)
                 entry["finished_at"] = datetime.now(timezone.utc).isoformat()
+                entry["elapsed_ms"] = round((perf_counter() - stage_tick) * 1000)
                 save_report()
                 print(
                     f"daily pipeline: failed {stage.name}；exit={exc.returncode}",
@@ -360,9 +394,12 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 raise
             entry["finished_at"] = datetime.now(timezone.utc).isoformat()
+            entry["elapsed_ms"] = round((perf_counter() - stage_tick) * 1000)
             save_report()
             print(f"daily pipeline: finished {stage.name}", flush=True)
+        audit_tick = perf_counter()
         report["audit"] = collect_audit(root, run_aspool)
+        report["audit_elapsed_ms"] = round((perf_counter() - audit_tick) * 1000)
         all_stages_ok = all(stage["status"] == "ok" for stage in report["stages"])
         report["status"] = "ok" if all_stages_ok and report["audit"]["ready"] else "partial"
     except subprocess.CalledProcessError as exc:
@@ -373,6 +410,7 @@ def main(argv: list[str] | None = None) -> int:
         report.update(status="failed", error=str(exc))
     finally:
         report["finished_at"] = datetime.now(timezone.utc).isoformat()
+        report["elapsed_ms"] = round((perf_counter() - tick) * 1000)
         save_report()
     print(f"daily pipeline: {report['status']}；报告：{path}")
     return 0 if report["status"] == "ok" else 130 if report["status"] == "interrupted" else 1

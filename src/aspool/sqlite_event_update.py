@@ -19,8 +19,9 @@ from .sqlite_reference_factors import (
 class SymbolUpdateError(ValueError):
     """A rejected security can be isolated; database failures must still propagate."""
 
-    def __init__(self, symbol, error):
+    def __init__(self, symbol, error, *, phase="validation"):
         self.symbol = symbol
+        self.phase = phase
         super().__init__(f"{symbol}: {error}")
 
 

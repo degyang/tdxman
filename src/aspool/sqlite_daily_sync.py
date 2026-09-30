@@ -6,6 +6,7 @@ import math
 from collections import Counter
 from datetime import date, timedelta
 from pathlib import Path
+from time import perf_counter
 
 import pandas as pd
 
@@ -17,6 +18,7 @@ from .sqlite_daily_update import apply_daily_changes, daily_window
 from .sqlite_stock_store import stock_connection
 
 _FACTOR_WRITE_BATCH_SIZE = 32
+_INLINE_FACTOR_BATCH_SIZE = 128
 
 
 def sync_daily_source(
@@ -72,10 +74,17 @@ def sync_daily_source(
         consecutive_failures = 0
 
         def mirror(applied, symbols):
+            applied["mirror_elapsed_ms"] = 0
             if not (Path(root) / "features.sqlite").is_file():
+                return
+            if applied["raw_revision"] == applied.get("previous_raw_revision"):
+                # The predecessor was checked under this same write lock. No
+                # source change needs a second factor copy or mirror commit.
+                applied["platform_v2"] = {"mirrored": False, "reason": "no actual changes"}
                 return
             from .platform_v2 import mirror_platform_v2
 
+            tick = perf_counter()
             applied["platform_v2"] = mirror_platform_v2(
                 root,
                 symbols=symbols,
@@ -83,14 +92,25 @@ def sync_daily_source(
                 raw_revision=applied["raw_revision"],
                 previous_raw_revision=applied.get("previous_raw_revision"),
             )
+            applied["mirror_elapsed_ms"] = round((perf_counter() - tick) * 1000)
 
         def flush():
             if not pending_symbols:
                 return
             from .sqlite_event_update import SymbolUpdateError
 
-            # Commit validated raw observations first.  A later factor problem
-            # must not discard valid OHLCV, names, trading state or limit data.
+            fast_extensions, revision_extensions = [], []
+            for pending in pending_extensions:
+                extension = dict(pending)
+                merge_revision = extension.pop("merge_event_revisions")
+                (revision_extensions if merge_revision else fast_extensions).append(extension)
+            inline_extensions = fast_extensions[:_INLINE_FACTOR_BATCH_SIZE]
+            fast_extensions = fast_extensions[_INLINE_FACTOR_BATCH_SIZE:]
+
+            # Proven adjacent no-event suffixes share the raw transaction and
+            # one derived cross-section. A rejected factor is removed and the
+            # transaction retried with its valid raw observations still present.
+            # Historical event revisions remain isolated after the raw commit.
             remaining = set(pending_symbols)
             while remaining:
                 try:
@@ -100,11 +120,16 @@ def sync_daily_source(
                             conn,
                             bars=[r for r in pending_bars if r["symbol"] in remaining],
                             dated_facts=[r for r in pending_facts if r["symbol"] in remaining],
+                            factor_extensions=[
+                                dict(extension, merge_event_revisions=False)
+                                for extension in inline_extensions
+                                if extension["symbol"] in remaining
+                            ],
                             market_sessions=sessions,
                             listed_days=listed_days,
                             fill_missing_metrics=source != "tdxman:quote",
-                            # Reuse the existing per-symbol validation wrapper;
-                            # there are no factor extensions in this transaction.
+                            # Raw validation still reports the responsible stock;
+                            # each factor declares its own event-merge semantics.
                             merge_event_revisions=True,
                         )
                         mirror(applied, remaining)
@@ -113,6 +138,16 @@ def sync_daily_source(
                     # invalid input; never retry database/transaction deadline failures.
                     if exc.symbol not in remaining:
                         raise
+                    if exc.phase == "factor":
+                        if not any(e["symbol"] == exc.symbol for e in inline_extensions):
+                            raise
+                        failure = dict(symbol=exc.symbol, error=str(exc), phase="factor")
+                        result["factor_failed"].append(failure)
+                        result["failed"].append(failure)
+                        inline_extensions = [
+                            e for e in inline_extensions if e["symbol"] != exc.symbol
+                        ]
+                        continue
                     remaining.remove(exc.symbol)
                     result["failed"].append(
                         dict(symbol=exc.symbol, error=str(exc), phase="validation")
@@ -127,13 +162,24 @@ def sync_daily_source(
                 pending_extensions.clear()
                 return
 
-            batch = dict(symbols=sorted(remaining), **applied, factor_success=[])
+            batch = dict(
+                symbols=sorted(remaining),
+                **applied,
+                raw_writer_elapsed_ms=applied["elapsed_ms"],
+                factor_writer_elapsed_ms=0,
+                factor_success=[
+                    e["symbol"] for e in inline_extensions if e["symbol"] in remaining
+                ],
+            )
 
             # Adjacent quote-proven no-event extensions share a transaction so
             # the same market cross-section is not recomputed once per stock.
             # Authoritative historical event reads remain isolated per symbol.
             def record_factor_success(factor_applied, symbols):
                 batch["factor_success"].extend(symbols)
+                batch["factor_writer_elapsed_ms"] += factor_applied["elapsed_ms"]
+                batch["elapsed_ms"] += factor_applied["elapsed_ms"]
+                batch["mirror_elapsed_ms"] += factor_applied["mirror_elapsed_ms"]
                 if "platform_v2" in factor_applied:
                     batch.setdefault("factor_platform_v2", []).append(factor_applied["platform_v2"])
                 for name in (
@@ -142,6 +188,8 @@ def sync_daily_source(
                     "changed_feature_rows",
                     "summary_rows",
                     "read_rows",
+                    "feature_elapsed_ms",
+                    "summary_elapsed_ms",
                 ):
                     batch[name] += factor_applied[name]
                 batch["affected_sessions"] = sorted(
@@ -149,14 +197,8 @@ def sync_daily_source(
                 )
                 batch["raw_revision"] = factor_applied["raw_revision"]
 
-            fast_extensions = []
-            revision_extensions = []
-            for pending in pending_extensions:
-                if pending["symbol"] not in remaining:
-                    continue
-                extension = dict(pending)
-                merge_revision = extension.pop("merge_event_revisions")
-                (revision_extensions if merge_revision else fast_extensions).append(extension)
+            fast_extensions = [e for e in fast_extensions if e["symbol"] in remaining]
+            revision_extensions = [e for e in revision_extensions if e["symbol"] in remaining]
 
             for offset in range(0, len(fast_extensions), _FACTOR_WRITE_BATCH_SIZE):
                 extensions = fast_extensions[offset : offset + _FACTOR_WRITE_BATCH_SIZE]

@@ -44,8 +44,11 @@ bash scripts/ops/run_daily_data_pipeline.sh --root /path/to/data
 目录的“待初始化”通过 `daily_bars(symbol, trade_date)` 主键逐证券跳转，禁止用
 `DISTINCT symbol` 扫描多年日线。股票按 128 只提交一次，使 Windows/WSL 数据盘上的
 WAL 保持有界；已经提交的批次可在中断后直接复用。
-相邻交易日且昨收可验证的无事件因子后缀按最多 32 只合并提交，只重算一次市场截面；
-需要合并历史事件的证券仍逐只隔离，单只失败不会回滚其他证券。每个有界小批在同一池写锁内
+相邻交易日且昨收可验证的无事件因子后缀与原始行情合并为同一事务，最多 128 只一起提交，
+每批只重算一次逐股派生和市场截面；超过该上限的 SDK 批次，其剩余后缀仍按最多 32 只提交。
+因子验证失败时只移除该证券的因子输入，再提交其有效原始行情；数据库或预算错误直接回滚并失败，
+不作为证券问题重试。需要合并历史事件的证券仍在原始行情提交后逐只隔离。
+每个有界小批在同一池写锁内
 提交因子并完成分层镜像。写入前先检查上一次镜像提交是否完整；不完整时本次写入以
 `DERIVED_NOT_READY` 拒绝，必须显式运行 `aspool platform reconcile` 恢复，后续局部更新
 不得改写待恢复状态，日更也不自动全量重建镜像。若进程在源因子提交后、分层镜像提交前中断，
@@ -78,3 +81,36 @@ bash scripts/ops/repair_recent_data_gaps.sh --count 30 --repair
 每次运行会在 `.local/reports/daily-pipeline/<UTC 时间>.json` 写入阶段命令、状态、数据块覆盖和最新股票派生闭合情况。报告不进入 `data/`，因此不污染设备间的基础数据同步。
 
 基本面因低频且当前只维护最新快照，默认不参加定时日行情任务；需要时用 `--with-fundamentals` 明确纳入。ETF 复权因子也不由在线 TDX 更新，仍属于已审核迁移参考数据；报告会保留它的覆盖范围，不会把 ETF 日线同步成功误报为因子已更新。
+
+## cron 接入
+
+先确认机器时区为 Asia/Shanghai、仓库 `.venv` 已安装锁定依赖，并创建日志目录。
+以下配置是待安装示例；脚本中的 `TZ` 控制应用日期，不改变 cron 守护进程的调度时区。
+
+```bash
+mkdir -p /mnt/d/Workstation/Services/tdxman/.local/reports
+```
+
+```cron
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+40 17 * * 1-5 /bin/bash /mnt/d/Workstation/Services/tdxman/scripts/ops/run_daily_data_pipeline.sh --root /mnt/d/Workstation/Services/tdxman/data >> /mnt/d/Workstation/Services/tdxman/.local/reports/cron-daily.log 2>&1
+```
+
+同一规范化数据根的整轮日更运行通过池外的 `.local/locks/<数据目录名>.daily-pipeline.lock`
+防止交错，重复启动立即返回 75；不同数据根独立运行。子命令继承运行锁，父进程单独退出后，
+仍在执行的子命令继续持锁。锁文件不删除，避免替换 inode 绕过正在持有的锁。
+运行锁只约束此日更入口；其他手动写入仍遵循池锁。它不替代每批数据写入的池锁，也不提供跨机器互斥。
+
+无变化批次在确认上一镜像完整后跳过镜像提交，保留原始库、因子库及派生库的业务行、
+时间戳与版本。股票子报告的 `performance` 记录行情采集、事件读取、writer、逐股派生、
+市场汇总、镜像和整轮耗时，并进入流水线的 `source_performance`。
+逐股派生与市场汇总耗时包含在 writer 内，不能再次相加；镜像耗时单独计算。
+批次 `elapsed_ms` 包含本批原始/无事件事务及后续独立因子事务，避免只统计第一笔写入。
+
+退出 0 表示全部阶段和最终闭合验收通过；`partial`、源失败或闭合不完整退出 1，
+操作员中断退出 130。报告记录每个阶段、最终验收和整轮的单调时钟耗时；
+文件名使用 UTC 微秒，快速连续重跑不会覆盖上一轮报告。
+节假日不能仅按周一至周五判断：当前入口要求带当日日期的指数报价确认交易日，
+没有确认时以非零状态结束，不把旧数据标为今日同步成功。调度侧应保留日志及非零退出通知。
+错过的历史交易日通过上文 `repair_recent_data_gaps.sh --repair` 显式恢复。
