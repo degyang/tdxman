@@ -544,3 +544,28 @@ def test_quote_calendar_writer_holds_pool_lock_for_catalog_lifetime(canonical, m
     _quote_calendar(canonical, quotes, "2026-09-29")
     with original(str(canonical / "catalog.duckdb"), read_only=True) as conn:
         assert conn.execute("SELECT is_open FROM security_calendar").fetchall() == [(True,)]
+
+
+def test_catalog_initializer_and_reader_own_locks_for_connection_lifetime(canonical, monkeypatch):
+    from aspool.pool import _holds_write_lock, _pool_locks
+    from aspool.store import initialize, read_only_catalog
+
+    original = duckdb.connect
+    observed = []
+
+    def guarded(path, **options):
+        if options.get("read_only", False):
+            assert any(root == canonical for root, _ in _pool_locks.get())
+            observed.append("read")
+        else:
+            assert _holds_write_lock(canonical)
+            observed.append("write")
+        return original(path, **options)
+
+    monkeypatch.setattr(duckdb, "connect", guarded)
+    initialize(canonical)
+    with read_only_catalog(canonical) as conn:
+        assert conn.execute(
+            "SELECT value FROM pool_metadata WHERE key='layout_version'"
+        ).fetchone() == ("3",)
+    assert observed == ["write", "read"]

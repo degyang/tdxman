@@ -842,18 +842,13 @@ def maintenance_context(root, command):
             ):
                 _finish_run(root, run)
             elif Path(root).exists():
-                import fcntl
+                from .pool import pool_lock
 
-                fd = os.open(root, os.O_RDONLY)
-                try:
-                    tick = perf_counter()
-                    fcntl.flock(fd, fcntl.LOCK_EX)
-                    run["lock_wait_seconds"] += perf_counter() - tick
+                # The catalog helper now owns its connection under this same
+                # context-aware lock; avoid a second independent directory FD.
+                with pool_lock(root, write=True):
                     run["elapsed_seconds"] = perf_counter() - started
                     _finish_run(root, run)
-                finally:
-                    fcntl.flock(fd, fcntl.LOCK_UN)
-                    os.close(fd)
         except Exception as exc:
             if primary is None:
                 raise RuntimeError(

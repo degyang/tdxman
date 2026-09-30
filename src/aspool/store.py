@@ -78,13 +78,15 @@ def catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
         yield active[1]
         return
     from .change_protocol import _mkdir_durable
+    from .pool import pool_lock
 
-    _mkdir_durable(root)
-    conn = duckdb.connect(root / "catalog.duckdb")
-    try:
-        yield conn
-    finally:
-        conn.close()
+    with pool_lock(root, write=True):
+        _mkdir_durable(root)
+        conn = duckdb.connect(root / "catalog.duckdb")
+        try:
+            yield conn
+        finally:
+            conn.close()
 
 
 @contextmanager
@@ -105,11 +107,14 @@ def read_only_catalog(root: Path) -> Iterator[duckdb.DuckDBPyConnection]:
     path = root / "catalog.duckdb"
     if not path.is_file():
         raise FileNotFoundError(f"aspool catalog not found: {path}")
-    conn = duckdb.connect(str(path), read_only=True)
-    try:
-        yield conn
-    finally:
-        conn.close()
+    from .pool import pool_lock
+
+    with pool_lock(root):
+        conn = duckdb.connect(str(path), read_only=True)
+        try:
+            yield conn
+        finally:
+            conn.close()
 
 
 def existing_tables(root: Path) -> set[str]:
