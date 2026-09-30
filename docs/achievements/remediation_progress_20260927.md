@@ -6,7 +6,7 @@
 
 ## 已落地
 
-DG-00 工程基线已补齐：[数据契约](../design/data-contract.md)、[消费者与入口清单](../design/consumer-inventory.md)、[恢复计划](../recovery-plan.md)。原恢复点及当前生产 catalog + lake 共 13,742 文件逐项 SHA-256 一致；仍为 1,296 发布日、605 stale 日。核验脚本不复制全池，明确这是一次整改检查点而非每日扫描流程。业务 RTO、最新行情延迟容忍度、异机灾备目标仍未确定，不作为后续生产切换已获验收的依据。
+DG-00 工程基线已补齐：[数据契约](../design/data-contract.md)、[消费者与入口清单](../design/consumer-inventory.md)、[恢复计划](../ops/recovery-plan.md)。原恢复点及当前生产 catalog + lake 共 13,742 文件逐项 SHA-256 一致；仍为 1,296 发布日、605 stale 日。核验脚本不复制全池，明确这是一次整改检查点而非每日扫描流程。业务 RTO、最新行情延迟容忍度、异机灾备目标仍未确定，不作为后续生产切换已获验收的依据。
 
 DG-01 本轮落实幂等修复和日线观测部分：
 

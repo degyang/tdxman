@@ -56,7 +56,7 @@ aspool:
 ```
 
 补源导入入口为 `aspool update` 和 `aspool sync --source baostock`。
-默认股票 `aspool sync` 先执行[日期股本和量价指标计算](design/daily_enrichment.md)，
+默认股票 `aspool sync` 先执行[日期股本和量价指标计算](../design/daily_enrichment.md)，
 以 BaoStock 只读校对冲突样本，再统一重算涨跌停及连板。没有新增常驻调度器。
 建议北京时间 16:00 后执行。当天 16:00 前补齐阶段只取至前一天，并用源端交易日历选择
 最近 N 个交易日。这不保证源端在 16:00 已全部更新，未返回的数据仍记录为缺口。
@@ -88,7 +88,7 @@ BaoStock 按已有股票池范围补齐，不负责发现完整历史上市/退�
 首日发行价特殊限幅仍需独立依据，缺失时保留 UNKNOWN。
 
 v5 增加混合复权参考价的冲突识别、保守精度下的唯一分价恢复与逐条依据。
-定向补齐及五年重算说明见 [限价历史修复](achievements/limit_history_rebuild.md)。
+定向补齐及五年重算说明见 [限价历史修复](../achievements/limit_history_rebuild.md)。
 
 近五年已有行情的派生重算入口为：
 

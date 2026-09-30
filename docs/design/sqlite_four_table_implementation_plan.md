@@ -1,6 +1,6 @@
 # 四表 SQLite 落地计划
 
-日期：2026-09-28。当前进展见[FW-04 执行记录](../achievements/fw04_sqlite_public_api_execution.md)；Jakarta 新派生成品已全量同步安装并经 Fundwise 验收，见[异机结果](../achievements/fw04_jakarta_full_copy_acceptance.md)。已开始实施隔离 SQLite 核心及事实迁移，生产数据未改动。用户最新优先级：**数据迁移与其他 VPS 开发数据准备 → 核心派生 → 同步更新接口 → 先跑通 Fundwise 日频工作流**。迁移/异机执行入口见[数据先行开发说明](../vps_development_data.md)。此文件替代旧 DG-03 月文件补做和 DG-06 发布代次扩建。详细依据见[数据迁移与接口评估](sqlite_migration_api_assessment.md)。执行规格见[详细需求与设计](sqlite_stock_requirements_design.md)，附[四表 DDL](design/stocks_schema.sql)和[完整模型模板](design/market_four_dimensions.v1.json)。
+日期：2026-09-28。当前进展见[FW-04 执行记录](../achievements/fw04_sqlite_public_api_execution.md)；Jakarta 新派生成品已全量同步安装并经 Fundwise 验收，见[异机结果](../achievements/fw04_jakarta_full_copy_acceptance.md)。已开始实施隔离 SQLite 核心及事实迁移，生产数据未改动。用户最新优先级：**数据迁移与其他 VPS 开发数据准备 → 核心派生 → 同步更新接口 → 先跑通 Fundwise 日频工作流**。迁移/异机执行入口见[数据先行开发说明](../ops/vps_development_data.md)。此文件替代旧 DG-03 月文件补做和 DG-06 发布代次扩建。详细依据见[数据迁移与接口评估](sqlite_migration_api_assessment.md)。执行规格见[详细需求与设计](sqlite_stock_requirements_design.md)，附[四表 DDL](design/stocks_schema.sql)和[完整模型模板](design/market_four_dimensions.v1.json)。
 
 新版权威根固定为本主项目 `data/`，股票主库 `data/stocks.sqlite`；迁移暂存与恢复材料现统一在 `.local/`，不放入运行 data。旧 `~/.aspool` 只作为源/恢复材料。所有工作包遵循[路径契约](sqlite_stock_requirements_design.md#0-新版数据根tdxmandata)。
 

@@ -1,6 +1,6 @@
 # 2026-09-28 日更执行记录
 
-本文保留名单改造前的执行过程和当时限制。后续改造见 [名单优先与事件修订设计](../sqlite_daily_directory_update.md)，最终实库回执另列，不能将本文的 `partial` 当作后续执行状态。
+本文保留名单改造前的执行过程和当时限制。后续改造见 [名单优先与事件修订设计](../ops/sqlite_daily_directory_update.md)，最终实库回执另列，不能将本文的 `partial` 当作后续执行状态。
 
 本次用户要求通过 `aspool update` 更新今日行情及派生。TDX 为默认源；没有使用 BaoStock。执行日志放 `.local/reports/execution-20260928-daily/`，运行任务置于 tmux。
 

@@ -1,6 +1,6 @@
 # Tick Stock Panel 接入恢复审查
 
-日期：2026-09-21。需求基线：[完整契约](design/tick-stock-panel-provider-design.md)。
+日期：2026-09-21。需求基线：[完整契约](../design/tick-stock-panel-provider-design.md)。
 
 更新：用户确认先停止 TickFlow 并授权更新后，恢复补丁已应用到本项目正式源码。
 现有软链接无需调整；消费端 Python 环境直接加载正式插件。没有启动或重启消费端服务。

@@ -58,7 +58,7 @@
 
 异机完整性证据复用实现为 `2eb136b`：只有完整数据库哈希/大小吻合，且源报告明确完整性通过时，显式 `--reuse-source-integrity` 才允许跳过重复索引遍历。仍在接收端检查 schema、索引、计数和实际读取；报告标记 `source_reused_after_sha256_match`。扩展受影响用例验证了成功复用、缺失源证据拒绝、数据库被修改后拒绝，仅重跑该用例并通过。Jakarta 最初重复全量检查的慢速尝试已停止，日志保留，不计为通过。
 
-当前股票读取入口是 `stock_connection(root)` 中的只读 SQL；指数、ETF 和公共目录使用现有 DataPool 接口。[开发说明](../vps_development_data.md)提供样例。旧股票 `DataPool.read_daily` 尚未接入 SQLite。
+当前股票读取入口是 `stock_connection(root)` 中的只读 SQL；指数、ETF 和公共目录使用现有 DataPool 接口。[开发说明](../ops/vps_development_data.md)提供样例。旧股票 `DataPool.read_daily` 尚未接入 SQLite。
 
 接下来按依赖推进：FW-03 先完成因子/参考价/ST、限价/连板/MA20、日汇总和局部 writer，再完成 FW-04 公开接口与 FW-05 Fundwise 适配。市场汇总空表、派生列未就绪均是当前明确边界，不计作 Fundwise 已可运行。首次封闭工件复制也不计作 FW-09 活库增量同步已通过。
 

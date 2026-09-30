@@ -1,7 +1,7 @@
 # aspool 指数数据池需求、设计与验收
 
 2026-09-28 新安排：按用户要求迁至独立 `indices.sqlite`，命令和公开 API 不变。
-新存储、读写路由、恢复及执行结果见 [指数 SQLite 迁移](index_sqlite_migration.md)。
+新存储、读写路由、恢复及执行结果见 [指数 SQLite 迁移](../ops/index_sqlite_migration.md)。
 下文 Parquet 和根内报告路径为旧后端说明，仅适用于尚未迁移的数据根。
 
 ## 已确认需求
@@ -72,7 +72,7 @@ ROOT/reports/index-sync/<run-id>.json
 
 ## 读取方式
 
-本阶段指数维护仅在 sync 增加分支，现有股票 DataPool API/query 不混入指数。Fundwise 使用新增 `DataPool.list_indices()` 和 `DataPool.read_index_daily()`，详见 [aspool API](design/aspool_api.md)。以下 DuckDB 示例仅供维护核验：
+本阶段指数维护仅在 sync 增加分支，现有股票 DataPool API/query 不混入指数。Fundwise 使用新增 `DataPool.list_indices()` 和 `DataPool.read_index_daily()`，详见 [aspool API](aspool_api.md)。以下 DuckDB 示例仅供维护核验：
 
 ```python
 from pathlib import Path

@@ -2,9 +2,9 @@
 
 2026-09-28 用户调整优先级：先完成数据迁移与异机开发数据准备，再开展派生计算和接口接入。新版数据统一放各设备主项目 `tdxman/data/`；任务 worktree 显式引用主项目数据，不隐式生成另一套池。
 
-2026-09-28 M0 已交付：本机及 JakartaVPS 均有经验证的 `data/_staging/fw02/`，详情见[M0 执行记录](achievements/sqlite_migration_m0_execution.md)。
+2026-09-28 M0 已交付：本机及 JakartaVPS 均有经验证的 `data/_staging/fw02/`，详情见[M0 执行记录](../achievements/sqlite_migration_m0_execution.md)。
 
-当前：本机已完成日派生并安装到 `data/`，仅 stocks.sqlite、catalog.duckdb、lake；报告和恢复源移到 `.local/`。Jakarta 已全量复制并安装同一派生成品，Fundwise 消费验收通过，见[异机结果](achievements/fw04_jakarta_full_copy_acceptance.md)。当前操作与验收见 [FW-04](achievements/fw04_sqlite_public_api_execution.md)，以下保留 M0 原始操作记录。
+当前：本机已完成日派生并安装到 `data/`，仅 stocks.sqlite、catalog.duckdb、lake；报告和恢复源移到 `.local/`。Jakarta 已全量复制并安装同一派生成品，Fundwise 消费验收通过，见[异机结果](../achievements/fw04_jakarta_full_copy_acceptance.md)。当前操作与验收见 [FW-04](../achievements/fw04_sqlite_public_api_execution.md)，以下保留 M0 原始操作记录。
 
 ## M0 历史交付边界
 
@@ -105,4 +105,4 @@ tmux attach-session -t tdxman-task
 
 ## 派生成品进度（2026-09-28）
 
-本机 `data/stocks.sqlite` 已完成全历史派生并通过完整校验，约 8.59 GiB；[证据](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 已安装到主项目 `data/`，全量文件 SHA-256 与源成品一致，并通过 Fundwise 近期 SDK/HTTP 验收。旧 M0 移至 `.local/recovery/`。执行证据见[完整复制与消费验收](achievements/fw04_jakarta_full_copy_acceptance.md)。
+本机 `data/stocks.sqlite` 已完成全历史派生并通过完整校验，约 8.59 GiB；[证据](evidence/sqlite-migration-assessment/20260928-derived-result.json)。Jakarta 已安装到主项目 `data/`，全量文件 SHA-256 与源成品一致，并通过 Fundwise 近期 SDK/HTTP 验收。旧 M0 移至 `.local/recovery/`。执行证据见[完整复制与消费验收](../achievements/fw04_jakarta_full_copy_acceptance.md)。

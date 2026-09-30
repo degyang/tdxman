@@ -17,7 +17,7 @@
 依据：
 
 - [数据治理原则](../design/data_management_principles.md)：变更、依赖、版本和恢复原则。
-- [日线存储专项评估](../daily_storage_architecture_assessment.md)：代码证据、查询基准、增长实验及候选结构。
+- [日线存储专项评估](../audit/daily_storage_architecture_assessment.md)：代码证据、查询基准、增长实验及候选结构。
 - [数据保留与清理方案](../design/regime_data_retention_plan.md)：当前备份、报告和未结证据处置。
 - [P0 有界读取交付](up_regime_bounded_read_delivery.md)：已有公共接口及五年 RSS 验收基线。
 - [POS 项目入口](</mnt/d/Workstation/Projects/POS/10-Projects/Active/11.42 Tdxman/Overview.md>)：有日期的目标、评估记录与推进摘要。
@@ -208,7 +208,7 @@ Fundwise 改为同一快照读取日线/限价/汇总，按依赖日期的更新
 
 ## 7. 第一轮可直接执行的工作包
 
-DG-00 已补齐 [data-contract.md](../design/data-contract.md)、[consumer-inventory.md](../design/consumer-inventory.md)、[recovery-plan.md](../recovery-plan.md)，既有恢复点与当前源逐文件哈希一致。DG-01 首批修复与隔离证据见 [实施记录](remediation_progress_20260927.md)，剩余入口/前滚协议/成本实现见 [本轮完整记录](dg01_implementation.md)，当前判定见 [独立恢复审查](dg01_review.md)；独立审查已通过且 `5b42c52` 已集成 main；DG-02 feature `6c85113` 完成旧后端访问封装，最终验收见 [实施报告](dg02_implementation.md)。生产修复前仍需判断恢复点是否覆盖最新输入，不为文档补齐重复复制全池；两项共同触及写入/存储入口，默认顺序推进。
+DG-00 已补齐 [data-contract.md](../design/data-contract.md)、[consumer-inventory.md](../design/consumer-inventory.md)、[recovery-plan.md](../ops/recovery-plan.md)，既有恢复点与当前源逐文件哈希一致。DG-01 首批修复与隔离证据见 [实施记录](remediation_progress_20260927.md)，剩余入口/前滚协议/成本实现见 [本轮完整记录](dg01_implementation.md)，当前判定见 [独立恢复审查](dg01_review.md)；独立审查已通过且 `5b42c52` 已集成 main；DG-02 feature `6c85113` 完成旧后端访问封装，最终验收见 [实施报告](dg02_implementation.md)。生产修复前仍需判断恢复点是否覆盖最新输入，不为文档补齐重复复制全池；两项共同触及写入/存储入口，默认顺序推进。
 
 第一轮结束应能回答：哪些数据有问题、每次究竟改了什么、影响了哪里、发生失败可以回到哪一版，以及哪些入口仍依赖物理文件。此时可推进 DG-04 的存量修复和 DG-03 的完整候选验证，不需要先等待全量架构迁移。
 

@@ -50,4 +50,4 @@
 
 文件写先持久 preparing，原子转 pending 后才替换目标；catalog 的 coverage/stale/日志/修订同事务提交，跨文件及跨 catalog 不是整体事务。源 writer 在写锁内前滚，公开读遇 pending 返回 RECOVERY_REQUIRED；完成后仅保留字段证据，不保留每代完整冷历史。snapshot 的裸独占锁不隐式恢复源，pending 时拒绝拍点。必要 manifest/redo/证据损坏则保留阻断，恢复可信对象或独立恢复点后才能继续，不能清状态假称成功。
 
-细节、故障窗口、真实进程退出及边界见 [DG-01 实施报告](achievements/dg01_implementation.md)。没有通用旧值自动回滚工具，也没有断电/异机/生产 SLA 验收；字段旧值是审计/恢复依据，默认支持的故障恢复方式是同一 prepared 操作前滚。
+细节、故障窗口、真实进程退出及边界见 [DG-01 实施报告](../achievements/dg01_implementation.md)。没有通用旧值自动回滚工具，也没有断电/异机/生产 SLA 验收；字段旧值是审计/恢复依据，默认支持的故障恢复方式是同一 prepared 操作前滚。
