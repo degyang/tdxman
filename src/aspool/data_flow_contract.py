@@ -44,7 +44,7 @@ DATA_FLOWS = (
         "aspool fundamentals update",
         "DataPool.read_fundamental_reports()",
         "aspool fundamentals status; aspool query --dataset fundamentals",
-        "manual low-frequency history",
+        "daily latest snapshot; source-dated history",
     ),
     DataFlow(
         "shareholder_counts",
@@ -53,7 +53,7 @@ DATA_FLOWS = (
         "aspool fundamentals update",
         "DataPool.read_shareholder_counts()",
         "aspool query --dataset shareholder-counts",
-        "manual low-frequency history",
+        "daily latest snapshot; source-dated history",
     ),
     DataFlow(
         "stock_daily_bars",

@@ -15,7 +15,7 @@ SPEC.loader.exec_module(MODULE)
 
 
 def test_pipeline_keeps_data_dependencies_in_operational_order(tmp_path):
-    stages = MODULE.pipeline_stages(tmp_path / "data", workers=4, fundamentals=True)
+    stages = MODULE.pipeline_stages(tmp_path / "data", workers=4)
     assert [stage.name for stage in stages] == [
         "directory",
         "stock_update",
@@ -26,9 +26,9 @@ def test_pipeline_keeps_data_dependencies_in_operational_order(tmp_path):
     assert "除权" in stages[1].purpose
 
 
-def test_fundamentals_remains_opt_in_for_scheduled_market_runs(tmp_path):
-    stages = MODULE.pipeline_stages(tmp_path / "data", workers=4, fundamentals=False)
-    assert "fundamentals" not in [stage.name for stage in stages]
+def test_fundamentals_runs_in_scheduled_market_runs(tmp_path):
+    stages = MODULE.pipeline_stages(tmp_path / "data", workers=4)
+    assert [stage.name for stage in stages][-1] == "fundamentals"
 
 
 def test_audit_requires_all_contract_datasets_and_closed_stock_features(tmp_path):
@@ -156,12 +156,12 @@ def test_pipeline_preserves_partial_receipts_and_runs_independent_stages(tmp_pat
 
     monkeypatch.setattr(MODULE, "run_command", run)
     assert MODULE.main(["--root", str(tmp_path / "data")]) == 1
-    assert [c[2] for c in calls] == ["all", "stock", "index", "etf"]
+    assert [c[2] for c in calls] == ["all", "stock", "index", "etf", "--root"]
     report = json.loads(
         next((tmp_path / ".local/reports/daily-pipeline").glob("*.json")).read_text()
     )
     assert report["status"] == "partial"
-    assert [s["status"] for s in report["stages"]] == ["ok", "partial", "partial", "ok"]
+    assert [s["status"] for s in report["stages"]] == ["ok", "partial", "partial", "ok", "ok"]
     assert report["stages"][1]["source_counts"]["factor_failed"] == 1
     assert report["elapsed_ms"] >= 0
     assert report["audit_elapsed_ms"] >= 0

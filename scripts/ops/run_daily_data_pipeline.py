@@ -37,7 +37,7 @@ class Stage:
     purpose: str
 
 
-def pipeline_stages(root: Path, *, workers: int, fundamentals: bool) -> list[Stage]:
+def pipeline_stages(root: Path, *, workers: int) -> list[Stage]:
     """Return the complete daily sequence without running it."""
     common = (
         "--root",
@@ -71,23 +71,22 @@ def pipeline_stages(root: Path, *, workers: int, fundamentals: bool) -> list[Sta
             "更新 ETF 未复权日线；源端确认无交易时保留 NO_TRADE",
         ),
     ]
-    if fundamentals:
-        stages.append(
-            Stage(
+    stages.append(
+        Stage(
+            "fundamentals",
+            (
                 "fundamentals",
-                (
-                    "fundamentals",
-                    "update",
-                    "--root",
-                    str(root),
-                    "--retries",
-                    "2",
-                    "--retry-delay",
-                    "1",
-                ),
-                "刷新最新财报和股东人数快照（不倒填历史）",
-            )
+                "update",
+                "--root",
+                str(root),
+                "--retries",
+                "2",
+                "--retry-delay",
+                "1",
+            ),
+            "刷新最新财报和股东人数快照（不倒填历史）",
         )
+    )
     return stages
 
 
@@ -289,7 +288,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("--workers", type=int, default=4, choices=range(1, 9), metavar="1..8")
     parser.add_argument(
-        "--with-fundamentals", action="store_true", help="纳入手动低频基本面快照更新"
+        "--with-fundamentals", action="store_true", help="兼容旧调用；基本面现已默认每天更新"
     )
     parser.add_argument("--dry-run", action="store_true", help="仅显示计划，不写入数据")
     return parser.parse_args(argv)
@@ -315,7 +314,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
     root = args.root.expanduser().resolve()
     project = Path(__file__).resolve().parents[2]
-    stages = pipeline_stages(root, workers=args.workers, fundamentals=args.with_fundamentals)
+    stages = pipeline_stages(root, workers=args.workers)
     if args.dry_run:
         print(json.dumps([asdict(stage) for stage in stages], ensure_ascii=False, indent=2))
         return 0
@@ -347,7 +346,7 @@ def run_pipeline(args, root: Path, project: Path, stages: list[Stage], lock_fd: 
         "started_at": datetime.now(timezone.utc).isoformat(),
         "options": {
             "workers": args.workers,
-            "fundamentals": args.with_fundamentals,
+            "fundamentals": True,
         },
         "stages": [],
     }

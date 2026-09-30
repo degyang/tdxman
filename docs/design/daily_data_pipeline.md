@@ -12,8 +12,7 @@
 tmux new-session -d -s aspool-daily \
   'cd /mnt/d/workstation/services/tdxman && bash scripts/ops/run_daily_data_pipeline.sh'
 
-# 纳入低频基本面快照。
-bash scripts/ops/run_daily_data_pipeline.sh --with-fundamentals
+# 最新财报与股东人数快照已包含在每天的默认运行中。
 
 # 先核对实际会调用的命令，不写数据。
 bash scripts/ops/run_daily_data_pipeline.sh --dry-run
@@ -30,7 +29,7 @@ bash scripts/ops/run_daily_data_pipeline.sh --root /path/to/data
 3. 股票 `update` 先提交已验证的原始行情、交易状态和可计算派生；再逐证券更新近期公司行为和因子后缀。因子失败不撤销合法行情，依赖因子的 MA20/广度样本保持缺失并记录原因。
 4. `update --type index` 更新指数日 K 和交易日历。
 5. `update --type etf` 更新 ETF 未复权日线；源端确认无交易时保留 `NO_TRADE`。
-6. 仅传入 `--with-fundamentals` 时刷新最新财报与股东人数快照。它不是历史财务回填。
+6. 每天刷新最新财报与股东人数快照。它不是历史财务回填；`--with-fundamentals` 仅保留为兼容旧调度的无操作参数。
 7. 读取 `aspool contract --format json` 与 `aspool status --format json`，按目标交易日比较当前有效股票集合、派生集合、因子覆盖和市场汇总；不能只比较最大日期或行数。
 
 流水线汇总各阶段的持久化子报告：单证券失败把该阶段标为 `partial` 而不是 `failed`，
@@ -80,7 +79,7 @@ bash scripts/ops/repair_recent_data_gaps.sh --count 30 --repair
 
 每次运行会在 `.local/reports/daily-pipeline/<UTC 时间>.json` 写入阶段命令、状态、数据块覆盖和最新股票派生闭合情况。报告不进入 `data/`，因此不污染设备间的基础数据同步。
 
-基本面因低频且当前只维护最新快照，默认不参加定时日行情任务；需要时用 `--with-fundamentals` 明确纳入。ETF 复权因子也不由在线 TDX 更新，仍属于已审核迁移参考数据；报告会保留它的覆盖范围，不会把 ETF 日线同步成功误报为因子已更新。
+基本面虽是低频来源，仍在每日运行中检查并写入有变化的最新快照；报告保留财报和股东人数的变化数量。ETF 复权因子也不由在线 TDX 更新，仍属于已审核迁移参考数据；报告会保留它的覆盖范围，不会把 ETF 日线同步成功误报为因子已更新。
 
 ## cron 接入
 
