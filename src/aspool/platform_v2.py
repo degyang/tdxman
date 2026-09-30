@@ -142,9 +142,9 @@ def _create_renamed_indexes(source, target, table, renamed):
             "SELECT 1 FROM sqlite_master WHERE type='index' AND name=?", (target_name,)
         ).fetchone():
             continue
-        target.execute(index_sql.replace(name, target_name, 1).replace(
-            f" ON {table}", f" ON {renamed}", 1
-        ))
+        target.execute(
+            index_sql.replace(name, target_name, 1).replace(f" ON {table}", f" ON {renamed}", 1)
+        )
 
 
 def _ensure_covering_event_index(target):
@@ -166,9 +166,7 @@ def _ensure_covering_event_index(target):
     )
 
 
-def _copy_feature_table(
-    source, target, table, renamed, *, source_revision, batch_symbols=256
-):
+def _copy_feature_table(source, target, table, renamed, *, source_revision, batch_symbols=256):
     columns = [row[1] for row in source.execute(f"PRAGMA table_info({table})")]
     projection = ",".join('"' + name + '"' for name in columns)
     state = target.execute(
@@ -207,8 +205,7 @@ def _copy_feature_table(
             symbols = [
                 row[0]
                 for row in source.execute(
-                    f"SELECT DISTINCT symbol FROM {table} WHERE symbol>? "
-                    "ORDER BY symbol LIMIT ?",
+                    f"SELECT DISTINCT symbol FROM {table} WHERE symbol>? ORDER BY symbol LIMIT ?",
                     (last, batch_symbols),
                 )
             ]
@@ -225,8 +222,7 @@ def _copy_feature_table(
             copied += target.execute("SELECT changes()").fetchone()[0]
             last = symbols[-1]
             target.execute(
-                "UPDATE migration_state SET target_rows=?,last_key=?,updated_at=? "
-                "WHERE dataset=?",
+                "UPDATE migration_state SET target_rows=?,last_key=?,updated_at=? WHERE dataset=?",
                 (copied, last, time.time_ns() // 1000, renamed),
             )
             target.commit()
@@ -254,9 +250,7 @@ def _copy_market_summary(source, target):
     target.execute("BEGIN IMMEDIATE")
     target.execute(f"DELETE FROM {renamed}")
     target.executemany(
-        f"INSERT INTO {renamed}({projection}) VALUES ("
-        + ",".join("?" for _ in columns)
-        + ")",
+        f"INSERT INTO {renamed}({projection}) VALUES (" + ",".join("?" for _ in columns) + ")",
         rows,
     )
     revision = max((row[columns.index("updated_at")] for row in rows), default=0)
@@ -269,9 +263,7 @@ def _copy_market_summary(source, target):
 
 
 def _prepare_features(root, *, factor_revision):
-    source = sqlite3.connect(
-        (root / "stocks.sqlite").as_uri() + "?mode=ro", uri=True, timeout=30
-    )
+    source = sqlite3.connect((root / "stocks.sqlite").as_uri() + "?mode=ro", uri=True, timeout=30)
     target = _connect(root / "features.sqlite", create=True)
     try:
         _rename_schema(source, target, "daily_features", "stock_daily_features")
@@ -292,32 +284,121 @@ def _prepare_features(root, *, factor_revision):
             "stock_daily_features",
             source_revision=raw_revision,
         )
-        _create_renamed_indexes(
-            source, target, "daily_features", "stock_daily_features"
-        )
+        _create_renamed_indexes(source, target, "daily_features", "stock_daily_features")
         _ensure_covering_event_index(target)
         market = _copy_market_summary(source, target)
-        _create_renamed_indexes(
-            source, target, "market_daily_summary", "market_regime_features"
-        )
+        _create_renamed_indexes(source, target, "market_daily_summary", "market_regime_features")
         stamp = time.time_ns() // 1000
         target.execute(
             "INSERT OR REPLACE INTO feature_state VALUES (?,?,?,?,?,?,?,?,?)",
             (
-                "stock_daily_features", "all", raw_revision, factor_revision, "legacy-v1",
-                "READY", None, None, stamp,
+                "stock_daily_features",
+                "all",
+                raw_revision,
+                factor_revision,
+                "legacy-v1",
+                "READY",
+                None,
+                None,
+                stamp,
             ),
         )
         target.execute(
             "INSERT OR REPLACE INTO feature_state VALUES (?,?,?,?,?,?,?,?,?)",
             (
-                "market_regime_features", "all", raw_revision, factor_revision, "legacy-v1",
-                "READY", None, None, stamp,
+                "market_regime_features",
+                "all",
+                raw_revision,
+                factor_revision,
+                "legacy-v1",
+                "READY",
+                None,
+                None,
+                stamp,
             ),
         )
         target.commit()
         return {"stock_daily_features": daily, "market_regime_features": market}
     finally:
+        target.close()
+        source.close()
+
+
+def _reconcile_features(root):
+    """Precise rebuild of feature mirror from authoritative stocks.sqlite.
+
+    Deletes stale target rows before copying so that source deletions are
+    reflected.  Runs inside a single transaction so an interruption leaves
+    the previous state intact.
+    """
+    source = sqlite3.connect((root / "stocks.sqlite").as_uri() + "?mode=ro", uri=True, timeout=30)
+    target = _connect(root / "features.sqlite")
+    adj_conn = _connect(root / "adjustments.sqlite")
+    try:
+        if target.execute("PRAGMA user_version").fetchone()[0] != 1:
+            raise ValueError("features.sqlite is not prepared")
+        raw_state = source.execute(
+            "SELECT revision FROM dataset_state WHERE dataset='stock_raw'"
+        ).fetchone()
+        raw_revision = raw_state[0] if raw_state else 0
+        factor_row = adj_conn.execute(
+            "SELECT revision FROM adjustment_state WHERE dataset='stock_adjustment_factors'"
+        ).fetchone()
+        factor_revision = factor_row[0] if factor_row else raw_revision
+        target.execute("BEGIN IMMEDIATE")
+        for dataset in ("stock_daily_features", "market_regime_features"):
+            target.execute(
+                "UPDATE feature_state SET status='DIRTY',updated_at=? WHERE dataset=?",
+                (time.time_ns() // 1000, dataset),
+            )
+        target.execute("DELETE FROM stock_daily_features")
+        target.execute("DELETE FROM market_regime_features")
+        columns = [row[1] for row in source.execute("PRAGMA table_info(daily_features)")]
+        projection = ",".join('"' + name + '"' for name in columns)
+        rows = source.execute(f"SELECT {projection} FROM daily_features").fetchall()
+        target.executemany(
+            f"INSERT INTO stock_daily_features({projection}) VALUES ("
+            + ",".join("?" for _ in columns)
+            + ")",
+            rows,
+        )
+        feature_rows = len(rows)
+        mkt_columns = [row[1] for row in source.execute("PRAGMA table_info(market_daily_summary)")]
+        mkt_projection = ",".join('"' + name + '"' for name in mkt_columns)
+        mkt_rows = source.execute(f"SELECT {mkt_projection} FROM market_daily_summary").fetchall()
+        target.executemany(
+            f"INSERT INTO market_regime_features({mkt_projection}) VALUES ("
+            + ",".join("?" for _ in mkt_columns)
+            + ")",
+            mkt_rows,
+        )
+        summary_rows = len(mkt_rows)
+        _create_renamed_indexes(source, target, "daily_features", "stock_daily_features")
+        _ensure_covering_event_index(target)
+        _create_renamed_indexes(source, target, "market_daily_summary", "market_regime_features")
+        stamp = time.time_ns() // 1000
+        for dataset in ("stock_daily_features", "market_regime_features"):
+            target.execute(
+                "INSERT OR REPLACE INTO feature_state VALUES (?,?,?,?,?,?,?,?,?)",
+                (
+                    dataset,
+                    "all",
+                    raw_revision,
+                    factor_revision,
+                    "legacy-v1",
+                    "READY",
+                    None,
+                    None,
+                    stamp,
+                ),
+            )
+        target.commit()
+        return {
+            "stock_daily_features": {"rows": feature_rows, "revision": raw_revision},
+            "market_regime_features": {"rows": summary_rows, "revision": raw_revision},
+        }
+    finally:
+        adj_conn.close()
         target.close()
         source.close()
 
@@ -353,8 +434,7 @@ def _prepare_adjustments(root):
                 etf = [
                     (*row, 0)
                     for row in source.execute(
-                        "SELECT symbol,trade_date,cumulative_factor,source "
-                        "FROM adjustment_factors"
+                        "SELECT symbol,trade_date,cumulative_factor,source FROM adjustment_factors"
                     )
                 ]
             finally:
@@ -370,9 +450,7 @@ def _prepare_adjustments(root):
         conn.executemany(
             "INSERT OR REPLACE INTO stock_factor_anchors VALUES (?,?,?,?,?,?,?)", anchors
         )
-        conn.executemany(
-            "INSERT OR REPLACE INTO etf_adjustment_factors VALUES (?,?,?,?,?)", etf
-        )
+        conn.executemany("INSERT OR REPLACE INTO etf_adjustment_factors VALUES (?,?,?,?,?)", etf)
         stamp = time.time_ns() // 1000
         for dataset, table in (
             ("stock_adjustment_factors", "stock_adjustment_factors"),
@@ -435,13 +513,14 @@ def prepare_platform_v2(root):
                 "dataset TEXT PRIMARY KEY,revision INTEGER NOT NULL,max_date TEXT,"
                 "updated_at INTEGER NOT NULL) STRICT, WITHOUT ROWID"
             )
-            if stocks.execute(
-                "SELECT 1 FROM dataset_state WHERE dataset='stock_raw'"
-            ).fetchone() is None:
+            if (
+                stocks.execute("SELECT 1 FROM dataset_state WHERE dataset='stock_raw'").fetchone()
+                is None
+            ):
                 revision = max(
-                    stocks.execute(
-                        "SELECT coalesce(max(updated_at),0) FROM daily_bars"
-                    ).fetchone()[0],
+                    stocks.execute("SELECT coalesce(max(updated_at),0) FROM daily_bars").fetchone()[
+                        0
+                    ],
                     stocks.execute(
                         "SELECT coalesce(max(updated_at),0) FROM corporate_actions"
                     ).fetchone()[0],
@@ -454,8 +533,7 @@ def prepare_platform_v2(root):
         adjustments = _prepare_adjustments(root)
         with sqlite3.connect(root / "adjustments.sqlite") as factor_store:
             factor_revision = factor_store.execute(
-                "SELECT revision FROM adjustment_state "
-                "WHERE dataset='stock_adjustment_factors'"
+                "SELECT revision FROM adjustment_state WHERE dataset='stock_adjustment_factors'"
             ).fetchone()[0]
         features = _prepare_features(root, factor_revision=factor_revision)
         _prepare_empty_stores(root)
@@ -479,17 +557,10 @@ def mirror_platform_v2(root, *, symbols, dates, raw_revision):
     symbols, dates = sorted(set(symbols)), sorted(set(dates))
     if not symbols and not dates:
         return {"mirrored": False, "reason": "no affected rows"}
-    if not dates:
-        with sqlite3.connect(feature_path) as state:
-            current = state.execute(
-                "SELECT raw_revision,status FROM feature_state "
-                "WHERE dataset='stock_daily_features' AND scope_key='all'"
-            ).fetchone()
-        if current == (raw_revision, "READY"):
-            return {"mirrored": False, "reason": "revisions are unchanged"}
-    source = sqlite3.connect(
-        (root / "stocks.sqlite").as_uri() + "?mode=ro", uri=True, timeout=30
-    )
+    # A matching global revision does not prove that every requested symbol was
+    # mirrored before an interrupted run.  Explicit symbols must always repair
+    # their factor rows, even when no feature date changed.
+    source = sqlite3.connect((root / "stocks.sqlite").as_uri() + "?mode=ro", uri=True, timeout=30)
     target = _connect(feature_path)
     adjustments = _connect(root / "adjustments.sqlite")
     try:
@@ -513,9 +584,7 @@ def mirror_platform_v2(root, *, symbols, dates, raw_revision):
             )
             feature_rows = len(rows)
         if dates:
-            columns = [
-                row[1] for row in source.execute("PRAGMA table_info(market_daily_summary)")
-            ]
+            columns = [row[1] for row in source.execute("PRAGMA table_info(market_daily_summary)")]
             projection = ",".join('"' + name + '"' for name in columns)
             marks = ",".join("?" for _ in dates)
             rows = source.execute(
@@ -531,20 +600,15 @@ def mirror_platform_v2(root, *, symbols, dates, raw_revision):
             )
             summary_rows = len(rows)
         stamp = time.time_ns() // 1000
-        for dataset in ("stock_daily_features", "market_regime_features"):
-            target.execute(
-                "UPDATE feature_state SET raw_revision=?,status='DIRTY',"
-                "affected_from=?,affected_through=?,updated_at=? "
-                "WHERE dataset=? AND scope_key='all'",
-                (
-                    raw_revision,
-                    min(dates) if dates else None,
-                    max(dates) if dates else None,
-                    stamp,
-                    dataset,
-                ),
-            )
-        target.commit()
+        if dates:
+            for dataset in ("stock_daily_features", "market_regime_features"):
+                target.execute(
+                    "UPDATE feature_state SET raw_revision=?,status='DIRTY',"
+                    "affected_from=?,affected_through=?,updated_at=? "
+                    "WHERE dataset=? AND scope_key='all'",
+                    (raw_revision, min(dates), max(dates), stamp, dataset),
+                )
+            target.commit()
         factor_rows = anchor_rows = 0
         if symbols:
             marks = ",".join("?" for _ in symbols)
@@ -585,23 +649,32 @@ def mirror_platform_v2(root, *, symbols, dates, raw_revision):
             factor_rows, anchor_rows = len(factors), len(anchors)
         else:
             factor_revision = adjustments.execute(
-                "SELECT revision FROM adjustment_state "
-                "WHERE dataset='stock_adjustment_factors'"
+                "SELECT revision FROM adjustment_state WHERE dataset='stock_adjustment_factors'"
             ).fetchone()[0]
-        target.execute(
-            "UPDATE feature_state SET factor_revision=?,status='READY',updated_at=? "
-            "WHERE scope_key='all'",
-            (factor_revision, time.time_ns() // 1000),
-        )
+        # Conditional READY: only advance status when feature content was actually written.
+        # Pure factor mirrors (dates empty) must not mark stale features as READY.
+        stamp = time.time_ns() // 1000
+        for dataset, rows in (
+            ("stock_daily_features", feature_rows),
+            ("market_regime_features", summary_rows),
+        ):
+            if rows > 0:
+                target.execute(
+                    "UPDATE feature_state SET raw_revision=?,factor_revision=?,"
+                    "status='READY',updated_at=? WHERE dataset=? AND scope_key='all'",
+                    (raw_revision, factor_revision, stamp, dataset),
+                )
+            else:
+                target.execute(
+                    "UPDATE feature_state SET factor_revision=?,updated_at=? "
+                    "WHERE dataset=? AND scope_key='all'",
+                    (factor_revision, stamp, dataset),
+                )
         target.commit()
     except BaseException:
+        # Roll back any open transaction; the last committed state (DIRTY or
+        # READY) survives.  Reconcile will detect and repair the inconsistency.
         target.rollback()
-        with target:
-            target.execute(
-                "UPDATE feature_state SET status='FAILED',updated_at=? "
-                "WHERE dataset IN ('stock_daily_features','market_regime_features')",
-                (time.time_ns() // 1000,),
-            )
         raise
     finally:
         adjustments.close()
@@ -623,9 +696,11 @@ def activate_platform_v2(root):
         check = verify_platform_v2(root)
         if not check["ready"]:
             raise ValueError("Platform v2 verification has not passed")
-        with sqlite3.connect(root / "stocks.sqlite") as stocks, sqlite3.connect(
-            root / "features.sqlite"
-        ) as features, sqlite3.connect(root / "adjustments.sqlite") as adjustments:
+        with (
+            sqlite3.connect(root / "stocks.sqlite") as stocks,
+            sqlite3.connect(root / "features.sqlite") as features,
+            sqlite3.connect(root / "adjustments.sqlite") as adjustments,
+        ):
             raw = stocks.execute(
                 "SELECT revision FROM dataset_state WHERE dataset='stock_raw'"
             ).fetchone()
@@ -634,20 +709,32 @@ def activate_platform_v2(root):
                 "FROM feature_state WHERE scope_key='all'"
             ).fetchall()
             factor = adjustments.execute(
-                "SELECT revision FROM adjustment_state "
-                "WHERE dataset='stock_adjustment_factors'"
+                "SELECT revision FROM adjustment_state WHERE dataset='stock_adjustment_factors'"
             ).fetchone()
         if raw is None or {row[0] for row in states} != {
-            "stock_daily_features", "market_regime_features"
+            "stock_daily_features",
+            "market_regime_features",
         }:
             raise ValueError("Platform revisions are incomplete")
         if factor is None or any(
-            row[1] != raw[0] or row[2] != factor[0] or row[3] != "READY"
-            for row in states
+            row[1] != raw[0] or row[2] != factor[0] or row[3] != "READY" for row in states
         ):
             raise ValueError("Platform derived revisions do not match stock_raw")
         _set_layout_version(root, 2)
     return verify_platform_v2(root)
+
+
+def reconcile_platform_v2(root):
+    """Rebuild feature and adjustment mirrors from authoritative local stores."""
+    root = Path(root).expanduser().resolve()
+    for required in ("stocks.sqlite", "etfs.sqlite", "adjustments.sqlite", "features.sqlite"):
+        if not (root / required).is_file():
+            raise FileNotFoundError(root / required)
+    with pool_lock(root, write=True):
+        adjustments = _prepare_adjustments(root)
+        features = _reconcile_features(root)
+        verification = verify_platform_v2(root)
+    return {"adjustments": adjustments, "features": features, "verification": verification}
 
 
 def rollback_platform_v2(root):
@@ -686,64 +773,148 @@ def layout_version(root):
 def verify_platform_v2(root):
     root = Path(root).expanduser().resolve()
     required = [
-        "catalog.duckdb", "stocks.sqlite", "indices.sqlite", "etfs.sqlite",
-        "fundamentals.sqlite", "adjustments.sqlite", "features.sqlite", "snapshots.sqlite",
+        "catalog.duckdb",
+        "stocks.sqlite",
+        "indices.sqlite",
+        "etfs.sqlite",
+        "fundamentals.sqlite",
+        "adjustments.sqlite",
+        "features.sqlite",
+        "snapshots.sqlite",
     ]
     missing = [name for name in required if not (root / name).is_file()]
     result = {"ready": not missing, "missing": missing, "counts": {}}
     if missing:
         return result
-    with sqlite3.connect(root / "stocks.sqlite") as old, sqlite3.connect(
-        root / "features.sqlite"
-    ) as new:
+    with (
+        sqlite3.connect(root / "stocks.sqlite") as old,
+        sqlite3.connect(root / "features.sqlite") as new,
+    ):
         if new.execute("PRAGMA user_version").fetchone()[0] != 1:
             result["ready"] = False
-        pairs = (
-            ("daily_features", "stock_daily_features"),
-            ("market_daily_summary", "market_regime_features"),
-        )
-        for source, target in pairs:
-            expected = old.execute(f"SELECT count(*) FROM {source}").fetchone()[0]
-            actual = new.execute(f"SELECT count(*) FROM {target}").fetchone()[0]
-            result["counts"][target] = {"source": expected, "target": actual}
-            result["ready"] = result["ready"] and expected == actual
+        # Attach source DB so EXCEPT can compare across databases.
+        source_path = (root / "stocks.sqlite").resolve()
+        new.execute("ATTACH DATABASE ? AS _verify_src", (str(source_path),))
+        try:
+            for source, target in (
+                ("daily_features", "stock_daily_features"),
+                ("market_daily_summary", "market_regime_features"),
+            ):
+                source_count = old.execute(f"SELECT count(*) FROM {source}").fetchone()[0]
+                target_count = new.execute(f"SELECT count(*) FROM {target}").fetchone()[0]
+                extra = new.execute(
+                    f"SELECT count(*) FROM "
+                    f"(SELECT * FROM {target} EXCEPT SELECT * FROM _verify_src.{source})"
+                ).fetchone()[0]
+                missing_rows = new.execute(
+                    f"SELECT count(*) FROM "
+                    f"(SELECT * FROM _verify_src.{source} EXCEPT SELECT * FROM {target})"
+                ).fetchone()[0]
+                content_equal = extra == 0 and missing_rows == 0
+                result["counts"][target] = {
+                    "source": source_count,
+                    "target": target_count,
+                    "extra": extra,
+                    "missing": missing_rows,
+                    "content_equal": content_equal,
+                }
+                result["ready"] = result["ready"] and content_equal
+        finally:
+            new.execute("DETACH DATABASE _verify_src")
         event_index = new.execute(
             "SELECT sql FROM sqlite_master WHERE type='index' "
             "AND name='stock_daily_features_events'"
         ).fetchone()
         result["event_index_covering"] = bool(
-            event_index
-            and "limit_status" in event_index[0]
-            and "updated_at" in event_index[0]
+            event_index and "limit_status" in event_index[0] and "updated_at" in event_index[0]
         )
         result["ready"] = result["ready"] and result["event_index_covering"]
-    with sqlite3.connect(root / "stocks.sqlite") as stocks, sqlite3.connect(
-        root / "etfs.sqlite"
-    ) as etfs, sqlite3.connect(root / "adjustments.sqlite") as adjustments:
+        raw_row = old.execute(
+            "SELECT revision FROM dataset_state WHERE dataset='stock_raw'"
+        ).fetchone()
+        raw_revision = raw_row[0] if raw_row else None
+        states = new.execute(
+            "SELECT dataset,status,raw_revision,factor_revision FROM feature_state "
+            "WHERE scope_key='all'"
+        ).fetchall()
+        expected_datasets = {"stock_daily_features", "market_regime_features"}
+        actual_datasets = {row[0] for row in states}
+        all_ready = all(row[1] == "READY" for row in states)
+        raw_match = all(row[2] == raw_revision for row in states)
+        factor_row = None
+        with sqlite3.connect(root / "adjustments.sqlite") as adj:
+            factor_row = adj.execute(
+                "SELECT revision FROM adjustment_state WHERE dataset='stock_adjustment_factors'"
+            ).fetchone()
+        factor_revision = factor_row[0] if factor_row else None
+        factor_match = all(row[3] == factor_revision for row in states)
+        result["feature_state"] = {
+            "datasets": sorted(actual_datasets),
+            "all_ready": all_ready,
+            "raw_revision_match": raw_match,
+            "factor_revision_match": factor_match,
+        }
+        result["ready"] = (
+            result["ready"]
+            and actual_datasets == expected_datasets
+            and all_ready
+            and raw_match
+            and factor_match
+        )
+    with (
+        sqlite3.connect(root / "stocks.sqlite") as stocks,
+        sqlite3.connect(root / "etfs.sqlite") as etfs,
+        sqlite3.connect(root / "adjustments.sqlite") as adjustments,
+    ):
         if adjustments.execute("PRAGMA user_version").fetchone()[0] != 1:
             result["ready"] = False
         factor_pairs = (
             (
                 "stock_adjustment_factors",
                 stocks.execute(
-                    "SELECT count(*) FROM corporate_actions WHERE record_kind='factor'"
-                ).fetchone()[0],
+                    "SELECT symbol,effective_date,event_factor,cumulative_factor,valid_from,"
+                    "valid_through,factor_basis,source,updated_at FROM corporate_actions "
+                    "WHERE record_kind='factor'"
+                ).fetchall(),
+                adjustments.execute(
+                    "SELECT symbol,effective_date,event_factor,cumulative_factor,valid_from,"
+                    "valid_through,factor_basis,source,updated_at "
+                    "FROM stock_adjustment_factors"
+                ).fetchall(),
             ),
             (
                 "stock_factor_anchors",
                 stocks.execute(
-                    "SELECT count(*) FROM corporate_actions WHERE record_kind='factor_anchor'"
-                ).fetchone()[0],
+                    "SELECT symbol,effective_date,source,source_key,source_cumulative_factor,"
+                    "payload_json,updated_at FROM corporate_actions "
+                    "WHERE record_kind='factor_anchor'"
+                ).fetchall(),
+                adjustments.execute(
+                    "SELECT symbol,effective_date,source,source_key,source_cumulative_factor,"
+                    "payload_json,updated_at FROM stock_factor_anchors"
+                ).fetchall(),
             ),
             (
                 "etf_adjustment_factors",
-                etfs.execute("SELECT count(*) FROM adjustment_factors").fetchone()[0],
+                etfs.execute(
+                    "SELECT symbol,trade_date,cumulative_factor,source FROM adjustment_factors"
+                ).fetchall(),
+                adjustments.execute(
+                    "SELECT symbol,effective_date,cumulative_factor,source "
+                    "FROM etf_adjustment_factors"
+                ).fetchall(),
             ),
         )
-        for table, expected in factor_pairs:
-            actual = adjustments.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
-            result["counts"][table] = {"source": expected, "target": actual}
-            result["ready"] = result["ready"] and expected == actual
+        for table, expected_rows, actual_rows in factor_pairs:
+            content_equal = set(expected_rows) == set(actual_rows)
+            result["counts"][table] = {
+                "source": len(expected_rows),
+                "target": len(actual_rows),
+                "content_equal": content_equal,
+            }
+            result["ready"] = (
+                result["ready"] and len(expected_rows) == len(actual_rows) and content_equal
+            )
     with duckdb.connect(str(root / "catalog.duckdb"), read_only=True) as catalog:
         row = catalog.execute(
             "SELECT value FROM pool_metadata WHERE key='layout_version'"
@@ -757,8 +928,14 @@ def platform_status(root):
     root = Path(root).expanduser().resolve()
     files = {}
     for name in (
-        "catalog.duckdb", "stocks.sqlite", "indices.sqlite", "etfs.sqlite",
-        "fundamentals.sqlite", "adjustments.sqlite", "features.sqlite", "snapshots.sqlite",
+        "catalog.duckdb",
+        "stocks.sqlite",
+        "indices.sqlite",
+        "etfs.sqlite",
+        "fundamentals.sqlite",
+        "adjustments.sqlite",
+        "features.sqlite",
+        "snapshots.sqlite",
     ):
         path = root / name
         files[name] = {
