@@ -32,7 +32,13 @@ ACTION_COLUMNS = (
     "factor_basis",
     "updated_at",
 )
+OPTIONAL_TABLES = {
+    "market_sessions", "board_snapshots", "board_snapshot_sets",
+    "board_sync_state", "board_daily", "board_daily_status",
+}
+
 RELATIONS = {
+    **{name: "features." + name for name in OPTIONAL_TABLES},
     "daily_features": "features.stock_daily_features",
     "market_daily_summary": "features.market_regime_features",
 }
@@ -49,7 +55,10 @@ def canonical_operation(conn, operation):
     if not isinstance(conn, CanonicalConnection):
         yield
         return
-    if operation not in {"daily_update", "summary_repair", "summary_recompute", "factor_bootstrap"}:
+    if operation not in {
+        "daily_update", "summary_repair", "summary_recompute", "factor_bootstrap",
+        "board_update", "six_dimension_init",
+    }:
         raise ValueError("Unknown canonical writer")
     previous = getattr(conn, "_operation", None)
     conn._operation = operation
@@ -163,6 +172,11 @@ class CanonicalConnection(sqlite3.Connection):
             self.create_function("aspool_changed", -1, self._record_change)
             for alias, tables in publication.TABLES.items():
                 for table in sorted(tables):
+                    if table in OPTIONAL_TABLES and not self.native.execute(
+                        "SELECT 1 FROM features.sqlite_master WHERE type='table' AND name=?",
+                        (table,),
+                    ).fetchone():
+                        continue
                     columns, keys = publication.table_shape(self.native, alias, table)
                     self._shapes[(alias, table)] = (columns, keys)
                     old = ",".join(f'OLD."{name}"' for name in columns)

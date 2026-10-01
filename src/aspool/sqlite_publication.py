@@ -19,7 +19,11 @@ FILES = {
 }
 TABLES = {
     "main": {"daily_bars", "corporate_actions", "dataset_state"},
-    "features": {"stock_daily_features", "market_regime_features", "feature_state"},
+    "features": {
+        "stock_daily_features", "market_regime_features", "feature_state", "market_sessions",
+        "board_snapshots", "board_snapshot_sets", "board_sync_state", "board_daily",
+        "board_daily_status",
+    },
     "adjustments": {"stock_adjustment_factors", "stock_factor_anchors", "adjustment_state"},
 }
 MAX_ROWS = 250_000

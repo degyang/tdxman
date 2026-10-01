@@ -107,6 +107,12 @@ def _inputs(rows, allowed):
     return merged
 
 
+def _board_input(row):
+    if row.get("calc_status") != "TRADED":
+        return None
+    return row.get("is_st"), row.get("close"), row.get("pre_close")
+
+
 def _write(conn, table, key, fields, old):
     delta = {name: value for name, value in fields.items() if old.get(name) != value}
     if old and not delta:
@@ -197,8 +203,11 @@ def apply_daily_changes(
     ma_dependencies = set()
     volume_dependencies = defaultdict(set)
     volume_propagation = defaultdict(set)
+    status_dependencies = set()
+    board_before = {}
     try:
         conn.execute("BEGIN IMMEDIATE")
+        from .sqlite_six_dimension import save_sessions, volume_affected_sessions
         for index, key in enumerate(sorted(keys)):
             if index % 128 == 0 and time.monotonic() >= deadline:
                 raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Writer deadline exceeded")
@@ -264,6 +273,7 @@ def apply_daily_changes(
             ).get(symbol, {})
             if not bar_delta and not fact_delta and not listing_ready:
                 continue
+            board_before[key] = _board_input(before)
             result["changed_rows"] += bool(bar_delta) + bool(fact_delta)
             if result["changed_rows"] > 100_000:
                 raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Too many changed source rows")
@@ -297,6 +307,19 @@ def apply_daily_changes(
                 volume_dependencies[symbol].add(day)
             if "volume" in bar_delta or identity_changed:
                 volume_propagation[symbol].add(day)
+            if fact_delta & {"trading_status", "trading_status_source"}:
+                status_dependencies.add(day)
+
+        if affected or volume_dependencies:
+            save_sessions(conn, sessions)
+        # Publish successors only when the date already has stock observations.
+        calendar_dependencies = set()
+        for days in volume_propagation.values():
+            calendar_dependencies.update(volume_affected_sessions(sessions, days))
+        calendar_dependencies.update(volume_affected_sessions(sessions, status_dependencies))
+        affected.update(day for day in calendar_dependencies if conn.execute(
+            "SELECT 1 FROM daily_features WHERE trade_date=? LIMIT 1", (day,)
+        ).fetchone())
 
         from .sqlite_volume_metrics import recompute_volume_metrics
 
@@ -304,7 +327,8 @@ def apply_daily_changes(
             changed_days, reads = recompute_volume_metrics(
                 conn, symbol, days, propagate_days=volume_propagation[symbol]
             )
-            affected.update(changed_days)
+            # Legacy quote/valid-bar ratios are not six-dimension summary inputs.
+            affected.update(changed_days & (calendar_dependencies | set(days)))
             result["read_rows"] += reads
             result["changed_metric_rows"] += len(changed_days)
 
@@ -377,6 +401,7 @@ def apply_daily_changes(
             for day in days:
                 row = _read(conn, "daily_bars", (symbol, day))
                 row.update(_read(conn, "daily_features", (symbol, day)))
+                board_before.setdefault((symbol, day), _board_input(row))
                 stamp_floors[day] = row["updated_at"]
                 row["bar_date"] = day if "close" in row else None
                 status = classify_trading(row)
@@ -465,6 +490,12 @@ def apply_daily_changes(
             raise DataPoolError(
                 "LOCAL_UPDATE_BUDGET_EXCEEDED", "Affected dates exceed supplied calendar"
             )
+        board_changes = defaultdict(set)
+        for (symbol, day), previous in board_before.items():
+            current = _read(conn, "daily_bars", (symbol, day))
+            current.update(_read(conn, "daily_features", (symbol, day)))
+            if _board_input(current) != previous:
+                board_changes[day].add(symbol)
         summary_tick = time.monotonic()
         for day in sorted(affected):
             if conn.execute(
@@ -478,6 +509,13 @@ def apply_daily_changes(
             stats = recompute_daily_summary(conn, trade_date=day, inputs_changed=True)
             result["summary_rows"] += stats["changed_rows"]
             result["read_rows"] += stats["read_rows"]
+            if day in board_changes:
+                from .sqlite_board_daily import recompute_board_daily
+
+                board_stats = recompute_board_daily(
+                    conn, day=day, changed_symbols=board_changes[day]
+                )
+                result["board_rows"] = result.get("board_rows", 0) + board_stats
         result["summary_elapsed_ms"] = round((time.monotonic() - summary_tick) * 1000)
         if time.monotonic() >= deadline:
             raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Writer deadline exceeded")

@@ -622,6 +622,10 @@ def run_update(
             finally:
                 action_elapsed_ms += round((perf_counter() - action_tick) * 1000)
 
+        if source == "tdx" and mode == "update":
+            from .sqlite_board_daily import refresh_board_snapshots
+            report["boards"] = refresh_board_snapshots(root, mac)
+
         result = sync_daily_source(
             root,
             client=client,
