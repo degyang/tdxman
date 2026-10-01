@@ -7,6 +7,9 @@ from pathlib import Path
 
 from .sqlite_publication import migration_path, pending_path
 
+OPTIONAL_FEATURE_TABLES = {"market_sessions", "board_snapshots", "board_snapshot_sets",
+                           "board_sync_state", "board_daily", "board_daily_status"}
+
 REQUIRED = {
     "stocks.sqlite": {"daily_bars", "corporate_actions", "dataset_state"},
     "features.sqlite": {"stock_daily_features", "market_regime_features", "feature_state"},
@@ -19,7 +22,9 @@ REQUIRED = {
     "etfs.sqlite": {"daily_bars"},
 }
 RETIRED = {
-    "stocks.sqlite": {"daily_features", "market_daily_summary", "_retired_actions"},
+    "stocks.sqlite": (
+        {"daily_features", "market_daily_summary", "_retired_actions"} | OPTIONAL_FEATURE_TABLES
+    ),
     "etfs.sqlite": {"adjustment_factors"},
 }
 

@@ -154,6 +154,8 @@ CREATE TABLE market_daily_summary (
     avg_turnover REAL, turnover_valid_count INTEGER,
     sealed_ratio REAL, promotion_ratio REAL,
     ma20_valid_count INTEGER, above_ma20_count INTEGER, above_ma20_pct REAL,
+    upper_median_return REAL, avg_vol_ratio_5d REAL,
+    vol_ratio_5d_valid_count INTEGER, high_vol_ratio_5d_count INTEGER,
     -- W/M-only daily-feature aggregates and native period observations.
     trading_observations INTEGER, st_unknown_observations INTEGER,
     valid_return_observations INTEGER,
@@ -187,4 +189,40 @@ CREATE TABLE dataset_state (
     revision INTEGER NOT NULL,
     max_date TEXT,
     updated_at INTEGER NOT NULL
+) STRICT, WITHOUT ROWID;
+
+
+CREATE TABLE IF NOT EXISTS market_sessions (
+    trade_date TEXT PRIMARY KEY
+) STRICT, WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS board_snapshot_sets (
+    snapshot_id TEXT NOT NULL, kind TEXT NOT NULL,
+    membership_as_of TEXT NOT NULL, membership_basis TEXT NOT NULL,
+    expected_board_count INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+    PRIMARY KEY(snapshot_id,kind)
+) STRICT, WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS board_snapshots (
+    snapshot_id TEXT NOT NULL, kind TEXT NOT NULL, board_id TEXT NOT NULL,
+    board_name TEXT NOT NULL, members_json TEXT NOT NULL CHECK(json_valid(members_json)),
+    PRIMARY KEY(snapshot_id,kind,board_id)
+) STRICT, WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS board_sync_state (
+    kind TEXT PRIMARY KEY, status TEXT NOT NULL, snapshot_id TEXT,
+    attempted_at TEXT NOT NULL, error TEXT, updated_at INTEGER NOT NULL
+) STRICT, WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS board_daily (
+    date TEXT NOT NULL, scope TEXT NOT NULL, classification TEXT NOT NULL,
+    kind TEXT NOT NULL, board_id TEXT NOT NULL, board_name TEXT NOT NULL,
+    member_count INTEGER NOT NULL, trading_member_count INTEGER NOT NULL,
+    valid_return_count INTEGER NOT NULL, avg_return REAL,
+    membership_as_of TEXT NOT NULL, membership_basis TEXT NOT NULL,
+    snapshot_id TEXT NOT NULL, input_digest TEXT NOT NULL, updated_at INTEGER NOT NULL,
+    PRIMARY KEY(date,scope,classification,kind,board_id)
+) STRICT, WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS board_daily_status (
+    date TEXT NOT NULL, scope TEXT NOT NULL, kind TEXT NOT NULL,
+    status TEXT NOT NULL, processed_board_count INTEGER NOT NULL,
+    expected_board_count INTEGER, mapped_trading_count INTEGER NOT NULL,
+    snapshot_id TEXT, updated_at INTEGER NOT NULL,
+    PRIMARY KEY(date,scope,kind)
 ) STRICT, WITHOUT ROWID;

@@ -1,0 +1,168 @@
+{
+  "start": "2026-09-01",
+  "end": "2026-09-30",
+  "sessions": [
+    "2026-09-01",
+    "2026-09-02",
+    "2026-09-03",
+    "2026-09-04",
+    "2026-09-07",
+    "2026-09-08",
+    "2026-09-09",
+    "2026-09-10",
+    "2026-09-11",
+    "2026-09-14",
+    "2026-09-15",
+    "2026-09-16",
+    "2026-09-17",
+    "2026-09-18",
+    "2026-09-21",
+    "2026-09-22",
+    "2026-09-23",
+    "2026-09-24",
+    "2026-09-28",
+    "2026-09-29",
+    "2026-09-30"
+  ],
+  "preceding_sessions": [
+    "2026-08-25",
+    "2026-08-26",
+    "2026-08-27",
+    "2026-08-28",
+    "2026-08-31"
+  ],
+  "summary_rows": 42,
+  "board_rows": 25872,
+  "read_rows": 816980,
+  "per_day": [
+    {
+      "date": "2026-09-01",
+      "read_rows": 38824,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-02",
+      "read_rows": 38826,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-03",
+      "read_rows": 38830,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-04",
+      "read_rows": 38830,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-07",
+      "read_rows": 38835,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-08",
+      "read_rows": 38840,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-09",
+      "read_rows": 38846,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-10",
+      "read_rows": 38850,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-11",
+      "read_rows": 38874,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-14",
+      "read_rows": 38888,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-15",
+      "read_rows": 38900,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-16",
+      "read_rows": 38916,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-17",
+      "read_rows": 38931,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-18",
+      "read_rows": 38945,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-21",
+      "read_rows": 38948,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-22",
+      "read_rows": 38955,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-23",
+      "read_rows": 38962,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-24",
+      "read_rows": 38970,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-28",
+      "read_rows": 38991,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-29",
+      "read_rows": 39004,
+      "changed_rows": 2,
+      "board_rows": 1232
+    },
+    {
+      "date": "2026-09-30",
+      "read_rows": 39015,
+      "changed_rows": 2,
+      "board_rows": 1232
+    }
+  ],
+  "missing_dates": [],
+  "seconds": 9.367,
+  "peak_rss_kib": 442488
+}

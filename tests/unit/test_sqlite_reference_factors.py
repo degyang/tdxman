@@ -293,8 +293,8 @@ def test_st_date_precedence_and_name_must_be_for_same_date():
         "2024-01-02",
     )
     assert select_is_st(name="ST甲", name_as_of="2023-01-02", trade_date="2024-01-02") == (
-        None,
-        None,
+        False,
+        "assumed:not_st",
         None,
     )
     assert select_is_st(
@@ -302,12 +302,16 @@ def test_st_date_precedence_and_name_must_be_for_same_date():
         name=None,
         name_as_of=None,
         trade_date="2024-01-02",
-    ) == (None, None, None)
+    ) == (False, "assumed:not_st", None)
     assert select_is_st(
         dated=[(False, "unknown")],
         trade_date="2024-01-02",
-    ) == (None, None, None)
-    assert select_is_st(name=None, name_as_of=None, trade_date="2024-01-02") == (None, None, None)
+    ) == (False, "assumed:not_st", None)
+    assert select_is_st(name=None, name_as_of=None, trade_date="2024-01-02") == (
+        False,
+        "assumed:not_st",
+        None,
+    )
     with pytest.raises(ValueError, match="Conflicting"):
         select_is_st(dated=[(True, "a"), (False, "b")], trade_date="2024-01-02")
 
@@ -1164,3 +1168,17 @@ def test_advance_two_cash_dividends_during_suspension_use_prior_factor_scale(adv
         events=[first_event, second_event],
     )
     assert result["changed_rows"] == 0 and conn.total_changes == changes
+
+
+def test_unverified_legacy_reference_is_not_selected_but_reliable_source_still_wins():
+    raw = (2.5, "raw_fallback:legacy_unspecified")
+    assert select_reference_pre_close(raw_candidate=raw) == (None, None)
+    assert select_reference_pre_close(dated=[(10, "verified_provider")], raw_candidate=raw) == (
+        10,
+        "verified_provider",
+    )
+    assert select_reference_pre_close(
+        previous_close=10,
+        actions_covered=True,
+        raw_candidate=raw,
+    ) == (10, "derived:previous_close+corporate_actions")

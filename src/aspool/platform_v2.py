@@ -271,6 +271,8 @@ def _prepare_features(root, *, factor_revision):
         _rename_schema(source, target, "daily_features", "stock_daily_features")
         _rename_schema(source, target, "market_daily_summary", "market_regime_features")
         target.executescript(FEATURE_STATE_DDL)
+        from .sqlite_six_dimension import SCHEMA
+        target.executescript(SCHEMA)
         if target.execute("PRAGMA user_version").fetchone()[0] != 1:
             raise ValueError("Unsupported features schema")
         raw_state = source.execute(

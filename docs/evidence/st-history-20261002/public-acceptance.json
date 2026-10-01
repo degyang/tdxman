@@ -1,0 +1,2572 @@
+{
+  "status": "verified",
+  "root": "/mnt/d/Workstation/Services/tdxman/data",
+  "start": "2000-01-04",
+  "end": "2026-09-30",
+  "days": 6482,
+  "source_rows": 16366762,
+  "feature_rows": 16367333,
+  "public_scopes": {
+    "all_stocks": {
+      "days": 6482,
+      "rows_with_known_limits": 6481,
+      "avg_limit_up": 30.944615859302683,
+      "avg_known": 2355.199938290651,
+      "avg_unknown": 127.62943535945696,
+      "optional_reason_json_available": false,
+      "stock_reason_counts_audited_in_year_reports": true
+    },
+    "exclude_known_st": {
+      "days": 6482,
+      "rows_with_known_limits": 6481,
+      "avg_limit_up": 30.930576982412834,
+      "avg_known": 2354.5964208577598,
+      "avg_unknown": 127.62943535945696,
+      "optional_reason_json_available": false,
+      "stock_reason_counts_audited_in_year_reports": true
+    }
+  },
+  "board_samples": {
+    "2000-01-11": {
+      "all_stocks": {
+        "rows": 614,
+        "known_return_boards": 485,
+        "category_status": [
+          "ready",
+          "ready"
+        ]
+      },
+      "exclude_known_st": {
+        "rows": 614,
+        "known_return_boards": 485,
+        "category_status": [
+          "ready",
+          "ready"
+        ]
+      }
+    },
+    "2010-01-04": {
+      "all_stocks": {
+        "rows": 614,
+        "known_return_boards": 568,
+        "category_status": [
+          "ready",
+          "ready"
+        ]
+      },
+      "exclude_known_st": {
+        "rows": 614,
+        "known_return_boards": 568,
+        "category_status": [
+          "ready",
+          "ready"
+        ]
+      }
+    },
+    "2025-06-30": {
+      "all_stocks": {
+        "rows": 614,
+        "known_return_boards": 613,
+        "category_status": [
+          "ready",
+          "ready"
+        ]
+      },
+      "exclude_known_st": {
+        "rows": 614,
+        "known_return_boards": 613,
+        "category_status": [
+          "ready",
+          "ready"
+        ]
+      }
+    },
+    "2026-09-30": {
+      "all_stocks": {
+        "rows": 614,
+        "known_return_boards": 614,
+        "category_status": [
+          "ready",
+          "ready"
+        ]
+      },
+      "exclude_known_st": {
+        "rows": 614,
+        "known_return_boards": 612,
+        "category_status": [
+          "ready",
+          "ready"
+        ]
+      }
+    }
+  },
+  "raw_and_adjustment_states_unchanged": true,
+  "monthly": [
+    {
+      "month": "2000-01",
+      "days": 19,
+      "avg_up": 13.95,
+      "avg_known": 619.05,
+      "avg_unknown": 137.47
+    },
+    {
+      "month": "2000-02",
+      "days": 12,
+      "avg_up": 68.92,
+      "avg_known": 652.17,
+      "avg_unknown": 106.17
+    },
+    {
+      "month": "2000-03",
+      "days": 23,
+      "avg_up": 17.0,
+      "avg_known": 654.3,
+      "avg_unknown": 108.91
+    },
+    {
+      "month": "2000-04",
+      "days": 20,
+      "avg_up": 6.95,
+      "avg_known": 652.35,
+      "avg_unknown": 109.8
+    },
+    {
+      "month": "2000-05",
+      "days": 18,
+      "avg_up": 6.22,
+      "avg_known": 652.39,
+      "avg_unknown": 104.78
+    },
+    {
+      "month": "2000-06",
+      "days": 22,
+      "avg_up": 3.82,
+      "avg_known": 677.41,
+      "avg_unknown": 103.23
+    },
+    {
+      "month": "2000-07",
+      "days": 21,
+      "avg_up": 3.1,
+      "avg_known": 704.43,
+      "avg_unknown": 97.48
+    },
+    {
+      "month": "2000-08",
+      "days": 23,
+      "avg_up": 2.3,
+      "avg_known": 713.09,
+      "avg_unknown": 100.35
+    },
+    {
+      "month": "2000-09",
+      "days": 21,
+      "avg_up": 1.05,
+      "avg_known": 715.71,
+      "avg_unknown": 100.67
+    },
+    {
+      "month": "2000-10",
+      "days": 17,
+      "avg_up": 2.12,
+      "avg_known": 717.47,
+      "avg_unknown": 111.29
+    },
+    {
+      "month": "2000-11",
+      "days": 22,
+      "avg_up": 2.05,
+      "avg_known": 722.05,
+      "avg_unknown": 115.41
+    },
+    {
+      "month": "2000-12",
+      "days": 21,
+      "avg_up": 1.05,
+      "avg_known": 720.14,
+      "avg_unknown": 127.76
+    },
+    {
+      "month": "2001-01",
+      "days": 14,
+      "avg_up": 1.86,
+      "avg_known": 720.79,
+      "avg_unknown": 147.79
+    },
+    {
+      "month": "2001-02",
+      "days": 18,
+      "avg_up": 0.56,
+      "avg_known": 722.78,
+      "avg_unknown": 159.89
+    },
+    {
+      "month": "2001-03",
+      "days": 22,
+      "avg_up": 1.09,
+      "avg_known": 720.91,
+      "avg_unknown": 170.5
+    },
+    {
+      "month": "2001-04",
+      "days": 21,
+      "avg_up": 1.1,
+      "avg_known": 718.95,
+      "avg_unknown": 169.62
+    },
+    {
+      "month": "2001-05",
+      "days": 18,
+      "avg_up": 1.89,
+      "avg_known": 730.56,
+      "avg_unknown": 148.33
+    },
+    {
+      "month": "2001-06",
+      "days": 21,
+      "avg_up": 1.29,
+      "avg_known": 793.14,
+      "avg_unknown": 104.57
+    },
+    {
+      "month": "2001-07",
+      "days": 22,
+      "avg_up": 0.77,
+      "avg_known": 838.05,
+      "avg_unknown": 71.64
+    },
+    {
+      "month": "2001-08",
+      "days": 23,
+      "avg_up": 1.13,
+      "avg_known": 850.83,
+      "avg_unknown": 61.83
+    },
+    {
+      "month": "2001-09",
+      "days": 20,
+      "avg_up": 1.4,
+      "avg_known": 851.15,
+      "avg_unknown": 66.65
+    },
+    {
+      "month": "2001-10",
+      "days": 18,
+      "avg_up": 48.94,
+      "avg_known": 855.39,
+      "avg_unknown": 65.11
+    },
+    {
+      "month": "2001-11",
+      "days": 22,
+      "avg_up": 1.27,
+      "avg_known": 861.86,
+      "avg_unknown": 61.32
+    },
+    {
+      "month": "2001-12",
+      "days": 21,
+      "avg_up": 0.14,
+      "avg_known": 856.33,
+      "avg_unknown": 63.43
+    },
+    {
+      "month": "2002-01",
+      "days": 20,
+      "avg_up": 12.6,
+      "avg_known": 863.8,
+      "avg_unknown": 69.9
+    },
+    {
+      "month": "2002-02",
+      "days": 10,
+      "avg_up": 3.9,
+      "avg_known": 861.1,
+      "avg_unknown": 71.9
+    },
+    {
+      "month": "2002-03",
+      "days": 21,
+      "avg_up": 4.67,
+      "avg_known": 862.19,
+      "avg_unknown": 75.1
+    },
+    {
+      "month": "2002-04",
+      "days": 22,
+      "avg_up": 2.59,
+      "avg_known": 854.18,
+      "avg_unknown": 77.41
+    },
+    {
+      "month": "2002-05",
+      "days": 18,
+      "avg_up": 1.56,
+      "avg_known": 847.89,
+      "avg_unknown": 77.5
+    },
+    {
+      "month": "2002-06",
+      "days": 20,
+      "avg_up": 34.7,
+      "avg_known": 867.5,
+      "avg_unknown": 72.75
+    },
+    {
+      "month": "2002-07",
+      "days": 23,
+      "avg_up": 0.57,
+      "avg_known": 903.91,
+      "avg_unknown": 56.0
+    },
+    {
+      "month": "2002-08",
+      "days": 22,
+      "avg_up": 0.32,
+      "avg_known": 919.09,
+      "avg_unknown": 53.68
+    },
+    {
+      "month": "2002-09",
+      "days": 20,
+      "avg_up": 0.4,
+      "avg_known": 917.65,
+      "avg_unknown": 58.0
+    },
+    {
+      "month": "2002-10",
+      "days": 18,
+      "avg_up": 0.11,
+      "avg_known": 919.06,
+      "avg_unknown": 64.0
+    },
+    {
+      "month": "2002-11",
+      "days": 21,
+      "avg_up": 0.81,
+      "avg_known": 923.24,
+      "avg_unknown": 67.0
+    },
+    {
+      "month": "2002-12",
+      "days": 22,
+      "avg_up": 0.82,
+      "avg_known": 919.64,
+      "avg_unknown": 69.77
+    },
+    {
+      "month": "2003-01",
+      "days": 20,
+      "avg_up": 2.0,
+      "avg_known": 928.75,
+      "avg_unknown": 74.05
+    },
+    {
+      "month": "2003-02",
+      "days": 15,
+      "avg_up": 1.2,
+      "avg_known": 925.53,
+      "avg_unknown": 78.33
+    },
+    {
+      "month": "2003-03",
+      "days": 21,
+      "avg_up": 0.29,
+      "avg_known": 926.1,
+      "avg_unknown": 82.29
+    },
+    {
+      "month": "2003-04",
+      "days": 22,
+      "avg_up": 3.27,
+      "avg_known": 916.45,
+      "avg_unknown": 84.5
+    },
+    {
+      "month": "2003-05",
+      "days": 15,
+      "avg_up": 3.87,
+      "avg_known": 905.93,
+      "avg_unknown": 82.33
+    },
+    {
+      "month": "2003-06",
+      "days": 21,
+      "avg_up": 0.67,
+      "avg_known": 937.86,
+      "avg_unknown": 61.05
+    },
+    {
+      "month": "2003-07",
+      "days": 23,
+      "avg_up": 0.3,
+      "avg_known": 971.74,
+      "avg_unknown": 53.43
+    },
+    {
+      "month": "2003-08",
+      "days": 21,
+      "avg_up": 0.67,
+      "avg_known": 976.76,
+      "avg_unknown": 55.43
+    },
+    {
+      "month": "2003-09",
+      "days": 22,
+      "avg_up": 1.09,
+      "avg_known": 976.14,
+      "avg_unknown": 58.86
+    },
+    {
+      "month": "2003-10",
+      "days": 18,
+      "avg_up": 0.67,
+      "avg_known": 981.5,
+      "avg_unknown": 62.67
+    },
+    {
+      "month": "2003-11",
+      "days": 20,
+      "avg_up": 5.65,
+      "avg_known": 986.3,
+      "avg_unknown": 65.95
+    },
+    {
+      "month": "2003-12",
+      "days": 23,
+      "avg_up": 3.17,
+      "avg_known": 983.65,
+      "avg_unknown": 70.35
+    },
+    {
+      "month": "2004-01",
+      "days": 13,
+      "avg_up": 10.08,
+      "avg_known": 990.15,
+      "avg_unknown": 74.38
+    },
+    {
+      "month": "2004-02",
+      "days": 20,
+      "avg_up": 6.1,
+      "avg_known": 988.7,
+      "avg_unknown": 79.2
+    },
+    {
+      "month": "2004-03",
+      "days": 23,
+      "avg_up": 2.61,
+      "avg_known": 983.35,
+      "avg_unknown": 86.0
+    },
+    {
+      "month": "2004-04",
+      "days": 22,
+      "avg_up": 2.27,
+      "avg_known": 976.68,
+      "avg_unknown": 92.82
+    },
+    {
+      "month": "2004-05",
+      "days": 16,
+      "avg_up": 2.38,
+      "avg_known": 970.25,
+      "avg_unknown": 91.19
+    },
+    {
+      "month": "2004-06",
+      "days": 22,
+      "avg_up": 2.18,
+      "avg_known": 1005.73,
+      "avg_unknown": 80.86
+    },
+    {
+      "month": "2004-07",
+      "days": 22,
+      "avg_up": 2.18,
+      "avg_known": 1035.41,
+      "avg_unknown": 86.55
+    },
+    {
+      "month": "2004-08",
+      "days": 22,
+      "avg_up": 3.09,
+      "avg_known": 1041.45,
+      "avg_unknown": 96.18
+    },
+    {
+      "month": "2004-09",
+      "days": 22,
+      "avg_up": 7.36,
+      "avg_known": 1039.86,
+      "avg_unknown": 99.91
+    },
+    {
+      "month": "2004-10",
+      "days": 16,
+      "avg_up": 6.06,
+      "avg_known": 1044.38,
+      "avg_unknown": 100.0
+    },
+    {
+      "month": "2004-11",
+      "days": 22,
+      "avg_up": 5.0,
+      "avg_known": 1046.82,
+      "avg_unknown": 100.23
+    },
+    {
+      "month": "2004-12",
+      "days": 23,
+      "avg_up": 2.26,
+      "avg_known": 1051.87,
+      "avg_unknown": 99.22
+    },
+    {
+      "month": "2005-01",
+      "days": 20,
+      "avg_up": 2.75,
+      "avg_known": 1058.35,
+      "avg_unknown": 99.5
+    },
+    {
+      "month": "2005-02",
+      "days": 13,
+      "avg_up": 6.77,
+      "avg_known": 1058.38,
+      "avg_unknown": 100.23
+    },
+    {
+      "month": "2005-03",
+      "days": 23,
+      "avg_up": 2.74,
+      "avg_known": 1056.09,
+      "avg_unknown": 101.43
+    },
+    {
+      "month": "2005-04",
+      "days": 21,
+      "avg_up": 6.9,
+      "avg_known": 1051.76,
+      "avg_unknown": 96.19
+    },
+    {
+      "month": "2005-05",
+      "days": 17,
+      "avg_up": 6.12,
+      "avg_known": 1044.47,
+      "avg_unknown": 83.35
+    },
+    {
+      "month": "2005-06",
+      "days": 22,
+      "avg_up": 8.91,
+      "avg_known": 1076.77,
+      "avg_unknown": 58.36
+    },
+    {
+      "month": "2005-07",
+      "days": 21,
+      "avg_up": 5.19,
+      "avg_known": 1121.19,
+      "avg_unknown": 33.38
+    },
+    {
+      "month": "2005-08",
+      "days": 23,
+      "avg_up": 11.7,
+      "avg_known": 1122.04,
+      "avg_unknown": 26.61
+    },
+    {
+      "month": "2005-09",
+      "days": 22,
+      "avg_up": 7.05,
+      "avg_known": 1106.27,
+      "avg_unknown": 22.55
+    },
+    {
+      "month": "2005-10",
+      "days": 16,
+      "avg_up": 7.31,
+      "avg_known": 1055.44,
+      "avg_unknown": 19.5
+    },
+    {
+      "month": "2005-11",
+      "days": 22,
+      "avg_up": 4.36,
+      "avg_known": 1062.18,
+      "avg_unknown": 17.36
+    },
+    {
+      "month": "2005-12",
+      "days": 22,
+      "avg_up": 2.0,
+      "avg_known": 1038.18,
+      "avg_unknown": 17.27
+    },
+    {
+      "month": "2006-01",
+      "days": 16,
+      "avg_up": 6.38,
+      "avg_known": 1025.38,
+      "avg_unknown": 16.69
+    },
+    {
+      "month": "2006-02",
+      "days": 17,
+      "avg_up": 5.65,
+      "avg_known": 1020.18,
+      "avg_unknown": 16.35
+    },
+    {
+      "month": "2006-03",
+      "days": 23,
+      "avg_up": 4.87,
+      "avg_known": 973.04,
+      "avg_unknown": 14.43
+    },
+    {
+      "month": "2006-04",
+      "days": 20,
+      "avg_up": 20.35,
+      "avg_known": 963.1,
+      "avg_unknown": 12.9
+    },
+    {
+      "month": "2006-05",
+      "days": 18,
+      "avg_up": 57.72,
+      "avg_known": 952.11,
+      "avg_unknown": 11.56
+    },
+    {
+      "month": "2006-06",
+      "days": 22,
+      "avg_up": 21.0,
+      "avg_known": 988.64,
+      "avg_unknown": 12.82
+    },
+    {
+      "month": "2006-07",
+      "days": 21,
+      "avg_up": 12.62,
+      "avg_known": 1020.9,
+      "avg_unknown": 17.43
+    },
+    {
+      "month": "2006-08",
+      "days": 23,
+      "avg_up": 6.13,
+      "avg_known": 1058.87,
+      "avg_unknown": 26.43
+    },
+    {
+      "month": "2006-09",
+      "days": 21,
+      "avg_up": 6.29,
+      "avg_known": 1080.57,
+      "avg_unknown": 33.48
+    },
+    {
+      "month": "2006-10",
+      "days": 17,
+      "avg_up": 8.12,
+      "avg_known": 1088.82,
+      "avg_unknown": 39.41
+    },
+    {
+      "month": "2006-11",
+      "days": 22,
+      "avg_up": 5.59,
+      "avg_known": 1093.73,
+      "avg_unknown": 46.36
+    },
+    {
+      "month": "2006-12",
+      "days": 21,
+      "avg_up": 13.71,
+      "avg_known": 1074.33,
+      "avg_unknown": 60.57
+    },
+    {
+      "month": "2007-01",
+      "days": 20,
+      "avg_up": 38.3,
+      "avg_known": 1075.15,
+      "avg_unknown": 75.55
+    },
+    {
+      "month": "2007-02",
+      "days": 15,
+      "avg_up": 40.53,
+      "avg_known": 1086.2,
+      "avg_unknown": 84.13
+    },
+    {
+      "month": "2007-03",
+      "days": 22,
+      "avg_up": 25.73,
+      "avg_known": 1090.0,
+      "avg_unknown": 91.09
+    },
+    {
+      "month": "2007-04",
+      "days": 21,
+      "avg_up": 39.67,
+      "avg_known": 1085.29,
+      "avg_unknown": 90.29
+    },
+    {
+      "month": "2007-05",
+      "days": 18,
+      "avg_up": 42.28,
+      "avg_known": 1072.56,
+      "avg_unknown": 85.0
+    },
+    {
+      "month": "2007-06",
+      "days": 21,
+      "avg_up": 44.43,
+      "avg_known": 1130.86,
+      "avg_unknown": 60.1
+    },
+    {
+      "month": "2007-07",
+      "days": 22,
+      "avg_up": 31.45,
+      "avg_known": 1163.5,
+      "avg_unknown": 45.5
+    },
+    {
+      "month": "2007-08",
+      "days": 23,
+      "avg_up": 31.7,
+      "avg_known": 1156.04,
+      "avg_unknown": 51.91
+    },
+    {
+      "month": "2007-09",
+      "days": 20,
+      "avg_up": 28.9,
+      "avg_known": 1157.6,
+      "avg_unknown": 62.15
+    },
+    {
+      "month": "2007-10",
+      "days": 18,
+      "avg_up": 22.89,
+      "avg_known": 1156.39,
+      "avg_unknown": 71.5
+    },
+    {
+      "month": "2007-11",
+      "days": 22,
+      "avg_up": 11.5,
+      "avg_known": 1152.5,
+      "avg_unknown": 80.27
+    },
+    {
+      "month": "2007-12",
+      "days": 20,
+      "avg_up": 10.9,
+      "avg_known": 1146.35,
+      "avg_unknown": 96.45
+    },
+    {
+      "month": "2008-01",
+      "days": 22,
+      "avg_up": 20.23,
+      "avg_known": 1158.86,
+      "avg_unknown": 108.41
+    },
+    {
+      "month": "2008-02",
+      "days": 16,
+      "avg_up": 25.0,
+      "avg_known": 1163.13,
+      "avg_unknown": 119.56
+    },
+    {
+      "month": "2008-03",
+      "days": 21,
+      "avg_up": 14.62,
+      "avg_known": 1158.0,
+      "avg_unknown": 122.95
+    },
+    {
+      "month": "2008-04",
+      "days": 21,
+      "avg_up": 56.1,
+      "avg_known": 1152.29,
+      "avg_unknown": 118.86
+    },
+    {
+      "month": "2008-05",
+      "days": 20,
+      "avg_up": 28.75,
+      "avg_known": 1168.7,
+      "avg_unknown": 100.25
+    },
+    {
+      "month": "2008-06",
+      "days": 20,
+      "avg_up": 21.65,
+      "avg_known": 1235.4,
+      "avg_unknown": 71.45
+    },
+    {
+      "month": "2008-07",
+      "days": 23,
+      "avg_up": 26.09,
+      "avg_known": 1282.61,
+      "avg_unknown": 62.91
+    },
+    {
+      "month": "2008-08",
+      "days": 21,
+      "avg_up": 23.71,
+      "avg_known": 1293.52,
+      "avg_unknown": 64.67
+    },
+    {
+      "month": "2008-09",
+      "days": 19,
+      "avg_up": 81.84,
+      "avg_known": 1299.63,
+      "avg_unknown": 68.11
+    },
+    {
+      "month": "2008-10",
+      "days": 20,
+      "avg_up": 13.3,
+      "avg_known": 1298.05,
+      "avg_unknown": 69.75
+    },
+    {
+      "month": "2008-11",
+      "days": 20,
+      "avg_up": 53.0,
+      "avg_known": 1296.95,
+      "avg_unknown": 68.5
+    },
+    {
+      "month": "2008-12",
+      "days": 23,
+      "avg_up": 30.96,
+      "avg_known": 1301.3,
+      "avg_unknown": 66.78
+    },
+    {
+      "month": "2009-01",
+      "days": 15,
+      "avg_up": 22.13,
+      "avg_known": 1314.0,
+      "avg_unknown": 68.2
+    },
+    {
+      "month": "2009-02",
+      "days": 20,
+      "avg_up": 36.85,
+      "avg_known": 1317.05,
+      "avg_unknown": 68.75
+    },
+    {
+      "month": "2009-03",
+      "days": 22,
+      "avg_up": 23.41,
+      "avg_known": 1314.23,
+      "avg_unknown": 69.23
+    },
+    {
+      "month": "2009-04",
+      "days": 21,
+      "avg_up": 25.57,
+      "avg_known": 1296.14,
+      "avg_unknown": 61.05
+    },
+    {
+      "month": "2009-05",
+      "days": 18,
+      "avg_up": 18.61,
+      "avg_known": 1301.28,
+      "avg_unknown": 46.5
+    },
+    {
+      "month": "2009-06",
+      "days": 22,
+      "avg_up": 13.45,
+      "avg_known": 1344.05,
+      "avg_unknown": 26.05
+    },
+    {
+      "month": "2009-07",
+      "days": 23,
+      "avg_up": 20.57,
+      "avg_known": 1356.43,
+      "avg_unknown": 20.0
+    },
+    {
+      "month": "2009-08",
+      "days": 21,
+      "avg_up": 20.76,
+      "avg_known": 1358.48,
+      "avg_unknown": 24.48
+    },
+    {
+      "month": "2009-09",
+      "days": 22,
+      "avg_up": 18.68,
+      "avg_known": 1360.91,
+      "avg_unknown": 34.77
+    },
+    {
+      "month": "2009-10",
+      "days": 16,
+      "avg_up": 15.56,
+      "avg_known": 1370.63,
+      "avg_unknown": 43.75
+    },
+    {
+      "month": "2009-11",
+      "days": 21,
+      "avg_up": 19.24,
+      "avg_known": 1364.71,
+      "avg_unknown": 73.76
+    },
+    {
+      "month": "2009-12",
+      "days": 23,
+      "avg_up": 10.04,
+      "avg_known": 1362.04,
+      "avg_unknown": 89.04
+    },
+    {
+      "month": "2010-01",
+      "days": 20,
+      "avg_up": 8.95,
+      "avg_known": 1369.8,
+      "avg_unknown": 120.7
+    },
+    {
+      "month": "2010-02",
+      "days": 15,
+      "avg_up": 11.87,
+      "avg_known": 1376.33,
+      "avg_unknown": 146.47
+    },
+    {
+      "month": "2010-03",
+      "days": 23,
+      "avg_up": 7.74,
+      "avg_known": 1374.7,
+      "avg_unknown": 168.3
+    },
+    {
+      "month": "2010-04",
+      "days": 21,
+      "avg_up": 6.71,
+      "avg_known": 1367.81,
+      "avg_unknown": 180.95
+    },
+    {
+      "month": "2010-05",
+      "days": 20,
+      "avg_up": 10.1,
+      "avg_known": 1410.75,
+      "avg_unknown": 161.0
+    },
+    {
+      "month": "2010-06",
+      "days": 19,
+      "avg_up": 7.26,
+      "avg_known": 1464.21,
+      "avg_unknown": 142.32
+    },
+    {
+      "month": "2010-07",
+      "days": 22,
+      "avg_up": 13.23,
+      "avg_known": 1498.91,
+      "avg_unknown": 140.77
+    },
+    {
+      "month": "2010-08",
+      "days": 22,
+      "avg_up": 10.14,
+      "avg_known": 1493.59,
+      "avg_unknown": 157.68
+    },
+    {
+      "month": "2010-09",
+      "days": 19,
+      "avg_up": 12.53,
+      "avg_known": 1502.58,
+      "avg_unknown": 171.84
+    },
+    {
+      "month": "2010-10",
+      "days": 16,
+      "avg_up": 26.94,
+      "avg_known": 1520.94,
+      "avg_unknown": 192.19
+    },
+    {
+      "month": "2010-11",
+      "days": 22,
+      "avg_up": 20.95,
+      "avg_known": 1518.77,
+      "avg_unknown": 210.91
+    },
+    {
+      "month": "2010-12",
+      "days": 23,
+      "avg_up": 7.87,
+      "avg_known": 1514.57,
+      "avg_unknown": 236.96
+    },
+    {
+      "month": "2011-01",
+      "days": 20,
+      "avg_up": 6.7,
+      "avg_known": 1524.5,
+      "avg_unknown": 267.8
+    },
+    {
+      "month": "2011-02",
+      "days": 15,
+      "avg_up": 14.27,
+      "avg_known": 1521.93,
+      "avg_unknown": 299.2
+    },
+    {
+      "month": "2011-03",
+      "days": 23,
+      "avg_up": 8.09,
+      "avg_known": 1516.83,
+      "avg_unknown": 323.83
+    },
+    {
+      "month": "2011-04",
+      "days": 19,
+      "avg_up": 8.32,
+      "avg_known": 1516.11,
+      "avg_unknown": 318.16
+    },
+    {
+      "month": "2011-05",
+      "days": 21,
+      "avg_up": 8.95,
+      "avg_known": 1611.33,
+      "avg_unknown": 246.76
+    },
+    {
+      "month": "2011-06",
+      "days": 21,
+      "avg_up": 11.24,
+      "avg_known": 1738.95,
+      "avg_unknown": 165.48
+    },
+    {
+      "month": "2011-07",
+      "days": 21,
+      "avg_up": 7.62,
+      "avg_known": 1787.38,
+      "avg_unknown": 151.48
+    },
+    {
+      "month": "2011-08",
+      "days": 23,
+      "avg_up": 9.04,
+      "avg_known": 1802.04,
+      "avg_unknown": 163.91
+    },
+    {
+      "month": "2011-09",
+      "days": 21,
+      "avg_up": 4.57,
+      "avg_known": 1813.71,
+      "avg_unknown": 170.71
+    },
+    {
+      "month": "2011-10",
+      "days": 16,
+      "avg_up": 11.63,
+      "avg_known": 1830.5,
+      "avg_unknown": 170.63
+    },
+    {
+      "month": "2011-11",
+      "days": 22,
+      "avg_up": 9.64,
+      "avg_known": 1825.32,
+      "avg_unknown": 182.23
+    },
+    {
+      "month": "2011-12",
+      "days": 22,
+      "avg_up": 5.95,
+      "avg_known": 1827.82,
+      "avg_unknown": 195.73
+    },
+    {
+      "month": "2012-01",
+      "days": 15,
+      "avg_up": 18.2,
+      "avg_known": 1831.87,
+      "avg_unknown": 210.87
+    },
+    {
+      "month": "2012-02",
+      "days": 21,
+      "avg_up": 11.9,
+      "avg_known": 1831.14,
+      "avg_unknown": 220.29
+    },
+    {
+      "month": "2012-03",
+      "days": 22,
+      "avg_up": 10.27,
+      "avg_known": 1826.68,
+      "avg_unknown": 237.5
+    },
+    {
+      "month": "2012-04",
+      "days": 17,
+      "avg_up": 19.71,
+      "avg_known": 1809.59,
+      "avg_unknown": 242.18
+    },
+    {
+      "month": "2012-05",
+      "days": 22,
+      "avg_up": 12.23,
+      "avg_known": 1870.82,
+      "avg_unknown": 206.27
+    },
+    {
+      "month": "2012-06",
+      "days": 20,
+      "avg_up": 8.7,
+      "avg_known": 1988.8,
+      "avg_unknown": 134.1
+    },
+    {
+      "month": "2012-07",
+      "days": 22,
+      "avg_up": 11.55,
+      "avg_known": 2075.05,
+      "avg_unknown": 91.45
+    },
+    {
+      "month": "2012-08",
+      "days": 23,
+      "avg_up": 17.52,
+      "avg_known": 2088.48,
+      "avg_unknown": 94.48
+    },
+    {
+      "month": "2012-09",
+      "days": 20,
+      "avg_up": 16.05,
+      "avg_known": 2097.85,
+      "avg_unknown": 97.6
+    },
+    {
+      "month": "2012-10",
+      "days": 18,
+      "avg_up": 15.06,
+      "avg_known": 2116.06,
+      "avg_unknown": 90.83
+    },
+    {
+      "month": "2012-11",
+      "days": 22,
+      "avg_up": 9.73,
+      "avg_known": 2125.77,
+      "avg_unknown": 84.32
+    },
+    {
+      "month": "2012-12",
+      "days": 21,
+      "avg_up": 21.14,
+      "avg_known": 2112.38,
+      "avg_unknown": 81.0
+    },
+    {
+      "month": "2013-01",
+      "days": 20,
+      "avg_up": 24.6,
+      "avg_known": 2111.8,
+      "avg_unknown": 78.85
+    },
+    {
+      "month": "2013-02",
+      "days": 15,
+      "avg_up": 15.2,
+      "avg_known": 2121.73,
+      "avg_unknown": 79.87
+    },
+    {
+      "month": "2013-03",
+      "days": 21,
+      "avg_up": 13.33,
+      "avg_known": 2117.19,
+      "avg_unknown": 77.43
+    },
+    {
+      "month": "2013-04",
+      "days": 18,
+      "avg_up": 10.33,
+      "avg_known": 2114.0,
+      "avg_unknown": 73.94
+    },
+    {
+      "month": "2013-05",
+      "days": 22,
+      "avg_up": 19.45,
+      "avg_known": 2122.27,
+      "avg_unknown": 60.68
+    },
+    {
+      "month": "2013-06",
+      "days": 17,
+      "avg_up": 13.35,
+      "avg_known": 2134.94,
+      "avg_unknown": 35.41
+    },
+    {
+      "month": "2013-07",
+      "days": 23,
+      "avg_up": 29.22,
+      "avg_known": 2152.48,
+      "avg_unknown": 15.09
+    },
+    {
+      "month": "2013-08",
+      "days": 22,
+      "avg_up": 29.5,
+      "avg_known": 2151.18,
+      "avg_unknown": 11.55
+    },
+    {
+      "month": "2013-09",
+      "days": 19,
+      "avg_up": 31.05,
+      "avg_known": 2154.47,
+      "avg_unknown": 11.37
+    },
+    {
+      "month": "2013-10",
+      "days": 18,
+      "avg_up": 30.17,
+      "avg_known": 2153.56,
+      "avg_unknown": 11.89
+    },
+    {
+      "month": "2013-11",
+      "days": 21,
+      "avg_up": 24.52,
+      "avg_known": 2144.76,
+      "avg_unknown": 11.86
+    },
+    {
+      "month": "2013-12",
+      "days": 22,
+      "avg_up": 18.86,
+      "avg_known": 2142.27,
+      "avg_unknown": 11.55
+    },
+    {
+      "month": "2014-01",
+      "days": 21,
+      "avg_up": 21.14,
+      "avg_known": 2145.24,
+      "avg_unknown": 20.1
+    },
+    {
+      "month": "2014-02",
+      "days": 16,
+      "avg_up": 34.25,
+      "avg_known": 2131.25,
+      "avg_unknown": 49.75
+    },
+    {
+      "month": "2014-03",
+      "days": 21,
+      "avg_up": 21.29,
+      "avg_known": 2121.29,
+      "avg_unknown": 54.0
+    },
+    {
+      "month": "2014-04",
+      "days": 21,
+      "avg_up": 12.67,
+      "avg_known": 2082.62,
+      "avg_unknown": 53.57
+    },
+    {
+      "month": "2014-05",
+      "days": 20,
+      "avg_up": 13.65,
+      "avg_known": 2075.6,
+      "avg_unknown": 43.25
+    },
+    {
+      "month": "2014-06",
+      "days": 20,
+      "avg_up": 18.4,
+      "avg_known": 2084.4,
+      "avg_unknown": 27.75
+    },
+    {
+      "month": "2014-07",
+      "days": 23,
+      "avg_up": 23.22,
+      "avg_known": 2092.22,
+      "avg_unknown": 22.04
+    },
+    {
+      "month": "2014-08",
+      "days": 21,
+      "avg_up": 23.33,
+      "avg_known": 2102.67,
+      "avg_unknown": 28.33
+    },
+    {
+      "month": "2014-09",
+      "days": 21,
+      "avg_up": 29.0,
+      "avg_known": 2097.62,
+      "avg_unknown": 32.9
+    },
+    {
+      "month": "2014-10",
+      "days": 18,
+      "avg_up": 19.39,
+      "avg_known": 2091.78,
+      "avg_unknown": 47.94
+    },
+    {
+      "month": "2014-11",
+      "days": 20,
+      "avg_up": 23.7,
+      "avg_known": 2093.15,
+      "avg_unknown": 57.7
+    },
+    {
+      "month": "2014-12",
+      "days": 23,
+      "avg_up": 40.17,
+      "avg_known": 2077.3,
+      "avg_unknown": 70.52
+    },
+    {
+      "month": "2015-01",
+      "days": 20,
+      "avg_up": 32.45,
+      "avg_known": 2077.3,
+      "avg_unknown": 88.2
+    },
+    {
+      "month": "2015-02",
+      "days": 15,
+      "avg_up": 30.13,
+      "avg_known": 2079.93,
+      "avg_unknown": 106.4
+    },
+    {
+      "month": "2015-03",
+      "days": 22,
+      "avg_up": 63.14,
+      "avg_known": 2048.95,
+      "avg_unknown": 130.09
+    },
+    {
+      "month": "2015-04",
+      "days": 21,
+      "avg_up": 92.05,
+      "avg_known": 2019.52,
+      "avg_unknown": 144.0
+    },
+    {
+      "month": "2015-05",
+      "days": 20,
+      "avg_up": 145.0,
+      "avg_known": 2022.1,
+      "avg_unknown": 149.8
+    },
+    {
+      "month": "2015-06",
+      "days": 21,
+      "avg_up": 117.33,
+      "avg_known": 2018.0,
+      "avg_unknown": 135.81
+    },
+    {
+      "month": "2015-07",
+      "days": 23,
+      "avg_up": 281.74,
+      "avg_known": 1821.35,
+      "avg_unknown": 131.57
+    },
+    {
+      "month": "2015-08",
+      "days": 21,
+      "avg_up": 131.81,
+      "avg_known": 2005.9,
+      "avg_unknown": 120.71
+    },
+    {
+      "month": "2015-09",
+      "days": 20,
+      "avg_up": 116.1,
+      "avg_known": 2052.65,
+      "avg_unknown": 114.3
+    },
+    {
+      "month": "2015-10",
+      "days": 17,
+      "avg_up": 103.71,
+      "avg_known": 2088.65,
+      "avg_unknown": 97.59
+    },
+    {
+      "month": "2015-11",
+      "days": 21,
+      "avg_up": 87.76,
+      "avg_known": 2164.76,
+      "avg_unknown": 93.95
+    },
+    {
+      "month": "2015-12",
+      "days": 23,
+      "avg_up": 50.57,
+      "avg_known": 2224.04,
+      "avg_unknown": 106.22
+    },
+    {
+      "month": "2016-01",
+      "days": 20,
+      "avg_up": 43.55,
+      "avg_known": 2256.35,
+      "avg_unknown": 120.75
+    },
+    {
+      "month": "2016-02",
+      "days": 16,
+      "avg_up": 53.63,
+      "avg_known": 2250.31,
+      "avg_unknown": 124.75
+    },
+    {
+      "month": "2016-03",
+      "days": 23,
+      "avg_up": 47.35,
+      "avg_known": 2236.7,
+      "avg_unknown": 131.39
+    },
+    {
+      "month": "2016-04",
+      "days": 20,
+      "avg_up": 24.6,
+      "avg_known": 2201.5,
+      "avg_unknown": 134.75
+    },
+    {
+      "month": "2016-05",
+      "days": 21,
+      "avg_up": 19.71,
+      "avg_known": 2230.05,
+      "avg_unknown": 132.1
+    },
+    {
+      "month": "2016-06",
+      "days": 20,
+      "avg_up": 35.45,
+      "avg_known": 2293.35,
+      "avg_unknown": 90.45
+    },
+    {
+      "month": "2016-07",
+      "days": 21,
+      "avg_up": 20.67,
+      "avg_known": 2362.67,
+      "avg_unknown": 63.19
+    },
+    {
+      "month": "2016-08",
+      "days": 23,
+      "avg_up": 17.48,
+      "avg_known": 2406.35,
+      "avg_unknown": 73.91
+    },
+    {
+      "month": "2016-09",
+      "days": 20,
+      "avg_up": 14.15,
+      "avg_known": 2400.85,
+      "avg_unknown": 93.6
+    },
+    {
+      "month": "2016-10",
+      "days": 16,
+      "avg_up": 20.19,
+      "avg_known": 2422.31,
+      "avg_unknown": 109.25
+    },
+    {
+      "month": "2016-11",
+      "days": 22,
+      "avg_up": 23.36,
+      "avg_known": 2428.68,
+      "avg_unknown": 133.95
+    },
+    {
+      "month": "2016-12",
+      "days": 22,
+      "avg_up": 17.73,
+      "avg_known": 2439.91,
+      "avg_unknown": 167.64
+    },
+    {
+      "month": "2017-01",
+      "days": 18,
+      "avg_up": 19.39,
+      "avg_known": 2452.67,
+      "avg_unknown": 212.56
+    },
+    {
+      "month": "2017-02",
+      "days": 18,
+      "avg_up": 17.11,
+      "avg_known": 2447.28,
+      "avg_unknown": 256.89
+    },
+    {
+      "month": "2017-03",
+      "days": 23,
+      "avg_up": 10.96,
+      "avg_known": 2442.65,
+      "avg_unknown": 290.3
+    },
+    {
+      "month": "2017-04",
+      "days": 18,
+      "avg_up": 24.67,
+      "avg_known": 2437.94,
+      "avg_unknown": 327.5
+    },
+    {
+      "month": "2017-05",
+      "days": 20,
+      "avg_up": 16.05,
+      "avg_known": 2460.75,
+      "avg_unknown": 334.4
+    },
+    {
+      "month": "2017-06",
+      "days": 22,
+      "avg_up": 17.23,
+      "avg_known": 2579.55,
+      "avg_unknown": 244.45
+    },
+    {
+      "month": "2017-07",
+      "days": 21,
+      "avg_up": 17.19,
+      "avg_known": 2679.19,
+      "avg_unknown": 173.95
+    },
+    {
+      "month": "2017-08",
+      "days": 23,
+      "avg_up": 18.22,
+      "avg_known": 2720.83,
+      "avg_unknown": 189.7
+    },
+    {
+      "month": "2017-09",
+      "days": 21,
+      "avg_up": 19.67,
+      "avg_known": 2749.14,
+      "avg_unknown": 214.38
+    },
+    {
+      "month": "2017-10",
+      "days": 17,
+      "avg_up": 17.71,
+      "avg_known": 2769.53,
+      "avg_unknown": 238.06
+    },
+    {
+      "month": "2017-11",
+      "days": 22,
+      "avg_up": 15.0,
+      "avg_known": 2780.77,
+      "avg_unknown": 266.32
+    },
+    {
+      "month": "2017-12",
+      "days": 21,
+      "avg_up": 11.71,
+      "avg_known": 2759.43,
+      "avg_unknown": 291.05
+    },
+    {
+      "month": "2018-01",
+      "days": 22,
+      "avg_up": 18.5,
+      "avg_known": 2770.5,
+      "avg_unknown": 306.55
+    },
+    {
+      "month": "2018-02",
+      "days": 15,
+      "avg_up": 27.0,
+      "avg_known": 2704.47,
+      "avg_unknown": 319.27
+    },
+    {
+      "month": "2018-03",
+      "days": 22,
+      "avg_up": 35.14,
+      "avg_known": 2731.91,
+      "avg_unknown": 328.64
+    },
+    {
+      "month": "2018-04",
+      "days": 18,
+      "avg_up": 26.89,
+      "avg_known": 2743.78,
+      "avg_unknown": 331.78
+    },
+    {
+      "month": "2018-05",
+      "days": 22,
+      "avg_up": 28.68,
+      "avg_known": 2807.86,
+      "avg_unknown": 297.0
+    },
+    {
+      "month": "2018-06",
+      "days": 20,
+      "avg_up": 29.0,
+      "avg_known": 2961.2,
+      "avg_unknown": 158.3
+    },
+    {
+      "month": "2018-07",
+      "days": 22,
+      "avg_up": 40.86,
+      "avg_known": 3112.64,
+      "avg_unknown": 66.41
+    },
+    {
+      "month": "2018-08",
+      "days": 23,
+      "avg_up": 25.39,
+      "avg_known": 3173.52,
+      "avg_unknown": 49.17
+    },
+    {
+      "month": "2018-09",
+      "days": 19,
+      "avg_up": 24.26,
+      "avg_known": 3196.16,
+      "avg_unknown": 53.58
+    },
+    {
+      "month": "2018-10",
+      "days": 18,
+      "avg_up": 40.67,
+      "avg_known": 3216.72,
+      "avg_unknown": 59.94
+    },
+    {
+      "month": "2018-11",
+      "days": 22,
+      "avg_up": 51.95,
+      "avg_known": 3240.23,
+      "avg_unknown": 63.36
+    },
+    {
+      "month": "2018-12",
+      "days": 20,
+      "avg_up": 23.4,
+      "avg_known": 3264.2,
+      "avg_unknown": 68.05
+    },
+    {
+      "month": "2019-01",
+      "days": 22,
+      "avg_up": 33.41,
+      "avg_known": 3270.36,
+      "avg_unknown": 77.23
+    },
+    {
+      "month": "2019-02",
+      "days": 15,
+      "avg_up": 77.4,
+      "avg_known": 3269.2,
+      "avg_unknown": 88.87
+    },
+    {
+      "month": "2019-03",
+      "days": 21,
+      "avg_up": 95.38,
+      "avg_known": 3262.9,
+      "avg_unknown": 96.19
+    },
+    {
+      "month": "2019-04",
+      "days": 21,
+      "avg_up": 65.0,
+      "avg_known": 3262.48,
+      "avg_unknown": 105.76
+    },
+    {
+      "month": "2019-05",
+      "days": 20,
+      "avg_up": 54.45,
+      "avg_known": 3277.55,
+      "avg_unknown": 107.4
+    },
+    {
+      "month": "2019-06",
+      "days": 19,
+      "avg_up": 49.74,
+      "avg_known": 3314.68,
+      "avg_unknown": 78.0
+    },
+    {
+      "month": "2019-07",
+      "days": 23,
+      "avg_up": 28.09,
+      "avg_known": 3348.22,
+      "avg_unknown": 70.13
+    },
+    {
+      "month": "2019-08",
+      "days": 22,
+      "avg_up": 33.91,
+      "avg_known": 3358.41,
+      "avg_unknown": 91.77
+    },
+    {
+      "month": "2019-09",
+      "days": 20,
+      "avg_up": 38.4,
+      "avg_known": 3361.95,
+      "avg_unknown": 98.95
+    },
+    {
+      "month": "2019-10",
+      "days": 18,
+      "avg_up": 35.83,
+      "avg_known": 3370.78,
+      "avg_unknown": 99.89
+    },
+    {
+      "month": "2019-11",
+      "days": 21,
+      "avg_up": 22.76,
+      "avg_known": 3375.33,
+      "avg_unknown": 126.29
+    },
+    {
+      "month": "2019-12",
+      "days": 22,
+      "avg_up": 33.77,
+      "avg_known": 3373.95,
+      "avg_unknown": 153.23
+    },
+    {
+      "month": "2020-01",
+      "days": 16,
+      "avg_up": 48.44,
+      "avg_known": 3373.0,
+      "avg_unknown": 170.75
+    },
+    {
+      "month": "2020-02",
+      "days": 20,
+      "avg_up": 106.1,
+      "avg_known": 3381.05,
+      "avg_unknown": 191.85
+    },
+    {
+      "month": "2020-03",
+      "days": 22,
+      "avg_up": 71.41,
+      "avg_known": 3375.09,
+      "avg_unknown": 207.45
+    },
+    {
+      "month": "2020-04",
+      "days": 21,
+      "avg_up": 54.86,
+      "avg_known": 3373.33,
+      "avg_unknown": 222.05
+    },
+    {
+      "month": "2020-05",
+      "days": 18,
+      "avg_up": 48.89,
+      "avg_known": 3390.5,
+      "avg_unknown": 226.94
+    },
+    {
+      "month": "2020-06",
+      "days": 20,
+      "avg_up": 52.35,
+      "avg_known": 3471.3,
+      "avg_unknown": 167.05
+    },
+    {
+      "month": "2020-07",
+      "days": 23,
+      "avg_up": 93.78,
+      "avg_known": 3559.96,
+      "avg_unknown": 115.17
+    },
+    {
+      "month": "2020-08",
+      "days": 21,
+      "avg_up": 63.24,
+      "avg_known": 3578.95,
+      "avg_unknown": 149.95
+    },
+    {
+      "month": "2020-09",
+      "days": 22,
+      "avg_up": 24.05,
+      "avg_known": 3588.05,
+      "avg_unknown": 203.55
+    },
+    {
+      "month": "2020-10",
+      "days": 16,
+      "avg_up": 22.88,
+      "avg_known": 3609.44,
+      "avg_unknown": 234.56
+    },
+    {
+      "month": "2020-11",
+      "days": 21,
+      "avg_up": 30.19,
+      "avg_known": 3620.1,
+      "avg_unknown": 252.86
+    },
+    {
+      "month": "2020-12",
+      "days": 23,
+      "avg_up": 38.48,
+      "avg_known": 3623.13,
+      "avg_unknown": 285.13
+    },
+    {
+      "month": "2021-01",
+      "days": 20,
+      "avg_up": 53.15,
+      "avg_known": 3626.9,
+      "avg_unknown": 324.35
+    },
+    {
+      "month": "2021-02",
+      "days": 15,
+      "avg_up": 51.67,
+      "avg_known": 3630.2,
+      "avg_unknown": 355.93
+    },
+    {
+      "month": "2021-03",
+      "days": 23,
+      "avg_up": 46.7,
+      "avg_known": 3628.74,
+      "avg_unknown": 386.17
+    },
+    {
+      "month": "2021-04",
+      "days": 21,
+      "avg_up": 43.57,
+      "avg_known": 3632.86,
+      "avg_unknown": 430.71
+    },
+    {
+      "month": "2021-05",
+      "days": 18,
+      "avg_up": 51.61,
+      "avg_known": 3691.89,
+      "avg_unknown": 420.17
+    },
+    {
+      "month": "2021-06",
+      "days": 21,
+      "avg_up": 51.14,
+      "avg_known": 3910.81,
+      "avg_unknown": 243.81
+    },
+    {
+      "month": "2021-07",
+      "days": 22,
+      "avg_up": 52.41,
+      "avg_known": 4018.05,
+      "avg_unknown": 187.14
+    },
+    {
+      "month": "2021-08",
+      "days": 22,
+      "avg_up": 64.5,
+      "avg_known": 4049.55,
+      "avg_unknown": 207.23
+    },
+    {
+      "month": "2021-09",
+      "days": 20,
+      "avg_up": 64.9,
+      "avg_known": 4062.6,
+      "avg_unknown": 228.15
+    },
+    {
+      "month": "2021-10",
+      "days": 16,
+      "avg_up": 47.81,
+      "avg_known": 4092.69,
+      "avg_unknown": 232.06
+    },
+    {
+      "month": "2021-11",
+      "days": 22,
+      "avg_up": 61.82,
+      "avg_known": 4103.27,
+      "avg_unknown": 257.59
+    },
+    {
+      "month": "2021-12",
+      "days": 23,
+      "avg_up": 66.78,
+      "avg_known": 4111.0,
+      "avg_unknown": 286.78
+    },
+    {
+      "month": "2022-01",
+      "days": 19,
+      "avg_up": 52.84,
+      "avg_known": 4115.47,
+      "avg_unknown": 316.74
+    },
+    {
+      "month": "2022-02",
+      "days": 16,
+      "avg_up": 57.75,
+      "avg_known": 4120.75,
+      "avg_unknown": 338.75
+    },
+    {
+      "month": "2022-03",
+      "days": 23,
+      "avg_up": 58.57,
+      "avg_known": 4124.7,
+      "avg_unknown": 358.35
+    },
+    {
+      "month": "2022-04",
+      "days": 19,
+      "avg_up": 64.26,
+      "avg_known": 4126.89,
+      "avg_unknown": 386.11
+    },
+    {
+      "month": "2022-05",
+      "days": 19,
+      "avg_up": 83.89,
+      "avg_known": 4160.63,
+      "avg_unknown": 375.63
+    },
+    {
+      "month": "2022-06",
+      "days": 21,
+      "avg_up": 71.52,
+      "avg_known": 4319.24,
+      "avg_unknown": 241.05
+    },
+    {
+      "month": "2022-07",
+      "days": 21,
+      "avg_up": 64.0,
+      "avg_known": 4437.52,
+      "avg_unknown": 150.57
+    },
+    {
+      "month": "2022-08",
+      "days": 23,
+      "avg_up": 56.0,
+      "avg_known": 4471.78,
+      "avg_unknown": 154.04
+    },
+    {
+      "month": "2022-09",
+      "days": 21,
+      "avg_up": 37.86,
+      "avg_known": 4486.33,
+      "avg_unknown": 183.0
+    },
+    {
+      "month": "2022-10",
+      "days": 16,
+      "avg_up": 54.38,
+      "avg_known": 4499.75,
+      "avg_unknown": 202.0
+    },
+    {
+      "month": "2022-11",
+      "days": 22,
+      "avg_up": 53.0,
+      "avg_known": 4507.82,
+      "avg_unknown": 220.18
+    },
+    {
+      "month": "2022-12",
+      "days": 22,
+      "avg_up": 38.64,
+      "avg_known": 4515.27,
+      "avg_unknown": 235.86
+    },
+    {
+      "month": "2023-01",
+      "days": 16,
+      "avg_up": 39.06,
+      "avg_known": 4518.0,
+      "avg_unknown": 249.94
+    },
+    {
+      "month": "2023-02",
+      "days": 20,
+      "avg_up": 27.5,
+      "avg_known": 4520.55,
+      "avg_unknown": 261.1
+    },
+    {
+      "month": "2023-03",
+      "days": 23,
+      "avg_up": 21.0,
+      "avg_known": 4526.09,
+      "avg_unknown": 279.26
+    },
+    {
+      "month": "2023-04",
+      "days": 19,
+      "avg_up": 32.53,
+      "avg_known": 4527.68,
+      "avg_unknown": 303.95
+    },
+    {
+      "month": "2023-05",
+      "days": 20,
+      "avg_up": 36.7,
+      "avg_known": 4551.3,
+      "avg_unknown": 299.5
+    },
+    {
+      "month": "2023-06",
+      "days": 20,
+      "avg_up": 44.4,
+      "avg_known": 4660.95,
+      "avg_unknown": 215.9
+    },
+    {
+      "month": "2023-07",
+      "days": 21,
+      "avg_up": 32.43,
+      "avg_known": 4735.57,
+      "avg_unknown": 180.43
+    },
+    {
+      "month": "2023-08",
+      "days": 23,
+      "avg_up": 27.78,
+      "avg_known": 4756.35,
+      "avg_unknown": 191.83
+    },
+    {
+      "month": "2023-09",
+      "days": 20,
+      "avg_up": 27.25,
+      "avg_known": 4764.05,
+      "avg_unknown": 202.6
+    },
+    {
+      "month": "2023-10",
+      "days": 17,
+      "avg_up": 43.59,
+      "avg_known": 4782.24,
+      "avg_unknown": 195.29
+    },
+    {
+      "month": "2023-11",
+      "days": 22,
+      "avg_up": 40.45,
+      "avg_known": 4790.27,
+      "avg_unknown": 196.64
+    },
+    {
+      "month": "2023-12",
+      "days": 21,
+      "avg_up": 37.48,
+      "avg_known": 4794.62,
+      "avg_unknown": 202.62
+    },
+    {
+      "month": "2024-01",
+      "days": 22,
+      "avg_up": 38.36,
+      "avg_known": 4797.68,
+      "avg_unknown": 213.09
+    },
+    {
+      "month": "2024-02",
+      "days": 15,
+      "avg_up": 118.47,
+      "avg_known": 4799.47,
+      "avg_unknown": 220.8
+    },
+    {
+      "month": "2024-03",
+      "days": 21,
+      "avg_up": 62.05,
+      "avg_known": 4799.14,
+      "avg_unknown": 225.05
+    },
+    {
+      "month": "2024-04",
+      "days": 20,
+      "avg_up": 60.6,
+      "avg_known": 4798.85,
+      "avg_unknown": 230.15
+    },
+    {
+      "month": "2024-05",
+      "days": 20,
+      "avg_up": 40.05,
+      "avg_known": 4813.05,
+      "avg_unknown": 220.35
+    },
+    {
+      "month": "2024-06",
+      "days": 19,
+      "avg_up": 33.47,
+      "avg_known": 4883.26,
+      "avg_unknown": 153.79
+    },
+    {
+      "month": "2024-07",
+      "days": 23,
+      "avg_up": 42.0,
+      "avg_known": 4948.61,
+      "avg_unknown": 94.48
+    },
+    {
+      "month": "2024-08",
+      "days": 22,
+      "avg_up": 41.5,
+      "avg_known": 4965.91,
+      "avg_unknown": 84.05
+    },
+    {
+      "month": "2024-09",
+      "days": 19,
+      "avg_up": 94.79,
+      "avg_known": 4967.42,
+      "avg_unknown": 87.26
+    },
+    {
+      "month": "2024-10",
+      "days": 18,
+      "avg_up": 143.06,
+      "avg_known": 4972.0,
+      "avg_unknown": 85.39
+    },
+    {
+      "month": "2024-11",
+      "days": 21,
+      "avg_up": 109.9,
+      "avg_known": 4976.1,
+      "avg_unknown": 85.9
+    },
+    {
+      "month": "2024-12",
+      "days": 22,
+      "avg_up": 89.32,
+      "avg_known": 4978.5,
+      "avg_unknown": 91.86
+    },
+    {
+      "month": "2025-01",
+      "days": 18,
+      "avg_up": 61.89,
+      "avg_known": 4980.83,
+      "avg_unknown": 98.72
+    },
+    {
+      "month": "2025-02",
+      "days": 18,
+      "avg_up": 79.83,
+      "avg_known": 4990.89,
+      "avg_unknown": 99.17
+    },
+    {
+      "month": "2025-03",
+      "days": 21,
+      "avg_up": 59.57,
+      "avg_known": 4987.95,
+      "avg_unknown": 102.71
+    },
+    {
+      "month": "2025-04",
+      "days": 21,
+      "avg_up": 71.38,
+      "avg_known": 4989.57,
+      "avg_unknown": 111.81
+    },
+    {
+      "month": "2025-05",
+      "days": 19,
+      "avg_up": 59.79,
+      "avg_known": 4995.21,
+      "avg_unknown": 113.79
+    },
+    {
+      "month": "2025-06",
+      "days": 20,
+      "avg_up": 57.35,
+      "avg_known": 5015.65,
+      "avg_unknown": 100.55
+    },
+    {
+      "month": "2025-07",
+      "days": 23,
+      "avg_up": 59.09,
+      "avg_known": 5038.39,
+      "avg_unknown": 84.78
+    },
+    {
+      "month": "2025-08",
+      "days": 21,
+      "avg_up": 65.43,
+      "avg_known": 5044.05,
+      "avg_unknown": 85.76
+    },
+    {
+      "month": "2025-09",
+      "days": 22,
+      "avg_up": 59.73,
+      "avg_known": 5047.91,
+      "avg_unknown": 86.95
+    },
+    {
+      "month": "2025-10",
+      "days": 17,
+      "avg_up": 56.94,
+      "avg_known": 5052.71,
+      "avg_unknown": 87.53
+    },
+    {
+      "month": "2025-11",
+      "days": 20,
+      "avg_up": 61.5,
+      "avg_known": 5054.2,
+      "avg_unknown": 92.75
+    },
+    {
+      "month": "2025-12",
+      "days": 23,
+      "avg_up": 60.7,
+      "avg_known": 5054.09,
+      "avg_unknown": 97.83
+    },
+    {
+      "month": "2026-01",
+      "days": 20,
+      "avg_up": 84.3,
+      "avg_known": 5062.5,
+      "avg_unknown": 103.45
+    },
+    {
+      "month": "2026-02",
+      "days": 14,
+      "avg_up": 61.79,
+      "avg_known": 5067.57,
+      "avg_unknown": 106.0
+    },
+    {
+      "month": "2026-03",
+      "days": 22,
+      "avg_up": 55.73,
+      "avg_known": 5068.27,
+      "avg_unknown": 108.5
+    },
+    {
+      "month": "2026-04",
+      "days": 21,
+      "avg_up": 64.81,
+      "avg_known": 5064.29,
+      "avg_unknown": 116.38
+    },
+    {
+      "month": "2026-05",
+      "days": 18,
+      "avg_up": 77.22,
+      "avg_known": 5070.0,
+      "avg_unknown": 115.06
+    },
+    {
+      "month": "2026-06",
+      "days": 21,
+      "avg_up": 93.9,
+      "avg_known": 5095.1,
+      "avg_unknown": 97.19
+    },
+    {
+      "month": "2026-07",
+      "days": 23,
+      "avg_up": 77.35,
+      "avg_known": 5123.87,
+      "avg_unknown": 71.43
+    },
+    {
+      "month": "2026-08",
+      "days": 21,
+      "avg_up": 78.62,
+      "avg_known": 5137.1,
+      "avg_unknown": 67.0
+    },
+    {
+      "month": "2026-09",
+      "days": 21,
+      "avg_up": 59.14,
+      "avg_known": 5181.29,
+      "avg_unknown": 26.9
+    }
+  ],
+  "samples": [
+    {
+      "period_key": "2000-01-04",
+      "scope": "all_stocks",
+      "trading_count": 751,
+      "close_limit_up_count": 0,
+      "close_limit_down_count": 0,
+      "limit_known_count": 0,
+      "limit_unknown_count": 751,
+      "valid_return_count": 0
+    },
+    {
+      "period_key": "2000-01-04",
+      "scope": "exclude_known_st",
+      "trading_count": 751,
+      "close_limit_up_count": 0,
+      "close_limit_down_count": 0,
+      "limit_known_count": 0,
+      "limit_unknown_count": 751,
+      "valid_return_count": 0
+    },
+    {
+      "period_key": "2000-01-05",
+      "scope": "all_stocks",
+      "trading_count": 754,
+      "close_limit_up_count": 12,
+      "close_limit_down_count": 0,
+      "limit_known_count": 650,
+      "limit_unknown_count": 104,
+      "valid_return_count": 650
+    },
+    {
+      "period_key": "2000-01-05",
+      "scope": "exclude_known_st",
+      "trading_count": 754,
+      "close_limit_up_count": 12,
+      "close_limit_down_count": 0,
+      "limit_known_count": 650,
+      "limit_unknown_count": 104,
+      "valid_return_count": 650
+    },
+    {
+      "period_key": "2000-01-11",
+      "scope": "all_stocks",
+      "trading_count": 753,
+      "close_limit_up_count": 6,
+      "close_limit_down_count": 1,
+      "limit_known_count": 652,
+      "limit_unknown_count": 101,
+      "valid_return_count": 652
+    },
+    {
+      "period_key": "2000-01-11",
+      "scope": "exclude_known_st",
+      "trading_count": 753,
+      "close_limit_up_count": 6,
+      "close_limit_down_count": 1,
+      "limit_known_count": 652,
+      "limit_unknown_count": 101,
+      "valid_return_count": 652
+    },
+    {
+      "period_key": "2010-01-04",
+      "scope": "all_stocks",
+      "trading_count": 1478,
+      "close_limit_up_count": 6,
+      "close_limit_down_count": 0,
+      "limit_known_count": 1374,
+      "limit_unknown_count": 104,
+      "valid_return_count": 1374
+    },
+    {
+      "period_key": "2010-01-04",
+      "scope": "exclude_known_st",
+      "trading_count": 1478,
+      "close_limit_up_count": 6,
+      "close_limit_down_count": 0,
+      "limit_known_count": 1374,
+      "limit_unknown_count": 104,
+      "valid_return_count": 1374
+    },
+    {
+      "period_key": "2015-06-30",
+      "scope": "all_stocks",
+      "trading_count": 2168,
+      "close_limit_up_count": 216,
+      "close_limit_down_count": 11,
+      "limit_known_count": 2022,
+      "limit_unknown_count": 146,
+      "valid_return_count": 2022
+    },
+    {
+      "period_key": "2015-06-30",
+      "scope": "exclude_known_st",
+      "trading_count": 2168,
+      "close_limit_up_count": 216,
+      "close_limit_down_count": 11,
+      "limit_known_count": 2022,
+      "limit_unknown_count": 146,
+      "valid_return_count": 2022
+    },
+    {
+      "period_key": "2025-06-30",
+      "scope": "all_stocks",
+      "trading_count": 5384,
+      "close_limit_up_count": 79,
+      "close_limit_down_count": 5,
+      "limit_known_count": 5027,
+      "limit_unknown_count": 90,
+      "valid_return_count": 5280
+    },
+    {
+      "period_key": "2025-06-30",
+      "scope": "exclude_known_st",
+      "trading_count": 5382,
+      "close_limit_up_count": 78,
+      "close_limit_down_count": 5,
+      "limit_known_count": 5025,
+      "limit_unknown_count": 90,
+      "valid_return_count": 5278
+    },
+    {
+      "period_key": "2025-12-31",
+      "scope": "all_stocks",
+      "trading_count": 5449,
+      "close_limit_up_count": 57,
+      "close_limit_down_count": 7,
+      "limit_known_count": 5058,
+      "limit_unknown_count": 105,
+      "valid_return_count": 5325
+    },
+    {
+      "period_key": "2025-12-31",
+      "scope": "exclude_known_st",
+      "trading_count": 5446,
+      "close_limit_up_count": 56,
+      "close_limit_down_count": 7,
+      "limit_known_count": 5055,
+      "limit_unknown_count": 105,
+      "valid_return_count": 5322
+    },
+    {
+      "period_key": "2026-06-30",
+      "scope": "all_stocks",
+      "trading_count": 5508,
+      "close_limit_up_count": 142,
+      "close_limit_down_count": 7,
+      "limit_known_count": 5105,
+      "limit_unknown_count": 81,
+      "valid_return_count": 5401
+    },
+    {
+      "period_key": "2026-06-30",
+      "scope": "exclude_known_st",
+      "trading_count": 5505,
+      "close_limit_up_count": 142,
+      "close_limit_down_count": 7,
+      "limit_known_count": 5102,
+      "limit_unknown_count": 81,
+      "valid_return_count": 5398
+    },
+    {
+      "period_key": "2026-09-30",
+      "scope": "all_stocks",
+      "trading_count": 5560,
+      "close_limit_up_count": 56,
+      "close_limit_down_count": 12,
+      "limit_known_count": 5210,
+      "limit_unknown_count": 2,
+      "valid_return_count": 5560
+    },
+    {
+      "period_key": "2026-09-30",
+      "scope": "exclude_known_st",
+      "trading_count": 5363,
+      "close_limit_up_count": 52,
+      "close_limit_down_count": 9,
+      "limit_known_count": 5016,
+      "limit_unknown_count": 2,
+      "valid_return_count": 5363
+    }
+  ],
+  "board_coverage": [
+    {
+      "scope": "all_stocks",
+      "kind": "concept",
+      "rows": 1743658,
+      "days": 6482
+    },
+    {
+      "scope": "all_stocks",
+      "kind": "industry",
+      "rows": 2236290,
+      "days": 6482
+    },
+    {
+      "scope": "exclude_known_st",
+      "kind": "concept",
+      "rows": 1743658,
+      "days": 6482
+    },
+    {
+      "scope": "exclude_known_st",
+      "kind": "industry",
+      "rows": 2236290,
+      "days": 6482
+    }
+  ],
+  "board_status": [
+    {
+      "status": "computed_empty",
+      "rows": 4
+    },
+    {
+      "status": "ready",
+      "rows": 25924
+    }
+  ],
+  "wheel_sha256": "d823ad1f6b030b0b2cf5f9194bc211ec3885168046501fce077754aeb28bb7af"
+}

@@ -196,6 +196,21 @@ def consolidate_storage(root, *, recovery):
                 ("frequency", "period_key", "scope"),
                 report,
             )
+            # Additive board/calendar facts have the same sole features owner.
+            from .sqlite_canonical import OPTIONAL_TABLES
+            from .sqlite_six_dimension import SCHEMA
+            for statement in SCHEMA.split(";"):
+                if statement.strip():
+                    conn.execute(statement.replace("IF NOT EXISTS ", "IF NOT EXISTS features.", 1))
+            conn.commit()
+            optional = []
+            for table in sorted(OPTIONAL_TABLES):
+                shape = conn.execute(f'PRAGMA main.table_info("{table}")').fetchall()
+                if not shape:
+                    continue
+                keys = tuple(row[1] for row in sorted(shape, key=lambda row: row[5]) if row[5])
+                _transfer_features(conn, root, table, table, keys, report)
+                optional.append(table)
             projection = ",".join(f'"{name}"' for name in ACTION_COLUMNS)
             references = {}
             conn.execute("BEGIN IMMEDIATE")
@@ -246,6 +261,8 @@ def consolidate_storage(root, *, recovery):
             conn.execute("BEGIN IMMEDIATE")
             conn.execute("DROP TABLE main.daily_features")
             conn.execute("DROP TABLE main.market_daily_summary")
+            for table in optional:
+                conn.execute(f'DROP TABLE main."{table}"')
             conn.execute("ALTER TABLE main.corporate_actions RENAME TO _retired_actions")
             conn.execute(EVENT_DDL)
             event_columns = (

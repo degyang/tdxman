@@ -424,6 +424,10 @@ class StockSnapshot:
             raise DataPoolError("FEATURE_NOT_READY", "Daily summary has not been calculated")
         return _frame(rows, chosen)
 
+    def read_board_daily(self, **kwargs):
+        from .sqlite_board_daily import read_board_daily
+        return read_board_daily(self, **kwargs)
+
     def read_market_daily(self, *, start, end, scope="all_stocks", fields=None):
         return self.read_market_summary(start=start, end=end, scope=scope, fields=fields)
 

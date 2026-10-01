@@ -1,0 +1,149 @@
+{
+  "latest_date": "2026-09-30",
+  "monthly": [
+    {
+      "month": "2025-01",
+      "days": 18,
+      "avg_up": 62.2,
+      "known": 5223.6,
+      "unknown": 114.9
+    },
+    {
+      "month": "2025-02",
+      "days": 18,
+      "avg_up": 80.9,
+      "known": 5234.9,
+      "unknown": 116.7
+    },
+    {
+      "month": "2025-03",
+      "days": 21,
+      "avg_up": 60.5,
+      "known": 5232.0,
+      "unknown": 118.6
+    },
+    {
+      "month": "2025-04",
+      "days": 21,
+      "avg_up": 72.4,
+      "known": 5234.0,
+      "unknown": 129.0
+    },
+    {
+      "month": "2025-05",
+      "days": 19,
+      "avg_up": 60.4,
+      "known": 5241.5,
+      "unknown": 130.1
+    },
+    {
+      "month": "2025-06",
+      "days": 20,
+      "avg_up": 57.7,
+      "known": 5264.9,
+      "unknown": 115.0
+    },
+    {
+      "month": "2025-07",
+      "days": 23,
+      "avg_up": 59.5,
+      "known": 5295.1,
+      "unknown": 93.2
+    },
+    {
+      "month": "2025-08",
+      "days": 21,
+      "avg_up": 65.7,
+      "known": 5301.1,
+      "unknown": 97.1
+    },
+    {
+      "month": "2025-09",
+      "days": 22,
+      "avg_up": 60.4,
+      "known": 5305.4,
+      "unknown": 101.7
+    },
+    {
+      "month": "2025-10",
+      "days": 17,
+      "avg_up": 57.4,
+      "known": 5313.3,
+      "unknown": 102.5
+    },
+    {
+      "month": "2025-11",
+      "days": 20,
+      "avg_up": 61.5,
+      "known": 5316.3,
+      "unknown": 110.5
+    },
+    {
+      "month": "2025-12",
+      "days": 23,
+      "avg_up": 61.0,
+      "known": 5320.8,
+      "unknown": 113.3
+    }
+  ],
+  "public": {
+    "all_stocks": {
+      "days": 243,
+      "up_mean": 63.181069958847736,
+      "max_up": 154,
+      "min_up": 24
+    },
+    "exclude_known_st": {
+      "days": 243,
+      "up_mean": 63.08230452674897,
+      "max_up": 154,
+      "min_up": 24
+    }
+  },
+  "missing_st": 0,
+  "st_assumption_rows": 747718,
+  "samples": [
+    {
+      "period_key": "2025-01-02",
+      "close_limit_up_count": 58,
+      "limit_known_count": 5218,
+      "limit_unknown_count": 112
+    },
+    {
+      "period_key": "2025-03-03",
+      "close_limit_up_count": 65,
+      "limit_known_count": 5231,
+      "limit_unknown_count": 116
+    },
+    {
+      "period_key": "2025-06-30",
+      "close_limit_up_count": 79,
+      "limit_known_count": 5280,
+      "limit_unknown_count": 103
+    },
+    {
+      "period_key": "2025-12-31",
+      "close_limit_up_count": 57,
+      "limit_known_count": 5324,
+      "limit_unknown_count": 121
+    },
+    {
+      "period_key": "2026-01-05",
+      "close_limit_up_count": 109,
+      "limit_known_count": 5324,
+      "limit_unknown_count": 122
+    },
+    {
+      "period_key": "2026-01-06",
+      "close_limit_up_count": 120,
+      "limit_known_count": 5325,
+      "limit_unknown_count": 122
+    },
+    {
+      "period_key": "2026-01-07",
+      "close_limit_up_count": 79,
+      "limit_known_count": 5326,
+      "limit_unknown_count": 122
+    }
+  ]
+}

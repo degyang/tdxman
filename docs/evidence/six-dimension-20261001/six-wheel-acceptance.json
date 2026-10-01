@@ -1,0 +1,9 @@
+{
+  "wheel": "/home/ubuntu/six-build/tdxman-1.1.2-py3-none-any.whl",
+  "sha256": "70d26abe0b524d9c2430e13eecd6ee248ab511d34e45849559d0e5e22137ee42",
+  "aspool_import": "/home/ubuntu/six-wheel-venv/lib/python3.12/site-packages/aspool/__init__.py",
+  "market_rows": 1,
+  "industry_rows": 345,
+  "industry_level": 2,
+  "assertions": "final packaged read APIs verified; dependencies reused from existing environment"
+}

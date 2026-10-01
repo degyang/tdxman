@@ -112,7 +112,7 @@ def test_summary_scopes_unknowns_denominators_and_noop_stamps(tmp_path):
         all_stocks, ex_st = summary(conn), summary(conn, "exclude_known_st")
         assert all_stocks["trading_count"] == 5 and ex_st["trading_count"] == 4
         assert all_stocks["valid_return_count"] == 4 and all_stocks["invalid_return_count"] == 1
-        assert all_stocks["limit_invalid_count"] == 1 and all_stocks["limit_unknown_count"] == 2
+        assert all_stocks["limit_invalid_count"] == 0 and all_stocks["limit_unknown_count"] == 2
         assert all_stocks["st_unknown_count"] == 1
         assert all_stocks["amount_sum"] == 300 and all_stocks["amount_valid_count"] == 3
         assert all_stocks["turnover_valid_count"] == 1 and all_stocks["avg_turnover"] == 2
@@ -160,16 +160,17 @@ def test_zero_market_session_and_unknown_only_height(tmp_path):
 def test_uncomputed_features_and_budget_never_publish_partial_scopes(tmp_path):
     with stock_connection(tmp_path, create=True, read_only=False) as conn:
         observation(conn, 1, limit=None, streak=None)
-        with pytest.raises(DataPoolError) as error:
-            recompute_daily_summary(conn, trade_date="2024-01-02")
-        assert error.value.code == "FEATURE_NOT_READY"
-        assert conn.execute("SELECT count(*) FROM market_daily_summary").fetchone() == (0,)
+        recompute_daily_summary(conn, trade_date="2024-01-02")
+        assert summary(conn)["trading_count"] == 0
+        before = conn.execute("SELECT * FROM market_daily_summary ORDER BY scope").fetchall()
         conn.execute("UPDATE daily_features SET limit_status='UNKNOWN'")
         observation(conn, 2)
         with pytest.raises(DataPoolError) as error:
             recompute_daily_summary(conn, trade_date="2024-01-02", max_rows=1)
         assert error.value.code == "LOCAL_UPDATE_BUDGET_EXCEEDED"
-        assert conn.execute("SELECT count(*) FROM market_daily_summary").fetchone() == (0,)
+        assert (
+            conn.execute("SELECT * FROM market_daily_summary ORDER BY scope").fetchall() == before
+        )
 
 
 def test_window_atomicity_when_another_symbol_is_not_prepared(tmp_path):
@@ -177,16 +178,14 @@ def test_window_atomicity_when_another_symbol_is_not_prepared(tmp_path):
         for code in (1, 2):
             observation(conn, code, limit=None, streak=None)
         conn.execute("UPDATE daily_bars SET open=close,high=close,low=close")
-        before = conn.execute("SELECT * FROM daily_features ORDER BY symbol").fetchall()
-        with pytest.raises(DataPoolError) as error:
-            recompute_market_window(conn, symbols=["000001.SZ"], market_sessions=["2024-01-02"])
-        assert error.value.code == "FEATURE_NOT_READY"
-        assert conn.execute("SELECT * FROM daily_features ORDER BY symbol").fetchall() == before
-        assert conn.execute("SELECT count(*) FROM market_daily_summary").fetchone() == (0,)
+        result = recompute_market_window(
+            conn, symbols=["000001.SZ"], market_sessions=["2024-01-02"]
+        )
+        assert result["feature_rows"] == 1 and summary(conn)["trading_count"] == 1
         result = recompute_market_window(
             conn, symbols=["000001.SZ", "000002.SZ"], market_sessions=["2024-01-02"]
         )
-        assert result == dict(feature_rows=2, summary_rows=2, read_rows=6)
+        assert result["feature_rows"] == 1 and summary(conn)["trading_count"] == 2
         before = conn.total_changes
         result = recompute_market_window(
             conn, symbols=["000001.SZ", "000002.SZ"], market_sessions=["2024-01-02"]

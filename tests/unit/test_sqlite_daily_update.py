@@ -171,7 +171,7 @@ def test_reference_withdrawal_and_invalid_bar_do_not_violate_known_constraints(t
         )
 
 
-def test_failed_summary_rolls_back_source_and_every_derived_write(tmp_path):
+def test_failed_summary_rolls_back_source_and_every_derived_write(tmp_path, monkeypatch):
     with stock_connection(tmp_path, create=True, read_only=False) as conn:
         prepare(conn)
         conn.execute(
@@ -181,7 +181,12 @@ def test_failed_summary_rolls_back_source_and_every_derived_write(tmp_path):
         )
         conn.commit()
         before = dump(conn)
-        with pytest.raises(DataPoolError, match="not been computed"):
+
+        def fail_summary(*args, **kwargs):
+            raise DataPoolError("SUMMARY_FAILURE", "structural summary failure")
+
+        monkeypatch.setattr("aspool.sqlite_daily_update.recompute_daily_summary", fail_summary)
+        with pytest.raises(DataPoolError, match="structural summary failure"):
             apply(conn, bars=[row(DAYS[25], close=11)])
         assert dump(conn) == before
         assert not conn.in_transaction
