@@ -1,0 +1,24 @@
+{
+  "wheel": "/home/ubuntu/st-history-final-build/tdxman-1.1.2-py3-none-any.whl",
+  "sha256": "d823ad1f6b030b0b2cf5f9194bc211ec3885168046501fce077754aeb28bb7af",
+  "source_commit": "591204da3c6418a1304b8c1d97ed32d78d88c1f5",
+  "installed_package": "/mnt/d/Workstation/Services/tdxman/.venv/lib/python3.12/site-packages/aspool/__init__.py",
+  "changed_modules_equal_wheel_source_and_runtime": [
+    "aspool/sqlite_st_repair.py",
+    "aspool/sqlite_daily_derived.py",
+    "aspool/sqlite_market_summary.py",
+    "aspool/sqlite_summary_quality.py",
+    "aspool/sqlite_board_daily.py",
+    "aspool/sqlite_canonical.py",
+    "aspool/sqlite_reference_factors.py",
+    "tdxman/codec/price_rules.py"
+  ],
+  "tests": {
+    "related_tests": 270,
+    "subtests": 12,
+    "final_constraint_fix_tests": 23,
+    "atomic_report_tests": 3
+  },
+  "production_root": "/mnt/d/Workstation/Services/tdxman/data",
+  "new_database_copies": 0
+}
