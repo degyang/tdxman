@@ -13,31 +13,34 @@ import duckdb
 
 from aspool.pool import pool_lock
 from aspool.sqlite_board_daily import recompute_board_daily
-from aspool.sqlite_canonical import canonical_writer
+from aspool.sqlite_canonical import canonical_operation
 from aspool.sqlite_market_summary import recompute_daily_summary
 from aspool.sqlite_six_dimension import save_sessions, six_columns, upgrade_six_dimension_schema
 from aspool.sqlite_stock_store import stock_connection
 
 
-@canonical_writer("six_dimension_init")
-def initialize_day(conn, *, day, sessions, replace_snapshot=False):
+def initialize_day(conn, *, day, sessions, replace_snapshot=False, extend_only=False):
     if conn.in_transaction:
         raise ValueError("Idle writer required")
-    try:
-        conn.execute("BEGIN IMMEDIATE")
-        save_sessions(conn, sessions)
-        result = recompute_daily_summary(conn, trade_date=day)
-        result["board_rows"] = recompute_board_daily(
-            conn, day=day, replace_snapshot=replace_snapshot
-        )
-        conn.commit()
-        return result
-    except BaseException:
-        conn.rollback()
-        raise
+    operation = "six_dimension_extend" if extend_only else "six_dimension_init"
+    with canonical_operation(conn, operation):
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            save_sessions(conn, sessions)
+            result = recompute_daily_summary(conn, trade_date=day, extend_only=extend_only)
+            result["board_rows"] = recompute_board_daily(
+                conn, day=day, replace_snapshot=replace_snapshot
+            )
+            conn.commit()
+            return result
+        except BaseException:
+            conn.rollback()
+            raise
 
 
-def backfill(root, *, start, end, upgrade_schema=False, replace_snapshot=False):
+def backfill(
+    root, *, start, end, upgrade_schema=False, replace_snapshot=False, extend_only=False
+):
     if (
         date.fromisoformat(start).isoformat() != start
         or date.fromisoformat(end).isoformat() != end
@@ -79,6 +82,10 @@ def backfill(root, *, start, end, upgrade_schema=False, replace_snapshot=False):
         missing_dates=[],
     )
     with stock_connection(root, read_only=False) as conn:
+        # Bounded maintenance benefits from reusing neighboring-date pages.
+        conn.execute("PRAGMA cache_size=-262144")
+        if hasattr(conn, "native"):
+            conn.execute("PRAGMA features.cache_size=-262144")
         if not six_columns(conn):
             raise ValueError("Explicit --upgrade-schema required")
         for day in days:
@@ -93,6 +100,7 @@ def backfill(root, *, start, end, upgrade_schema=False, replace_snapshot=False):
                     day=day,
                     sessions=sorted(preceding) + days,
                     replace_snapshot=replace_snapshot,
+                    extend_only=extend_only,
                 )
             result["summary_rows"] += stats["changed_rows"]
             result["board_rows"] += stats["board_rows"]
@@ -112,6 +120,10 @@ def main():
     parser.add_argument("--end", required=True)
     parser.add_argument("--upgrade-schema", action="store_true")
     parser.add_argument(
+        "--extend-only", action="store_true",
+        help="Add six-dimension inputs without changing existing four-dimension facts",
+    )
+    parser.add_argument(
         "--replace-snapshot",
         action="store_true",
         help="Explicitly replace retained historical membership",
@@ -127,6 +139,7 @@ def main():
         end=args.end,
         upgrade_schema=args.upgrade_schema,
         replace_snapshot=args.replace_snapshot,
+        extend_only=args.extend_only,
     )
     args.report.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result))

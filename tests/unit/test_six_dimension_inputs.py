@@ -371,3 +371,81 @@ def test_uninitialized_calendar_is_not_computed_not_a_zero_sample(tmp_path):
         row = summary(conn)
         assert row["upper_median_return"] == 0
         assert row["vol_ratio_5d_valid_count"] is row["high_vol_ratio_5d_count"] is None
+
+
+def test_explicit_extension_preserves_old_columns_and_rejects_changed_sample(tmp_path):
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        save_sessions(conn, ["2024-01-02"])
+        observation(conn, 1, close=10.2)
+        recompute_daily_summary(conn, trade_date="2024-01-02")
+        conn.execute(
+            "UPDATE market_daily_summary SET upper_median_return=NULL,avg_return=123 "
+            "WHERE frequency='D'"
+        )
+        before = summary(conn)
+        assert recompute_daily_summary(
+            conn, trade_date="2024-01-02", extend_only=True
+        )["changed_rows"] == 2
+        after = summary(conn)
+        excluded = {
+            "upper_median_return", "avg_vol_ratio_5d", "vol_ratio_5d_valid_count",
+            "high_vol_ratio_5d_count", "updated_at",
+        }
+        assert {k: v for k, v in before.items() if k not in excluded} == {
+            k: v for k, v in after.items() if k not in excluded
+        }
+        assert after["upper_median_return"] == .02
+        assert recompute_daily_summary(
+            conn, trade_date="2024-01-02", extend_only=True
+        )["changed_rows"] == 0
+        observation(conn, 2, close=10.1)
+        with pytest.raises(DataPoolError) as error:
+            recompute_daily_summary(conn, trade_date="2024-01-02", extend_only=True)
+        assert error.value.code == "SOURCE_CHANGED"
+
+
+def test_historical_extension_uses_one_feature_transaction(canonical_pool, monkeypatch):
+    from aspool import sqlite_publication
+    from scripts.ops.backfill_six_dimension_inputs import initialize_day
+
+    root = canonical_pool
+    upgrade_six_dimension_schema(root)
+    from aspool.sqlite_canonical import canonical_operation
+    with stock_connection(root, read_only=False) as conn:
+        with canonical_operation(conn, "summary_recompute"):
+            conn.execute("BEGIN IMMEDIATE")
+            recompute_daily_summary(conn, trade_date="2026-09-28")
+            conn.execute("UPDATE market_daily_summary SET upper_median_return=NULL")
+            conn.commit()
+    with stock_connection(root) as conn:
+        raw_before = conn.execute("SELECT * FROM dataset_state").fetchall()
+        feature_before = conn.execute("SELECT * FROM features.feature_state").fetchall()
+        adjustment_before = conn.execute("SELECT * FROM adjustments.adjustment_state").fetchall()
+    def reject_cross_file(*_args, **_kwargs):
+        raise AssertionError("Single-file initialization must not stage a cross-file intent")
+    monkeypatch.setattr(sqlite_publication, "prepare_intent", reject_cross_file)
+    with stock_connection(root, read_only=False) as conn:
+        initialize_day(
+            conn, day="2026-09-28", sessions=["2026-09-27", "2026-09-28"],
+            extend_only=True,
+        )
+    with stock_connection(root) as conn:
+        assert conn.execute("SELECT * FROM dataset_state").fetchall() == raw_before
+        assert conn.execute("SELECT * FROM features.feature_state").fetchall() == feature_before
+        assert (
+            conn.execute("SELECT * FROM adjustments.adjustment_state").fetchall()
+            == adjustment_before
+        )
+        assert summary(conn, day="2026-09-28")["upper_median_return"] is not None
+    from aspool.sqlite_canonical import canonical_operation
+    with stock_connection(root, read_only=False) as conn:
+        with canonical_operation(conn, "six_dimension_extend"):
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE daily_bars SET close=99 WHERE trade_date='2026-09-28'")
+            with pytest.raises(DataPoolError) as error:
+                conn.commit()
+            assert error.value.code == "WRITE_SCOPE_REQUIRED"
+    with stock_connection(root) as conn:
+        assert conn.execute(
+            "SELECT close FROM daily_bars WHERE trade_date='2026-09-28'"
+        ).fetchone()[0] != 99

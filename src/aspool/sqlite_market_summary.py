@@ -209,7 +209,9 @@ class _Summary:
         return result
 
 
-def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_rows=100_000):
+def recompute_daily_summary(
+    conn, *, trade_date: str, inputs_changed=False, max_rows=100_000, extend_only=False
+):
     """Aggregate one explicit market session in the caller's write transaction.
 
     The caller supplies only confirmed market sessions. inputs_changed=True
@@ -226,6 +228,8 @@ def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_
     from .sqlite_six_dimension import six_columns, volume_inputs
 
     available = six_columns(conn)
+    if extend_only and not available:
+        raise DataPoolError("SCHEMA_MAINTENANCE_REQUIRED", "Six-dimension columns required")
     volumes, volume_reads, volume_ready, volume_stamp = (
         volume_inputs(conn, trade_date, max_rows) if available else ({}, 0, False, 0)
     )
@@ -307,6 +311,29 @@ def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_
                 "WHERE frequency='D' AND period_key=? AND scope=?",
                 (trade_date, scope),
             ).fetchone()
+            if extend_only:
+                from .sqlite_market_metadata import SIX_FIELDS
+
+                if old is None:
+                    raise DataPoolError("SUMMARY_NOT_FOUND", "Existing daily summary required")
+                prior = dict(zip(columns, old[:-1]))
+                for name in ("trading_count", "valid_return_count"):
+                    if prior[name] != values[name]:
+                        raise DataPoolError(
+                            "SOURCE_CHANGED", "Existing summary sample differs from its facts"
+                        )
+                additions = {name: values[name] for name in SIX_FIELDS}
+                if all(prior[name] == value for name, value in additions.items()):
+                    continue
+                stamp = max(time.time_ns() // 1000, input_stamp + 1, old[-1] + 1)
+                conn.execute(
+                    "UPDATE market_daily_summary SET "
+                    + ",".join(name + "=?" for name in additions)
+                    + ",updated_at=? WHERE frequency='D' AND period_key=? AND scope=?",
+                    (*additions.values(), stamp, trade_date, scope),
+                )
+                changed += 1
+                continue
             if old is not None and tuple(values.values()) == old[:-1] and not inputs_changed:
                 continue
             stamp = max(time.time_ns() // 1000, input_stamp + 1, old[-1] + 1 if old else 1)
