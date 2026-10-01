@@ -110,7 +110,7 @@ def derive_daily_row(
         code,
         "",
         date.fromisoformat(row["trade_date"]),
-        st_status=bool(raw_st) if raw_st in (0, 1) else None,
+        st_status=bool(raw_st) if raw_st in (0, 1) else False,
         listed_days=listed_days,
         observed_sessions=observed_sessions,
     )
@@ -213,6 +213,7 @@ def recompute_symbol_features(
     propagate: bool = False,
     successor_window: int = 20,
     max_affected_dates: int = 60,
+    limits_only: bool = False,
 ) -> dict:
     """Recompute an explicit range, using bounded warmup and the caller's transaction.
 
@@ -221,6 +222,7 @@ def recompute_symbol_features(
     Use successor_window=0 only for changes that cannot affect MA20 membership
     or adjustment. References/factors must already reflect their dependencies.
     Without propagation, only the explicit range is written (maintenance use).
+    limits_only preserves existing MA20 values during explicit ST maintenance.
     """
     if not conn.in_transaction:
         raise ValueError("An outer write transaction is required")
@@ -235,6 +237,10 @@ def recompute_symbol_features(
         or successor_window not in (0, 20)
     ):
         raise ValueError("Invalid range or row budget")
+    owned_columns = tuple(
+        field for field in DERIVED_COLUMNS
+        if not limits_only or field not in {"ma20", "above_ma20"}
+    )
     visited = 0
 
     def counted(rows):
@@ -307,7 +313,7 @@ def recompute_symbol_features(
                 if status == "TRADED":
                     history.append((row["close"], factor))
                     successors += day > end
-                different = any(values[field] != row[field] for field in DERIVED_COLUMNS)
+                different = any(values[field] != row[field] for field in owned_columns)
                 if different:
                     if propagate and len(changed_dates) >= max_affected_dates:
                         raise DataPoolError(
@@ -316,9 +322,9 @@ def recompute_symbol_features(
                     stamp = max(time.time_ns() // 1000, row["updated_at"] + 1)
                     conn.execute(
                         "UPDATE daily_features SET "
-                        + ",".join(field + "=?" for field in DERIVED_COLUMNS)
+                        + ",".join(field + "=?" for field in owned_columns)
                         + ",updated_at=? WHERE symbol=? AND trade_date=?",
-                        (*(values[field] for field in DERIVED_COLUMNS), stamp, symbol, day),
+                        (*(values[field] for field in owned_columns), stamp, symbol, day),
                     )
                     changed_dates.append(day)
                     if any(

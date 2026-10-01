@@ -57,7 +57,7 @@ def canonical_operation(conn, operation):
         return
     if operation not in {
         "daily_update", "summary_repair", "summary_recompute", "factor_bootstrap",
-        "board_update", "six_dimension_init", "six_dimension_extend",
+        "board_update", "six_dimension_init", "six_dimension_extend", "st_default_repair",
     }:
         raise ValueError("Unknown canonical writer")
     previous = getattr(conn, "_operation", None)
@@ -376,13 +376,15 @@ class CanonicalConnection(sqlite3.Connection):
         if self.read_only or not self.in_transaction:
             return sqlite3.Connection.commit(self)
         try:
-            if self._operation == "six_dimension_extend":
+            if self._operation in {"six_dimension_extend", "st_default_repair"}:
                 # Explicit historical initialization changes only this one WAL file.
                 # Its single-file transaction is atomic without a cross-file intent.
                 permitted = {
                     "market_regime_features", "market_sessions", "board_daily",
                     "board_daily_status",
                 }
+                if self._operation == "st_default_repair":
+                    permitted = {"stock_daily_features", "market_regime_features"}
                 if any(
                     alias != "features" or table not in permitted
                     for (alias, table, _), _old in self._changes

@@ -217,7 +217,7 @@ def select_is_st(
     name_as_of: str | None = None,
     trade_date: str,
 ) -> tuple[bool | None, str | None, str | None]:
-    """Use dated ST, then a name proved for that exact day; otherwise unknown."""
+    """Use dated ST, then a same-day name; default missing evidence to non-ST."""
     day = _day(trade_date)
     known = [
         (bool(value), source)
@@ -232,7 +232,7 @@ def select_is_st(
         value = classify_st_name(name)
         if value is not None:
             return value, "dated_name", day
-    return None, None, None
+    return False, "assumed:not_st", None
 
 
 def build_selected_factors(

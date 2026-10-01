@@ -449,3 +449,24 @@ def test_historical_extension_uses_one_feature_transaction(canonical_pool, monke
         assert conn.execute(
             "SELECT close FROM daily_bars WHERE trade_date='2026-09-28'"
         ).fetchone()[0] != 99
+
+
+def test_st_default_repair_is_atomic_and_rejects_raw_writes(canonical_pool):
+    from aspool.sqlite_canonical import canonical_operation
+
+    with stock_connection(canonical_pool, read_only=False) as conn:
+        before = conn.execute("SELECT * FROM dataset_state").fetchall()
+        factors = conn.execute("SELECT * FROM adjustments.adjustment_state").fetchall()
+        with canonical_operation(conn, "st_default_repair"):
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE daily_features SET is_st=0,is_st_source='assumed:not_st'")
+            conn.commit()
+        assert conn.execute("SELECT * FROM dataset_state").fetchall() == before
+        assert conn.execute("SELECT * FROM adjustments.adjustment_state").fetchall() == factors
+        with canonical_operation(conn, "st_default_repair"):
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE daily_bars SET close=99")
+            with pytest.raises(DataPoolError) as error:
+                conn.commit()
+            assert error.value.code == "WRITE_SCOPE_REQUIRED"
+        assert conn.execute("SELECT COUNT(*) FROM daily_bars WHERE close=99").fetchone()[0] == 0

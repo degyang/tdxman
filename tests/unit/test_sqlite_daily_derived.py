@@ -43,8 +43,8 @@ def seed(conn, day, close=10, **fields):
         is_st=0,
         calc_status="TRADED",
         updated_at=1,
-        **fields,
     )
+    values.update(fields)
     conn.execute(
         "INSERT INTO daily_features ("
         + ",".join(values)
@@ -293,3 +293,38 @@ def test_unchanged_suspension_dates_do_not_consume_the_changed_date_budget(tmp_p
             ).fetchone()[0]
             == 10
         )
+
+
+def test_missing_st_defaults_non_st_without_masking_missing_reference():
+    row = dict(bar(), is_st=None)
+    result, _ = calculate(row, 0)
+    assert result["limit_status"] == "KNOWN"
+    assert result["close_limit_up"] == 1
+    missing, _ = calculate(dict(row, pre_close=None), 0)
+    assert missing["limit_reason"] == "missing_reference"
+
+
+def test_st_repair_preserves_ma_and_source_evidence(tmp_path):
+    from aspool.sqlite_st_repair import repair_symbol_st
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        for i in range(6):
+            seed(conn, f"2024-01-{i + 2:02d}", close=10)
+        seed(conn, "2024-01-08", close=11, is_st=None, limit_status="UNKNOWN",
+             limit_reason="missing_st", ma20=8, above_ma20=1)
+        seed(conn, "2024-01-09", close=11, is_st=None, source_is_st=1,
+             source_is_st_source="baostock:dated", ma20=9, above_ma20=1)
+        result = repair_symbol_st(conn, symbol="000001.SZ", start="2024-01-08",
+                                  end="2024-01-09")
+        assert result["selected_rows"] == 2
+        rows = conn.execute(
+            "SELECT is_st,is_st_source,close_limit_up,ma20,above_ma20,source_is_st "
+            "FROM daily_features WHERE trade_date>='2024-01-08' ORDER BY trade_date"
+        ).fetchall()
+        assert rows[0] == (0, "assumed:not_st", 1, 8, 1, None)
+        assert rows[1][:2] == (1, "baostock:dated")
+        assert rows[1][3:] == (9, 1, 1)
+        assert repair_symbol_st(conn, symbol="000001.SZ", start="2024-01-08",
+                                end="2024-01-09")["selected_rows"] == 0
+        conn.rollback()
