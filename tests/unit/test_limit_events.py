@@ -150,26 +150,25 @@ class TestRuleResolution:
         )
         assert after.is_known and after.rule.limit_pct == 0.20
 
-    def test_gem_before_registration_window_unconfirmed_is_unknown(self):
-        """注册制前创业板的上市无涨跌幅窗口规则未确认 => UNKNOWN，不套用当前窗口。"""
+    def test_established_gem_before_registration_uses_regular_limit(self):
+        """Observed prior sessions exclude the historic first-day exception."""
         from tdxman.codec.price_rules import resolve_limit_rule
         from tdxman.models.enums import Market
 
         before = resolve_limit_rule(
             Market.SZ, "300001", "创业", date(2020, 8, 21), False, observed_sessions=99
         )
-        assert not before.is_known and not before.is_no_limit
-        assert "窗口规则未确认" in before.reason
+        assert before.is_known and before.rule.limit_pct == 0.10
 
-    def test_main_board_before_registration_window_is_unknown(self):
-        """全面注册制主板前的上市窗口规则未确认 => UNKNOWN。"""
+    def test_established_historic_main_board_uses_regular_limit(self):
+        """Historic IPO uncertainty must not exclude an established stock."""
         from tdxman.codec.price_rules import resolve_limit_rule
         from tdxman.models.enums import Market
 
         result = resolve_limit_rule(
             Market.SH, "600519", "贵州茅台", date(2010, 5, 4), False, observed_sessions=99
         )
-        assert not result.is_known and "窗口规则未确认" in result.reason
+        assert result.is_known and result.rule.limit_pct == 0.10
 
     def test_main_board_registration_window_is_date_aware(self):
         from tdxman.codec.price_rules import resolve_limit_rule, resolve_no_limit_window

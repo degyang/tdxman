@@ -384,7 +384,10 @@ class CanonicalConnection(sqlite3.Connection):
                     "board_daily_status",
                 }
                 if self._operation == "st_default_repair":
-                    permitted = {"stock_daily_features", "market_regime_features"}
+                    permitted = {
+                        "stock_daily_features", "market_regime_features",
+                        "board_daily", "board_daily_status",
+                    }
                 if any(
                     alias != "features" or table not in permitted
                     for (alias, table, _), _old in self._changes

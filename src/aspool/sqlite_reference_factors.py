@@ -206,6 +206,11 @@ def select_reference_pre_close(
             raise ValueError("Invalid combined corporate action reference")
         return reference, "derived:previous_close+corporate_actions"
     value, source = raw_candidate
+    if source == "raw_fallback:legacy_unspecified":
+        # Imported legacy references have no verified price basis and may be
+        # forward-adjusted while the stored OHLC are unadjusted. Keep evidence
+        # in source fields; never select it as a daily reference price.
+        return None, None
     value = _positive(value, "raw pre_close")
     return (value, source or "raw_fallback:unspecified") if value is not None else (None, None)
 

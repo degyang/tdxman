@@ -107,16 +107,12 @@ class _Summary:
     def add(self, row):
         counts = self.counts
         status = row["calc_status"]
-        if status == "NO_TRADE":
+        if (
+            status != "TRADED"
+            or row["limit_status"] not in ("KNOWN", "NO_LIMIT", "UNKNOWN")
+            or not finite(row["close"], positive=True)
+        ):
             return
-        if status == "INVALID":
-            self.reasons["INVALID"][row["limit_reason"] or "unclassified"] += 1
-            counts["limit_invalid_count"] += 1
-            return
-        if status != "TRADED" or row["limit_status"] not in ("KNOWN", "NO_LIMIT", "UNKNOWN"):
-            raise DataPoolError("FEATURE_NOT_READY", "Daily limits have not been computed")
-        if not finite(row["close"], positive=True):
-            raise DataPoolError("DAILY_INVALID", "Traded feature has no valid close")
         if row["limit_status"] == "UNKNOWN":
             self.reasons["UNKNOWN"][row["limit_reason"] or "unclassified"] += 1
         counts["trading_count"] += 1

@@ -241,12 +241,17 @@ def recompute_board_daily(conn, *, day, changed_symbols=None, replace_snapshot=F
     if not conn.in_transaction:
         raise ValueError("Outer publication transaction required")
     current = {}
-    for symbol, status, st, close, pre in conn.execute(
-        "SELECT f.symbol,f.calc_status,f.is_st,b.close,f.pre_close FROM daily_features f "
+    for symbol, status, st, close, pre, limit_status in conn.execute(
+        "SELECT f.symbol,f.calc_status,f.is_st,b.close,f.pre_close,f.limit_status "
+        "FROM daily_features f "
         "LEFT JOIN daily_bars b USING(symbol,trade_date) WHERE f.trade_date=?",
         (day,),
     ):
-        if status == "TRADED":
+        if (
+            status == "TRADED"
+            and limit_status in ("KNOWN", "NO_LIMIT", "UNKNOWN")
+            and finite(close, positive=True)
+        ):
             value = (
                 float((Decimal(str(close)) - Decimal(str(pre))) / Decimal(str(pre)))
                 if finite(close, positive=True) and finite(pre, positive=True)

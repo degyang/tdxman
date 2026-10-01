@@ -55,7 +55,7 @@ def seed(conn, day, close=10, **fields):
     )
 
 
-def test_gaps_freeze_but_invalid_and_unknown_break_streak():
+def test_gaps_and_invalid_freeze_but_unknown_limit_breaks_streak():
     up, state = calculate(bar(), 2)
     assert up["close_limit_up"] == 1 and state == 3
     suspended = dict(bar(), trading_status="SUSPENDED", volume=0, amount=0)
@@ -67,10 +67,10 @@ def test_gaps_freeze_but_invalid_and_unknown_break_streak():
     _, state = calculate(bar(), state)
     assert state == 4
     invalid, state = calculate(dict(bar(), open=0), state)
-    assert invalid["limit_status"] == "INVALID" and state is None
+    assert invalid["limit_status"] == "INVALID" and state == 4
     unknown_height, state = calculate(bar(), state)
     assert unknown_height["close_limit_up"] == 1
-    assert unknown_height["streak_known"] == 0 and state is None
+    assert unknown_height["streak_known"] == 1 and state == 5
     _, state = calculate(bar(close=10), state)
     assert state == 0
     _, state = calculate(bar(), state)
@@ -92,9 +92,11 @@ def test_first_observed_up_is_unknown_and_ipo_no_limit_is_known_zero():
     assert unknown["limit_status"] == "UNKNOWN"
 
 
-def test_suspension_with_turnover_is_a_conflict():
-    with pytest.raises(DataPoolError, match="turnover"):
-        calculate(dict(bar(), trading_status="SUSPENDED"), 2)
+@pytest.mark.parametrize("status", ["SUSPENDED", "UNKNOWN", "INVALID", "UNCONFIRMED"])
+def test_uncertain_or_suspended_status_with_turnover_is_no_trade(status):
+    result, state = calculate(dict(bar(), trading_status=status), 2)
+    assert result["calc_status"] == "NO_TRADE" and state == 2
+    assert all(value is None for key, value in result.items() if key != "calc_status")
 
 
 def test_ma20_uses_twenty_adjusted_valid_closes_with_no_future_anchor():
@@ -311,12 +313,27 @@ def test_st_repair_preserves_ma_and_source_evidence(tmp_path):
         conn.execute("BEGIN IMMEDIATE")
         for i in range(6):
             seed(conn, f"2024-01-{i + 2:02d}", close=10)
-        seed(conn, "2024-01-08", close=11, is_st=None, limit_status="UNKNOWN",
-             limit_reason="missing_st", ma20=8, above_ma20=1)
-        seed(conn, "2024-01-09", close=11, is_st=None, source_is_st=1,
-             source_is_st_source="baostock:dated", ma20=9, above_ma20=1)
-        result = repair_symbol_st(conn, symbol="000001.SZ", start="2024-01-08",
-                                  end="2024-01-09")
+        seed(
+            conn,
+            "2024-01-08",
+            close=11,
+            is_st=None,
+            limit_status="UNKNOWN",
+            limit_reason="missing_st",
+            ma20=8,
+            above_ma20=1,
+        )
+        seed(
+            conn,
+            "2024-01-09",
+            close=11,
+            is_st=None,
+            source_is_st=1,
+            source_is_st_source="baostock:dated",
+            ma20=9,
+            above_ma20=1,
+        )
+        result = repair_symbol_st(conn, symbol="000001.SZ", start="2024-01-08", end="2024-01-09")
         assert result["selected_rows"] == 2
         rows = conn.execute(
             "SELECT is_st,is_st_source,close_limit_up,ma20,above_ma20,source_is_st "
@@ -325,6 +342,104 @@ def test_st_repair_preserves_ma_and_source_evidence(tmp_path):
         assert rows[0] == (0, "assumed:not_st", 1, 8, 1, None)
         assert rows[1][:2] == (1, "baostock:dated")
         assert rows[1][3:] == (9, 1, 1)
-        assert repair_symbol_st(conn, symbol="000001.SZ", start="2024-01-08",
-                                end="2024-01-09")["selected_rows"] == 0
+        assert (
+            repair_symbol_st(conn, symbol="000001.SZ", start="2024-01-08", end="2024-01-09")[
+                "selected_rows"
+            ]
+            == 0
+        )
+        conn.rollback()
+
+
+def test_limits_only_recomputes_known_st_rows_without_factor_reads(tmp_path, monkeypatch):
+    def reject_factor_read(*args):
+        raise AssertionError("Limit maintenance must not read adjustment factors")
+
+    monkeypatch.setattr("aspool.sqlite_daily_derived._factor_at", reject_factor_read)
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        for i in range(6):
+            seed(conn, f"2024-01-{i + 2:02d}", close=10)
+        seed(
+            conn,
+            "2024-01-08",
+            close=11,
+            is_st=0,
+            limit_status="UNKNOWN",
+            limit_reason="missing_st",
+            ma20=8,
+            above_ma20=1,
+        )
+        result = recompute_symbol_features(
+            conn,
+            symbol="000001.SZ",
+            start="2024-01-08",
+            end="2024-01-08",
+            listed_days={"2024-01-08": 10},
+            limits_only=True,
+        )
+        assert result["changed_rows"] == 1
+        assert result["changed_dates"] == ["2024-01-08"]
+        assert conn.execute(
+            "SELECT close_limit_up,ma20,above_ma20 FROM daily_features "
+            "WHERE trade_date='2024-01-08'"
+        ).fetchone() == (1, 8, 1)
+        conn.rollback()
+
+
+@pytest.mark.parametrize(
+    "day,symbol",
+    [
+        ("2000-01-04", "000001.SZ"),
+        ("2010-01-04", "600001.SH"),
+        ("2010-01-04", "300001.SZ"),
+        ("2019-01-04", "300001.SZ"),
+    ],
+)
+def test_historic_established_stocks_have_limits_but_first_observation_is_unknown(day, symbol):
+    row = dict(bar(day=day), symbol=symbol)
+    result, state = derive_daily_row(row, previous_streak=0, observed_sessions=2)
+    assert result["close_limit_up"] == 1 and state == 1
+    result, _ = derive_daily_row(row, previous_streak=0, observed_sessions=1)
+    assert result["limit_status"] == "UNKNOWN"
+    assert result["limit_reason"] == "missing_listing_date"
+
+
+def test_full_history_repair_removes_mixed_basis_reference_and_preserves_original(tmp_path):
+    from aspool.sqlite_st_repair import repair_symbol_st
+
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        seed(conn, "2000-01-04", close=10)
+        seed(
+            conn,
+            "2000-01-05",
+            close=10,
+            pre_close=2.5,
+            pre_close_source="raw_fallback:legacy_unspecified",
+            source_pre_close=2.5,
+            source_pre_close_source="raw_fallback:legacy_unspecified",
+            limit_status="KNOWN",
+            limit_up_price=2.75,
+            limit_down_price=2.25,
+            touch_limit_up=1,
+            close_limit_up=1,
+            touch_limit_down=0,
+            close_limit_down=0,
+            streak_known=1,
+            consecutive_up=2,
+        )
+        result = repair_symbol_st(
+            conn, symbol="000001.SZ", start="2000-01-04", end="2000-01-05", recompute_existing=True
+        )
+        assert result["reference_rows"] == 1
+        assert result["board_changed_dates"] == ["2000-01-05"]
+        assert conn.execute(
+            "SELECT pre_close,source_pre_close,limit_status,limit_reason,close_limit_up "
+            "FROM daily_features WHERE trade_date='2000-01-05'"
+        ).fetchone() == (None, 2.5, "UNKNOWN", "missing_reference", None)
+        repeated = repair_symbol_st(
+            conn, symbol="000001.SZ", start="2000-01-04", end="2000-01-05", recompute_existing=True
+        )
+        assert repeated["reference_rows"] == repeated["changed_rows"] == 0
         conn.rollback()

@@ -4,6 +4,7 @@ import json
 from collections import Counter
 
 from .api_contract import DataPoolError
+from .sqlite_daily_derived import finite
 
 QUALITY_FIELDS = ("limit_reason_counts_json", "promotion_quality_json")
 PROMOTION_KEYS = (
@@ -36,7 +37,7 @@ def upgrade_quality_columns(conn):
 def promotion_quality(conn, day, current, *, max_rows):
     """Visit stock keys and only necessary preceding observations, with a hard budget.
 
-    The latest non-NO_TRADE observation establishes candidate identity. Missing
+    The latest valid trading observation establishes candidate identity. Missing
     current rows and NO_TRADE both exclude the candidate for this session. A
     stored known predecessor streak avoids rereading its historical observation.
     """
@@ -75,13 +76,18 @@ def promotion_quality(conn, day, current, *, max_rows):
             try:
                 for previous in cursor:
                     charge()
-                    if previous[0] != "NO_TRADE":
+                    if previous[0] not in ("NO_TRADE", "INVALID"):
                         candidate = previous[1] == 1
                         break
             finally:
                 cursor.close()
         counts = {key: 0 for key in PROMOTION_KEYS}
         status = row["calc_status"] if row else "NO_TRADE"
+        if status == "TRADED" and (
+            row["limit_status"] not in ("KNOWN", "NO_LIMIT", "UNKNOWN")
+            or not finite(row["close"], positive=True)
+        ):
+            status = "NO_TRADE"
         if candidate:
             counts["candidate_count"] = 1
             if status == "NO_TRADE":
