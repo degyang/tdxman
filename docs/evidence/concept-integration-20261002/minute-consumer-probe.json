@@ -1,0 +1,14 @@
+{
+  "symbol": "600519.SH",
+  "date": "2026-09-01",
+  "prev_close": 1299.52001953125,
+  "source": "tdxman.mac.tick_chart",
+  "date_verified": true,
+  "received_at": "2026-10-02T16:04:54.073466+08:00",
+  "basis": "指定日分时价格曲线；日期已核实，非完整分钟OHLCV；不展示未确认单位的量额",
+  "protocol_requests": 1,
+  "rows": 240,
+  "actual_start": "2026-09-01T09:30:00",
+  "actual_end": "2026-09-01T14:59:00",
+  "sdk_version": "1.1.3"
+}

@@ -1,0 +1,22 @@
+{
+  "previous_pid": 970490,
+  "cwd": "/mnt/d/workstation/projects/fundwise",
+  "args": [
+    ".venv/bin/python",
+    "-m",
+    "fundwise.cli",
+    "web",
+    "serve",
+    "--port",
+    "8765",
+    "--static-dir",
+    "webapp/dist",
+    "--aspool-root",
+    "/mnt/d/Workstation/Services/tdxman/data",
+    "--regime-cache",
+    ".fundwise/regime-live-sqlite"
+  ],
+  "sdk_version": "1.1.3",
+  "production_data_repair": false,
+  "new_pid": 982781
+}
