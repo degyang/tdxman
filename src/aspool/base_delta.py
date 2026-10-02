@@ -20,6 +20,7 @@ DATASETS = {
     "event-coverage": ("@coverage", "event_coverage", "as_of"),
     "factor-source-evidence": ("@files", "source_evidence", "as_of"),
     "stock-bars": ("stocks.sqlite", "daily_bars", "trade_date"),
+    "stock-qfq-bars": ("stocks.sqlite", "stock_qfq_bars", "trade_date"),
     "index-bars": ("indices.sqlite", "daily_bars", "trade_date"),
     "etf-bars": ("etfs.sqlite", "daily_bars", "trade_date"),
     "stock-source-facts": ("features.sqlite", "stock_daily_features", "trade_date"),
@@ -39,7 +40,7 @@ DATASETS = {
 OBSERVATION_METADATA = {"updated_at", "fetched_at", "input_hash", "algorithm_version"}
 MAX_ROWS = 100_000
 MAX_BYTES = 256 * 1024 * 1024
-STOCK_DATASETS = {"stock-bars", "stock-source-facts", "actions", "factor-anchors"}
+STOCK_DATASETS = {"stock-bars", "stock-qfq-bars", "stock-source-facts", "actions", "factor-anchors"}
 _ACTIVE = ContextVar("replica_recovery_root", default=None)
 
 
@@ -127,6 +128,25 @@ def _fields(dataset, columns, keys):
 
 
 def _read(root, dataset, start, end, symbols, max_rows):
+    if dataset == "stock-qfq-bars":
+        with _connection(root, "stocks.sqlite") as conn:
+            if not conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE name='stock_qfq_bars'"
+            ).fetchone():
+                return (
+                    [
+                        "symbol",
+                        "trade_date",
+                        "open",
+                        "high",
+                        "low",
+                        "close",
+                        "source",
+                        "source_as_of",
+                    ],
+                    ["symbol", "trade_date"],
+                    {},
+                )
     if dataset == "event-coverage":
         path = evidence_directory(root) / "coverage.sqlite"
         fields = ["symbol", "verified_start", "as_of", "source", "payload_json"]
@@ -586,6 +606,7 @@ def _stock_apply(root, datasets, window, *, force=False):
                     reference_symbols.add(symbol)
                 table = {
                     "stock-bars": "daily_bars",
+                    "stock-qfq-bars": "stock_qfq_bars",
                     "stock-source-facts": "daily_features",
                     "actions": "corporate_actions",
                     "factor-anchors": "corporate_actions",
@@ -740,6 +761,9 @@ def _stock_apply(root, datasets, window, *, force=False):
                     options.update(factor_through=dates[-1], anchors=[])
                     # Passing an empty finite list requests rebuild from stored source inputs.
                 update_reference_factors(conn, symbol=symbol, dates=dates, **options)
+                from .sqlite_qfq import refresh_references
+
+                refresh_references(conn, symbol, dates)
                 for offset in range(0, len(dates), 60):
                     volume_days, _ = recompute_volume_metrics(
                         conn, symbol, dates[offset : offset + 60], propagate_days=()
@@ -821,6 +845,10 @@ def _apply_delta(root, package=None, *, recover=False):
             if pending_path(root).exists():
                 recover_publication(root)
             window, datasets = value["window"], value["datasets"]
+            if any(d["name"] == "stock-qfq-bars" for d in datasets):
+                from .sqlite_qfq import ensure_qfq_schema
+
+                ensure_qfq_schema(root)
             for dataset in datasets:
                 _checked(root, dataset, window)
 
