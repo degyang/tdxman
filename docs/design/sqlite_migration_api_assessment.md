@@ -1,5 +1,8 @@
 # 四表 SQLite：数据迁移、接口与 Regime 计算评估
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 日期：2026-09-28。对象：tdxman/aspool，消费者包括 Fundwise 与 tick-stock-panel。状态：只读调查与目标契约，尚未实现 SQLite 后端、迁移或上线。详细字段、DDL 和完整模板以[详细需求与设计](sqlite_stock_requirements_design.md)为准。目标和任务见[精简决策](daily_data_simplification.md)、[实施计划](sqlite_four_table_implementation_plan.md)。
 
 ## 1. 结论与评估边界

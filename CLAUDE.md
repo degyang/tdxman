@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](docs/design/data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build / Test / Lint

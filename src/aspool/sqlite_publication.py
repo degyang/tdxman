@@ -44,6 +44,9 @@ def migration_path(root):
 
 
 def assert_published(root):
+    from .base_delta import assert_replica_complete
+
+    assert_replica_complete(root)
     if pending_path(root).exists() or migration_path(root).exists():
         raise DataPoolError(
             "RECOVERY_REQUIRED", "A database publication is incomplete; recover it explicitly"

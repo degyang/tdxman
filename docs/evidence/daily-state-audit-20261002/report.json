@@ -1,0 +1,21 @@
+{
+  "root": "/mnt/d/Workstation/Services/tdxman/data",
+  "start": "2016-10-01",
+  "end": "2026-09-30",
+  "status": "completed",
+  "inspected_rows": 10345399,
+  "repaired_states": 9912705,
+  "enriched_verified_rows": 9912705,
+  "processed_symbols": 5594,
+  "before": {
+    "missing_trading_status": 9912705,
+    "legacy_nontrade_placeholder": 63,
+    "invalid_or_unconfirmed_bar": 16
+  },
+  "after": {
+    "legacy_nontrade_placeholder": 63,
+    "invalid_or_unconfirmed_bar": 16
+  },
+  "source_results": [],
+  "seconds": 2231.08
+}

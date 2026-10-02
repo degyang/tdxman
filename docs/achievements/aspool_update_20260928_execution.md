@@ -1,5 +1,8 @@
 # 2026-09-28 日更执行记录
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 本文保留名单改造前的执行过程和当时限制。后续改造见 [名单优先与事件修订设计](../implements/../implements/sqlite_daily_directory_update.md)，最终实库回执另列，不能将本文的 `partial` 当作后续执行状态。
 
 本次用户要求通过 `aspool update` 更新今日行情及派生。TDX 为默认源；没有使用 BaoStock。执行日志放 `.local/reports/execution-20260928-daily/`，运行任务置于 tmux。

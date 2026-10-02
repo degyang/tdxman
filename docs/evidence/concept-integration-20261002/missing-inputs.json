@@ -1,0 +1,36 @@
+{
+  "rows": 13,
+  "members": 13,
+  "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+  "missing_counts": {
+    "total_share": 13,
+    "float_share": 13,
+    "total_mv": 13,
+    "float_mv": 13
+  },
+  "volume_source_counts": {
+    "tdxman:quote": 13
+  },
+  "sample": [
+    {
+      "symbol": "000713.SZ",
+      "date": "2026-09-30T00:00:00.000",
+      "vol_ratio": 0.8777064085,
+      "vol_ratio_source": "tdxman:quote",
+      "total_share": null,
+      "float_share": null,
+      "total_mv": null,
+      "float_mv": null
+    },
+    {
+      "symbol": "000998.SZ",
+      "date": "2026-09-30T00:00:00.000",
+      "vol_ratio": 1.0625772476,
+      "vol_ratio_source": "tdxman:quote",
+      "total_share": null,
+      "float_share": null,
+      "total_mv": null,
+      "float_mv": null
+    }
+  ]
+}

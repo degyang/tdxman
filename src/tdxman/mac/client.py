@@ -11,10 +11,10 @@ from typing import Any, TypeVar
 import pandas as pd
 
 from .._df import _to_df
-from ..codec.bitmap import Fields, PresetField
+from ..codec.bitmap import Fields, PresetField, get_active_fields
 from ..commands.base import BaseCommand
 from ..config import get_best_mac_endpoint, get_best_mac_host, get_mac_hosts, get_port, get_timeout
-from ..exceptions import TdxConnectionError
+from ..exceptions import TdxConnectionError, TdxDecodeError
 from ..transport.async_ import AsyncTdxConnection
 from ..transport.sync import TdxConnection, ping_mac_all
 from .commands import (
@@ -97,12 +97,90 @@ def _quotes_to_df(quotes: list[MacQuoteField]) -> pd.DataFrame:
     return pd.DataFrame(_flatten_quote_fields(quotes))
 
 
+def _requested_quotes_frame(quotes, stocks, bitmap):
+    expected = set(stocks)
+    identities = [(quote.market, quote.code) for quote in quotes]
+    if len(set(identities)) != len(identities) or not set(identities) <= expected:
+        raise TdxDecodeError("Quote response repeated or returned an unexpected identity")
+    frame = _quotes_to_df(quotes)
+    requested = [field.field_name for field, _ in get_active_fields(bitmap)]
+    frame.attrs.update(
+        requested_count=len(stocks),
+        returned_count=len(quotes),
+        complete=set(identities) == expected,
+        missing_identities=[
+            dict(market=int(m), code=c) for m, c in sorted(expected - set(identities))
+        ],
+        missing_fields=[name for name in requested if name not in frame],
+        source_consistency="best_effort",
+        source_time_basis="server_update_fields",
+        amount_unit="CNY",
+        price_unit="asset_dependent",
+        volume_unit="asset_dependent",
+        shares_unit="10000 shares for stocks",
+    )
+    return frame
+
+
+def _validate_page(count, start):
+    if (
+        type(count) is not int
+        or not 1 <= count <= 100000
+        or type(start) is not int
+        or not 0 <= start <= 100000
+    ):
+        raise ValueError("Expected count=1..100000 and start=0..100000")
+
+
+def _page_frame(items, count, start, exhausted, *, directory=False):
+    identities = [(item.market, item.code) for item in items]
+    if len(set(identities)) != len(identities):
+        raise TdxDecodeError("Source pagination repeated an identity; retry the bounded read")
+    frame = _to_df(items) if directory else _quotes_to_df(items)
+    frame.attrs.update(
+        requested_count=count,
+        returned_count=len(items),
+        start=start,
+        next_offset=None if exhausted else start + len(items),
+        source_exhausted=exhausted,
+        complete=exhausted and start == 0,
+        truncated=not exhausted,
+        source_consistency="best_effort",
+    )
+    return frame
+
+
 def _flatten_tick_chart(chart: MacTickChart) -> list[dict[str, Any]]:
     """将 MacTickChart 的 ticks 展平为 DataFrame 行。"""
     rows: list[dict[str, Any]] = []
     for tick in chart.charts:
         rows.append(asdict(tick))
     return rows
+
+
+def _tick_frame(chart, requested_date):
+    frame = pd.DataFrame(_flatten_tick_chart(chart))
+    if requested_date is not None and chart.source_date is not None:
+        if requested_date != chart.source_date:
+            raise TdxDecodeError("Source returned a different historical minute date")
+    frame["date"] = chart.source_date
+    frame["pre_close"] = chart.reference_pre_close
+    if chart.source_date is not None and "time" in frame:
+        from datetime import datetime
+
+        frame["datetime"] = [datetime.combine(chart.source_date, value) for value in frame["time"]]
+    frame.attrs.update(
+        requested_date=str(requested_date) if requested_date else None,
+        source_date=str(chart.source_date) if chart.source_date else None,
+        date_verified=chart.source_date is not None,
+        price_unit="asset_dependent",
+        pre_close_basis="requested_day_header",
+        volume_unit="provider_raw_unverified",
+        amount_provided=False,
+        ohlc_provided=False,
+        source_consistency="best_effort",
+    )
+    return frame
 
 
 def _flatten_multi_tick_chart(chart: MacMultiTickChart) -> list[dict[str, Any]]:
@@ -274,8 +352,11 @@ class MacClient:
             stocks: [(market, code), ...] 列表。
             fields: 字段选择，默认 PresetField.COMMON。
         """
-        quotes = self._execute(SymbolQuotesCmd(stocks, fields))  # type: ignore[arg-type]
-        return _quotes_to_df(quotes)
+        if not 1 <= len(stocks) <= 80 or len(set(stocks)) != len(stocks):
+            raise ValueError("Expected 1..80 distinct quote identities")
+        command = SymbolQuotesCmd(stocks, fields)  # type: ignore[arg-type]
+        quotes = self._execute(command)
+        return _requested_quotes_frame(quotes, stocks, command._bitmap)
 
     def get_stock_quotes_list(
         self,
@@ -302,10 +383,11 @@ class MacClient:
             fields = PresetField.BASIC + PresetField.VOLUME
         all_quotes: list[MacQuoteField] = []
         fetched = 0
-        page_size = min(count, _BOARD_MEMBERS_PAGE_SIZE)
+        _validate_page(count, start)
         offset = start
 
         while fetched < count:
+            page_size = min(count - fetched, _BOARD_MEMBERS_PAGE_SIZE)
             batch = self._execute(
                 BoardMembersQuotesCmd(
                     board_code=int(category),
@@ -319,13 +401,15 @@ class MacClient:
             )
             if not batch:
                 break
-            all_quotes = batch + all_quotes
+            if len(batch) > page_size:
+                raise TdxDecodeError("Source returned more quotes than requested")
+            all_quotes.extend(batch)
             fetched += len(batch)
             offset += len(batch)
             if len(batch) < page_size:
                 break
 
-        return _quotes_to_df(all_quotes)
+        return _page_frame(all_quotes, count, offset - fetched, fetched < count)
 
     # ------------------------------------------------------------------ #
     # K 线（支持复权）
@@ -383,6 +467,30 @@ class MacClient:
     # 分时
     # ------------------------------------------------------------------ #
 
+    def get_minute_bars(
+        self,
+        market: int,
+        code: str,
+        *,
+        date,
+        since=None,
+        max_pages=4,
+        page_size=240,
+        asset_type="stock",
+    ) -> pd.DataFrame:
+        """Read a bounded dated window, optionally including a revision-overlap tail."""
+        from .minute_window import arguments, consume, finish
+
+        day, floor = arguments(date, since, max_pages, page_size, asset_type)
+        pages, offset, stopped = [], 0, False
+        for number in range(max_pages):
+            frame = self.get_stock_kline(market, code, Period.MIN_1, start=offset, count=page_size)
+            stopped = consume(pages, frame, floor, page_size)
+            offset += len(frame)
+            if stopped:
+                break
+        return finish(pages, day, floor, number + 1, page_size, stopped, asset_type)
+
     def get_tick_chart(
         self,
         market: int,
@@ -402,7 +510,7 @@ class MacClient:
             date_cls(date // 10000, (date % 10000) // 100, date % 100) if date is not None else None
         )
         chart = self._execute(SymbolTickChartCmd(market, code, query_date))
-        return pd.DataFrame(_flatten_tick_chart(chart))
+        return _tick_frame(chart, query_date)
 
     def get_tick_charts(
         self,
@@ -513,22 +621,30 @@ class MacClient:
             board_type: 板块类型。
             count: 请求总数。
         """
-        all_items = self._execute(BoardListCmd(board_type, 0, min(count, 150)))
-        fetched = len(all_items)
-        offset = fetched
-
+        _validate_page(count, 0)
+        all_items, totals = [], []
+        fetched = 0
+        exhausted = False
         while fetched < count:
             page_size = min(count - fetched, 150)
-            batch = self._execute(BoardListCmd(board_type, offset, page_size))
-            if not batch:
-                break
+            command = BoardListCmd(board_type, fetched, page_size)
+            batch = self._execute(command)
+            totals.append(command.total)
+            if len(batch) > page_size:
+                raise TdxDecodeError("Source returned more boards than requested")
             all_items.extend(batch)
             fetched += len(batch)
-            offset += len(batch)
             if len(batch) < page_size:
+                exhausted = True
                 break
-
-        return _to_df(all_items)
+        frame = _page_frame(all_items, count, 0, exhausted, directory=True)
+        known = {total for total in totals if total is not None}
+        frame.attrs.update(
+            source_total=totals[-1] if totals else None, source_total_changed=len(known) > 1
+        )
+        if len(known) > 1:
+            frame.attrs["complete"] = False
+        return frame
 
     def get_board_members(
         self,
@@ -549,6 +665,7 @@ class MacClient:
             fields: 字段选择。
             exclude_flags: 过滤标志列表。
         """
+        _validate_page(count, 0)
         board_code = _convert_board_code(board_symbol)
         all_quotes: list[MacQuoteField] = []
         fetched = 0
@@ -569,13 +686,15 @@ class MacClient:
             )
             if not batch:
                 break
-            all_quotes = batch + all_quotes
+            if len(batch) > page_size:
+                raise TdxDecodeError("Source returned more quotes than requested")
+            all_quotes.extend(batch)
             fetched += len(batch)
             offset += len(batch)
             if len(batch) < page_size:
                 break
 
-        return _quotes_to_df(all_quotes)
+        return _page_frame(all_quotes, count, offset - fetched, fetched < count)
 
     def get_belong_board(self, market: int, code: str) -> pd.DataFrame:
         """获取个股所属板块列表。
@@ -922,8 +1041,11 @@ class AsyncMacClient:
         stocks: list[tuple[int, str]],
         fields: object = None,
     ) -> pd.DataFrame:
-        quotes = await self._execute(SymbolQuotesCmd(stocks, fields))  # type: ignore[arg-type]
-        return _quotes_to_df(quotes)
+        if not 1 <= len(stocks) <= 80 or len(set(stocks)) != len(stocks):
+            raise ValueError("Expected 1..80 distinct quote identities")
+        command = SymbolQuotesCmd(stocks, fields)  # type: ignore[arg-type]
+        quotes = await self._execute(command)
+        return _requested_quotes_frame(quotes, stocks, command._bitmap)
 
     async def get_stock_quotes_list(
         self,
@@ -939,10 +1061,11 @@ class AsyncMacClient:
             fields = PresetField.BASIC + PresetField.VOLUME
         all_quotes: list[MacQuoteField] = []
         fetched = 0
-        page_size = min(count, _BOARD_MEMBERS_PAGE_SIZE)
+        _validate_page(count, start)
         offset = start
 
         while fetched < count:
+            page_size = min(count - fetched, _BOARD_MEMBERS_PAGE_SIZE)
             batch = await self._execute(
                 BoardMembersQuotesCmd(
                     board_code=int(category),
@@ -956,13 +1079,15 @@ class AsyncMacClient:
             )
             if not batch:
                 break
-            all_quotes = batch + all_quotes
+            if len(batch) > page_size:
+                raise TdxDecodeError("Source returned more quotes than requested")
+            all_quotes.extend(batch)
             fetched += len(batch)
             offset += len(batch)
             if len(batch) < page_size:
                 break
 
-        return _quotes_to_df(all_quotes)
+        return _page_frame(all_quotes, count, offset - fetched, fetched < count)
 
     # ------------------------------------------------------------------ #
     # K 线
@@ -1009,6 +1134,32 @@ class AsyncMacClient:
     # 分时
     # ------------------------------------------------------------------ #
 
+    async def get_minute_bars(
+        self,
+        market: int,
+        code: str,
+        *,
+        date,
+        since=None,
+        max_pages=4,
+        page_size=240,
+        asset_type="stock",
+    ) -> pd.DataFrame:
+        """Read a bounded dated window, optionally including a revision-overlap tail."""
+        from .minute_window import arguments, consume, finish
+
+        day, floor = arguments(date, since, max_pages, page_size, asset_type)
+        pages, offset, stopped = [], 0, False
+        for number in range(max_pages):
+            frame = await self.get_stock_kline(
+                market, code, Period.MIN_1, start=offset, count=page_size
+            )
+            stopped = consume(pages, frame, floor, page_size)
+            offset += len(frame)
+            if stopped:
+                break
+        return finish(pages, day, floor, number + 1, page_size, stopped, asset_type)
+
     async def get_tick_chart(
         self,
         market: int,
@@ -1021,7 +1172,7 @@ class AsyncMacClient:
             date_cls(date // 10000, (date % 10000) // 100, date % 100) if date is not None else None
         )
         chart = await self._execute(SymbolTickChartCmd(market, code, query_date))
-        return pd.DataFrame(_flatten_tick_chart(chart))
+        return _tick_frame(chart, query_date)
 
     async def get_tick_charts(
         self,
@@ -1099,22 +1250,30 @@ class AsyncMacClient:
         board_type: BoardType = BoardType.ALL,
         count: int = 10000,
     ) -> pd.DataFrame:
-        all_items = await self._execute(BoardListCmd(board_type, 0, min(count, 150)))
-        fetched = len(all_items)
-        offset = fetched
-
+        _validate_page(count, 0)
+        all_items, totals = [], []
+        fetched = 0
+        exhausted = False
         while fetched < count:
             page_size = min(count - fetched, 150)
-            batch = await self._execute(BoardListCmd(board_type, offset, page_size))
-            if not batch:
-                break
+            command = BoardListCmd(board_type, fetched, page_size)
+            batch = await self._execute(command)
+            totals.append(command.total)
+            if len(batch) > page_size:
+                raise TdxDecodeError("Source returned more boards than requested")
             all_items.extend(batch)
             fetched += len(batch)
-            offset += len(batch)
             if len(batch) < page_size:
+                exhausted = True
                 break
-
-        return _to_df(all_items)
+        frame = _page_frame(all_items, count, 0, exhausted, directory=True)
+        known = {total for total in totals if total is not None}
+        frame.attrs.update(
+            source_total=totals[-1] if totals else None, source_total_changed=len(known) > 1
+        )
+        if len(known) > 1:
+            frame.attrs["complete"] = False
+        return frame
 
     async def get_board_members(
         self,
@@ -1125,6 +1284,7 @@ class AsyncMacClient:
         fields: object = PresetField.COMMON,
         exclude_flags: list[FilterType] | None = None,
     ) -> pd.DataFrame:
+        _validate_page(count, 0)
         board_code = _convert_board_code(board_symbol)
         all_quotes: list[MacQuoteField] = []
         fetched = 0
@@ -1145,13 +1305,15 @@ class AsyncMacClient:
             )
             if not batch:
                 break
-            all_quotes = batch + all_quotes
+            if len(batch) > page_size:
+                raise TdxDecodeError("Source returned more quotes than requested")
+            all_quotes.extend(batch)
             fetched += len(batch)
             offset += len(batch)
             if len(batch) < page_size:
                 break
 
-        return _quotes_to_df(all_quotes)
+        return _page_frame(all_quotes, count, offset - fetched, fetched < count)
 
     async def get_belong_board(self, market: int, code: str) -> pd.DataFrame:
         items = await self._execute(SymbolBelongBoardCmd(market, code))

@@ -1,5 +1,8 @@
 # tdxman
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](docs/design/data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/tdxman.svg)](https://pypi.org/project/tdxman/)
 
@@ -563,7 +566,7 @@ src/tdxman/
 
 commands 层不依赖 transport，可独立单测。
 
-## aspool：股票与指数数据池
+## aspool：基础数据与 Enriched 数据池
 
 `aspool` 与 `tdxman` 一起安装，代码位于 `src/aspool`。默认数据池是 `~/.aspool`，
 可在各命令中使用 `--root PATH` 指向其他池；同一工作流的所有命令应使用同一个 root。
@@ -764,3 +767,5 @@ ruff format --check src/ tests/                              # format check
 - [mootdx](https://github.com/mootdx/mootdx) -- 工程化封装参考
 
 详见 [NOTICE](NOTICE) 和 [LICENSE](LICENSE)。
+
+基础数据增量同步使用 `aspool replica export/apply/recover`，支持有界逻辑差异、依赖重算与中断恢复，见[同步说明](docs/ops/base_data_incremental_sync.md)。

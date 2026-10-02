@@ -1,5 +1,8 @@
 # 生产涨跌停更新与派生交付
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](../design/data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 执行时间：2026-09-18 23:55 起（北京时间，跨至 09-19）。UP 研发自验；PM 尚未审核冻结。
 
 生产池：`/home/ubuntu/.aspool`，来自 Fundwise `settings/config.yaml` 的 `aspool.root: ~/.aspool`。

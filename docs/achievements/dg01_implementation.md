@@ -1,5 +1,8 @@
 # DG-01 剩余实施与隔离验收
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 日期：2026-09-27。本文保留 `c3c45f9` 实施交付时的状态和证据；随后独立审查发现并修复的恢复、源故障、TTL 与成本问题，以及当前工程判定见 [独立恢复审查](dg01_review.md)。main 集成由协调者完成，本分支不执行生产修复、迁移、切换或清理。
 
 首批 `981ab5f` 已由协调者 fast-forward 集成并推送 main/feature；本轮基于该提交。任务 `task_c544312049ac`、Dispatch `ctx_85e33bd51354`、终端 `term_53175c77-60be-4618-9acd-c8a2cbc3f787`，独占实施工作树 `/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract`、分支 `degyang/aspool-dg00-contract`。本会话 turn_context 与协调者 requested/effective 核验均为 `gpt-6-sol / high`，全程未换模型、升级 effort 或使用子 agent。身份与依赖版本仅保存允许字段。

@@ -1,5 +1,8 @@
 # 日终涨跌停来源质量实施交付
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 **日期**：2026-09-18
 **审核依据**：`Fundwise/docs/northstar/reviews/UP-daily-limit-events-pm-review.md` 的“来源准备度复审：来源定位采纳，合并安全结论需修正并进入实施”。
 **状态**：本地实施包及局部收口完成，定向验证通过；未接新来源、未联网、未写生产池、未改 Fundwise 业务代码；已随 checkpoint `a78fb49` 本地提交。

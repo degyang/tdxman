@@ -1,0 +1,179 @@
+{
+  "status": "completed_with_unresolved",
+  "start": "2016-10-01",
+  "end": "2026-09-30",
+  "symbols": 5594,
+  "inspected_existing_stock_days": 10345399,
+  "repaired_states_total": 9915119,
+  "enriched_numeric_verified_total": 9915119,
+  "resumed_run_repaired_states": 9912705,
+  "first_completed_symbol_rows": 2414,
+  "repaired_symbols": 5427,
+  "source_repaired_keys": [
+    [
+      "688383.SH",
+      "2022-08-29"
+    ]
+  ],
+  "dated_shares_enriched_verified": true,
+  "remaining": {
+    "legacy_nontrade_placeholder": 63,
+    "invalid_or_unconfirmed_bar": 16
+  },
+  "positive_turnover_missing_state": 0,
+  "state_trade_conflicts": 0,
+  "trading_calc_mismatches": 0,
+  "missing_bar_for_unconfirmed_or_trading_fact": 0,
+  "mac_logical_calls": 35,
+  "mac_returned_bars": 54788,
+  "transport_page_calls": "not instrumented",
+  "baostock_status_confirmation": "login failed: 10002007",
+  "canonical_publication": {
+    "final_publication": {
+      "summary_publication_rows": 4854,
+      "publication_stamp": 1790941040553485
+    },
+    "canonical_verification": {
+      "layout_version": 3,
+      "activated": true,
+      "ready": true,
+      "verification_level": "shallow",
+      "publication_pending": false,
+      "ownership": {
+        "stocks.sqlite": {
+          "missing_tables": [],
+          "retired_tables_present": [],
+          "schema": 3
+        },
+        "features.sqlite": {
+          "missing_tables": [],
+          "retired_tables_present": [],
+          "schema": 3
+        },
+        "adjustments.sqlite": {
+          "missing_tables": [],
+          "retired_tables_present": [],
+          "schema": 3
+        },
+        "etfs.sqlite": {
+          "missing_tables": [],
+          "retired_tables_present": [],
+          "schema": 1
+        }
+      },
+      "source_events_only": true
+    },
+    "public_sample_rows": 7751,
+    "positive_volume_rows": 7751,
+    "positive_volume_all_trading": true,
+    "feature_rows": 18,
+    "summary_rows": 6,
+    "board_rows": 1614,
+    "summary_attrs": {
+      "contract_version": 3,
+      "price_adjustment": "raw",
+      "volume_unit": "share",
+      "amount_unit": "CNY",
+      "point_in_time": false,
+      "source": "aspool.sqlite"
+    },
+    "board_attrs": {
+      "contract_version": 3,
+      "price_adjustment": "raw",
+      "volume_unit": "share",
+      "amount_unit": "CNY",
+      "point_in_time": false,
+      "source": "aspool.sqlite",
+      "classification": "tdx_hy2_gn",
+      "industry_level": 2,
+      "category_status": [
+        {
+          "date": "2026-09-22",
+          "scope": "all_stocks",
+          "kind": "concept",
+          "status": "ready",
+          "processed_board_count": 269,
+          "expected_board_count": 269,
+          "mapped_trading_count": 5433,
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "updated_at": 1790856561755619
+        },
+        {
+          "date": "2026-09-23",
+          "scope": "all_stocks",
+          "kind": "concept",
+          "status": "ready",
+          "processed_board_count": 269,
+          "expected_board_count": 269,
+          "mapped_trading_count": 5435,
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "updated_at": 1790856562423470
+        },
+        {
+          "date": "2026-09-24",
+          "scope": "all_stocks",
+          "kind": "concept",
+          "status": "ready",
+          "processed_board_count": 269,
+          "expected_board_count": 269,
+          "mapped_trading_count": 5436,
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "updated_at": 1790856563125889
+        },
+        {
+          "date": "2026-09-28",
+          "scope": "all_stocks",
+          "kind": "concept",
+          "status": "ready",
+          "processed_board_count": 269,
+          "expected_board_count": 269,
+          "mapped_trading_count": 5436,
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "updated_at": 1790856563840996
+        },
+        {
+          "date": "2026-09-29",
+          "scope": "all_stocks",
+          "kind": "concept",
+          "status": "ready",
+          "processed_board_count": 269,
+          "expected_board_count": 269,
+          "mapped_trading_count": 5438,
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "updated_at": 1790856564596631
+        },
+        {
+          "date": "2026-09-30",
+          "scope": "all_stocks",
+          "kind": "concept",
+          "status": "ready",
+          "processed_board_count": 269,
+          "expected_board_count": 269,
+          "mapped_trading_count": 5439,
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "updated_at": 1790856565192737
+        }
+      ],
+      "categories": {
+        "concept": {
+          "kind": "concept",
+          "status": "ready",
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "attempted_at": "2026-10-01T09:09:47.968296+00:00",
+          "error": null,
+          "updated_at": 1790853451566273
+        }
+      },
+      "uncomputed_date_status": "not_computed",
+      "limit": 100000,
+      "offset": 0,
+      "next_offset": null
+    }
+  },
+  "execution_seconds": 2231.08,
+  "recovery": "/home/ubuntu/tdxman-ten-year-status-recovery-20261002",
+  "SDK_version": "1.1.5",
+  "wheel_sha256": "9961e0cd39ad50daa2eca4116fa422e7c620e27dc15e85099eeb862cc47a8757",
+  "related_unit_tests_passed": 111,
+  "installed_wheel_tests_passed": 9
+}

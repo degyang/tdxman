@@ -1,0 +1,102 @@
+[
+  {
+    "path": "/api/v1/health",
+    "http_status": 200,
+    "seconds": 0.032,
+    "response_keys": [
+      "status",
+      "service",
+      "version",
+      "api_version"
+    ],
+    "status": "ok"
+  },
+  {
+    "path": "/api/analysis/board-daily-rotation?days=7&kind=concept&end=2026-09-30",
+    "http_status": 200,
+    "seconds": 2.044,
+    "response_keys": [
+      "directory",
+      "dates",
+      "columns",
+      "quality",
+      "concept_count",
+      "kind",
+      "input_version",
+      "requested_end",
+      "basis",
+      "available_days",
+      "stale"
+    ],
+    "directory_count": 269,
+    "basis": "成分股日收益均值排名；按各日记录绑定的成分快照回看，不代表历史时点成分"
+  },
+  {
+    "path": "/api/analysis/concept-directory",
+    "http_status": 200,
+    "seconds": 0.777,
+    "response_keys": [
+      "directory",
+      "basis",
+      "stale",
+      "requested_end",
+      "error"
+    ],
+    "directory_count": 269,
+    "basis": "成分股日收益均值排名；按各日记录绑定的成分快照回看，不代表历史时点成分"
+  },
+  {
+    "path": "/api/analysis/concept-detail/880710",
+    "http_status": 200,
+    "seconds": 1.199,
+    "response_keys": [
+      "stocks",
+      "count",
+      "avgPct",
+      "medianPct",
+      "upCount",
+      "downCount",
+      "flatCount",
+      "unknownCount",
+      "upRate",
+      "strongCount",
+      "weakCount",
+      "totalAmount",
+      "amountCoverage",
+      "validCount",
+      "avgTurnover",
+      "avgVolRatio",
+      "leader",
+      "heatScore",
+      "riskScore",
+      "key",
+      "board_id",
+      "date",
+      "snapshot_id",
+      "membership_as_of",
+      "basis",
+      "limitations"
+    ],
+    "count": 13,
+    "validCount": 13,
+    "heatScore": null,
+    "leader": null,
+    "date": "2026-09-30",
+    "basis": "成分股日收益均值排名；按各日记录绑定的成分快照回看，不代表历史时点成分"
+  },
+  {
+    "path": "/api/analysis/stock-daily?symbol=600519.SH&days=30&end=2026-09-30",
+    "http_status": 200,
+    "seconds": 0.142,
+    "response_keys": [
+      "symbol",
+      "rows",
+      "basis",
+      "source",
+      "requested_days",
+      "actual_days"
+    ],
+    "basis": "前复权日线；来源正式日K，不注入实时报价",
+    "rows": 30
+  }
+]

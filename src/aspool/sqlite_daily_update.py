@@ -19,6 +19,7 @@ from .sqlite_daily_derived import (
     DERIVED_COLUMNS,
     _factor_at,
     classify_trading,
+    finite,
     recompute_symbol_features,
 )
 from .sqlite_market_summary import recompute_daily_summary
@@ -35,6 +36,25 @@ FACT_FIELDS = frozenset(
 )
 PRICE_FIELDS = frozenset(("open", "high", "low", "close"))
 REFERENCE_FIELDS = frozenset(("name", "name_as_of", "name_source"))
+
+
+def valuation_patch(effective, changed):
+    """Calculate valuation only from same-date, sourced shares and raw closing price."""
+    result = {}
+    for share, mv in (("total_share", "total_mv"), ("float_share", "float_mv")):
+        if not changed.intersection({"close", share, share + "_source"}):
+            continue
+        close, shares = effective.get("close"), effective.get(share)
+        source = effective.get(share + "_source")
+        if share in changed and shares is not None and (not finite(shares) or shares < 0):
+            raise ValueError("Invalid dated share count")
+        if finite(close, positive=True) and finite(shares) and shares >= 0 and source:
+            result[mv] = close * shares
+            result[mv + "_source"] = "derived:raw_close*" + source
+        elif str(effective.get(mv + "_source") or "").startswith("derived:"):
+            result[mv] = None
+            result[mv + "_source"] = None
+    return result
 
 
 def _day(value):
@@ -149,6 +169,7 @@ def apply_daily_changes(
     listed_days=None,
     fill_missing_metrics=False,
     merge_event_revisions=False,
+    max_elapsed_seconds=30,
 ) -> dict:
     """Apply at most 60 source dates, propagating actual dependencies atomically.
 
@@ -158,6 +179,8 @@ def apply_daily_changes(
     merges can revise a bounded factor suffix when explicitly enabled.
     A missing required bootstrap or an excessive suffix fails without writes.
     """
+    if type(max_elapsed_seconds) is not int or not 1 <= max_elapsed_seconds <= 300:
+        raise ValueError("Expected max_elapsed_seconds=1..300")
     if conn.in_transaction:
         raise ValueError("Writer requires an idle connection")
     columns = {row[1] for row in conn.execute("PRAGMA table_info(daily_bars)")}
@@ -190,7 +213,7 @@ def apply_daily_changes(
     from .sqlite_reference_factors import advance_factor_coverage, update_reference_factors
 
     started = time.monotonic()
-    deadline = started + 30
+    deadline = started + max_elapsed_seconds
     old_timeout = conn.execute("PRAGMA busy_timeout").fetchone()[0]
     conn.execute("PRAGMA busy_timeout=30000")
     conn.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)
@@ -208,6 +231,7 @@ def apply_daily_changes(
     try:
         conn.execute("BEGIN IMMEDIATE")
         from .sqlite_six_dimension import save_sessions, volume_affected_sessions
+
         for index, key in enumerate(sorted(keys)):
             if index % 128 == 0 and time.monotonic() >= deadline:
                 raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Writer deadline exceeded")
@@ -223,6 +247,9 @@ def apply_daily_changes(
                 # A historical contradictory source row is invalid input, but
                 # must remain repairable by a correcting source observation.
                 old_status = "INVALID"
+            if key in incoming_bars:
+                patch = incoming_bars[key]
+                patch.update(valuation_patch(dict(old_bar, **patch), set(patch)))
             bar_delta = (
                 _write(conn, "daily_bars", key, incoming_bars[key], old_bar)
                 if key in incoming_bars
@@ -317,9 +344,13 @@ def apply_daily_changes(
         for days in volume_propagation.values():
             calendar_dependencies.update(volume_affected_sessions(sessions, days))
         calendar_dependencies.update(volume_affected_sessions(sessions, status_dependencies))
-        affected.update(day for day in calendar_dependencies if conn.execute(
-            "SELECT 1 FROM daily_features WHERE trade_date=? LIMIT 1", (day,)
-        ).fetchone())
+        affected.update(
+            day
+            for day in calendar_dependencies
+            if conn.execute(
+                "SELECT 1 FROM daily_features WHERE trade_date=? LIMIT 1", (day,)
+            ).fetchone()
+        )
 
         from .sqlite_volume_metrics import recompute_volume_metrics
 
@@ -339,7 +370,9 @@ def apply_daily_changes(
                 next_row = conn.execute(
                     "SELECT b.trade_date FROM daily_bars b LEFT JOIN daily_features f "
                     "USING(symbol,trade_date) WHERE b.symbol=? AND b.trade_date>? "
-                    "AND coalesce(f.trading_status,'') NOT IN ('SUSPENDED','停牌') "
+                    "AND coalesce(f.trading_status,'') NOT IN "
+                    "('SUSPENDED','停牌','NO_TRADE','NOT_LISTED',"
+                    "'UNKNOWN','MISSING','INVALID','UNCONFIRMED','未知','不确定') "
                     "AND b.low>0 AND b.low<=min(b.open,b.close) "
                     "AND max(b.open,b.close)<=b.high ORDER BY b.trade_date LIMIT 1",
                     (symbol, day),

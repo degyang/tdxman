@@ -29,7 +29,11 @@ _REFERENCES: dict[str, HelpRows] = {
         ("--period", "daily 或 minutes；stock + source=tdx 要求该周期已有导入标的"),
         ("--source baostock", "串行补齐已有沪深股票的历史空缺；保留有效主源值，报告冲突"),
         ("--start / --end", "明确补齐窗口；省略时按各库末端和股票最近十个交易日重叠补齐"),
-        ("--count", "省略明确窗口时检查最近 N 个已完成交易日；默认10，与日期范围互斥"),
+        (
+            "--count",
+            "省略明确窗口时检查最近 N 个已完成交易日；股票/ETF 默认10，"
+            "指数默认完整可得历史；与日期范围互斥",
+        ),
         ("--status", "missing 或 invalid；只修复相应逐股状态"),
         ("--max-consecutive-failures", "单股重试耗尽后连续失败熔断，默认3"),
         ("--baostock / --no-baostock", "只读校对冲突样本；默认读取配置，不以补源覆盖冲突"),

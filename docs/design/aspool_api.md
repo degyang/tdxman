@@ -1,5 +1,8 @@
 # aspool API：Screen 与 Backtest 数据接口契约
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 契约版本：2。Python 包随 tdxman 安装，对外入口为 `DataPool` 和 `DataPoolError`。
 本文明确区分已经实现的 API 与回测扩展需求；规划中的方法不可直接调用。
 

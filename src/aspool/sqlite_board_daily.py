@@ -169,6 +169,8 @@ def fetch_board_category(client, kind):
     listing = client.get_board_list(BoardType.HY2 if kind == "industry" else BoardType.GN)
     if listing.empty:
         raise EmptySourceResponse("Empty board directory")
+    if listing.attrs.get("complete") is False:
+        raise ValueError("Incomplete or changing board directory")
     if len(listing) >= MAX_BOARDS:
         raise ValueError("Truncated board directory")
     result, seen = [], set()
@@ -183,6 +185,8 @@ def fetch_board_category(client, kind):
         )
         if members.empty:
             raise EmptySourceResponse("Empty board membership: " + board_id)
+        if members.attrs.get("complete") is False:
+            raise ValueError("Incomplete board membership: " + board_id)
         if len(members) >= 100000:
             raise ValueError("Truncated board membership: " + board_id)
         symbols = []
@@ -426,5 +430,89 @@ def read_board_daily(
         limit=limit,
         offset=offset,
         next_offset=offset + limit if len(rows) == limit else None,
+    )
+    return frame
+
+
+def read_board_members(reader, *, snapshot_id, kind, board_ids, limit=100000, offset=0):
+    """Read only explicitly selected members from an immutable source snapshot."""
+    from .sqlite_read_api import _frame
+
+    reader._require_open()
+    ids = [board_ids] if isinstance(board_ids, str) else list(board_ids or ())
+    if (
+        not isinstance(snapshot_id, str)
+        or not snapshot_id
+        or len(snapshot_id) > 128
+        or kind not in KINDS
+        or not 1 <= len(ids) <= 128
+        or any(not isinstance(item, str) or not re.fullmatch(r"\d{6}", item) for item in ids)
+        or len(set(ids)) != len(ids)
+        or type(limit) is not int
+        or not 1 <= limit <= 100000
+        or type(offset) is not int
+        or offset < 0
+    ):
+        raise DataPoolError("INVALID_ARGUMENT", "Expected a snapshot, kind and 1..128 board IDs")
+    conn = reader.conn
+    if not conn.execute("PRAGMA table_info(board_snapshot_sets)").fetchall():
+        raise DataPoolError("CAPABILITY_UNAVAILABLE", "Board source snapshots are unavailable")
+    header = conn.execute(
+        "SELECT membership_as_of,membership_basis FROM board_snapshot_sets "
+        "WHERE snapshot_id=? AND kind=?",
+        (snapshot_id, kind),
+    ).fetchone()
+    if header is None:
+        raise DataPoolError("SNAPSHOT_NOT_FOUND", "The selected source snapshot is unavailable")
+    marks = ",".join("?" for _ in ids)
+    where = f"s.snapshot_id=? AND s.kind=? AND s.board_id IN ({marks})"
+    params = (snapshot_id, kind, *sorted(ids))
+    sizes = conn.execute(
+        "SELECT board_id,length(members_json),json_array_length(members_json),"
+        f"json_type(members_json) FROM board_snapshots s WHERE {where}",
+        params,
+    ).fetchall()
+    if len(sizes) != len(ids):
+        raise DataPoolError(
+            "BOARD_NOT_FOUND", "A selected board is absent from the source snapshot"
+        )
+    if (
+        sum(row[1] for row in sizes) > 8 * 1024 * 1024
+        or sum(row[2] or 0 for row in sizes) > 100000
+        or any(row[3] != "array" for row in sizes)
+    ):
+        raise DataPoolError("DAILY_TOO_LARGE", "Selected membership exceeds the source read budget")
+    invalid = conn.execute(
+        f"SELECT 1 FROM board_snapshots s,json_each(s.members_json) j WHERE {where} "
+        "AND (j.type!='text' OR length(j.value)!=9 OR "
+        "substr(j.value,1,6) GLOB '*[^0-9]*' OR substr(j.value,7,1)!='.' OR "
+        "substr(j.value,8,2) NOT IN ('SH','SZ','BJ')) LIMIT 1",
+        params,
+    ).fetchone()
+    if invalid:
+        raise DataPoolError("DAILY_INVALID", "Invalid source member identity")
+    rows = conn.execute(
+        "SELECT s.kind,s.board_id,s.board_name,j.value,s.snapshot_id "
+        f"FROM board_snapshots s,json_each(s.members_json) j WHERE {where} "
+        "ORDER BY s.board_id,j.value LIMIT ? OFFSET ?",
+        (*params, limit + 1, offset),
+    ).fetchall()
+    has_more = len(rows) > limit
+    frame = _frame(rows[:limit], ["kind", "board_id", "board_name", "symbol", "snapshot_id"])
+    frame["membership_as_of"] = header[0]
+    frame["membership_basis"] = header[1]
+    frame.attrs.update(
+        classification=CLASSIFICATION,
+        source="board_snapshots",
+        snapshot_id=snapshot_id,
+        membership_as_of=header[0],
+        membership_basis=header[1],
+        point_in_time=False,
+        total_members=sum(row[2] for row in sizes),
+        board_ids=sorted(ids),
+        offset=offset,
+        limit=limit,
+        complete=offset == 0 and not has_more,
+        next_offset=offset + limit if has_more else None,
     )
     return frame

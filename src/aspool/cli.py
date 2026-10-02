@@ -160,8 +160,7 @@ def import_free_stockdb(
     "--count",
     type=click.IntRange(min=1, max=60),
     default=None,
-    show_default="10",
-    help="未指定日期范围时检查最近 N 个已完成交易日。",
+    help="未指定日期范围时检查最近 N 个已完成交易日；股票/ETF 默认 10，指数默认完整可得历史。",
 )
 @click.option(
     "--lookback", type=click.IntRange(min=1), help="字段补齐交易日数；缺省读取配置（30）。"
@@ -221,9 +220,10 @@ def sync(
         raise click.UsageError("--start 与 --end 必须同时指定")
     if count is not None and start_date is not None:
         raise click.UsageError("--count 与 --start/--end 互斥")
+    index_count = count
     # A dated range is an explicit sync contract; do not inject the tail-window
     # default and make it mutually exclusive in the downstream writer.
-    if count is None and start_date is None:
+    if count is None and start_date is None and asset_type != "index":
         count = 10
     target = (
         _root(root)
@@ -247,6 +247,7 @@ def sync(
             start=start_date.date().isoformat() if start_date else None,
             end=end_date.date().isoformat() if end_date else None,
             count=count,
+            index_count=index_count,
             retries=retries,
             retry_delay=retry_delay,
             max_consecutive_failures=max_consecutive_failures,
@@ -647,6 +648,7 @@ def _run_all(
     start=None,
     end=None,
     count=10,
+    index_count=None,
 ):
     """Run the complete operational dataset and keep one inspectable summary."""
     from datetime import datetime, timezone
@@ -702,7 +704,7 @@ def _run_all(
             "index_changes": index_directory,
             "retries": directory_events,
         }
-        window = dict(start=start, end=end, count=count) if mode == "sync" else {}
+        window = dict(start=start, end=end, count=index_count) if mode == "sync" else {}
         index, index_path = sync_indices(
             target,
             workers=workers,
@@ -1540,3 +1542,83 @@ def factors_bootstrap(root, as_of, symbols, maintenance):
     click.echo(f"报告：{report}")
     if result["failed"] or result["deferred"]:
         raise click.ClickException("部分因子初始化尚未完成，详见 failed/deferred。")
+
+
+@cli.group("replica")
+def replica() -> None:
+    """导出有界基础数据差异包。"""
+
+
+@replica.command("export")
+@click.option("--source-root", required=True, type=click.Path(path_type=Path, exists=True))
+@click.option("--target-root", required=True, type=click.Path(path_type=Path, exists=True))
+@click.option("--dataset", "datasets", multiple=True, required=True)
+@click.option("--start", required=True)
+@click.option("--end", required=True)
+@click.option("--symbol", "symbols", multiple=True, required=True)
+@click.option("--output", required=True, type=click.Path(path_type=Path))
+def replica_export(source_root, target_root, datasets, start, end, symbols, output):
+    """比较源端和接收端，导出真实变化及旧值前置条件。"""
+    from .base_delta import export_delta
+
+    try:
+        result = export_delta(
+            source_root,
+            target_root,
+            datasets=datasets,
+            start=start,
+            end=end,
+            symbols=symbols,
+            output=output,
+        )
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(
+        json.dumps(
+            {
+                "status": result["status"],
+                "output": str(output),
+                "changed_rows": sum(len(d["changes"]) for d in result["datasets"]),
+            },
+            ensure_ascii=False,
+        )
+    )
+
+
+@replica.command("apply-stock")
+@click.option("--root", required=True, type=click.Path(path_type=Path, exists=True))
+@click.option("--package", required=True, type=click.Path(path_type=Path, exists=True))
+def replica_apply_stock(root, package):
+    """应用股票基础增量并通过现有 writer 重算依赖结果。"""
+    from .base_delta import apply_stock_delta
+
+    try:
+        result = apply_stock_delta(root, package)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(json.dumps(result, ensure_ascii=False))
+
+
+@replica.command("apply")
+@click.option("--root", required=True, type=click.Path(path_type=Path, exists=True))
+@click.option("--package", required=True, type=click.Path(path_type=Path, exists=True))
+def replica_apply(root, package):
+    """应用基础增量并重算依赖结果；中断后通过 recover 续接。"""
+    from .base_delta import apply_delta
+
+    try:
+        click.echo(json.dumps(apply_delta(root, package), ensure_ascii=False))
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@replica.command("recover")
+@click.option("--root", required=True, type=click.Path(path_type=Path, exists=True))
+def replica_recover(root):
+    """幂等恢复未完成的基础增量应用。"""
+    from .base_delta import apply_delta
+
+    try:
+        click.echo(json.dumps(apply_delta(root, recover=True), ensure_ascii=False))
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
