@@ -213,10 +213,14 @@ def _read(root, dataset, start, end, symbols, max_rows):
                 raise ValueError("Unsupported ETF source-factor identity")
             # Locally computed volume metrics are not source observations.
             if dataset in {"stock-bars", "etf-bars"}:
-                for metric in ("vol_ratio", "turnover_rate"):
-                    if (dataset == "etf-bars" and not row.get(metric + "_source")) or str(
-                        row.get(metric + "_source") or ""
-                    ).startswith("derived:"):
+                for metric in ("vol_ratio", "turnover_rate", "total_mv", "float_mv"):
+                    if metric not in row:
+                        continue
+                    if (
+                        dataset == "etf-bars"
+                        and metric in {"vol_ratio", "turnover_rate"}
+                        and not row.get(metric + "_source")
+                    ) or str(row.get(metric + "_source") or "").startswith("derived:"):
                         row[metric] = None
                         row[metric + "_source"] = None
             records[tuple(row[k] for k in keys)] = row
@@ -517,6 +521,11 @@ def _stock_apply(root, datasets, window, *, force=False):
     changes = [(d, c) for d in datasets for c in _checked(root, d, window)]
     if not changes and not force:
         return {"changed_rows": 0, "summary_rows": 0}
+    valuation_keys = {
+        (c["after"]["symbol"], c["after"]["trade_date"])
+        for d, c in changes
+        if d["name"] == "stock-bars"
+    }
     affected, symbols = set(), {}
     if force:
         symbols = {symbol: window["start"] for symbol in window["symbols"]}
@@ -650,6 +659,20 @@ def _stock_apply(root, datasets, window, *, force=False):
                         continue
                     row = dict(zip([c[0] for c in cursor.description], values))
                     row["bar_date"] = day
+                    from .sqlite_daily_update import valuation_patch
+
+                    values = (
+                        valuation_patch(row, {"close", "total_share", "float_share"})
+                        if (symbol, day) in valuation_keys
+                        else {}
+                    )
+                    if values:
+                        conn.execute(
+                            "UPDATE daily_bars SET "
+                            + ",".join(f"{k}=?" for k in values)
+                            + " WHERE symbol=? AND trade_date=?",
+                            (*values.values(), symbol, day),
+                        )
                     if classify_trading(row) == "TRADED":
                         conn.execute(
                             "UPDATE daily_features SET calc_status='TRADED' "

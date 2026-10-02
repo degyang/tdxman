@@ -329,7 +329,16 @@ def _read(root, table, *, symbols=None, start=None, end=None, date_field):
 
 
 def read_financial_reports(root, **kwargs):
-    return _read(root, "stock_financial_reports", date_field="period_end", **kwargs)
+    frame = _read(root, "stock_financial_reports", date_field="period_end", **kwargs)
+    # Existing period_end keys came from source updated_date, not a verified report period.
+    frame["source_updated_date"] = frame["period_end"]
+    frame["report_period_end"] = pd.NaT
+    frame.attrs.update(date_filter_basis="source_updated_date",
+                       legacy_period_end_semantics="source_updated_date",
+                       report_period_status="not_provided", known_at_field="published_at",
+                       shares_unit="share", financial_unit_status="provider_conversion",
+                       missing_announcement_semantics="not_known_at_historical_date")
+    return frame
 
 
 def read_shareholder_counts(root, **kwargs):

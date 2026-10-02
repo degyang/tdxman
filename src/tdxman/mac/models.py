@@ -82,6 +82,8 @@ class MacTickChart:
     turnover: float = 0.0
     avg: float = 0.0
     charts: list[MacTick] = field(default_factory=list)
+    source_date: date | None = None
+    reference_pre_close: float | None = None
 
 
 @dataclass(frozen=True)

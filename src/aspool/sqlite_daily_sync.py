@@ -419,6 +419,8 @@ def sync_daily_source(
                     "vol_ratio",
                     "float_share",
                     "float_share_source",
+                    "total_share", "total_share_source", "float_mv", "float_mv_source",
+                    "total_mv", "total_mv_source",
                 )
                 bar = dict(
                     key,

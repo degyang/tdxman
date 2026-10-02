@@ -19,6 +19,7 @@ from .sqlite_daily_derived import (
     DERIVED_COLUMNS,
     _factor_at,
     classify_trading,
+    finite,
     recompute_symbol_features,
 )
 from .sqlite_market_summary import recompute_daily_summary
@@ -35,6 +36,25 @@ FACT_FIELDS = frozenset(
 )
 PRICE_FIELDS = frozenset(("open", "high", "low", "close"))
 REFERENCE_FIELDS = frozenset(("name", "name_as_of", "name_source"))
+
+
+def valuation_patch(effective, changed):
+    """Calculate valuation only from same-date, sourced shares and raw closing price."""
+    result = {}
+    for share, mv in (("total_share", "total_mv"), ("float_share", "float_mv")):
+        if not changed.intersection({"close", share, share + "_source"}):
+            continue
+        close, shares = effective.get("close"), effective.get(share)
+        source = effective.get(share + "_source")
+        if share in changed and shares is not None and (not finite(shares) or shares < 0):
+            raise ValueError("Invalid dated share count")
+        if finite(close, positive=True) and finite(shares) and shares >= 0 and source:
+            result[mv] = close * shares
+            result[mv + "_source"] = "derived:raw_close*" + source
+        elif str(effective.get(mv + "_source") or "").startswith("derived:"):
+            result[mv] = None
+            result[mv + "_source"] = None
+    return result
 
 
 def _day(value):
@@ -224,6 +244,9 @@ def apply_daily_changes(
                 # A historical contradictory source row is invalid input, but
                 # must remain repairable by a correcting source observation.
                 old_status = "INVALID"
+            if key in incoming_bars:
+                patch = incoming_bars[key]
+                patch.update(valuation_patch(dict(old_bar, **patch), set(patch)))
             bar_delta = (
                 _write(conn, "daily_bars", key, incoming_bars[key], old_bar)
                 if key in incoming_bars

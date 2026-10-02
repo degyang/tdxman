@@ -52,8 +52,8 @@ class WheelInstallationTests(unittest.TestCase):
         self.pool = DataPool(self.root)
 
     def test_installed_distribution_and_runtime_version(self):
-        self.assertEqual(metadata.version("tdxman"), "1.1.2")
-        self.assertEqual(tdxman.__version__, "1.1.2")
+        self.assertEqual(metadata.version("tdxman"), "1.1.3")
+        self.assertEqual(tdxman.__version__, "1.1.3")
         for module in (tdxman, aspool):
             self.assertTrue(Path(module.__file__).resolve().is_relative_to(Path(sys.prefix)))
 
@@ -160,7 +160,7 @@ class WheelInstallationTests(unittest.TestCase):
                 text=True,
                 check=True,
             )
-            self.assertIn("1.1.2", result.stdout)
+            self.assertIn("1.1.3", result.stdout)
         categories = subprocess.run(
             [str(Path(sys.prefix) / "bin/aspool"), "ex", "categories"],
             cwd=self.root,

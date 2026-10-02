@@ -244,6 +244,15 @@ class DataPool:
             return read_board_daily(reader, start=start, end=end, kind=kind, scope=scope,
                                     fields=fields, limit=limit, offset=offset)
 
+    @public_read
+    def read_board_members(self, *, snapshot_id, kind, board_ids, limit=100000, offset=0):
+        """Read complete or explicitly paged source memberships without network access."""
+        from .sqlite_board_daily import read_board_members
+
+        with self.stock_snapshot() as reader:
+            return read_board_members(reader, snapshot_id=snapshot_id, kind=kind,
+                                      board_ids=board_ids, limit=limit, offset=offset)
+
     def read_market_daily(self, *, start, end, scope="all_stocks", fields=None):
         return self.read_market_summary(start=start, end=end, scope=scope, fields=fields)
 
@@ -275,10 +284,14 @@ class DataPool:
                         "SELECT symbol,code,market,asset_type,name,active,listing_date,"
                         "delisting_date,updated_at FROM securities"
                         + where
-                        + " ORDER BY symbol",
+                        + " ORDER BY symbol LIMIT 50001",
                         params,
                     ).fetchdf()
-                    frame.attrs.update(source="catalog.securities", point_in_time=False)
+                    if len(frame) > 50000:
+                        raise DataPoolError("DIRECTORY_TOO_LARGE", "Use a bounded symbol scope")
+                    frame.attrs.update(source="catalog.securities", point_in_time=False,
+                                       complete=True, returned_count=len(frame), read_limit=50000,
+                                       name_basis="current_catalog")
                     return frame
         from .security_facts import BASIC_TABLE, read_facts
 
