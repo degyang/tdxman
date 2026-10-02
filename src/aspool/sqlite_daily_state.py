@@ -18,7 +18,6 @@ def has_real_trade(row):
         all(finite(v, positive=True) for v in prices)
         and prices[2] <= min(prices[0], prices[3]) <= max(prices[0], prices[3]) <= prices[1]
         and finite(row.get("volume"), positive=True)
-        and finite(row.get("amount"), positive=True)
     )
 
 

@@ -48,9 +48,7 @@ def test_state_writer_rejects_numeric_and_other_store_mutations(canonical):  # n
                 conn.rollback()
 
 
-@pytest.mark.parametrize(
-    "changes", [{"volume": 0}, {"amount": None}, {"high": 9}, {"close": float("inf")}]
-)
+@pytest.mark.parametrize("changes", [{"volume": 0}, {"high": 9}, {"close": float("inf")}])
 def test_nontrade_or_invalid_data_cannot_prove_trading(changes):
     row = dict(open=10, high=11, low=9, close=10, volume=10, amount=100)
     assert has_real_trade(row)
@@ -135,3 +133,8 @@ def test_final_publication_advances_cache_stamp_and_preserves_summary(canonical)
         for old, new in zip(before, after):
             assert old[:stamp] + old[stamp + 1 :] == new[:stamp] + new[stamp + 1 :]
             assert new[stamp] > old[stamp]
+
+
+def test_missing_amount_does_not_negate_observed_trading():
+    row = dict(open=10, high=11, low=9, close=10, volume=100, amount=None)
+    assert has_real_trade(row)

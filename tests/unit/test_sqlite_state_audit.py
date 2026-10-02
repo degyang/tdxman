@@ -50,7 +50,8 @@ def test_three_store_recovery_is_verified_and_existing_destination_is_rejected(c
         assert len(list(scan(conn, "000001.SZ", "2026-09-27", "2026-09-28"))) == 2
 
 
-def test_source_repair_publishes_dated_shares_and_derived_valuation(canonical, tmp_path):  # noqa: F811
+@pytest.mark.parametrize("amount", [1000, None])
+def test_source_repair_publishes_dated_shares_and_derived_valuation(canonical, tmp_path, amount):  # noqa: F811
     from datetime import datetime
 
     import pandas as pd
@@ -69,7 +70,7 @@ def test_source_repair_publishes_dated_shares_and_derived_valuation(canonical, t
                         low=10,
                         close=11,
                         vol=100,
-                        amount=1000,
+                        amount=amount,
                         float_shares=2,
                     )
                 ]
@@ -92,3 +93,24 @@ def test_source_repair_publishes_dated_shares_and_derived_valuation(canonical, t
         assert row[:4] == (20000, "tdxman:kline", 220000, "derived:raw_close*tdxman:kline")
         assert row[4] == 0.5
         assert row[5] == "derived:dated_float_share"
+        assert (
+            conn.execute("SELECT amount FROM daily_bars WHERE trade_date='2026-09-28'").fetchone()[
+                0
+            ]
+            == 1000
+        )
+
+
+def test_amount_quality_is_separate_from_trading_evidence():
+    row = dict(
+        open=10,
+        high=11,
+        low=9,
+        close=10,
+        volume=100,
+        amount=None,
+        bar_date="2026-09-28",
+        trading_status=None,
+        calc_status="TRADED",
+    )
+    assert issues(row) == ["missing_or_invalid_amount", "missing_trading_status"]

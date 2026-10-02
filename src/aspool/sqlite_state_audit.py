@@ -26,6 +26,10 @@ def issues(row):
     status = row.get("trading_status")
     real = has_real_trade(row)
     found = []
+    from aspool.sqlite_daily_derived import finite
+
+    if real and not finite(row.get("amount"), positive=True):
+        found.append("missing_or_invalid_amount")
     if real and not status:
         found.append("missing_trading_status")
     elif real and status not in ("TRADING", "TRADED", "NORMAL", "正常交易", "1"):
@@ -120,15 +124,17 @@ def source_repair(conn, rows, *, client, evidence, sessions):
         if raw is None:
             results.append(dict(symbol=symbol, date=day, result="source_day_unavailable"))
             continue
-        bar = {k: raw.get(k) for k in ("open", "high", "low", "close", "amount")}
+        bar = {k: raw.get(k) for k in ("open", "high", "low", "close")}
+        from aspool.sqlite_daily_derived import finite
+
+        if finite(raw.get("amount"), positive=True):
+            bar["amount"] = raw["amount"]
         bar.update(volume=raw.get("vol"), symbol=symbol, trade_date=day)
         if not has_real_trade(bar):
             results.append(dict(symbol=symbol, date=day, result="source_not_a_verified_trade"))
             continue
         bar["ohlcv_source"] = "tdxman:kline"
         floating = raw.get("float_shares")
-        from aspool.sqlite_daily_derived import finite
-
         if finite(floating, positive=True):
             # The MAC daily field is in ten-thousand shares, as in KlineSource.
             bar.update(float_share=floating * 10000, float_share_source="tdxman:kline")
