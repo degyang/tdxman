@@ -877,3 +877,9 @@ def test_factor_budget_error_preserves_code_and_rolls_back(tmp_path, monkeypatch
             )
         assert error.value.code == "LOCAL_UPDATE_BUDGET_EXCEEDED"
         assert dump(conn) == before
+
+
+@pytest.mark.parametrize("budget", [0, 301, True])
+def test_daily_writer_rejects_unbounded_or_invalid_time_budget(budget):
+    with pytest.raises(ValueError, match="max_elapsed_seconds"):
+        apply_daily_changes(None, market_sessions=[], max_elapsed_seconds=budget)

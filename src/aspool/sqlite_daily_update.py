@@ -169,6 +169,7 @@ def apply_daily_changes(
     listed_days=None,
     fill_missing_metrics=False,
     merge_event_revisions=False,
+    max_elapsed_seconds=30,
 ) -> dict:
     """Apply at most 60 source dates, propagating actual dependencies atomically.
 
@@ -178,6 +179,8 @@ def apply_daily_changes(
     merges can revise a bounded factor suffix when explicitly enabled.
     A missing required bootstrap or an excessive suffix fails without writes.
     """
+    if type(max_elapsed_seconds) is not int or not 1 <= max_elapsed_seconds <= 300:
+        raise ValueError("Expected max_elapsed_seconds=1..300")
     if conn.in_transaction:
         raise ValueError("Writer requires an idle connection")
     columns = {row[1] for row in conn.execute("PRAGMA table_info(daily_bars)")}
@@ -210,7 +213,7 @@ def apply_daily_changes(
     from .sqlite_reference_factors import advance_factor_coverage, update_reference_factors
 
     started = time.monotonic()
-    deadline = started + 30
+    deadline = started + max_elapsed_seconds
     old_timeout = conn.execute("PRAGMA busy_timeout").fetchone()[0]
     conn.execute("PRAGMA busy_timeout=30000")
     conn.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)

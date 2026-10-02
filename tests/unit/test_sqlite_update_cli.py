@@ -857,3 +857,35 @@ def test_dated_sync_cli_reaches_real_writer_without_count(tmp_path, monkeypatch)
     assert report["status"] == "ok"
     assert report["requested"] == 0
     assert report["summary_repair"] == {"dates": days[-2:], "changed_rows": 4}
+
+
+@pytest.mark.parametrize(
+    "volume,low,expected", [(100, 9, "TRADING"), (0, 9, None), (100, 12, None)]
+)
+def test_mac_kline_sets_status_only_for_valid_real_trades(volume, low, expected):
+    from aspool.sqlite_update_cli import KlineSource
+
+    class Client:
+        def get_stock_kline(self, *args, **kwargs):
+            return pd.DataFrame(
+                [
+                    dict(
+                        datetime=datetime(2026, 9, 22),
+                        open=10,
+                        high=11,
+                        low=low,
+                        close=10,
+                        vol=volume,
+                        amount=1000,
+                    )
+                ]
+            )
+
+    class Session:
+        def read(self, request, **kwargs):
+            return request(Client())
+
+    frame = KlineSource(Session()).get_daily(
+        2, "920087", start=date(2026, 9, 22), end=date(2026, 9, 22), count=1
+    )
+    assert frame.iloc[0].get("trading_status") == expected

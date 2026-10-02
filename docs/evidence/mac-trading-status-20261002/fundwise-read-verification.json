@@ -1,0 +1,82 @@
+{
+  "five_day_rows": [
+    {
+      "symbol": "920087.BJ",
+      "date": "2026-09-22T00:00:00.000",
+      "volume": 17836144.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:kline"
+    },
+    {
+      "symbol": "920087.BJ",
+      "date": "2026-09-23T00:00:00.000",
+      "volume": 11976824.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:kline"
+    },
+    {
+      "symbol": "920087.BJ",
+      "date": "2026-09-24T00:00:00.000",
+      "volume": 10453391.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:kline"
+    },
+    {
+      "symbol": "920087.BJ",
+      "date": "2026-09-28T00:00:00.000",
+      "volume": 9059700.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:quote"
+    },
+    {
+      "symbol": "920087.BJ",
+      "date": "2026-09-29T00:00:00.000",
+      "volume": 8631700.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:quote"
+    },
+    {
+      "symbol": "920403.BJ",
+      "date": "2026-09-22T00:00:00.000",
+      "volume": 3785874.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:kline"
+    },
+    {
+      "symbol": "920403.BJ",
+      "date": "2026-09-23T00:00:00.000",
+      "volume": 2683033.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:kline"
+    },
+    {
+      "symbol": "920403.BJ",
+      "date": "2026-09-24T00:00:00.000",
+      "volume": 2776748.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:kline"
+    },
+    {
+      "symbol": "920403.BJ",
+      "date": "2026-09-28T00:00:00.000",
+      "volume": 2010500.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:quote"
+    },
+    {
+      "symbol": "920403.BJ",
+      "date": "2026-09-29T00:00:00.000",
+      "volume": 2221800.0,
+      "trading_status": "TRADING",
+      "trading_status_source": "tdxman:quote"
+    }
+  ],
+  "candidate_count": 10,
+  "scored_count": 10,
+  "top3": [
+    "登海种业",
+    "万向德农",
+    "神农种业"
+  ],
+  "consumer_cache_modified": false
+}
