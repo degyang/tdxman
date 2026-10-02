@@ -68,6 +68,7 @@ def canonical_operation(conn, operation):
         "six_dimension_init",
         "six_dimension_extend",
         "st_default_repair",
+        "daily_state_normalize",
     }:
         raise ValueError("Unknown canonical writer")
     previous = getattr(conn, "_operation", None)
@@ -212,6 +213,31 @@ class CanonicalConnection(sqlite3.Connection):
         length = len(columns)
         before = tuple(values[:length]) if operation != "INSERT" else None
         after = tuple(values[length:]) if operation != "DELETE" else None
+        if getattr(self, "_operation", None) == "daily_state_normalize":
+            allowed = {
+                "stock_daily_features": {"trading_status", "trading_status_source", "updated_at"},
+                "market_regime_features": {"updated_at"},
+                "board_daily": {"updated_at"},
+                "feature_state": {"updated_at"},
+            }
+            if alias != "features" or table not in allowed or operation != "UPDATE":
+                raise ValueError("State normalization must update only existing feature rows")
+            if table == "stock_daily_features":
+                state = columns.index("trading_status")
+                source = columns.index("trading_status_source")
+                calc = columns.index("calc_status")
+                if (
+                    before[state] not in (None, "")
+                    or after[state] != "TRADING"
+                    or after[source] != "derived:stored_ohlcv"
+                    or before[calc] != "TRADED"
+                ):
+                    raise ValueError("State normalization accepts only equivalent missing states")
+            if any(
+                old != new and name not in allowed[table]
+                for name, old, new in zip(columns, before, after)
+            ):
+                raise ValueError("State normalization cannot change numeric dependencies")
         positions = [columns.index(key) for key in keys]
         if before is not None:
             key = tuple(before[position] for position in positions)
@@ -220,6 +246,11 @@ class CanonicalConnection(sqlite3.Connection):
             key = tuple(after[position] for position in positions)
             if before is None or key != tuple(before[position] for position in positions):
                 self._changes.append(((alias, table, key), None))
+        if (
+            getattr(self, "_operation", None) == "daily_state_normalize"
+            and len(self._changes) > 25000
+        ):
+            raise ValueError("State normalization exceeds publication row budget")
         return 0
 
     def _begin_guard(self):
@@ -401,7 +432,11 @@ class CanonicalConnection(sqlite3.Connection):
         if self.read_only or not self.in_transaction:
             return sqlite3.Connection.commit(self)
         try:
-            if self._operation in {"six_dimension_extend", "st_default_repair"}:
+            if self._operation in {
+                "six_dimension_extend",
+                "st_default_repair",
+                "daily_state_normalize",
+            }:
                 # Explicit historical initialization changes only this one WAL file.
                 # Its single-file transaction is atomic without a cross-file intent.
                 permitted = {
@@ -416,6 +451,13 @@ class CanonicalConnection(sqlite3.Connection):
                         "market_regime_features",
                         "board_daily",
                         "board_daily_status",
+                    }
+                if self._operation == "daily_state_normalize":
+                    permitted = {
+                        "stock_daily_features",
+                        "market_regime_features",
+                        "board_daily",
+                        "feature_state",
                     }
                 if any(
                     alias != "features" or table not in permitted

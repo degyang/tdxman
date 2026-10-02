@@ -223,6 +223,11 @@ def _read(root, dataset, start, end, symbols, max_rows):
                     ) or str(row.get(metric + "_source") or "").startswith("derived:"):
                         row[metric] = None
                         row[metric + "_source"] = None
+            if dataset == "stock-source-facts" and str(
+                row.get("trading_status_source") or ""
+            ).startswith("derived:"):
+                row["trading_status"] = None
+                row["trading_status_source"] = None
             records[tuple(row[k] for k in keys)] = row
         return fields, keys, records
 
@@ -258,6 +263,17 @@ def export_delta(source, target, *, datasets, start, end, symbols, output, max_r
             total += len(before) + len(after)
             if total > max_rows:
                 raise ValueError("Aggregate row budget exceeded")
+            if dataset == "stock-source-facts":
+                for key, row in after.items():
+                    # Omitted local inference / absent source observations must
+                    # not withdraw a receiver's explicitly sourced daily fact.
+                    if (
+                        row.get("trading_status") is None
+                        and row.get("trading_status_source") is None
+                        and key in before
+                    ):
+                        row["trading_status"] = before[key].get("trading_status")
+                        row["trading_status_source"] = before[key].get("trading_status_source")
             result["datasets"].append(
                 {
                     "name": dataset,
@@ -659,6 +675,15 @@ def _stock_apply(root, datasets, window, *, force=False):
                         continue
                     row = dict(zip([c[0] for c in cursor.description], values))
                     row["bar_date"] = day
+                    from .sqlite_daily_state import SOURCE, has_real_trade
+
+                    if not row.get("trading_status") and has_real_trade(row):
+                        conn.execute(
+                            "UPDATE daily_features SET trading_status='TRADING',"
+                            "trading_status_source=? WHERE symbol=? AND trade_date=?",
+                            (SOURCE, symbol, day),
+                        )
+                        row["trading_status"] = "TRADING"
                     from .sqlite_daily_update import valuation_patch
 
                     values = (

@@ -309,7 +309,7 @@ def test_sync_uses_kline_and_fills_missing_metrics(tmp_path, monkeypatch):
         )
 
 
-def test_successful_kline_window_marks_absent_session_as_no_trade(tmp_path):
+def test_successful_kline_window_marks_absent_session_as_missing(tmp_path):
     days = store(tmp_path)
     with stock_connection(tmp_path, read_only=False) as conn:
         conn.execute(
@@ -352,7 +352,7 @@ def test_successful_kline_window_marks_absent_session_as_no_trade(tmp_path):
         assert conn.execute(
             "SELECT trading_status,calc_status FROM daily_features "
             "WHERE symbol='000001.SZ' AND trade_date='2026-09-29'"
-        ).fetchone() == ("NO_TRADE", "NO_TRADE")
+        ).fetchone() == ("MISSING", "NO_TRADE")
 
 
 def test_volume_repair_updates_five_successors_and_rolls_back(tmp_path, monkeypatch):

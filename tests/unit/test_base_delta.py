@@ -596,3 +596,52 @@ def test_new_day_empty_event_download_extends_factor_coverage(canonical, tmp_pat
             == "TRADED"
         )
     assert apply_delta(canonical, package)["results"]["event-coverage"] == 0
+
+
+def test_local_normalized_status_is_not_exported_as_a_source_fact(canonical, tmp_path):  # noqa: F811
+    import shutil
+
+    from aspool.sqlite_daily_state import normalize_traded_states
+    from aspool.sqlite_stock_store import stock_connection
+
+    source = tmp_path / "unmodified-source"
+    shutil.copytree(canonical, source)
+    with stock_connection(canonical, read_only=False) as conn:
+        normalize_traded_states(conn, symbol="000001.SZ", start="2026-09-27", end="2026-09-28")
+    result = export_delta(
+        source,
+        canonical,
+        datasets=["stock-source-facts"],
+        start="2026-09-27",
+        end="2026-09-28",
+        symbols=["000001.SZ"],
+        output=tmp_path / "normalization.json",
+    )
+    assert result["datasets"][0]["changes"] == []
+
+
+def test_local_inference_does_not_withdraw_receiver_source_status(canonical, tmp_path):  # noqa: F811
+    import shutil
+
+    from aspool.sqlite_daily_state import normalize_traded_states
+    from aspool.sqlite_stock_store import stock_connection
+
+    receiver = tmp_path / "receiver"
+    shutil.copytree(canonical, receiver)
+    with sqlite3.connect(receiver / "features.sqlite") as conn:
+        conn.execute(
+            "UPDATE stock_daily_features SET trading_status='TRADING',"
+            "trading_status_source='baostock'"
+        )
+    with stock_connection(canonical, read_only=False) as conn:
+        normalize_traded_states(conn, symbol="000001.SZ", start="2026-09-27", end="2026-09-28")
+    result = export_delta(
+        canonical,
+        receiver,
+        datasets=["stock-source-facts"],
+        start="2026-09-27",
+        end="2026-09-28",
+        symbols=["000001.SZ"],
+        output=tmp_path / "source-status.json",
+    )
+    assert result["datasets"][0]["changes"] == []

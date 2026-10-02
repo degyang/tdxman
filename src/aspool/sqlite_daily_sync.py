@@ -262,9 +262,23 @@ def sync_daily_source(
                 return
             with pool_lock(root, write=True):
                 require_current_mirror(root)
+                preserved = [
+                    f
+                    for f in pending_state_facts
+                    if not conn.execute(
+                        "SELECT 1 FROM daily_features WHERE symbol=? AND trade_date=? "
+                        "AND trading_status IS NOT NULL AND trading_status NOT IN "
+                        "('MISSING','UNKNOWN','INVALID','UNCONFIRMED')",
+                        (f["symbol"], f["trade_date"]),
+                    ).fetchone()
+                    and not conn.execute(
+                        "SELECT 1 FROM daily_bars WHERE symbol=? AND trade_date=?",
+                        (f["symbol"], f["trade_date"]),
+                    ).fetchone()
+                ]
                 applied = apply_daily_changes(
                     conn,
-                    dated_facts=pending_state_facts,
+                    dated_facts=preserved,
                     market_sessions=sessions,
                     listed_days=listed_days,
                 )
@@ -387,7 +401,19 @@ def sync_daily_source(
                     ).fetchone()
                     is not None
                 )
-                if status is not None and not (status == "MISSING" and has_bar):
+                previous = conn.execute(
+                    "SELECT trading_status FROM daily_features WHERE symbol=? AND trade_date=?",
+                    (symbol, day),
+                ).fetchone()
+                uncertain = status in ("MISSING", "UNKNOWN", "INVALID", "UNCONFIRMED")
+                known = previous and previous[0] not in (
+                    None,
+                    "MISSING",
+                    "UNKNOWN",
+                    "INVALID",
+                    "UNCONFIRMED",
+                )
+                if status is not None and not (uncertain and (has_bar or known)):
                     fact.update(trading_status=row["trading_status"], trading_status_source=source)
                 # Empty provider cells mean unavailable, not an authorized
                 # withdrawal of an earlier observation. Explicit retractions
@@ -419,8 +445,12 @@ def sync_daily_source(
                     "vol_ratio",
                     "float_share",
                     "float_share_source",
-                    "total_share", "total_share_source", "float_mv", "float_mv_source",
-                    "total_mv", "total_mv_source",
+                    "total_share",
+                    "total_share_source",
+                    "float_mv",
+                    "float_mv_source",
+                    "total_mv",
+                    "total_mv_source",
                 )
                 bar = dict(
                     key,
@@ -437,15 +467,27 @@ def sync_daily_source(
                 for day in window:
                     if day in returned_dates:
                         continue
+                    if (
+                        conn.execute(
+                            "SELECT 1 FROM daily_features WHERE symbol=? AND trade_date=?",
+                            (symbol, day),
+                        ).fetchone()
+                        or conn.execute(
+                            "SELECT 1 FROM daily_bars WHERE symbol=? AND trade_date=?",
+                            (symbol, day),
+                        ).fetchone()
+                    ):
+                        result["missing"].append(symbol)
+                        continue
                     facts.append(
                         dict(
                             symbol=symbol,
                             trade_date=day,
-                            trading_status="NO_TRADE",
+                            trading_status="MISSING",
                             trading_status_source=source,
                         )
                     )
-                    result["no_trade"].append(symbol)
+                    result["missing"].append(symbol)
             consecutive_failures = consecutive_failures + 1 if all_missing else 0
             through = max(fact["trade_date"] for fact in facts)
             tail = conn.execute(
