@@ -223,6 +223,61 @@ def test_base_replication_carries_downloaded_qfq(canonical, tmp_path):  # noqa: 
         )
 
 
+def test_qfq_base_delta_rebuilds_a_missing_reference(canonical, tmp_path):  # noqa: F811
+    import sqlite3
+
+    from aspool.base_delta import _checksum, apply_delta
+    from aspool.sqlite_qfq import PRICES
+
+    with sqlite3.connect(canonical / "features.sqlite") as conn:
+        conn.execute(
+            "UPDATE stock_daily_features SET source_pre_close=NULL,"
+            "source_pre_close_source=NULL,pre_close=NULL,pre_close_source=NULL,"
+            "limit_status='UNKNOWN',limit_reason='missing_reference',limit_up_price=NULL,"
+            "limit_down_price=NULL,touch_limit_up=NULL,close_limit_up=NULL,"
+            "touch_limit_down=NULL,close_limit_down=NULL"
+        )
+    with stock_connection(canonical) as conn:
+        bars = conn.execute(
+            "SELECT trade_date,open,high,low,close FROM daily_bars "
+            "WHERE symbol='000001.SZ' ORDER BY trade_date"
+        ).fetchall()
+    changes = []
+    for day, *values in bars:
+        row = dict(
+            symbol="000001.SZ",
+            trade_date=day,
+            source="fixture:qfq",
+            source_as_of="2026-09-28",
+            **{k: v - (1 if day == "2026-09-27" else 0) for k, v in zip(PRICES, values)},
+        )
+        changes.append(dict(key=[row["symbol"], day], before=None, after=row))
+    value = dict(
+        format="aspool-base-delta-v1",
+        target=str(canonical),
+        window=dict(start="2026-09-27", end="2026-09-28", symbols=["000001.SZ"]),
+        datasets=[
+            dict(
+                name="stock-qfq-bars",
+                keys=["symbol", "trade_date"],
+                fields=["symbol", "trade_date", *PRICES, "source", "source_as_of"],
+                changes=changes,
+            )
+        ],
+    )
+    value["sha256"] = _checksum(value)
+    package = tmp_path / "base-only-qfq.json"
+    package.write_text(json.dumps(value))
+    apply_delta(canonical, package)
+    with stock_connection(canonical) as conn:
+        ref = conn.execute(
+            "SELECT pre_close,pre_close_source FROM daily_features "
+            "WHERE symbol='000001.SZ' AND trade_date='2026-09-28'"
+        ).fetchone()
+        assert ref[0] == pytest.approx(bars[0][-1] - 1)
+        assert ref[1] == "derived:paired_qfq_affine"
+
+
 def test_full_repair_releases_maintenance_gate_and_replays(canonical, tmp_path):  # noqa: F811
     from aspool.qfq_audit import stage_connection
     from aspool.qfq_audit_repair import run
