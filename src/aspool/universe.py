@@ -179,7 +179,7 @@ def refresh_index_universe(root: Path):
         "excluded": excluded,
         "categories": {
             category: sum(category in entry["source"] for entry in collected["indices"])
-            for category in ("HY2", "GN", "FG", "ZS")
+            for category in ("HY", "HY2", "GN", "FG", "ZS")
         },
     }
 

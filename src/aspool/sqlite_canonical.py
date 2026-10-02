@@ -33,8 +33,12 @@ ACTION_COLUMNS = (
     "updated_at",
 )
 OPTIONAL_TABLES = {
-    "market_sessions", "board_snapshots", "board_snapshot_sets",
-    "board_sync_state", "board_daily", "board_daily_status",
+    "market_sessions",
+    "board_snapshots",
+    "board_snapshot_sets",
+    "board_sync_state",
+    "board_daily",
+    "board_daily_status",
 }
 
 RELATIONS = {
@@ -56,8 +60,14 @@ def canonical_operation(conn, operation):
         yield
         return
     if operation not in {
-        "daily_update", "summary_repair", "summary_recompute", "factor_bootstrap",
-        "board_update", "six_dimension_init", "six_dimension_extend", "st_default_repair",
+        "daily_update",
+        "summary_repair",
+        "summary_recompute",
+        "factor_bootstrap",
+        "board_update",
+        "six_dimension_init",
+        "six_dimension_extend",
+        "st_default_repair",
     }:
         raise ValueError("Unknown canonical writer")
     previous = getattr(conn, "_operation", None)
@@ -172,10 +182,13 @@ class CanonicalConnection(sqlite3.Connection):
             self.create_function("aspool_changed", -1, self._record_change)
             for alias, tables in publication.TABLES.items():
                 for table in sorted(tables):
-                    if table in OPTIONAL_TABLES and not self.native.execute(
-                        "SELECT 1 FROM features.sqlite_master WHERE type='table' AND name=?",
-                        (table,),
-                    ).fetchone():
+                    if (
+                        table in OPTIONAL_TABLES
+                        and not self.native.execute(
+                            "SELECT 1 FROM features.sqlite_master WHERE type='table' AND name=?",
+                            (table,),
+                        ).fetchone()
+                    ):
                         continue
                     columns, keys = publication.table_shape(self.native, alias, table)
                     self._shapes[(alias, table)] = (columns, keys)
@@ -339,7 +352,16 @@ class CanonicalConnection(sqlite3.Connection):
             "SELECT revision,max_date FROM dataset_state WHERE dataset='stock_raw'"
         ).fetchone()
         baseline = self._baseline_revision[0] if self._baseline_revision else 0
-        revision = max(state[0] if state else 0, baseline + 1)
+        raw_changed = any(
+            (r["alias"], r["table"])
+            in {
+                ("main", "daily_bars"),
+                ("main", "corporate_actions"),
+                ("adjustments", "stock_factor_anchors"),
+            }
+            for r in business
+        )
+        revision = max(state[0] if state else 0, baseline + int(raw_changed))
         stamp = time.time_ns() // 1000
         if state is None or revision != state[0]:
             maximum = self.native.execute("SELECT max(trade_date) FROM daily_bars").fetchone()[0]
@@ -356,7 +378,10 @@ class CanonicalConnection(sqlite3.Connection):
         if factor is None:
             raise DataPoolError("LAYOUT_INVALID", "Canonical factor state is absent")
         factor_revision = factor[0]
-        if any(r["alias"] == "adjustments" for r in business):
+        if any(
+            (r["alias"], r["table"]) == ("adjustments", "stock_adjustment_factors")
+            for r in business
+        ):
             factor_revision += 1
             maximum = self.native.execute(
                 "SELECT max(valid_through) FROM adjustments.stock_adjustment_factors"
@@ -380,13 +405,17 @@ class CanonicalConnection(sqlite3.Connection):
                 # Explicit historical initialization changes only this one WAL file.
                 # Its single-file transaction is atomic without a cross-file intent.
                 permitted = {
-                    "market_regime_features", "market_sessions", "board_daily",
+                    "market_regime_features",
+                    "market_sessions",
+                    "board_daily",
                     "board_daily_status",
                 }
                 if self._operation == "st_default_repair":
                     permitted = {
-                        "stock_daily_features", "market_regime_features",
-                        "board_daily", "board_daily_status",
+                        "stock_daily_features",
+                        "market_regime_features",
+                        "board_daily",
+                        "board_daily_status",
                     }
                 if any(
                     alias != "features" or table not in permitted
@@ -398,6 +427,9 @@ class CanonicalConnection(sqlite3.Connection):
                 sqlite3.Connection.commit(self)
                 return
             rows, _ = self._changed_rows()
+            from .factor_lineage import refresh_factor_lineage
+
+            refresh_factor_lineage(self.native, rows, root=self.root)
             self._coherent_states(rows)
             rows, shapes = self._changed_rows()
             if rows:

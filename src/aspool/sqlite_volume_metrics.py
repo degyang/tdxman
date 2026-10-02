@@ -20,7 +20,9 @@ def recompute_volume_metrics(conn, symbol, days, *, propagate_days=None):
                 "LEFT JOIN daily_features f USING(symbol,trade_date) "
                 "WHERE b.symbol=? AND b.trade_date>? AND b.volume>0 AND b.low>0 "
                 "AND b.low<=min(b.open,b.close) AND max(b.open,b.close)<=b.high "
-                "AND coalesce(f.trading_status,'') NOT IN ('SUSPENDED','停牌') "
+                "AND coalesce(f.trading_status,'') NOT IN "
+                "('SUSPENDED','停牌','NO_TRADE','NOT_LISTED',"
+                "'UNKNOWN','MISSING','INVALID','UNCONFIRMED','未知','不确定') "
                 "ORDER BY b.trade_date LIMIT 5",
                 (symbol, day),
             )
@@ -60,7 +62,19 @@ def recompute_volume_metrics(conn, symbol, days, *, propagate_days=None):
             and volume > 0
             and all(v is not None for v in (op, hi, lo, cl))
             and 0 < lo <= min(op, cl) <= max(op, cl) <= hi
-            and status not in ("SUSPENDED", "停牌")
+            and status
+            not in (
+                "SUSPENDED",
+                "停牌",
+                "NO_TRADE",
+                "NOT_LISTED",
+                "UNKNOWN",
+                "MISSING",
+                "INVALID",
+                "UNCONFIRMED",
+                "未知",
+                "不确定",
+            )
         )
         updates = {}
         if ratio is None or ratio_source == VOLUME_SOURCE:
@@ -69,7 +83,9 @@ def recompute_volume_metrics(conn, symbol, days, *, propagate_days=None):
                 "LEFT JOIN daily_features f USING(symbol,trade_date) "
                 "WHERE b.symbol=? AND b.trade_date<? AND b.volume>0 AND b.low>0 "
                 "AND b.low<=min(b.open,b.close) AND max(b.open,b.close)<=b.high "
-                "AND coalesce(f.trading_status,'') NOT IN ('SUSPENDED','停牌') "
+                "AND coalesce(f.trading_status,'') NOT IN "
+                "('SUSPENDED','停牌','NO_TRADE','NOT_LISTED',"
+                "'UNKNOWN','MISSING','INVALID','UNCONFIRMED','未知','不确定') "
                 "ORDER BY b.trade_date DESC LIMIT 5",
                 (symbol, day),
             ).fetchall()

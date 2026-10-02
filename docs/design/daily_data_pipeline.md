@@ -1,5 +1,8 @@
 # 每日更新与尾部修补流程
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 入口是 `scripts/ops/run_daily_data_pipeline.sh`。它只调用公开 `aspool` CLI，因此可在交互终端、tmux、cron 或 systemd timer 中使用同一套流程。
 
 两个 shell 入口（`run_daily_data_pipeline.sh`、`repair_recent_data_gaps.sh`）都先解析并进入项目根目录，

@@ -1,5 +1,8 @@
 # Aspool 数据整治与日线存储重构推进方案
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 2026-09-28 当前执行约束：[日线与派生数据精简决策](../design/daily_data_simplification.md)取代下文尚未实施的复杂修订/发布设计。股票库目标为 SQLite 四张业务表（含 corporate_actions 除权资料），业务仅局部更新、同事务同步计算；缺数据与确认停牌采用相同涨跌统计逻辑，补数触发局部递推。全量维护仅由外部 ops 脚本执行。旧实验、已完成任务和验收数字保留为历史证据，不代表新方案已经实现。
 
 后续执行统一按[四表 SQLite 实施计划 S0–S7](../design/sqlite_four_table_implementation_plan.md)推进；数据与接口变更见[迁移评估](../design/sqlite_migration_api_assessment.md)。Regime 公共特征由 aspool 计算，Fundwise 用[模型模板](../design/regime_model_template_design.md)支持多模型 D/W/M；仍为四张股票业务表。下文未实施任务的旧细节不再优先于上述新计划。

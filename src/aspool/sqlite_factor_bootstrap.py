@@ -122,6 +122,7 @@ def validate_evidence(symbol, listing_date, as_of, frames, events):
         raw=arrays["NONE"].tolist(),
         validation_prices={name: values.tolist() for name, values in arrays.items()},
         events=selected,
+        source_evidence=proof,
         price_events=price_events,
         proof=dict(
             method=METHOD,
@@ -176,6 +177,7 @@ def _fetch_evidence(symbol, listing_date, as_of):
         ipo_date=int(finance["ipo_date"]),
         fetched_date=source["fetched_date"],
     )
+    result["source_evidence"]["finance_identity"] = result["proof"]["finance_identity"]
     return result
 
 
@@ -325,6 +327,10 @@ def publish_bootstrap(conn, evidence, *, maintenance=False):
             )
             for event in item["events"]:
                 _insert_action(conn, symbol, event, "tdx:xdxr")
+            if hasattr(conn, "root") and item.get("source_evidence"):
+                from .base_delta import store_source_evidence
+
+                item["proof"]["sha256"] = store_source_evidence(conn.root, item["source_evidence"])
             payload = json.dumps(dict(bootstrap=item["proof"]), sort_keys=True)
             for factor in factors:
                 conn.execute(

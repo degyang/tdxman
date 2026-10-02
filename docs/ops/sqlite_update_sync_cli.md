@@ -1,5 +1,8 @@
 # SQLite 日线统一命令
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](../design/data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 2026-09-28。CLI 合同。真实执行记录见 [首次日更](../achievements/aspool_update_20260928_execution.md)；名单优先与事件修订设计见 [日更名单、状态与修订处理](../implements/sqlite_daily_directory_update.md)。
 
 所有生产数据块的输入、落点、输出和 CLI 唯一登记见[生产数据流与 CLI 契约](../design/production_data_flow_contract.md)，也可执行 `aspool contract --format json` 检查。

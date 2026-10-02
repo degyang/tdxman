@@ -1,5 +1,8 @@
 # DG-04 当前事实、固定计划与生产执行证据
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 2026-09-27，基点 `be60d78`，独立 `.venv` editable 导入本 worktree，依赖复用 `/tmp/tdxman-dg00-constraints.txt`。生产 `/home/ubuntu/.aspool`；固定恢复快照 `/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot` 保持不变；实验及逐项来源证据 `/home/ubuntu/aspool-labs/dg04-20260927`。已完成两阶段具体授权的生产补数、1,213 会话重发布与真实 Fundwise 消费窗口验证；全池 stale=0。剩余 unknown/invalid 和消费者 partial 透明保留，不把发布成功称为基础数据完整。
 
 ## 当前只读审计

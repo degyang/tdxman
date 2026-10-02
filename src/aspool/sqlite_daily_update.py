@@ -208,6 +208,7 @@ def apply_daily_changes(
     try:
         conn.execute("BEGIN IMMEDIATE")
         from .sqlite_six_dimension import save_sessions, volume_affected_sessions
+
         for index, key in enumerate(sorted(keys)):
             if index % 128 == 0 and time.monotonic() >= deadline:
                 raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Writer deadline exceeded")
@@ -317,9 +318,13 @@ def apply_daily_changes(
         for days in volume_propagation.values():
             calendar_dependencies.update(volume_affected_sessions(sessions, days))
         calendar_dependencies.update(volume_affected_sessions(sessions, status_dependencies))
-        affected.update(day for day in calendar_dependencies if conn.execute(
-            "SELECT 1 FROM daily_features WHERE trade_date=? LIMIT 1", (day,)
-        ).fetchone())
+        affected.update(
+            day
+            for day in calendar_dependencies
+            if conn.execute(
+                "SELECT 1 FROM daily_features WHERE trade_date=? LIMIT 1", (day,)
+            ).fetchone()
+        )
 
         from .sqlite_volume_metrics import recompute_volume_metrics
 
@@ -339,7 +344,9 @@ def apply_daily_changes(
                 next_row = conn.execute(
                     "SELECT b.trade_date FROM daily_bars b LEFT JOIN daily_features f "
                     "USING(symbol,trade_date) WHERE b.symbol=? AND b.trade_date>? "
-                    "AND coalesce(f.trading_status,'') NOT IN ('SUSPENDED','停牌') "
+                    "AND coalesce(f.trading_status,'') NOT IN "
+                    "('SUSPENDED','停牌','NO_TRADE','NOT_LISTED',"
+                    "'UNKNOWN','MISSING','INVALID','UNCONFIRMED','未知','不确定') "
                     "AND b.low>0 AND b.low<=min(b.open,b.close) "
                     "AND max(b.open,b.close)<=b.high ORDER BY b.trade_date LIMIT 1",
                     (symbol, day),

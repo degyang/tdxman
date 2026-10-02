@@ -64,6 +64,9 @@ def _normalize_symbols(values):
 def pool_lock(root: Path, *, write: bool = False):
     """Coordinate batch writers and readers without opening the DuckDB catalog."""
     root = Path(root).expanduser().resolve()
+    from .base_delta import assert_replica_complete
+
+    assert_replica_complete(root)
     held = next((mode for path, mode in _pool_locks.get() if path == root), None)
     if held is not None:
         if write and not held:

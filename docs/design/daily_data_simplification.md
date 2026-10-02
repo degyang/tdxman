@@ -1,5 +1,8 @@
 # 日线与派生数据精简决策
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 日期：2026-09-28。状态：按用户最新约束收敛目标设计；尚未迁移生产存储或删除旧接口。股票数据以 SQLite 为目标，性能与生产切换尚未验证。业务只做局部更新，不再设计业务批次、修订发布体系；全量导入、重建和规则升级通过外部 ops 脚本维护。
 
 落地入口：[四表实施计划](sqlite_four_table_implementation_plan.md)；迁移与接口依据：[系统评估](sqlite_migration_api_assessment.md)；新增多模型/日周月要求：[Regime 模型模板](regime_model_template_design.md)。

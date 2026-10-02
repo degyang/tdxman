@@ -1,0 +1,129 @@
+{
+  "date": "2026-10-02",
+  "status": "implementation_and_local_acceptance_complete",
+  "branch": "feat/base-enriched-replica",
+  "base_commit": "c2c3edd1594953b98e23ea7ee2b2085c70c0034b",
+  "depends_on_pr": "https://github.com/degyang/tdxman/pull/2",
+  "worktree": "/home/ubuntu/tdxman-data-layers",
+  "definitions": {
+    "base": "Downloaded K lines, source adjustment inputs, financial and directory facts, dated source facts, immutable source memberships, successful event download coverage including empty responses.",
+    "enriched": "Locally calculated adjustment factors, stock indicators, market and board aggregates, calculated snapshots."
+  },
+  "test_runs": [
+    {
+      "kind": "broad_regression",
+      "suites": [
+        "test_base_delta.py",
+        "test_data_flow_contract.py",
+        "test_sqlite_factor_bootstrap.py",
+        "test_storage_single_authority.py",
+        "test_platform_v2.py",
+        "test_sqlite_daily_derived.py",
+        "test_sqlite_daily_update.py",
+        "test_sqlite_reference_factors.py",
+        "test_aspool_cli_help.py",
+        "test_aspool_index.py",
+        "test_dynamic_index_directory.py",
+        "test_sqlite_indices.py",
+        "test_six_dimension_inputs.py",
+        "test_sqlite_etfs.py",
+        "test_fundamentals_store.py"
+      ],
+      "passed": 214,
+      "failed": 0,
+      "seconds": 62.75,
+      "exit_code": 0
+    },
+    {
+      "kind": "final_changed_dependency_verification",
+      "suites": [
+        "test_base_delta.py",
+        "test_sqlite_factor_bootstrap.py",
+        "test_sqlite_daily_update.py",
+        "test_sqlite_reference_factors.py",
+        "test_storage_single_authority.py"
+      ],
+      "passed": 102,
+      "failed": 0,
+      "seconds": 41.77,
+      "exit_code": 0,
+      "notes": "Includes additional receipt-only update case and final factor input evidence hashing; overlapping tests, do not sum counts."
+    }
+  ],
+  "checks": {
+    "ruff_changed_python_files": "passed",
+    "git_diff_check": "passed",
+    "layer_document_links": {
+      "documents": 63,
+      "broken": 0
+    },
+    "wheel_build": "passed",
+    "wheel_replica_cli_smoke": "passed"
+  },
+  "behaviors_verified": [
+    "source-only payload projection",
+    "old-value conflict refusal before writes",
+    "idempotent replay",
+    "source absence does not delete",
+    "bounded input and publication",
+    "multiple-domain durable recovery",
+    "real process exit after canonical SQLite commit and recovery",
+    "ordinary reads and writes blocked until recovery completes",
+    "stock factor and dependent suffix recalculation",
+    "immutable downloaded evidence transfer",
+    "verified bootstrap rederives complete history suffix",
+    "external anchor revisions with factor lineage",
+    "successful empty event download extends factor coverage",
+    "coverage-only changes trigger recalculation",
+    "unknown trading state excluded from market statistics",
+    "financial and shareholder inputs",
+    "ETF dependent volume ratio"
+  ],
+  "deployment": {
+    "production_pool_modified": false,
+    "production_databases_copied": false,
+    "installed_sdk_replaced": false,
+    "remote_pool_modified": false,
+    "automatic_jobs_installed": false,
+    "pr_merged": false
+  },
+  "retained_boundaries": [
+    "Unmodified legacy factors retain their original algorithm and missing lineage; source evidence is not fabricated.",
+    "ETF legacy source references remain external base data; no new online ETF corporate-action calculation pipeline.",
+    "Missing source rows do not authorize deletion.",
+    "File transport and scheduling are deployment configuration.",
+    "Existing index/ETF extra indicators, W/M and snapshot calculator boundaries are retained."
+  ],
+  "wheel": {
+    "path": "/home/ubuntu/tdxman-data-layers-build/tdxman-1.1.2-py3-none-any.whl",
+    "sha256": "5f040de82de385ef62fdca5f2ee24a0240bafb33098d6969e558f0578f83315d"
+  },
+  "source_sha256": {
+    "src/aspool/base_delta.py": "16237eb321c21d671c89bcc8e4eb6c6d8d1c38b0daca990dcb5ce76d22be5285",
+    "src/aspool/cli.py": "c58ce7bac48c9cea58f8a22c222381a2a77ad4b38d66b71d89658ad4f8dd4ea3",
+    "src/aspool/data_flow_contract.py": "c08bc75ef5e2d73e93d8da46b5b9c76af76cf92d34fe0483233adef22b93f3f6",
+    "src/aspool/factor_lineage.py": "a02c429cd083c870e3e8b3f2218329ddf7eb534855209bd7e154455c1d3172e9",
+    "src/aspool/fundamentals_store.py": "7becc32a15f692489d7e70e2e2b2fec3ee7ad1ac294500802d25e25db08fda1f",
+    "src/aspool/help.py": "3399a79b390f1aaff3aafb25f80fd0afdda277f04cbfe258b316f4202d57c547",
+    "src/aspool/index_lists.py": "75d0f7a0a82a8decf3f5a7916fd3908fced72cc9fc91b8fbbf557d342c5c5de9",
+    "src/aspool/pool.py": "b68b8460ce1d8dea889ac11cb34103ea0290de8771db33e517d52ae833b02a6f",
+    "src/aspool/securities.py": "7f64ebfde18e089b21c7c8e97420ada0e71b6c405f0d88eff7629b0c76a8dabf",
+    "src/aspool/sqlite_canonical.py": "0b30de36889caf739608dedc4535242114c99162c4af269760779ea524d81996",
+    "src/aspool/sqlite_daily_update.py": "485825ff073c0a546b39367e89a58e9c63f3c6db32cb262977fb6dc66473327c",
+    "src/aspool/sqlite_etf_store.py": "ae332d20a60b1ac49cddb3674ed141e78fbf78531c97d7042e54038e90d563bb",
+    "src/aspool/sqlite_event_update.py": "9e0ef581fa489b72f17ea4fe7ada80fb3524c1978f1c2c734dab42b6600d004f",
+    "src/aspool/sqlite_factor_bootstrap.py": "3cc587fa9fbe7c1c9922119be9b3c653c8ad2c460bd103fb1e2f2687a271d9a7",
+    "src/aspool/sqlite_index_store.py": "0da26265ae26e409c649decf47dc574b097f3d50f11c2550da63ebae91ad8fae",
+    "src/aspool/sqlite_publication.py": "6375ddc3d8ca9e4411aaa66035432106d5704e64371e98b01cf8832b2191685b",
+    "src/aspool/sqlite_reference_factors.py": "44cc15399d15c331c8ec2b81f74ebd880ee581ac34db255bdb899fe1cee8fab7",
+    "src/aspool/sqlite_volume_metrics.py": "59060a71997eba08d4c430ae625415399a46f50e15f48deb98e13cbb254b9cbf",
+    "src/aspool/storage_verify.py": "747870ee4b58f5d21741f190a4848044bfc42af574c0c303fc8c053e40e93e00",
+    "src/aspool/universe.py": "666deae6153762268eaf731bfc0e3f2474771b1bc8054e6ac90c21eab56647ea",
+    "tests/unit/test_aspool_cli_help.py": "250d0708de270babf23b12345df3d3f51552c9d8e6464b11cd8a219f92c4c4ec",
+    "tests/unit/test_aspool_index.py": "5e451b94cdb871f3db21254a5830cd8e09a1b4e3875ffa75ef91dab0d58797d2",
+    "tests/unit/test_base_delta.py": "1086fd178fcfd5d8079a2fe499b70bb1e2c1e73f3def772ca43fbb2048eb918a",
+    "tests/unit/test_data_flow_contract.py": "89071c62ce4bdec9eb5e0e33f033b8bfd6ab67d9a0e285c8dd2cb0fd9b7db52a",
+    "tests/unit/test_dynamic_index_directory.py": "841bcde8944230bb7c426bfebf6b53741a88b1d6b1cd91b9e559793690cf6ca9",
+    "tests/unit/test_sqlite_indices.py": "9d5e69e04612b919be556b2b98d3b0af041e76a9d19f9cc93e67119c124bd157"
+  }
+}

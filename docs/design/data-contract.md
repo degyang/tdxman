@@ -1,5 +1,8 @@
 # DG-00：现行数据契约与未决项
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 2026-09-28：本文是旧后端的兼容性基线，不是新统计目标。用户已指定缺数据与停牌同统计、取消业务批次；新四表与日周月模型契约见[迁移/API 评估](sqlite_migration_api_assessment.md)和[模板设计](regime_model_template_design.md)。迁移需区分保留的原始数据语义与明确改变的统计口径。
 
 日期：2026-09-27。依据 tdxman 基线 `5083dbb` 与 Fundwise `1b25658` 的代码；这是兼容性基线，不是全市场数据完整性证明。整改状态以 [推进方案](../achievements/../achievements/remediation_execution_plan.md) 为准。

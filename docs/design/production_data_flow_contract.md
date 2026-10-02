@@ -1,8 +1,11 @@
 # asPool 完整数据与 CLI 落地契约
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 日期：2026-09-30。布局 3 的唯一存储职责及一致发布见 [单一权威存储整改](../implements/single_authority_storage.md)。公共 API 的逻辑数据名保持不变，不表示旧物理表仍存在。布局 2 仅作为迁移输入，恢复材料在生产池外。
 
-## 1. 数据根和十个生产数据块
+## 1. 数据根与生产数据块
 
 权威数据根是当前项目 `tdxman/data/`：
 
@@ -18,13 +21,15 @@ data/
 └── snapshots.sqlite       # optional cache
 ```
 
+基础层保存未复权行情、下载的复权依据、外部锚点、财务及来源成分；Enriched 层保存计算因子、逐股指标和市场/板块汇总。层按表和内容划分，同库可以包含不同层。完整源验证行情在 `.local/base-evidence/<pool>/`，是需同步和保留的基础资产。增量入口与恢复见[基础增量同步](../ops/base_data_incremental_sync.md)。
+
 运行报告、断点和恢复材料放在 `tdxman/.local/`，不进入运行数据根。
 
 | 数据块 | 输入 | 写入入口 | 输出 |
 |---|---|---|---|
 | `securities` / `index_memberships` | TDX 沪深北股票、ETF、HY2/GN/FG/ZS 完整目录 | `update/sync` 自动刷新；`directory` 独立刷新 | 当日预期证券集合、当前名称及指数分类关系 |
 | `security_calendar` | 上证指数日 K 线的实际日期 | 指数 `update/sync` | 市场交易会话轴 |
-| `fundamental_snapshots` | TDX quote 基本面字段 | `fundamentals`；`--type all` 复用/补取当前 quote | 最新股本及估值基础快照 |
+| `fundamentals.stock_financial_reports` / `stock_shareholder_counts` | TDX 财报及股东人数 | `fundamentals`；每日流程检查最新快照 | 基础：来源财报与股东人数历史；catalog 旧快照仅审计 |
 | `stocks.daily_bars` | TDX 当日 quote；TDX/BaoStock 历史 K 线 | 股票 `update/sync` | 未复权股票日线 |
 | `stocks.corporate_actions` | TDX 除权事件 | 股票 `update/sync` | 参考昨收和稀疏复权因子输入 |
 | `features.stock_daily_features` | 股票日线、事件、名称/ST、交易状态 | 与股票事实通过共同发布机制提交 | `TRADED/NO_TRADE/MISSING/INVALID`、涨跌停、连板、MA20 |

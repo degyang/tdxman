@@ -21,6 +21,11 @@ def test_every_production_data_block_declares_input_output_and_cli():
         "index_daily_bars",
         "etf_daily_bars",
         "etf_adjustment_factors",
+        "stock_factor_anchors",
+        "factor_source_evidence",
+        "event_coverage",
+        "board_source_snapshots",
+        "board_daily",
     }
     assert all(
         flow.inputs and flow.outputs and flow.write_cli and flow.read_cli for flow in DATA_FLOWS
@@ -32,6 +37,8 @@ def test_contract_cli_is_machine_readable():
     assert result.exit_code == 0, result.output
     rows = json.loads(result.output)
     assert len(rows) == len(DATA_FLOWS)
-    assert all(set(row) == {
-        "name", "storage", "inputs", "write_cli", "outputs", "read_cli", "lifecycle"
-    } for row in rows)
+    assert all(
+        set(row)
+        == {"name", "storage", "inputs", "write_cli", "outputs", "read_cli", "lifecycle", "layer"}
+        for row in rows
+    )

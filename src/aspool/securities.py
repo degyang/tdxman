@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS securities (
 INDEX_MEMBERSHIPS_DDL = """
 CREATE TABLE IF NOT EXISTS index_memberships (
     symbol VARCHAR NOT NULL,
-    category VARCHAR NOT NULL CHECK (category IN ('HY2','GN','FG','ZS','benchmark')),
+    category VARCHAR NOT NULL CHECK (category IN ('HY','HY2','GN','FG','ZS','benchmark')),
     active BOOLEAN NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     PRIMARY KEY (symbol, category)
@@ -65,6 +65,22 @@ def ensure_securities(root: Path) -> dict[str, int]:
                     conn.execute("DROP TABLE securities")
                     conn.execute("ALTER TABLE securities_next RENAME TO securities")
             conn.execute(DDL)
+            if "index_memberships" in tables:
+                membership_sql = conn.execute(
+                    "SELECT sql FROM duckdb_tables() WHERE table_name='index_memberships'"
+                ).fetchone()[0]
+                if "'HY'" not in membership_sql:
+                    conn.execute(
+                        INDEX_MEMBERSHIPS_DDL.replace(
+                            "index_memberships", "index_memberships_next", 1
+                        )
+                    )
+                    conn.execute(
+                        "INSERT INTO index_memberships_next "
+                        "SELECT symbol,category,active,updated_at FROM index_memberships"
+                    )
+                    conn.execute("DROP TABLE index_memberships")
+                    conn.execute("ALTER TABLE index_memberships_next RENAME TO index_memberships")
             conn.execute(INDEX_MEMBERSHIPS_DDL)
             before = conn.execute("SELECT count(*) FROM securities").fetchone()[0]
             tables = _tables(conn)
@@ -223,7 +239,7 @@ def publish_index_directory(
     """Publish a complete dynamic index directory and its category memberships."""
     observed_at = observed_at or datetime.now(UTC).replace(tzinfo=None)
     normalized: dict[str, tuple[str, str, str, tuple[str, ...]]] = {}
-    valid_categories = {"HY2", "GN", "FG", "ZS"}
+    valid_categories = {"HY", "HY2", "GN", "FG", "ZS"}
     for entry in entries:
         code = str(entry["code"])
         market = str(entry["market"])
