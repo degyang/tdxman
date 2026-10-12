@@ -18,10 +18,16 @@ FILES = {
     "adjustments": "adjustments.sqlite",
 }
 TABLES = {
-    "main": {"daily_bars", "corporate_actions", "dataset_state"},
+    "main": {"daily_bars", "corporate_actions", "dataset_state", "stock_qfq_bars"},
     "features": {
-        "stock_daily_features", "market_regime_features", "feature_state", "market_sessions",
-        "board_snapshots", "board_snapshot_sets", "board_sync_state", "board_daily",
+        "stock_daily_features",
+        "market_regime_features",
+        "feature_state",
+        "market_sessions",
+        "board_snapshots",
+        "board_snapshot_sets",
+        "board_sync_state",
+        "board_daily",
         "board_daily_status",
     },
     "adjustments": {"stock_adjustment_factors", "stock_factor_anchors", "adjustment_state"},
@@ -47,7 +53,10 @@ def assert_published(root):
     from .base_delta import assert_replica_complete
 
     assert_replica_complete(root)
-    if pending_path(root).exists() or migration_path(root).exists():
+    from .qfq_audit_repair import ACTIVE
+
+    history_active = ACTIVE.get() == str(Path(root).resolve())
+    if pending_path(root).exists() or (migration_path(root).exists() and not history_active):
         raise DataPoolError(
             "RECOVERY_REQUIRED", "A database publication is incomplete; recover it explicitly"
         )
@@ -193,10 +202,15 @@ def complete_intent(root, conn, value):
 def recover_publication(root):
     """Idempotently roll forward a prepared publication under the writer lock."""
     from .pool import pool_lock
+    from .qfq_audit_repair import ACTIVE
 
     root = Path(root).resolve()
     with pool_lock(root, write=True):
-        if migration_path(root).exists():
+        history_active = ACTIVE.get() == str(root) and (
+            not migration_path(root).exists()
+            or json.loads(migration_path(root).read_text()).get("operation") == "qfq-history-audit"
+        )
+        if migration_path(root).exists() and not history_active:
             raise DataPoolError(
                 "RECOVERY_REQUIRED", "Restore the verified migration recovery point"
             )

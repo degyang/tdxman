@@ -69,6 +69,7 @@ def canonical_operation(conn, operation):
         "six_dimension_extend",
         "st_default_repair",
         "daily_state_normalize",
+        "qfq_audit",
     }:
         raise ValueError("Unknown canonical writer")
     previous = getattr(conn, "_operation", None)
@@ -184,12 +185,11 @@ class CanonicalConnection(sqlite3.Connection):
             for alias, tables in publication.TABLES.items():
                 for table in sorted(tables):
                     if (
-                        table in OPTIONAL_TABLES
-                        and not self.native.execute(
-                            "SELECT 1 FROM features.sqlite_master WHERE type='table' AND name=?",
-                            (table,),
-                        ).fetchone()
-                    ):
+                        table in OPTIONAL_TABLES or table == "stock_qfq_bars"
+                    ) and not self.native.execute(
+                        f"SELECT 1 FROM {alias}.sqlite_master WHERE type='table' AND name=?",
+                        (table,),
+                    ).fetchone():
                         continue
                     columns, keys = publication.table_shape(self.native, alias, table)
                     self._shapes[(alias, table)] = (columns, keys)
@@ -387,6 +387,7 @@ class CanonicalConnection(sqlite3.Connection):
             (r["alias"], r["table"])
             in {
                 ("main", "daily_bars"),
+                ("main", "stock_qfq_bars"),
                 ("main", "corporate_actions"),
                 ("adjustments", "stock_factor_anchors"),
             }

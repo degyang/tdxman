@@ -486,6 +486,9 @@ def apply_daily_changes(
                             day,
                         ),
                     )
+            from .sqlite_qfq import refresh_references
+
+            refresh_references(conn, symbol, sorted(days))
             stats = recompute_symbol_features(
                 conn,
                 symbol=symbol,

@@ -57,7 +57,8 @@ class LimitRuleResult:
 
 
 def is_star_board(code: str) -> bool:
-    return code.startswith("688")
+    # SSE uses 688 for STAR shares and 689 for STAR depositary receipts.
+    return code.startswith(("688", "689"))
 
 
 def is_gem_board(code: str) -> bool:

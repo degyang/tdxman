@@ -611,6 +611,15 @@ class DataPool:
     # ------------------------------------------------------------------ #
 
     @public_read
+    def read_downloaded_qfq(self, *, start, end, symbols=None, max_rows=100_000):
+        """Read source qfq OHLC retained as rebuildable base input."""
+        from .sqlite_qfq import read_downloaded_qfq
+
+        return read_downloaded_qfq(
+            self.root, start=start, end=end, symbols=symbols, max_rows=max_rows
+        )
+
+    @public_read
     def read_limit_summary(self, *, start=None, end=None):
         """已发布的日级涨跌停汇总。"""
         if (self.root / "stocks.sqlite").is_file():
