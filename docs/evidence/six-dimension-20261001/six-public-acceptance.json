@@ -1,0 +1,312 @@
+{
+  "window": [
+    "2026-09-01",
+    "2026-09-30"
+  ],
+  "scopes": {
+    "all_stocks": {
+      "market_rows": 21,
+      "board_rows": 12894,
+      "legacy_values_unchanged": true,
+      "min_volume_valid_count": 5535,
+      "max_volume_valid_count": 5553,
+      "last_market": {
+        "frequency": "D",
+        "period_key": "2026-09-30",
+        "scope": "all_stocks",
+        "period_start": "2026-09-30 00:00:00",
+        "period_end": "2026-09-30 00:00:00",
+        "as_of": "2026-09-30 00:00:00",
+        "session_count": 1,
+        "trading_count": 5560,
+        "st_unknown_count": 0,
+        "valid_return_count": 5560,
+        "invalid_return_count": 0,
+        "up_count": 2567,
+        "down_count": 2823,
+        "flat_count": 170,
+        "strong_up_count": 380,
+        "strong_down_count": 514,
+        "avg_return": -0.0006772622078418223,
+        "median_return": -0.0009079562218715846,
+        "return_distribution_json": "{\"limit_up\":56,\"limit_down\":12,\"pos_ge_10\":17,\"pos_08_10\":10,\"pos_06_08\":34,\"pos_04_06\":111,\"pos_02_04\":464,\"pos_00_02\":1875,\"flat\":170,\"neg_00_02\":1842,\"neg_02_04\":709,\"neg_04_06\":202,\"neg_06_08\":42,\"neg_08_10\":10,\"neg_le_10\":6}",
+        "up_pct": 46.169064748201436,
+        "strong_up_pct": 6.83453237410072,
+        "strong_down_pct": 9.244604316546763,
+        "close_limit_up_count": 56,
+        "touch_limit_up_count": 70,
+        "close_limit_down_count": 12,
+        "touch_limit_down_count": 24,
+        "limit_known_count": 5210,
+        "no_limit_count": 350,
+        "limit_unknown_count": 0,
+        "limit_invalid_count": 0,
+        "streak_unknown_count": 0,
+        "max_consecutive_up": 7,
+        "first_board_count": 44,
+        "second_plus_count": 12,
+        "third_plus_count": 6,
+        "fifth_plus_count": 1,
+        "ladder_json": "{\"1\":44,\"2\":6,\"3\":4,\"4\":1,\"7\":1}",
+        "promotion_eligible_count": 56,
+        "promotion_success_count": 12,
+        "amount_sum": 1450060833910.0,
+        "amount_valid_count": 5560,
+        "avg_turnover": 2.6335139116821744,
+        "turnover_valid_count": 5560,
+        "sealed_ratio": 0.8,
+        "promotion_ratio": 0.21428571428571427,
+        "ma20_valid_count": 5203,
+        "above_ma20_count": 1759,
+        "above_ma20_pct": 0.3380741879684797,
+        "upper_median_return": -0.0008993011676936018,
+        "avg_vol_ratio_5d": 0.9243709875678072,
+        "vol_ratio_5d_valid_count": 5549,
+        "high_vol_ratio_5d_count": 421,
+        "updated_at": 1790845910386550
+      },
+      "last_categories": [
+        {
+          "date": "2026-09-30",
+          "scope": "all_stocks",
+          "kind": "concept",
+          "status": "ready",
+          "processed_board_count": 269,
+          "expected_board_count": 269,
+          "mapped_trading_count": 5439,
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "updated_at": 1790845910489512
+        },
+        {
+          "date": "2026-09-30",
+          "scope": "all_stocks",
+          "kind": "industry",
+          "status": "ready",
+          "processed_board_count": 345,
+          "expected_board_count": 345,
+          "mapped_trading_count": 5555,
+          "snapshot_id": "971020c354da3319e6ae78e64babc46cd028644ef3a9cd42d9a503b6d74f6cac",
+          "updated_at": 1790845910438007
+        }
+      ],
+      "consumer_harness": {
+        "dimensions": {
+          "I": 41,
+          "P": 45,
+          "M": 36,
+          "Q": 74,
+          "R": 38,
+          "L": 65
+        },
+        "total": 50,
+        "index_count": 4,
+        "candidates": [
+          {
+            "kind": "industry",
+            "board_id": "881258",
+            "board_name": "医美耗材",
+            "avg_return": 0.05232253859629717,
+            "trading_member_count": 3
+          },
+          {
+            "kind": "industry",
+            "board_id": "881240",
+            "board_name": "其他生物制药",
+            "avg_return": 0.050642647599733887,
+            "trading_member_count": 35
+          },
+          {
+            "kind": "industry",
+            "board_id": "881236",
+            "board_name": "疫苗",
+            "avg_return": 0.047021966498605496,
+            "trading_member_count": 13
+          },
+          {
+            "kind": "concept",
+            "board_id": "880899",
+            "board_name": "钴金属",
+            "avg_return": 0.058132506420329265,
+            "trading_member_count": 39
+          },
+          {
+            "kind": "concept",
+            "board_id": "880612",
+            "board_name": "镍金属",
+            "avg_return": 0.04861164879403423,
+            "trading_member_count": 46
+          },
+          {
+            "kind": "concept",
+            "board_id": "880710",
+            "board_name": "种业",
+            "avg_return": 0.03763991527695011,
+            "trading_member_count": 13
+          }
+        ],
+        "max_avg_group": "880899",
+        "max_cover_group": "880612"
+      },
+      "index_partial_scores": {
+        "0": null,
+        "1": 56,
+        "2": 52,
+        "3": 50,
+        "4": 41
+      }
+    },
+    "exclude_known_st": {
+      "market_rows": 21,
+      "board_rows": 12894,
+      "legacy_values_unchanged": true,
+      "min_volume_valid_count": 5341,
+      "max_volume_valid_count": 5538,
+      "last_market": {
+        "frequency": "D",
+        "period_key": "2026-09-30",
+        "scope": "exclude_known_st",
+        "period_start": "2026-09-30 00:00:00",
+        "period_end": "2026-09-30 00:00:00",
+        "as_of": "2026-09-30 00:00:00",
+        "session_count": 1,
+        "trading_count": 5363,
+        "st_unknown_count": 0,
+        "valid_return_count": 5363,
+        "invalid_return_count": 0,
+        "up_count": 2470,
+        "down_count": 2746,
+        "flat_count": 147,
+        "strong_up_count": 359,
+        "strong_down_count": 502,
+        "avg_return": -0.0007949919601092364,
+        "median_return": -0.0011682510237143724,
+        "return_distribution_json": "{\"limit_up\":52,\"limit_down\":9,\"pos_ge_10\":17,\"pos_08_10\":10,\"pos_06_08\":32,\"pos_04_06\":105,\"pos_02_04\":436,\"pos_00_02\":1818,\"flat\":147,\"neg_00_02\":1787,\"neg_02_04\":699,\"neg_04_06\":197,\"neg_06_08\":40,\"neg_08_10\":10,\"neg_le_10\":4}",
+        "up_pct": 46.05631176580272,
+        "strong_up_pct": 6.694014544098452,
+        "strong_down_pct": 9.360432593697556,
+        "close_limit_up_count": 52,
+        "touch_limit_up_count": 66,
+        "close_limit_down_count": 9,
+        "touch_limit_down_count": 20,
+        "limit_known_count": 5016,
+        "no_limit_count": 347,
+        "limit_unknown_count": 0,
+        "limit_invalid_count": 0,
+        "streak_unknown_count": 0,
+        "max_consecutive_up": 7,
+        "first_board_count": 40,
+        "second_plus_count": 12,
+        "third_plus_count": 6,
+        "fifth_plus_count": 1,
+        "ladder_json": "{\"1\":40,\"2\":6,\"3\":4,\"4\":1,\"7\":1}",
+        "promotion_eligible_count": 56,
+        "promotion_success_count": 12,
+        "amount_sum": 1441971329927.0,
+        "amount_valid_count": 5363,
+        "avg_turnover": 2.6808474759376586,
+        "turnover_valid_count": 5363,
+        "sealed_ratio": 0.7878787878787878,
+        "promotion_ratio": 0.21428571428571427,
+        "ma20_valid_count": 5009,
+        "above_ma20_count": 1695,
+        "above_ma20_pct": 0.33839089638650427,
+        "upper_median_return": -0.0011682510237143724,
+        "avg_vol_ratio_5d": 0.923613547228078,
+        "vol_ratio_5d_valid_count": 5353,
+        "high_vol_ratio_5d_count": 401,
+        "updated_at": 1790845910387725
+      },
+      "last_categories": [
+        {
+          "date": "2026-09-30",
+          "scope": "exclude_known_st",
+          "kind": "concept",
+          "status": "ready",
+          "processed_board_count": 269,
+          "expected_board_count": 269,
+          "mapped_trading_count": 5242,
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "updated_at": 1790845910564001
+        },
+        {
+          "date": "2026-09-30",
+          "scope": "exclude_known_st",
+          "kind": "industry",
+          "status": "ready",
+          "processed_board_count": 345,
+          "expected_board_count": 345,
+          "mapped_trading_count": 5359,
+          "snapshot_id": "971020c354da3319e6ae78e64babc46cd028644ef3a9cd42d9a503b6d74f6cac",
+          "updated_at": 1790845910512494
+        }
+      ],
+      "consumer_harness": {
+        "dimensions": {
+          "I": 41,
+          "P": 44,
+          "M": 35,
+          "Q": 72,
+          "R": 37,
+          "L": 65
+        },
+        "total": 49,
+        "index_count": 4,
+        "candidates": [
+          {
+            "kind": "industry",
+            "board_id": "881258",
+            "board_name": "医美耗材",
+            "avg_return": 0.05232253859629717,
+            "trading_member_count": 3
+          },
+          {
+            "kind": "industry",
+            "board_id": "881240",
+            "board_name": "其他生物制药",
+            "avg_return": 0.049964955162991896,
+            "trading_member_count": 34
+          },
+          {
+            "kind": "industry",
+            "board_id": "881236",
+            "board_name": "疫苗",
+            "avg_return": 0.04874747934556899,
+            "trading_member_count": 12
+          },
+          {
+            "kind": "concept",
+            "board_id": "880899",
+            "board_name": "钴金属",
+            "avg_return": 0.05856995677660226,
+            "trading_member_count": 38
+          },
+          {
+            "kind": "concept",
+            "board_id": "880612",
+            "board_name": "镍金属",
+            "avg_return": 0.04876947670319154,
+            "trading_member_count": 45
+          },
+          {
+            "kind": "concept",
+            "board_id": "880710",
+            "board_name": "种业",
+            "avg_return": 0.038210148601941225,
+            "trading_member_count": 12
+          }
+        ],
+        "max_avg_group": "880899",
+        "max_cover_group": "880612"
+      },
+      "index_partial_scores": {
+        "0": null,
+        "1": 56,
+        "2": 52,
+        "3": 50,
+        "4": 41
+      }
+    }
+  },
+  "seconds": 1.303,
+  "peak_rss_kib": 442488
+}

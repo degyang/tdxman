@@ -232,6 +232,15 @@ class DataPool:
             return reader.read_market_summary(start=start, end=end, frequency=frequency,
                                              scope=scope, fields=fields, closed_only=closed_only)
 
+    @public_read
+    def read_board_daily(self, *, start, end, kind=None, scope="all_stocks", fields=None,
+                         limit=100000, offset=0):
+        """Read published HY2/GN facts only; metadata lives in DataFrame.attrs."""
+        from .sqlite_board_daily import read_board_daily
+        with self.stock_snapshot() as reader:
+            return read_board_daily(reader, start=start, end=end, kind=kind, scope=scope,
+                                    fields=fields, limit=limit, offset=offset)
+
     def read_market_daily(self, *, start, end, scope="all_stocks", fields=None):
         return self.read_market_summary(start=start, end=end, scope=scope, fields=fields)
 

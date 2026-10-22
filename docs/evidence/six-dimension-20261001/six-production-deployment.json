@@ -1,0 +1,13 @@
+{
+  "status": "verified",
+  "source_commit": "e14eb62356d207c398b361de9d74166e2d9eb761",
+  "wheel_sha256": "549fe609c4f62a1768668aad9fb0ac76c0ecf22a45684d4a823cea5dc23575e0",
+  "installed_environment": "/mnt/d/Workstation/Services/tdxman/.venv",
+  "import_path": "/mnt/d/Workstation/Services/tdxman/.venv/lib/python3.12/site-packages/aspool/__init__.py",
+  "data_root": "/mnt/d/Workstation/Services/tdxman/data",
+  "dates_per_scope": 6482,
+  "original_four_dimension_facts_unchanged": true,
+  "temporary_database_copies_remaining": 0,
+  "future_real_session": "2026-10-08 not verified",
+  "consumer_boundary": "Fundwise SDK adapter and shared result persistence remain pending; no consumer code changed"
+}

@@ -1,0 +1,59 @@
+{
+  "root": "/mnt/d/Workstation/Services/tdxman/data",
+  "aspool_import": "/mnt/d/Workstation/Services/tdxman/.venv/lib/python3.12/site-packages/aspool/__init__.py",
+  "scopes": {
+    "all_stocks": {
+      "days": 6482,
+      "start": "2000-01-04",
+      "end": "2026-09-30",
+      "volume_computed_days": 6482,
+      "volume_valid_sample_days": 6477,
+      "volume_empty_dates": [
+        "2000-01-04",
+        "2000-01-05",
+        "2000-01-06",
+        "2000-01-07",
+        "2000-01-10"
+      ],
+      "upper_median_days": 6482,
+      "old_limit_input_missing_days": 4740,
+      "latest": {
+        "period_key": "2026-09-30",
+        "upper_median_return": -0.0008993011676936018,
+        "avg_vol_ratio_5d": 0.9243709875678072,
+        "vol_ratio_5d_valid_count": 5549,
+        "high_vol_ratio_5d_count": 421
+      },
+      "earliest_and_latest_board_rows": 1228,
+      "real_window_inputs_equal_isolated_validation": true
+    },
+    "exclude_known_st": {
+      "days": 6482,
+      "start": "2000-01-04",
+      "end": "2026-09-30",
+      "volume_computed_days": 6482,
+      "volume_valid_sample_days": 6477,
+      "volume_empty_dates": [
+        "2000-01-04",
+        "2000-01-05",
+        "2000-01-06",
+        "2000-01-07",
+        "2000-01-10"
+      ],
+      "upper_median_days": 6482,
+      "old_limit_input_missing_days": 4740,
+      "latest": {
+        "period_key": "2026-09-30",
+        "upper_median_return": -0.0011682510237143724,
+        "avg_vol_ratio_5d": 0.923613547228078,
+        "vol_ratio_5d_valid_count": 5353,
+        "high_vol_ratio_5d_count": 401
+      },
+      "earliest_and_latest_board_rows": 1228,
+      "real_window_inputs_equal_isolated_validation": true
+    }
+  },
+  "scorer_receipt": "same datewise facts as verified Fundwise pure scorer inputs",
+  "status": "verified",
+  "seconds": 3.757
+}

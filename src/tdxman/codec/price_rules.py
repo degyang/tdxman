@@ -111,8 +111,7 @@ _NO_LIMIT_WINDOWS = (
         5,
         GEM_REGISTRATION_EFFECTIVE,
         None,
-        "《创业板交易特别规定》（2020-08-24起）："
-        "首次公开发行上市后前5个交易日不设涨跌幅限制",
+        "《创业板交易特别规定》（2020-08-24起）：首次公开发行上市后前5个交易日不设涨跌幅限制",
     ),
     (
         lambda market, code: is_bj_board(code),
@@ -183,9 +182,7 @@ def resolve_limit_rule(
         rule = LimitRule(0.30, "北交所", BJ_EFFECTIVE, _BJ_SOURCE)
     elif is_gem_board(code):
         if trade_date >= GEM_REGISTRATION_EFFECTIVE:
-            rule = LimitRule(
-                0.20, "创业板(注册制)", GEM_REGISTRATION_EFFECTIVE, _GEM_REG_SOURCE
-            )
+            rule = LimitRule(0.20, "创业板(注册制)", GEM_REGISTRATION_EFFECTIVE, _GEM_REG_SOURCE)
         else:
             if trade_date < GEM_INCEPTION:
                 return LimitRuleResult(None, f"早于创业板开板日 {GEM_INCEPTION}，无可靠规则依据")
@@ -202,8 +199,9 @@ def resolve_limit_rule(
                 None, f"早于主板涨跌幅制度生效日 {MAIN_BOARD_INCEPTION}，无可靠规则依据"
             )
         if trade_date >= MAIN_BOARD_ST_TEN_PERCENT:
-            rule = LimitRule(0.10, "主板(2026新规)", MAIN_BOARD_ST_TEN_PERCENT,
-                             _MAIN_BOARD_2026_SOURCE)
+            rule = LimitRule(
+                0.10, "主板(2026新规)", MAIN_BOARD_ST_TEN_PERCENT, _MAIN_BOARD_2026_SOURCE
+            )
         elif st_status is None:
             return LimitRuleResult(None, "主板涨跌幅取决于风险警示状态，无历史 ST 依据")
         else:
@@ -212,10 +210,13 @@ def resolve_limit_rule(
             rule = LimitRule(pct, label, MAIN_BOARD_INCEPTION, _MAIN_BOARD_SOURCE)
 
     # 上市无涨跌幅窗口：必须能可靠排除，否则不得按常规限价声称 KNOWN。
-    main_board = ((market == Market.SH and code.startswith("60"))
-                  or (market == Market.SZ and code.startswith("00")))
-    if (main_board
-            and MAIN_BOARD_LEGACY_IPO_EFFECTIVE <= trade_date < MAIN_BOARD_IPO_WINDOW_EFFECTIVE):
+    main_board = (market == Market.SH and code.startswith("60")) or (
+        market == Market.SZ and code.startswith("00")
+    )
+    if (
+        main_board
+        and MAIN_BOARD_LEGACY_IPO_EFFECTIVE <= trade_date < MAIN_BOARD_IPO_WINDOW_EFFECTIVE
+    ):
         # Legacy IPO first-day bounds refer to the issue price, not pre_close.
         # SSE: https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20150912_3988762.shtml
         # SZSE: https://www.szse.cn/www/disclosure/notice/company/t20140613_508770.html
@@ -225,6 +226,20 @@ def resolve_limit_rule(
         return LimitRuleResult(
             None, "主板注册制前上市首日采用发行价特殊限幅，缺少首日排除依据或发行价"
         )
+    if (main_board and trade_date < MAIN_BOARD_LEGACY_IPO_EFFECTIVE) or (
+        is_gem_board(code) and trade_date < GEM_REGISTRATION_EFFECTIVE
+    ):
+        # Historic exchanges exempted the first listing session only. A dated
+        # age or an observed-session lower bound greater than one excludes it.
+        # SZSE 2004 historical review of the 1996 SSE/SZSE rule:
+        # https://www.szse.cn/aboutus/research/secuities/documents/t20040106_531320.html
+        # SZSE 2006 Trading Rules 3.3.14 and 2011 amendment explanation:
+        # https://www.szse.cn/disclosure/notice/t20060515_499577.html
+        # https://www.szse.cn/disclosure/notice/t20110118_500654.html
+        age = listed_days if listed_days is not None else observed_sessions
+        if age is not None and age > 1:
+            return LimitRuleResult(rule)
+        return LimitRuleResult(None, "无法排除注册制前上市首日特殊交易规则，缺少可靠上市依据")
     window_spec = resolve_no_limit_window(market, code, trade_date)
     if window_spec is None:
         return LimitRuleResult(
@@ -257,9 +272,7 @@ def resolve_limit_rule(
     return LimitRuleResult(rule)
 
 
-def resolve_no_limit_window(
-    market: Market, code: str, trade_date: date
-) -> tuple[int, str] | None:
+def resolve_no_limit_window(market: Market, code: str, trade_date: date) -> tuple[int, str] | None:
     """该交易日适用的上市初期无涨跌幅窗口。
 
     Returns:

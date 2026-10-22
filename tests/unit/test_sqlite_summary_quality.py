@@ -25,7 +25,8 @@ def test_reason_partition_changes_even_when_unknown_total_is_unchanged(tmp_path)
         before = summary(conn)
         reasons = json.loads(before["limit_reason_counts_json"])
         assert reasons["UNKNOWN"] == {"missing_st": 1, "missing_reference": 1}
-        assert reasons["INVALID"] == {"invalid_ohlc": 1}
+        assert reasons["INVALID"] == {}
+        assert before["trading_count"] == 2
         conn.execute(
             "UPDATE daily_features SET limit_reason='missing_reference' WHERE symbol='000001.SZ'"
         )
@@ -122,10 +123,8 @@ def test_writer_repairs_missing_reasons_and_rolls_back_json_with_source(tmp_path
         day = DAYS[25]
         kwargs = dict(market_sessions=DAYS, listed_days=AGES)
         writer.apply_daily_changes(conn, bars=[row(day)], **kwargs)
-        assert (
-            json.loads(summary(conn, day=day)["limit_reason_counts_json"])["UNKNOWN"]["missing_st"]
-            == 1
-        )
+        initial = json.loads(summary(conn, day=day)["limit_reason_counts_json"])["UNKNOWN"]
+        assert initial["missing_st"] == 0 and initial["missing_reference"] == 1
         writer.apply_daily_changes(
             conn,
             dated_facts=[
@@ -219,3 +218,16 @@ def test_quality_budget_and_schema_upgrade_rollback(tmp_path):
         assert "promotion_quality_json" not in {
             r[1] for r in conn.execute("PRAGMA table_info(market_daily_summary)")
         }
+
+
+@pytest.mark.parametrize("fields", [{"close": 0}, {"limit": None}])
+def test_bad_individual_row_cannot_abort_promotion_summary(tmp_path, fields):
+    with stock_connection(tmp_path, create=True, read_only=False) as conn:
+        observation(conn, 1, previous=1, **fields)
+        observation(conn, 2, close=11, up=1, touch=1, previous=1, streak=2)
+        recompute_daily_summary(conn, trade_date="2024-01-02")
+        result = summary(conn)
+        assert result["trading_count"] == 1
+        assert result["promotion_eligible_count"] == result["promotion_success_count"] == 1
+        quality = json.loads(result["promotion_quality_json"])
+        assert quality["candidate_count"] == 2 and quality["excluded_no_trade_count"] == 1

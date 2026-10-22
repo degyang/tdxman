@@ -122,6 +122,8 @@ def test_full_source_migration_and_resume(tmp_path):
             "corporate_actions",
             "market_daily_summary",
             "dataset_state",
+            "market_sessions", "board_snapshots", "board_snapshot_sets",
+            "board_sync_state", "board_daily", "board_daily_status",
         }
         factor_payload = c.execute("SELECT payload_json FROM corporate_actions "
                                    "WHERE symbol='920001.BJ'").fetchone()[0]

@@ -3,6 +3,11 @@
 from .api_contract import DataPoolError
 from .sqlite_summary_quality import QUALITY_FIELDS
 
+SIX_FIELDS = (
+    "upper_median_return", "avg_vol_ratio_5d",
+    "vol_ratio_5d_valid_count", "high_vol_ratio_5d_count",
+)
+
 
 def _table_info(conn, table):
     if "." in table:
@@ -13,7 +18,10 @@ def _table_info(conn, table):
 
 def daily_columns(conn, table="market_daily_summary"):
     columns = [row[1] for row in _table_info(conn, table)]
-    return columns[: columns.index("above_ma20_pct") + 1] + ["updated_at"]
+    return (
+        columns[: columns.index("above_ma20_pct") + 1]
+        + [name for name in SIX_FIELDS if name in columns] + ["updated_at"]
+    )
 
 
 def describe_fields(
@@ -44,6 +52,7 @@ def describe_fields(
         elif name in (
             "avg_return",
             "median_return",
+            "upper_median_return", "avg_vol_ratio_5d",
             "sealed_ratio",
             "promotion_ratio",
             "above_ma20_pct",
@@ -61,7 +70,7 @@ def describe_fields(
             unit = "label"
         null_meaning = (
             "not_computed"
-            if name in QUALITY_FIELDS
+            if name in QUALITY_FIELDS or name in SIX_FIELDS[2:]
             else (
                 "unknown_streak"
                 if name == "max_consecutive_up"
@@ -95,4 +104,21 @@ def describe_fields(
             ),
             absent_current_scope="Absent current ST stays unknown and is retained; no forward fill",
         )
+    definitions = {
+        "upper_median_return": "sorted(valid daily returns)[n//2]; ordinary median unchanged",
+        "avg_vol_ratio_5d": (
+            "Mean of finite stock volume / mean(previous five market sessions); "
+            "confirmed suspended predecessors contribute zero; "
+            "missing/unknown/not-listed predecessors invalidate; quote ratios ignored"
+        ),
+        "vol_ratio_5d_valid_count": (
+            "Number of valid calendar-based EOD volume ratios; NULL before calculation"
+        ),
+        "high_vol_ratio_5d_count": (
+            "Number of valid EOD ratios >=1.5; consumer denominator is trading_count"
+        ),
+    }
+    for name in SIX_FIELDS:
+        if name in result:
+            result[name]["definition"] = definitions[name]
     return result

@@ -1,0 +1,21 @@
+{
+  "as_of": "2026-10-01T09:09:47.968296+00:00",
+  "basis": "current_snapshot",
+  "categories": {
+    "industry": {
+      "status": "ready",
+      "board_count": 345,
+      "unique_members": 5573,
+      "seconds": 13.491
+    },
+    "concept": {
+      "status": "ready",
+      "board_count": 269,
+      "unique_members": 5451,
+      "seconds": 25.762
+    }
+  },
+  "retry": [],
+  "seconds": 39.253,
+  "peak_rss_kib": 442488
+}

@@ -1,0 +1,27 @@
+{
+  "all_stocks": {
+    "index_score": 41,
+    "profit_score": 45,
+    "money_score": 36,
+    "speculation_score": 74,
+    "resilience_score": 38,
+    "mainline_score": 65,
+    "score": 50,
+    "score_input_quality": "known_subset",
+    "max_avg_group": "钴金属",
+    "max_cover_group": "镍金属"
+  },
+  "exclude_known_st": {
+    "index_score": 41,
+    "profit_score": 44,
+    "money_score": 35,
+    "speculation_score": 72,
+    "resilience_score": 37,
+    "mainline_score": 65,
+    "score": 49,
+    "score_input_quality": "known_subset",
+    "max_avg_group": "钴金属",
+    "max_cover_group": "镍金属"
+  },
+  "scope": "Fundwise existing pure scoring functions only; cache/service/UI not changed or exercised"
+}
