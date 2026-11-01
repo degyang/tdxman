@@ -195,14 +195,29 @@ def _fill_close_vol_ratio(rows: list[dict[str, object]]) -> list[dict[str, objec
 def _symbols(root: Path, period: str, limit: int | None, asset_type: str = "stock") -> list[str]:
     table = "coverage" if period == "daily" else "coverage_minutes"
     with catalog(root) as conn:
-        if asset_type == "etf":
-            query = f"""select c.symbol from {table} c
-                join universe u on u.symbol = c.symbol
-                where u.asset_type = 'etf' and u.active order by c.symbol"""
+        tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
+        if "securities" in tables:
+            if asset_type == "etf":
+                query = f"""select c.symbol from {table} c
+                    join securities s on s.code = c.symbol and s.market = c.market
+                    where s.asset_type = 'etf' and s.active order by c.symbol"""
+            else:
+                query = f"""select c.symbol from {table} c
+                    left join securities s on s.code = c.symbol and s.market = c.market
+                    where coalesce(s.asset_type, 'stock') = 'stock' order by c.symbol"""
+        elif "universe" in tables:
+            if asset_type == "etf":
+                query = f"""select c.symbol from {table} c
+                    join universe u on u.symbol = c.symbol
+                    where u.asset_type = 'etf' and u.active order by c.symbol"""
+            else:
+                query = f"""select c.symbol from {table} c
+                    left join universe u on u.symbol = c.symbol
+                    where coalesce(u.asset_type, 'stock') = 'stock' order by c.symbol"""
         else:
-            query = f"""select c.symbol from {table} c
-                left join universe u on u.symbol = c.symbol
-                where coalesce(u.asset_type, 'stock') = 'stock' order by c.symbol"""
+            if (Path(root) / "stocks.sqlite").exists():
+                raise ValueError("Missing securities directory for SQLite pool")
+            query = f"select symbol from {table} order by symbol"
         values = [row[0] for row in conn.execute(query).fetchall()]
     return values[:limit] if limit else values
 
@@ -442,7 +457,7 @@ def _publish_stock_rows(root, pending, asset_type="stock"):
             names = {
                 row[0]: row[1]
                 for row in conn.execute(
-                    "SELECT symbol, name FROM universe WHERE asset_type = ?", [asset_type]
+                    "SELECT code, name FROM securities WHERE asset_type = ?", [asset_type]
                 ).fetchall()
             }
         except Exception:

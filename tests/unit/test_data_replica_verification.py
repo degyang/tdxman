@@ -15,6 +15,31 @@ SPEC = importlib.util.spec_from_file_location(
 verifier = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(verifier)
 
+# The FW-04 verifier checks the closed layout-2 stock artifact. Keep its fixture
+# independent from the evolving production stocks_schema.sql.
+LEGACY_STOCK_SCHEMA = """
+PRAGMA user_version=1;
+CREATE TABLE daily_bars (
+    symbol TEXT, trade_date TEXT, open REAL, high REAL, low REAL, close REAL,
+    amount REAL, updated_at INTEGER
+);
+CREATE TABLE daily_features (
+    symbol TEXT, trade_date TEXT, pre_close REAL, is_st INTEGER,
+    calc_status TEXT, limit_status TEXT, streak_known INTEGER, ma20 REAL,
+    updated_at INTEGER
+);
+CREATE TABLE corporate_actions (
+    symbol TEXT, effective_date TEXT, record_kind TEXT, source TEXT,
+    source_key TEXT, cumulative_factor REAL, valid_through TEXT
+);
+CREATE TABLE market_daily_summary (
+    frequency TEXT, period_key TEXT, scope TEXT, period_start TEXT,
+    period_end TEXT, as_of TEXT, session_count INTEGER, trading_count INTEGER,
+    updated_at INTEGER
+);
+CREATE TABLE dataset_state (key TEXT);
+"""
+
 
 def _write(path, value):
     path.write_text(json.dumps(value))
@@ -58,7 +83,7 @@ def replica(tmp_path):
         with sqlite3.connect(root / name) as conn:
             conn.execute("PRAGMA user_version=1")
     with sqlite3.connect(root / "stocks.sqlite") as conn:
-        conn.executescript((REPOSITORY / "src/aspool/stocks_schema.sql").read_text())
+        conn.executescript(LEGACY_STOCK_SCHEMA)
         conn.execute("""INSERT INTO daily_bars
             (symbol,trade_date,open,high,low,close,amount,updated_at)
             VALUES ('000001.SZ','2024-01-02',10,11,9,10,1000,100)""")

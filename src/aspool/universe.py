@@ -94,6 +94,8 @@ def fetch_index_universe():
 def _publish_universe(root, entries):
     from .securities import ensure_securities, publish_directory
 
+    if any(entry.get("active", True) is not True for entry in entries):
+        raise ValueError("unsupported explicit directory deactivation")
     ensure_securities(root)
     kind = entries[0].get("asset_type", "stock") if entries else "stock"
     rows = [

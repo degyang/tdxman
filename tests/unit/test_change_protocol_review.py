@@ -130,7 +130,7 @@ def test_universe_observation_ttl_uses_utc_not_business_last_seen(pool):
 
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     with catalog(pool) as conn:
-        conn.execute("UPDATE universe SET last_seen=?", [now - timedelta(days=30)])
+        conn.execute("UPDATE securities SET updated_at=?", [now - timedelta(days=30)])
         conn.execute(
             "UPDATE fetch_observations SET observed_at=? WHERE object_key='universe:stock'",
             [now - timedelta(days=7) + timedelta(hours=1)],

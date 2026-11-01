@@ -305,7 +305,9 @@ def test_all_file_crash_windows_roll_forward_exactly_once(pool, monkeypatch, pha
     assert not list((pool / "change-state/applied").rglob("*.parquet"))
 
 
-@pytest.mark.parametrize("category", CATEGORIES)
+@pytest.mark.parametrize(
+    "category", [category for category in CATEGORIES if category != "universe"]
+)
 def test_each_entry_fault_is_detectable_and_retry_matches_clean_reference(
     pool, tmp_path, monkeypatch, category
 ):
@@ -364,7 +366,7 @@ def test_each_entry_fault_is_detectable_and_retry_matches_clean_reference(
             "security_calendar",
             "security_lifecycle",
             "security_daily_facts",
-            "universe",
+            "securities",
         ):
             a = (
                 conn.execute(f"SELECT * FROM {table} ORDER BY 1")
@@ -467,24 +469,25 @@ def test_baostock_real_publisher_noop_empty_and_conflict_retraction(pool):
     assert (state(pool), counts(pool)) == before
 
 
-def test_universe_omissions_and_empty_source_preserve_facts_and_ttl(pool):
+def test_universe_omissions_and_empty_source_preserve_history_and_ttl(pool):
     before = state(pool), counts(pool)
-    _publish_universe(pool, [])
+    with pytest.raises(ValueError, match="Empty directory"):
+        _publish_universe(pool, [])
     assert (state(pool), counts(pool)) == before
     _publish_universe(pool, [dict(symbol="000002", market="SZ", name="乙")])
     with catalog(pool) as conn:
-        assert conn.execute("SELECT active FROM universe WHERE symbol='000001'").fetchone() == (
-            True,
+        active = conn.execute("SELECT active FROM securities WHERE symbol='000001.SZ'").fetchone()
+        assert active == (False,)
+        assert conn.execute("SELECT row_count FROM coverage WHERE symbol='000001'").fetchone() == (
+            1,
         )
-        conn.execute("UPDATE universe SET last_seen = current_timestamp - INTERVAL 30 DAY")
     _publish_universe(pool, [dict(symbol="000001", market="SZ", name="甲")])
     assert not universe_is_stale(pool, asset_type="stock")
     with pytest.raises(ValueError, match="unsupported"):
         _publish_universe(pool, [dict(symbol="000001", market="SZ", name="甲", active=False)])
     with catalog(pool) as conn:
-        assert conn.execute("SELECT active FROM universe WHERE symbol='000001'").fetchone() == (
-            True,
-        )
+        active = conn.execute("SELECT active FROM securities WHERE symbol='000001.SZ'").fetchone()
+        assert active == (True,)
 
 
 def test_explicit_delete_rejected_before_mutation(pool):

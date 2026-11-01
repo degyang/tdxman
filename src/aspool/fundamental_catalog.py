@@ -24,7 +24,9 @@ def available(root):
     path = Path(root) / "catalog.duckdb"
     if not path.exists():
         return False
-    with duckdb.connect(str(path), read_only=True) as conn:
+    from .store import read_only_catalog
+
+    with read_only_catalog(root) as conn:
         return bool(
             conn.execute(
                 "SELECT count(*) FROM information_schema.tables "
@@ -34,7 +36,9 @@ def available(root):
 
 
 def read(root):
-    with duckdb.connect(str(Path(root) / "catalog.duckdb"), read_only=True) as conn:
+    from .store import read_only_catalog
+
+    with read_only_catalog(root) as conn:
         return conn.execute("SELECT * FROM fundamental_snapshots ORDER BY market,code").fetchdf()
 
 

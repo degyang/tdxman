@@ -289,10 +289,10 @@ def test_universe_preserves_omitted_securities_and_coverage(tmp_path):
     )
     assert [item["symbol"] for item in first["added"]] == ["600519"]
     second = _publish_universe(tmp_path, [{"symbol": "000001", "market": "SZ", "name": "甲"}])
-    assert second["inactive"] == []
+    assert second["inactive"] == 0
     with catalog(tmp_path) as conn:
-        assert conn.execute("SELECT active FROM universe WHERE symbol='600519'").fetchone() == (
-            True,)
+        active = conn.execute("SELECT active FROM securities WHERE symbol='600519.SH'").fetchone()
+        assert active == (True,)
     with catalog(tmp_path) as conn:
         assert conn.execute("select count(*) from coverage").fetchone() == (1,)
 

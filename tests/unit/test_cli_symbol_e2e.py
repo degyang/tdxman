@@ -36,8 +36,10 @@ def mock_clients():
     def fake_tdx():
         yield tdx
 
-    with patch.object(conn, "get_mac_client", fake_mac), patch.object(
-        conn, "get_tdx_client", fake_tdx
+    with (
+        patch.object(conn, "get_mac_client", fake_mac),
+        patch.object(conn, "get_tdx_client", fake_tdx),
+        patch.object(conn, "get_tdx_quote_client", fake_tdx),
     ):
         yield mac, tdx
 

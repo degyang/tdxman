@@ -173,16 +173,28 @@ def publish_directory(
     ):
         conn.execute("BEGIN")
         try:
-            previous = {
-                r[0]: r[1:]
-                for r in conn.execute(
-                    "SELECT symbol,code,market,name,active FROM securities WHERE asset_type=?",
-                    [asset_type],
+            all_previous = {
+                row[0]: row[1:]
+                for row in conn.execute(
+                    "SELECT symbol,code,market,asset_type,name,active FROM securities"
                 ).fetchall()
             }
+            previous = {
+                symbol: (code, market, name, active)
+                for symbol, (code, market, kind, name, active) in all_previous.items()
+                if kind == asset_type
+            }
+            affected_stock_codes: set[str] = set()
             added = changed = unchanged = 0
             for symbol, (code, market, name) in normalized.items():
                 old = previous.get(symbol)
+                prior = all_previous.get(symbol)
+                if (
+                    prior is not None
+                    and (prior[2] != asset_type or prior[3] != name or not prior[4])
+                    and (prior[2] == "stock" or asset_type == "stock")
+                ):
+                    affected_stock_codes.add(code)
                 current = (code, market, name, True)
                 if old is None:
                     added += 1
@@ -208,9 +220,21 @@ def publish_directory(
                         [observed_at, symbol],
                     )
                     inactive += 1
+                    if asset_type == "stock":
+                        affected_stock_codes.add(old[0])
             from .invalid_securities import enforce_invalid
 
             enforce_invalid(conn, root)
+            from .change_protocol import _stale, observe
+
+            if affected_stock_codes and "coverage" in _tables(conn):
+                placeholders = ",".join("?" for _ in affected_stock_codes)
+                first = conn.execute(
+                    f"SELECT min(start_date) FROM coverage WHERE symbol IN ({placeholders})",
+                    sorted(affected_stock_codes),
+                ).fetchone()[0]
+                _stale(conn, first, "universe_directory_changed")
+            observe(conn, f"universe:{asset_type}")
             conn.execute("COMMIT")
         except BaseException:
             conn.execute("ROLLBACK")

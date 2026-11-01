@@ -128,16 +128,15 @@ def test_unsafe_target(candidate):
         build(source, source / "inside")
 
 
-def test_real_process_recovery_and_locking(candidate, tmp_path):
-    import importlib.util
+def test_real_process_recovery_and_locking(candidate, tmp_path, monkeypatch):
+    import importlib
     import shutil
     from pathlib import Path
 
     script = Path(__file__).parents[2] / "scripts/dg03/bench.py"
-    spec = importlib.util.spec_from_file_location("dg03_bench", script)
-    bench = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(bench)
-    bench.LAB = tmp_path / "process-lab"
+    monkeypatch.syspath_prepend(str(script.parent))
+    bench = importlib.import_module("bench")
+    monkeypatch.setattr(bench, "LAB", tmp_path / "process-lab")
     bench.LAB.mkdir()
     shutil.copytree(candidate[1], bench.LAB / "candidate")
     bench.recovery()
@@ -224,22 +223,17 @@ def test_dated_facts_atomic_with_raw_and_null_precedence(candidate):
         assert c.execute("SELECT count(*) FROM security_daily_facts").fetchone()[0] == 0
 
 
-def test_frozen_public_read_semantics():
-    import ast
-    import inspect
-    import textwrap
-
-    old_source = textwrap.dedent(inspect.getsource(DataPool.read_daily.__wrapped__))
-    new_source = textwrap.dedent(inspect.getsource(CandidatePool.read_daily.__wrapped__))
-    old_start = old_source.index("            frame = conn.execute(")
-    old_end = old_source.index("    frame.attrs.update(", old_start)
-    new_start = new_source.index("            frame = _read_with_overlay(")
-    new_end = new_source.index("    frame.attrs.update(", new_start)
-    # The only allowed difference is SQL-before-Pandas overlay materialization.
-    normalized = new_source[:new_start] + old_source[old_start:old_end] + new_source[new_end:]
-    normalized = normalized.replace("                    fields=selected,\n", "")
-    normalized = normalized.replace("self.storage_type(self.root)", "DailyStorage(self.root)")
-    assert ast.dump(ast.parse(old_source)) == ast.dump(ast.parse(normalized))
+@pytest.mark.parametrize(
+    "query",
+    [
+        {"symbols": "000001.SH", "start": "2025-01-03", "end": "2025-01-06"},
+        {"symbols": ["SH.000001"], "lookback": 2, "fields": ["symbol", "date", "close"]},
+        {"symbols": "999999.SZ", "fields": ["symbol", "date", "amount"]},
+    ],
+)
+def test_public_read_semantics_match_legacy(candidate, query):
+    source, _, pool = candidate
+    pd.testing.assert_frame_equal(DataPool(source).read_daily(**query), pool.read_daily(**query))
 
 
 def test_candidate_public_status_and_etf_routes(candidate):
