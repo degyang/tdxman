@@ -23,6 +23,7 @@ uv.lock
 
 # Local operation evidence and migration recovery, outside runtime data
 /.local/
+/.artifacts/
 
 # Durable publication/migration runtime metadata outside the data root.
 .aspool-state/

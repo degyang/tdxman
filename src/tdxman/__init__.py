@@ -26,6 +26,7 @@ from .ex.client import AsyncExTdxClient, ExTdxClient
 from .ex.mac_client import AsyncMacExClient, MacExClient
 from .ex.models import KNOWN_EX_HOSTS
 from .exceptions import TdxCommandError, TdxConnectionError, TdxDecodeError, TdxError
+from .f10 import F10Client, F10Response, F10Table
 from .mac.client import AsyncMacClient, MacClient
 from .mac.enums import (
     Adjust,
@@ -54,6 +55,7 @@ from .models import (
 )
 from .transport.sync import CALC_HOSTS, KNOWN_HOSTS, MAC_HOSTS, ping_all, ping_mac_all
 from .unified import AsyncUnifiedTdxClient, UnifiedTdxClient
+from .workdays import WorkdayService
 
 __all__ = [
     # 客户端
@@ -65,6 +67,10 @@ __all__ = [
     "AsyncMacExClient",
     "UnifiedTdxClient",
     "AsyncUnifiedTdxClient",
+    "F10Client",
+    "F10Response",
+    "F10Table",
+    "WorkdayService",
     # 枚举
     "Market",
     "KlineCategory",
@@ -107,4 +113,4 @@ __all__ = [
     "save_best_ex_host",
 ]
 
-__version__ = "1.1.2"
+__version__ = "1.1.6"

@@ -1,0 +1,46 @@
+{"name": "provenance", "time": 1790510666.7481031, "git_head": "26f65d1804920ec8156e8c1e8522f50cdc27b1e2", "imports": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/__init__.py", "python": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/.venv/bin/python", "source_hashes": {"src/aspool/dg03_candidate.py": "8a1da7c42f5db81c6e2920f103938afaa5fba6cd496e99f6d55ba2c9fde350e1", "src/aspool/dg03_etf.py": "5549a56d203d0a7ce98e260baa8327c61074ab81091127598e0761e591963ffd", "scripts/dg03/bench.py": "3cde7f666ffc8bb96e88a651ee732fdade04338b4d0cd83c062e767408942ad4"}, "snapshot": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot", "lab": "/home/ubuntu/aspool-labs/dg03-20260927", "candidate": "/home/ubuntu/aspool-labs/dg03-20260927/month-clustered", "manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b", "versions": {"duckdb": "1.5.5", "pandas": "3.0.5", "pyarrow": "25.0.1", "numpy": "2.2.6"}, "memory_limit": "1GB", "threads": 2, "nice": 0, "cache": "OS cache not evicted; raw repeats retained"}
+{"name": "growth_5x_full_market_insert", "time": 1790510714.7384934, "seconds": 46.79555771499872, "maxrss_bytes": 1244684288, "rss_start": 184029184, "rss_end": 211857408, "peak_sampled_rss": 1241243648, "io_delta": {"rchar": 913954056, "wchar": 9633792, "syscr": 3768, "syscw": 91, "read_bytes": 901324800, "write_bytes": 9502720, "cancelled_write_bytes": 9502720}, "disk_before": 10102942109, "disk_after": 10102942109, "peak_sampled_disk": 10109757853, "result": null, "status": "failed", "error": "TransactionException('TransactionContext Error: cannot rollback - no transaction is active')"}
+{"name": "phase_growth-writes", "time": 1790510715.274856, "seconds": 47.57341581900255, "maxrss_bytes": 1244684288, "rss_start": 147734528, "rss_end": 211857408, "peak_sampled_rss": 1191927808, "io_delta": {"rchar": 956450886, "wchar": 9634988, "syscr": 3972, "syscw": 93, "read_bytes": 901324800, "write_bytes": 9510912, "cancelled_write_bytes": 9502720}, "disk_before": 75068590837, "disk_after": 75068592033, "peak_sampled_disk": 75068590837, "result": null, "status": "failed", "error": "TransactionException('TransactionContext Error: cannot rollback - no transaction is active')"}
+Traceback (most recent call last):
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/dg03_candidate.py", line 524, in apply
+    c.execute("COMMIT")
+_duckdb.TransactionException: TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.4 MiB/953.6 MiB used)
+
+Possible solutions:
+* Reducing the number of threads (SET threads=X)
+* Disabling insertion-order preservation (SET preserve_insertion_order=false)
+* Increasing the memory limit (SET memory_limit='...GB')
+
+See also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 1035, in <module>
+    main()
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 1011, in main
+    measured(
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 129, in measured
+    raise failure
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 105, in measured
+    result = fn()
+             ^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 1020, in <lambda>
+    "growth-writes": lambda: growth_writes(args.factor),
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 686, in growth_writes
+    measured(
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 129, in measured
+    raise failure
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 105, in measured
+    result = fn()
+             ^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 688, in <lambda>
+    lambda: pool.apply(market_changes, source="synthetic", reason="whole market next day"),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/dg03_candidate.py", line 345, in apply
+    duckdb.connect(str(self.root / "catalog.duckdb")) as c,
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/dg03_candidate.py", line 531, in apply
+    c.execute("ROLLBACK")
+_duckdb.TransactionException: TransactionContext Error: cannot rollback - no transaction is active

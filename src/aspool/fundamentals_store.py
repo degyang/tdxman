@@ -7,7 +7,7 @@ import json
 import math
 import sqlite3
 import time
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import date, datetime
 from pathlib import Path
 
@@ -109,7 +109,16 @@ def fundamentals_connection(root, *, create=False, read_only=True):
         with path.open("xb"):
             pass
     mode = "ro" if read_only else "rw"
-    conn = sqlite3.connect(path.as_uri() + f"?mode={mode}", uri=True, timeout=30)
+    from .pool import pool_lock
+
+    contexts = ExitStack()
+    contexts.enter_context(pool_lock(root, write=not read_only))
+    try:
+        conn = sqlite3.connect(path.as_uri() + f"?mode={mode}", uri=True, timeout=30)
+    except BaseException:
+        contexts.close()
+        raise
+
     try:
         conn.execute("PRAGMA busy_timeout=30000")
         conn.execute("PRAGMA cache_size=-8192")
@@ -125,6 +134,7 @@ def fundamentals_connection(root, *, create=False, read_only=True):
         yield conn
     finally:
         conn.close()
+        contexts.close()
 
 
 def _source_date(value):
@@ -207,8 +217,15 @@ def write_finance_rows(conn, rows):
     if conn.in_transaction:
         raise ValueError("Writer requires an idle connection")
     columns = [
-        "symbol", "period_end", "source", *FINANCE_FIELDS, "source_hash", "payload_json",
-        "published_at", "fetched_at", "updated_at",
+        "symbol",
+        "period_end",
+        "source",
+        *FINANCE_FIELDS,
+        "source_hash",
+        "payload_json",
+        "published_at",
+        "fetched_at",
+        "updated_at",
     ]
     changed_reports = changed_counts = 0
     stamp = time.time_ns() // 1000
@@ -223,10 +240,12 @@ def write_finance_rows(conn, rows):
             if old is None or old[0] != row["source_hash"]:
                 values = [row.get(name) for name in columns[:-1]] + [stamp]
                 conn.execute(
-                    "INSERT INTO stock_financial_reports(" + ",".join(columns) + ") VALUES ("
-                    + ",".join("?" for _ in columns) + ") ON CONFLICT(symbol,period_end,source) "
-                    "DO UPDATE SET "
-                    + ",".join(f"{name}=excluded.{name}" for name in columns[3:]),
+                    "INSERT INTO stock_financial_reports("
+                    + ",".join(columns)
+                    + ") VALUES ("
+                    + ",".join("?" for _ in columns)
+                    + ") ON CONFLICT(symbol,period_end,source) "
+                    "DO UPDATE SET " + ",".join(f"{name}=excluded.{name}" for name in columns[3:]),
                     values,
                 )
                 changed_reports += 1
@@ -245,9 +264,14 @@ def write_finance_rows(conn, rows):
                         "published_at=excluded.published_at,fetched_at=excluded.fetched_at,"
                         "updated_at=excluded.updated_at",
                         (
-                            row["symbol"], row["period_end"], row["source"],
-                            row["shareholder_count"], row["period_end"], None,
-                            row["fetched_at"], stamp,
+                            row["symbol"],
+                            row["period_end"],
+                            row["source"],
+                            row["shareholder_count"],
+                            row["period_end"],
+                            None,
+                            row["fetched_at"],
+                            stamp,
                         ),
                     )
                     changed_counts += 1
@@ -305,7 +329,16 @@ def _read(root, table, *, symbols=None, start=None, end=None, date_field):
 
 
 def read_financial_reports(root, **kwargs):
-    return _read(root, "stock_financial_reports", date_field="period_end", **kwargs)
+    frame = _read(root, "stock_financial_reports", date_field="period_end", **kwargs)
+    # Existing period_end keys came from source updated_date, not a verified report period.
+    frame["source_updated_date"] = frame["period_end"]
+    frame["report_period_end"] = pd.NaT
+    frame.attrs.update(date_filter_basis="source_updated_date",
+                       legacy_period_end_semantics="source_updated_date",
+                       report_period_status="not_provided", known_at_field="published_at",
+                       shares_unit="share", financial_unit_status="provider_conversion",
+                       missing_announcement_semantics="not_known_at_historical_date")
+    return frame
 
 
 def read_shareholder_counts(root, **kwargs):

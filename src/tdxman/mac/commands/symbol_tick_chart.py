@@ -95,7 +95,13 @@ class SymbolTickChartCmd(BaseCommand[MacTickChart]):
             _industry,
         ) = unpack_from("<44sBHf5x2I5ffIf12s2fI", body, tail_offset, "tick_chart tail")
 
+        try:
+            source_date = date(query_date // 10000, query_date % 10000 // 100, query_date % 100)
+        except ValueError:
+            source_date = None
         return MacTickChart(
+            source_date=source_date,
+            reference_pre_close=ref_price,
             market=market,
             code=code_raw.decode("gbk", errors="ignore").replace("\x00", ""),
             name=name_raw.decode("gbk", errors="ignore").replace("\x00", ""),

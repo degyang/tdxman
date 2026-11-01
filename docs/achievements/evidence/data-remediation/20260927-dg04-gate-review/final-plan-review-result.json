@@ -1,0 +1,25 @@
+{
+  "plan_id": "a3fc2e4e59492c0f97d47dfb14fecf6d7cbce8e0033204feb4471c95e0e81d4b",
+  "plan_file_sha256": "cb5859c122a0d7b73ec53ec7d327ce9e5790e4ba2c6b297999a0b4e68bc271a8",
+  "source": "ddd0c37c09a299c8addaf9e4f09ba6928178079f1ced11f960b463018ab1e44b",
+  "prior_hash": "00aaa72f98803d6cecb5370d478db204675e89342eda36e6e51055764e4a1ec8",
+  "prior_size": 4372,
+  "prior_dates": [
+    "2021-09-23"
+  ],
+  "first": "2021-09-24",
+  "last": "2026-09-24",
+  "days": 1213,
+  "scope": 5586,
+  "checks": {
+    "signature": true,
+    "implementation": true,
+    "recovery": true,
+    "same_scope": true,
+    "same_axis": true,
+    "earliest": true,
+    "all_supplement_dates_on_axis": true,
+    "full_suffix": true,
+    "prior_hash": true
+  }
+}

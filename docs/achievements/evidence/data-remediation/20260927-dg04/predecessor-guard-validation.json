@@ -1,0 +1,38 @@
+{
+  "parent_tested_commit": "a410d735a26b77b72650a6b26930eaea86922080",
+  "code_files": {
+    "src/aspool/remediation.py": "3fed8f0f39d899d74782c4cd4fa209ec2548045c027af01e4da84513278a0d9b",
+    "tests/unit/test_remediation_publication.py": "ab167407bcad8d118627252706105fee5cbf34c51e56d8aa9aa52412bf4eedee"
+  },
+  "implementation": {
+    "files": {
+      "aspool/remediation.py": "3fed8f0f39d899d74782c4cd4fa209ec2548045c027af01e4da84513278a0d9b",
+      "aspool/limit_events.py": "09876515573ac187800a785a9591b750d3edfd59e89f09d0763e46c33a77b380",
+      "aspool/security_facts.py": "3c0bfb466c4f4885d7292f7195fc7ac15a198d104cc17bace934f79a70ee8ec8",
+      "aspool/daily_access.py": "c986d9bb12c08164d9e36d1afd61dc11e43eecf40093610220be6eb74e958e60",
+      "tdxman/codec/price_rules.py": "0598ef85ea7ceca9fb96a1aa6d464139cfd936808dd9b02e846dd7a3683405fe"
+    },
+    "dependencies": {
+      "duckdb": "1.5.5",
+      "pyarrow": "25.0.1",
+      "pandas": "3.0.5"
+    }
+  },
+  "tests": "14 passed in13.24s",
+  "command": ".venv/bin/pytest tests/unit/test_remediation_publication.py -q",
+  "new_cases": [
+    "predecessor height1->99",
+    "gap provenance drift",
+    "prefix stale selection drift",
+    "recursive suspended predecessor height drift"
+  ],
+  "refusal": "before ledger creation/stale/publication/state file",
+  "normal_resume": "affected nonempty references/IPO/gap regression passed",
+  "production_initial_repair": "complete748 rows/594 facts, expected after exact",
+  "base_gap_plan": "/home/ubuntu/aspool-labs/dg04-20260927/production-base-gap-plan.json",
+  "base_gap_plan_sha256": "9dc801e6cec3847ebbc46aa9ce58fd98195338c483a7fe2a4a82861e8a861e44",
+  "base_gap_state": "isolated only, awaiting independent coordinator approval",
+  "conditional_pub_plan": "/home/ubuntu/aspool-labs/dg04-20260927/production-final-publication-plan.json",
+  "conditional_pub_plan_sha256": "cb5859c122a0d7b73ec53ec7d327ce9e5790e4ba2c6b297999a0b4e68bc271a8",
+  "conditional_pub_state": "only after supplement approval and exact actual source match; source/version/recovery and predecessor gates enforced"
+}

@@ -1,0 +1,152 @@
+{
+  "root_tests": {
+    "daily_derived": 9,
+    "daily_summary": 11,
+    "daily_update_and_sync": 20
+  },
+  "auxiliary_tests_reused": {
+    "reference_factors": 17,
+    "commit": "42c778204c9ef7b6e5cc9ea2ec043c0e5982466f",
+    "advance_commit": "61d7c40e9444031197418faa432f129e56043e4c",
+    "advance_new_tests": 6
+  },
+  "real_sample": {
+    "symbols": [
+      "000001.SZ",
+      "300822.SZ",
+      "600519.SH"
+    ],
+    "feature_rows": 13918,
+    "latest_date": "2026-09-24"
+  },
+  "live_update": {
+    "requested_sessions": [
+      "2026-09-23",
+      "2026-09-24"
+    ],
+    "success": [
+      {
+        "symbol": "000001.SZ",
+        "changed_rows": 2,
+        "affected_sessions": [
+          "2026-09-23",
+          "2026-09-24"
+        ],
+        "recomputed_feature_rows": 2,
+        "changed_feature_rows": 2,
+        "summary_rows": 4,
+        "read_rows": 27,
+        "elapsed_ms": 15
+      }
+    ],
+    "empty": [],
+    "failed": [],
+    "unsupported": []
+  },
+  "live_noop": {
+    "requested_sessions": [
+      "2026-09-23",
+      "2026-09-24"
+    ],
+    "success": [
+      {
+        "symbol": "000001.SZ",
+        "changed_rows": 0,
+        "affected_sessions": [],
+        "recomputed_feature_rows": 0,
+        "changed_feature_rows": 0,
+        "summary_rows": 0,
+        "read_rows": 0,
+        "elapsed_ms": 4
+      }
+    ],
+    "empty": [],
+    "failed": [],
+    "unsupported": []
+  },
+  "real_backfill": {
+    "changed_rows": 1,
+    "affected_sessions": [
+      "2026-09-23",
+      "2026-09-24"
+    ],
+    "recomputed_feature_rows": 2,
+    "changed_feature_rows": 2,
+    "summary_rows": 4,
+    "read_rows": 27,
+    "elapsed_ms": 6,
+    "restored_all_feature_values": true,
+    "symbol": "300822.SZ",
+    "repaired_date": "2026-09-23"
+  },
+  "full_derivation_status": "complete and verified; see 20260928-derived-result.json",
+  "production_switched": false,
+  "limits": [
+    "Historical dated ST gaps remain UNKNOWN.",
+    "Source factor coverage is not extended without new evidence.",
+    "New writer currently handles D summaries; existing intersecting W/M results cause atomic rejection.",
+    "BaoStock fetch supports SH/SZ; BJ reported unsupported.",
+    "An edited close that feeds an event-derived factor requires explicit factor maintenance; the daily writer rejects and rolls back."
+  ],
+  "hot_update_benchmark": {
+    "source": "/mnt/d/workstation/services/tdxman/data/_staging/fw02",
+    "target": "/mnt/d/workstation/services/tdxman/data/_reports/fw03-main/market-sample",
+    "synthetic_target": true,
+    "symbols": 500,
+    "input_rows": 2500,
+    "window": [
+      "2026-09-18",
+      "2026-09-21",
+      "2026-09-22",
+      "2026-09-23",
+      "2026-09-24"
+    ],
+    "copy_seconds": 53.986,
+    "update": {
+      "changed_rows": 2500,
+      "affected_sessions": [
+        "2026-09-18",
+        "2026-09-21",
+        "2026-09-22",
+        "2026-09-23",
+        "2026-09-24"
+      ],
+      "recomputed_feature_rows": 2500,
+      "changed_feature_rows": 2500,
+      "summary_rows": 10,
+      "read_rows": 39835,
+      "elapsed_ms": 10122
+    },
+    "repeat": {
+      "changed_rows": 0,
+      "affected_sessions": [],
+      "recomputed_feature_rows": 0,
+      "changed_feature_rows": 0,
+      "summary_rows": 0,
+      "read_rows": 0,
+      "elapsed_ms": 71
+    },
+    "max_rss_kib": 418304,
+    "disposable_target_removed": true
+  },
+  "daily_factor_tail_integration": "passed: empty interval, ex-date, rollback, source gating and TDX units",
+  "calendar_refresh": "passed: bounded, no-op, contradictory history rollback",
+  "live_new_session_probe": {
+    "requested_sessions": [
+      "2026-09-28"
+    ],
+    "success": [],
+    "empty": [
+      "000001.SZ"
+    ],
+    "failed": [],
+    "unsupported": [],
+    "factor_unavailable": [],
+    "calendar": {
+      "changed_dates": 3,
+      "start": "2026-09-25",
+      "end": "2026-09-28"
+    }
+  },
+  "live_new_session_note": "2026-09-25 confirmed closed; 2026-09-28 confirmed open but BaoStock returned empty. No new bar or factor written. New-day calculation proven by deterministic integration tests, not this empty live response."
+}

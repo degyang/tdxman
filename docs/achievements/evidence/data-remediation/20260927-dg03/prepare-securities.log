@@ -1,0 +1,23 @@
+{"name": "provenance", "time": 1790508033.2839444, "git_head": "88275cb75c28649c6584176d39fe1a1f16e73ad1", "imports": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/__init__.py", "python": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/.venv/bin/python", "source_hashes": {"src/aspool/dg03_candidate.py": "2bc432e582f3993e06629d708633dcba34e3ac75655cb845c0db0973b9cd411d", "src/aspool/dg03_etf.py": "5549a56d203d0a7ce98e260baa8327c61074ab81091127598e0761e591963ffd", "scripts/dg03/bench.py": "e7c1db7c0d838f2ae16c4e28d3d38acb8bcc6a2c32aa068a4d85f837235448b9"}, "snapshot": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot", "lab": "/home/ubuntu/aspool-labs/dg03-20260927", "candidate": "/home/ubuntu/aspool-labs/dg03-20260927/month-clustered", "manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b", "versions": {"duckdb": "1.5.5", "pandas": "3.0.5", "pyarrow": "25.0.1", "numpy": "2.2.6"}, "memory_limit": "1GB", "threads": 1, "nice": 19, "cache": "OS cache not evicted; raw repeats retained"}
+{"name": "prepare_securities_copy", "time": 1790508039.063703, "seconds": 5.220758126000874, "maxrss_bytes": 154873856, "rss_start": 146866176, "rss_end": 154132480, "peak_sampled_rss": 154873856, "io_delta": {"rchar": 4881370028, "wchar": 4881295773, "syscr": 13015, "syscw": 12912, "read_bytes": 484216832, "write_bytes": 4894511104, "cancelled_write_bytes": 0}, "disk_before": 0, "disk_after": 4881295773, "peak_sampled_disk": 4881007180, "result": null, "status": "passed", "error": null}
+{"name": "prepare_more_securities", "time": 1790508088.4134696, "seconds": 48.202688362995104, "maxrss_bytes": 1224753152, "rss_start": 250834944, "rss_end": 1220050944, "peak_sampled_rss": 1224753152, "io_delta": {"rchar": 1508290558, "wchar": 1898188800, "syscr": 8103, "syscw": 7242, "read_bytes": 3932160, "write_bytes": 1898188800, "cancelled_write_bytes": 0}, "disk_before": 4881295773, "disk_after": 4875790749, "peak_sampled_disk": 4881295773, "result": [17862387], "status": "passed", "error": null}
+{"name": "phase_prepare-securities", "time": 1790508089.2035756, "seconds": 55.48225279199687, "maxrss_bytes": 1224753152, "rss_start": 146866176, "rss_end": 180097024, "peak_sampled_rss": 1224753152, "io_delta": {"rchar": 6490111649, "wchar": 6779486577, "syscr": 21571, "syscw": 20158, "read_bytes": 492204032, "write_bytes": 6792716288, "cancelled_write_bytes": 0}, "disk_before": 23275978536, "disk_after": 28151771289, "peak_sampled_disk": 28157275295, "result": null, "status": "failed", "error": "ConstraintException('Constraint Error: PRIMARY KEY or UNIQUE constraint violation: duplicate key \"800001\"')"}
+Traceback (most recent call last):
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 994, in <module>
+    parser.add_argument("--factor", type=int, choices=[1, 2, 5])
+    ^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 971, in main
+    
+    
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 129, in measured
+    raise failure
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 105, in measured
+    result = fn()
+             ^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 674, in prepare_securities
+    f"growth_{factor}x_update_{cycle}",
+ ^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 693, in prepare_securities
+    profile(
+^^^^^^^^^^^^
+_duckdb.ConstraintException: Constraint Error: PRIMARY KEY or UNIQUE constraint violation: duplicate key "800001"

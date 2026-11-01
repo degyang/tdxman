@@ -1,0 +1,72 @@
+{
+  "status": "verified",
+  "database_bytes": 434597888,
+  "symbols": 865,
+  "migrated_rows": 2571034,
+  "rows": 2571899,
+  "added": 865,
+  "revised": 4308,
+  "unchanged": 0,
+  "last": "2026-09-28",
+  "minimum_overlap": "2026-06-24",
+  "cold_history_samples": [
+    "000001.SH",
+    "000300.SH",
+    "399001.SZ",
+    "399006.SZ",
+    "881165.SH"
+  ],
+  "query_plan": [
+    [
+      4,
+      0,
+      104,
+      "SEARCH daily_bars USING PRIMARY KEY (symbol=? AND trade_date<?)"
+    ]
+  ],
+  "public_today_rows": 865,
+  "index_groups": {
+    "ZS": 13,
+    "HY": 128,
+    "HY2": 345,
+    "GN": 269,
+    "FG": 146
+  },
+  "date": "2026-09-28",
+  "database": "data/indices.sqlite",
+  "sync_report": ".local/reports/index-sync/593d4bcb4e7a48b296d919b762cfe635.json",
+  "recovery": ".local/recovery/20260928-indices-sqlite/",
+  "historical_verification": "All source values compared in bounded batches; source SHA verified; integrity_check=ok",
+  "migration_peak_rss_kib": 329496,
+  "sync_peak_rss_kib": 163148,
+  "sync_seconds": 12.78,
+  "archive_resume": "Initial directory rename failed; verified installed database SHA before successful archive retry",
+  "tests": {
+    "new_regressions": 8,
+    "existing_related_regressions": 52
+  },
+  "noop": {
+    "market": "SH",
+    "code": "000001",
+    "added": 0,
+    "changed": 0,
+    "unchanged": 5
+  },
+  "regime": {
+    "session_date": "2026-09-28",
+    "score_model": "tickflow_regime_adapted_v1",
+    "score": 11,
+    "score_unrounded": 11.2,
+    "state": "weak",
+    "score_input_quality": "complete",
+    "profit_score": 0.0,
+    "speculation_score": 34.8,
+    "resilience_score": 0.0,
+    "trend_score": 12.5
+  },
+  "regime_artifact": ".local/reports/execution-20260928-indices/fundwise/regime-55b5d103380341be8ea8f86aea54a635/report.json",
+  "not_performed": [
+    "Fundwise automatic scheduler/cache refresh",
+    "Jakarta full data copy"
+  ]
+}

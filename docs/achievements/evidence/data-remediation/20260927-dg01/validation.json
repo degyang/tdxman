@@ -1,0 +1,73 @@
+{
+  "observed_at": "2026-09-27T06:07:47.955301+00:00",
+  "branch": "degyang/aspool-dg00-contract",
+  "initial_base": "5083dbbd843711772be2fec4128f5a68fda35293",
+  "dg00_commit": "6cc4fd9622656a23c92fbf4e1fdbce76bb4922f5",
+  "code_sha256": {
+    "src/aspool/change_observation.py": "8793e32c6f98574eb5304a82db7e0174ef5882111f5ab13295cc426533dcf5ea",
+    "src/aspool/daily_storage.py": "bbe63689746c3df79c8936f4fe663a643db78bfe9314f1971238c1e5880eaa50",
+    "src/aspool/enrichment.py": "8c2cbd16c23ca05e130ecfcdea4bc027f94b53997500ac254428a5d964462514",
+    "src/aspool/free_stockdb.py": "0c3fcadc4e538ad9d41cb754880b51934670ebdd101a49e0c340597445cd762d",
+    "src/aspool/tdx_online.py": "94b020eeb861fcdf545a3d50c4f3aa47ff50077f45086db3100d4ad3105631e1",
+    "scripts/aspool_verify_baseline.py": "fdea58e867046baf829623181c41568fd7371502f65d934c80e0b051d0cca2e7",
+    "scripts/aspool_delta_probe.py": "42b82bd9a1e97e8b9b8009ba4a857364a83fda6c780e99c87a3e7379fef272f2",
+    "tests/unit/test_daily_remediation.py": "cb399f8560196d7a2170b4f9711ca96443cb22cdee9db2e96d15d0078bd4a78f"
+  },
+  "unit_suite": {
+    "command": ".venv/bin/pytest tests/unit/ -q",
+    "passed": 542,
+    "failed": 4,
+    "skipped": 2,
+    "subtests_passed": 17,
+    "elapsed_seconds": 34.97,
+    "log": "unit-suite.txt"
+  },
+  "new_regressions": {
+    "module": "tests/unit/test_daily_remediation.py",
+    "passed": 11
+  },
+  "baseline_failures": {
+    "reproduced_at": "5083dbb",
+    "log": "baseline-failures.txt",
+    "tests": [
+      "test_stock_default_still_uses_existing_pipeline",
+      "TestComputePriceLimits.test_main_board_st",
+      "TestSampleData.test_single_day_samples / ST stock sample",
+      "test_compute_price_limits_for_stocks"
+    ]
+  },
+  "lint": {
+    "scope": [
+      "src/aspool/change_observation.py",
+      "src/aspool/daily_storage.py",
+      "src/aspool/enrichment.py",
+      "src/aspool/free_stockdb.py",
+      "src/aspool/tdx_online.py",
+      "scripts/aspool_verify_baseline.py",
+      "scripts/aspool_delta_probe.py",
+      "tests/unit/test_daily_remediation.py"
+    ],
+    "result": "passed"
+  },
+  "format": {
+    "scope": [
+      "src/aspool/change_observation.py",
+      "scripts/aspool_verify_baseline.py",
+      "scripts/aspool_delta_probe.py",
+      "tests/unit/test_daily_remediation.py"
+    ],
+    "result": "passed",
+    "note": "Existing file formatting outside changed sections preserved."
+  },
+  "real_data_probe": "delta-probe.json",
+  "production_mutations": false,
+  "not_validated": [
+    "five-year RSS acceptance rerun",
+    "network supplementation",
+    "production stale repair",
+    "transactional recovery journal",
+    "full DG-01 acceptance",
+    "DG-02+ storage migration"
+  ],
+  "result": "scoped changes validated; full suite has four reproduced baseline failures; DG-01 remains partial"
+}

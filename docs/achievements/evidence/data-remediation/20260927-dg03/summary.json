@@ -1,0 +1,3411 @@
+{
+  "input_sha256": "a4270d45580d48ce50c45572cbc2f94c3050e2e07e4f28a946bd60a9ade0b159",
+  "public_samples": {
+    "facts_1x_bounded_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.199927033005224,
+        1.176986359001603,
+        1.1360728250001557
+      ],
+      "median_seconds": 1.176986359001603,
+      "api_seconds": [
+        0.8497846590034897,
+        0.8145071309991181,
+        0.7668519709986867
+      ],
+      "median_api_seconds": 0.8145071309991181,
+      "peak_sampled_rss": 1144270848,
+      "maxrss_process_highwater": 1315450880,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "facts_1x_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.2892151630003355,
+        1.1889271499967435,
+        1.1256883469977765
+      ],
+      "median_seconds": 1.1889271499967435,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 1.1889271499967435,
+      "peak_sampled_rss": 828231680,
+      "maxrss_process_highwater": 1292320768,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "facts_2x_bounded_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.1569473519994062,
+        1.1313885590061545,
+        1.154943645997264
+      ],
+      "median_seconds": 1.154943645997264,
+      "api_seconds": [
+        0.8093440040029236,
+        0.7888961499993457,
+        0.7787891089974437
+      ],
+      "median_api_seconds": 0.7888961499993457,
+      "peak_sampled_rss": 1102233600,
+      "maxrss_process_highwater": 1315450880,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "facts_2x_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.2045050890010316,
+        1.1991550399980042,
+        1.174091736000264
+      ],
+      "median_seconds": 1.1991550399980042,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 1.1991550399980042,
+      "peak_sampled_rss": 869425152,
+      "maxrss_process_highwater": 1319632896,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "facts_5x_bounded_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.1333824660032406,
+        1.1229230669996468,
+        1.115277180004341
+      ],
+      "median_seconds": 1.1229230669996468,
+      "api_seconds": [
+        0.8030313959970954,
+        0.7701966199965682,
+        0.7718530560014187
+      ],
+      "median_api_seconds": 0.7718530560014187,
+      "peak_sampled_rss": 1099755520,
+      "maxrss_process_highwater": 1315450880,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "facts_5x_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.2737032549994183,
+        1.219605889004015,
+        1.1545966280027642
+      ],
+      "median_seconds": 1.219605889004015,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 1.219605889004015,
+      "peak_sampled_rss": 1147854848,
+      "maxrss_process_highwater": 1320091648,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "growth_1x_bounded_public_single_history": {
+      "n": 3,
+      "seconds": [
+        2.4726420160004636,
+        0.7888229540039902,
+        0.7429584460041951
+      ],
+      "median_seconds": 0.7888229540039902,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 0.7888229540039902,
+      "peak_sampled_rss": 706416640,
+      "maxrss_process_highwater": 758484992,
+      "rows": [
+        6318,
+        6318,
+        6318
+      ]
+    },
+    "growth_1x_public_60_natural_days": {
+      "n": 3,
+      "seconds": [
+        0.867695900000399,
+        0.8242469760007225,
+        0.8151554500000202
+      ],
+      "median_seconds": 0.8242469760007225,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 0.8242469760007225,
+      "peak_sampled_rss": 473436160,
+      "maxrss_process_highwater": 1262301184,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "growth_1x_public_day": {
+      "n": 3,
+      "seconds": [
+        0.0995408039962058,
+        0.09548435200122185,
+        0.10062184900016291
+      ],
+      "median_seconds": 0.0995408039962058,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 0.0995408039962058,
+      "peak_sampled_rss": 202510336,
+      "maxrss_process_highwater": 1262301184,
+      "rows": [
+        5570,
+        5570,
+        5570
+      ]
+    },
+    "growth_1x_public_single_history": {
+      "n": 3,
+      "seconds": [
+        0.73752058899845,
+        0.7513271499992697,
+        0.7415363870022702
+      ],
+      "median_seconds": 0.7415363870022702,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 0.7415363870022702,
+      "peak_sampled_rss": 765300736,
+      "maxrss_process_highwater": 1262301184,
+      "rows": [
+        6318,
+        6318,
+        6318
+      ]
+    },
+    "growth_2x_bounded_public_single_history": {
+      "n": 3,
+      "seconds": [
+        4.5971085090059205,
+        1.5244682809934602,
+        1.30704999199952
+      ],
+      "median_seconds": 1.5244682809934602,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 1.5244682809934602,
+      "peak_sampled_rss": 757886976,
+      "maxrss_process_highwater": 795803648,
+      "rows": [
+        12636,
+        12636,
+        12636
+      ]
+    },
+    "growth_2x_public_60_natural_days": {
+      "n": 3,
+      "seconds": [
+        0.8665693820003071,
+        0.8511214359969017,
+        0.7618418889978784
+      ],
+      "median_seconds": 0.8511214359969017,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 0.8511214359969017,
+      "peak_sampled_rss": 902549504,
+      "maxrss_process_highwater": 1280286720,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "growth_2x_public_day": {
+      "n": 3,
+      "seconds": [
+        0.13024544000654714,
+        0.09395809999841731,
+        0.08401480099564651
+      ],
+      "median_seconds": 0.09395809999841731,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 0.09395809999841731,
+      "peak_sampled_rss": 250355712,
+      "maxrss_process_highwater": 1280286720,
+      "rows": [
+        5570,
+        5570,
+        5570
+      ]
+    },
+    "growth_2x_public_single_history": {
+      "n": 3,
+      "seconds": [
+        1.4025205360012478,
+        1.3745796010043705,
+        1.3526347449951572
+      ],
+      "median_seconds": 1.3745796010043705,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 1.3745796010043705,
+      "peak_sampled_rss": 894390272,
+      "maxrss_process_highwater": 1280286720,
+      "rows": [
+        12636,
+        12636,
+        12636
+      ]
+    },
+    "growth_5x_bounded_public_single_history": {
+      "n": 3,
+      "seconds": [
+        6.638659276002727,
+        2.0171000810005353,
+        2.098650899999484
+      ],
+      "median_seconds": 2.098650899999484,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 2.098650899999484,
+      "peak_sampled_rss": 797057024,
+      "maxrss_process_highwater": 845152256,
+      "rows": [
+        31590,
+        31590,
+        31590
+      ]
+    },
+    "growth_5x_public_60_natural_days": {
+      "n": 3,
+      "seconds": [
+        0.8469416989973979,
+        0.8358386239997344,
+        0.796271416998934
+      ],
+      "median_seconds": 0.8358386239997344,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 0.8358386239997344,
+      "peak_sampled_rss": 666124288,
+      "maxrss_process_highwater": 1381601280,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "growth_5x_public_day": {
+      "n": 3,
+      "seconds": [
+        0.11757736999425106,
+        0.10999065000214614,
+        0.12493705700035207
+      ],
+      "median_seconds": 0.11757736999425106,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 0.11757736999425106,
+      "peak_sampled_rss": 285560832,
+      "maxrss_process_highwater": 1381601280,
+      "rows": [
+        5570,
+        5570,
+        5570
+      ]
+    },
+    "monthly_1x_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.4558922109936248,
+        1.600646457001858,
+        1.6195784029987408
+      ],
+      "median_seconds": 1.600646457001858,
+      "api_seconds": [
+        1.033959505999519,
+        1.2311692299990682,
+        1.2365266350025195
+      ],
+      "median_api_seconds": 1.2311692299990682,
+      "peak_sampled_rss": 1150504960,
+      "maxrss_process_highwater": 1223630848,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "monthly_1x_public_60days_threads2": {
+      "n": 3,
+      "seconds": [
+        1.2108414989997982,
+        1.2236376000000746,
+        1.1588837930030422
+      ],
+      "median_seconds": 1.2108414989997982,
+      "api_seconds": [
+        0.8211940949986456,
+        0.8690557349982555,
+        0.820678334996046
+      ],
+      "median_api_seconds": 0.8211940949986456,
+      "peak_sampled_rss": 606027776,
+      "maxrss_process_highwater": 1246232576,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "monthly_1x_public_day": {
+      "n": 3,
+      "seconds": [
+        0.14353325800038874,
+        0.14490440699592,
+        0.14301421400159597
+      ],
+      "median_seconds": 0.14353325800038874,
+      "api_seconds": [
+        0.10995106100017438,
+        0.11879336699348642,
+        0.11506603300222196
+      ],
+      "median_api_seconds": 0.11506603300222196,
+      "peak_sampled_rss": 221954048,
+      "maxrss_process_highwater": 233816064,
+      "rows": [
+        5570,
+        5570,
+        5570
+      ]
+    },
+    "monthly_1x_public_day_threads2": {
+      "n": 3,
+      "seconds": [
+        0.15503906999947503,
+        0.14040795899927616,
+        0.1171016430016607
+      ],
+      "median_seconds": 0.14040795899927616,
+      "api_seconds": [
+        0.10966942200320773,
+        0.10743701899627922,
+        0.08138962999510113
+      ],
+      "median_api_seconds": 0.10743701899627922,
+      "peak_sampled_rss": 221761536,
+      "maxrss_process_highwater": 234721280,
+      "rows": [
+        5570,
+        5570,
+        5570
+      ]
+    },
+    "monthly_1x_public_single": {
+      "n": 3,
+      "seconds": [
+        7.105004092001764,
+        7.419347226001264,
+        6.994848315996933
+      ],
+      "median_seconds": 7.105004092001764,
+      "api_seconds": [
+        7.064221316002659,
+        7.392680738994386,
+        6.966031485993881
+      ],
+      "median_api_seconds": 7.064221316002659,
+      "peak_sampled_rss": 518713344,
+      "maxrss_process_highwater": 1223630848,
+      "rows": [
+        6318,
+        6318,
+        6318
+      ]
+    },
+    "monthly_1x_public_single_bounded": {
+      "n": 3,
+      "seconds": [
+        2.134698654001113,
+        2.2575839350029128,
+        2.2608383580009104
+      ],
+      "median_seconds": 2.2575839350029128,
+      "api_seconds": [
+        2.1095822700008284,
+        2.2283362800008035,
+        2.2188598240027204
+      ],
+      "median_api_seconds": 2.2188598240027204,
+      "peak_sampled_rss": 269389824,
+      "maxrss_process_highwater": 749469696,
+      "rows": [
+        6318,
+        6318,
+        6318
+      ]
+    },
+    "monthly_1x_public_single_threads2": {
+      "n": 3,
+      "seconds": [
+        1.7384498359970166,
+        1.244670218002284,
+        1.2333847760019125
+      ],
+      "median_seconds": 1.244670218002284,
+      "api_seconds": [
+        1.7065758150056354,
+        1.2135484329992323,
+        1.2076959730038652
+      ],
+      "median_api_seconds": 1.2135484329992323,
+      "peak_sampled_rss": 251932672,
+      "maxrss_process_highwater": 750444544,
+      "rows": [
+        6318,
+        6318,
+        6318
+      ]
+    },
+    "monthly_2x_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.2108041769970441,
+        1.1321633090046817,
+        1.1677825110018603
+      ],
+      "median_seconds": 1.1677825110018603,
+      "api_seconds": [
+        0.859010155996657,
+        0.7918646539983456,
+        0.806615558998601
+      ],
+      "median_api_seconds": 0.806615558998601,
+      "peak_sampled_rss": 604352512,
+      "maxrss_process_highwater": 1245433856,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "monthly_2x_public_day": {
+      "n": 3,
+      "seconds": [
+        0.14407561199914198,
+        0.1423140860060812,
+        0.12709891599661205
+      ],
+      "median_seconds": 0.1423140860060812,
+      "api_seconds": [
+        0.10912403999827802,
+        0.08633228699909523,
+        0.09494643899961375
+      ],
+      "median_api_seconds": 0.09494643899961375,
+      "peak_sampled_rss": 216387584,
+      "maxrss_process_highwater": 235741184,
+      "rows": [
+        5570,
+        5570,
+        5570
+      ]
+    },
+    "monthly_2x_public_single": {
+      "n": 3,
+      "seconds": [
+        2.3208162780065322,
+        2.135095135003212,
+        2.2040516799970646
+      ],
+      "median_seconds": 2.2040516799970646,
+      "api_seconds": [
+        2.296065448994341,
+        2.100056225004664,
+        2.1724252970016096
+      ],
+      "median_api_seconds": 2.1724252970016096,
+      "peak_sampled_rss": 418668544,
+      "maxrss_process_highwater": 1245433856,
+      "rows": [
+        12636,
+        12636,
+        12636
+      ]
+    },
+    "monthly_5x_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.339057427001535,
+        1.2332437279983424,
+        1.1866269780002767
+      ],
+      "median_seconds": 1.2332437279983424,
+      "api_seconds": [
+        0.9743261219991837,
+        0.8654057919993647,
+        0.8250551909950445
+      ],
+      "median_api_seconds": 0.8654057919993647,
+      "peak_sampled_rss": 603697152,
+      "maxrss_process_highwater": 1262747648,
+      "rows": [
+        243936,
+        243936,
+        243936
+      ]
+    },
+    "monthly_5x_public_day": {
+      "n": 3,
+      "seconds": [
+        0.1546864080009982,
+        0.1243873839994194,
+        0.12101964599423809
+      ],
+      "median_seconds": 0.1243873839994194,
+      "api_seconds": [
+        0.10481730199535377,
+        0.09102527100185398,
+        0.0827423259979696
+      ],
+      "median_api_seconds": 0.09102527100185398,
+      "peak_sampled_rss": 199852032,
+      "maxrss_process_highwater": 241729536,
+      "rows": [
+        5570,
+        5570,
+        5570
+      ]
+    },
+    "monthly_5x_public_single": {
+      "n": 3,
+      "seconds": [
+        7.51555548000033,
+        6.190753312999732,
+        6.0782481740025105
+      ],
+      "median_seconds": 6.190753312999732,
+      "api_seconds": [
+        7.460547864997352,
+        6.1337782940026955,
+        6.032536171995162
+      ],
+      "median_api_seconds": 6.1337782940026955,
+      "peak_sampled_rss": 475578368,
+      "maxrss_process_highwater": 1262747648,
+      "rows": [
+        31590,
+        31590,
+        31590
+      ]
+    },
+    "more_securities_public_60days": {
+      "n": 3,
+      "seconds": [
+        1.7941079910015105,
+        1.7024555090029025,
+        1.7195392020003055
+      ],
+      "median_seconds": 1.7195392020003055,
+      "api_seconds": [
+        null,
+        null,
+        null
+      ],
+      "median_api_seconds": 1.7195392020003055,
+      "peak_sampled_rss": 1580691456,
+      "maxrss_process_highwater": 1805971456,
+      "rows": [
+        487872,
+        487872,
+        487872
+      ]
+    }
+  },
+  "failures": [
+    {
+      "name": "prepare_5x_add_2",
+      "time": 1790507999.528629,
+      "seconds": 50.56033087600372,
+      "maxrss_bytes": 1226817536,
+      "rss_start": 170758144,
+      "rss_end": 1223655424,
+      "peak_sampled_rss": 1226817536,
+      "io_delta": {
+        "rchar": 1909240417,
+        "wchar": 1430257664,
+        "syscr": 9810,
+        "syscw": 5456,
+        "read_bytes": 3067904,
+        "write_bytes": 1430257664,
+        "cancelled_write_bytes": 0
+      },
+      "disk_before": 4645890626,
+      "disk_after": 6055438914,
+      "peak_sampled_disk": 6055438914,
+      "result": null,
+      "status": "failed",
+      "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.5 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"
+    },
+    {
+      "name": "phase_prepare-growth",
+      "time": 1790507999.7488387,
+      "seconds": 56.25906761999795,
+      "maxrss_bytes": 1226817536,
+      "rss_start": 146849792,
+      "rss_end": 172912640,
+      "peak_sampled_rss": 1226817536,
+      "io_delta": {
+        "rchar": 6562838365,
+        "wchar": 6076151116,
+        "syscr": 22887,
+        "syscw": 18373,
+        "read_bytes": 211070976,
+        "write_bytes": 6089388032,
+        "cancelled_write_bytes": 0
+      },
+      "disk_before": 17220530787,
+      "disk_after": 23275972527,
+      "peak_sampled_disk": 23275970673,
+      "result": null,
+      "status": "failed",
+      "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.5 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"
+    },
+    {
+      "name": "phase_prepare-securities",
+      "time": 1790508089.2035756,
+      "seconds": 55.48225279199687,
+      "maxrss_bytes": 1224753152,
+      "rss_start": 146866176,
+      "rss_end": 180097024,
+      "peak_sampled_rss": 1224753152,
+      "io_delta": {
+        "rchar": 6490111649,
+        "wchar": 6779486577,
+        "syscr": 21571,
+        "syscw": 20158,
+        "read_bytes": 492204032,
+        "write_bytes": 6792716288,
+        "cancelled_write_bytes": 0
+      },
+      "disk_before": 23275978536,
+      "disk_after": 28151771289,
+      "peak_sampled_disk": 28157275295,
+      "result": null,
+      "status": "failed",
+      "error": "ConstraintException('Constraint Error: PRIMARY KEY or UNIQUE constraint violation: duplicate key \"800001\"')"
+    },
+    {
+      "name": "prepare_5x_add_3_year_2022",
+      "time": 1790508632.782184,
+      "seconds": 12.512194839997392,
+      "maxrss_bytes": 1197989888,
+      "rss_start": 168415232,
+      "rss_end": 167129088,
+      "peak_sampled_rss": 1195040768,
+      "io_delta": {
+        "rchar": 965493004,
+        "wchar": 124583936,
+        "syscr": 4310,
+        "syscw": 477,
+        "read_bytes": 847872,
+        "write_bytes": 124583936,
+        "cancelled_write_bytes": 589824
+      },
+      "disk_before": 8345528942,
+      "disk_after": 8345528942,
+      "peak_sampled_disk": 8345528942,
+      "result": null,
+      "status": "failed",
+      "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.5 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"
+    },
+    {
+      "name": "phase_prepare-growth",
+      "time": 1790508632.9824588,
+      "seconds": 506.2657106500046,
+      "maxrss_bytes": 1197989888,
+      "rss_start": 146608128,
+      "rss_end": 167129088,
+      "peak_sampled_rss": 1196646400,
+      "io_delta": {
+        "rchar": 25252552591,
+        "wchar": 24251847988,
+        "syscr": 117111,
+        "syscw": 92809,
+        "read_bytes": 481419264,
+        "write_bytes": 24252190720,
+        "cancelled_write_bytes": 589824
+      },
+      "disk_before": 28151775713,
+      "disk_after": 30441923813,
+      "peak_sampled_disk": 30441921939,
+      "result": null,
+      "status": "failed",
+      "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.5 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"
+    },
+    {
+      "name": "growth_5x_public_single_history_0",
+      "time": 1790510174.1319609,
+      "seconds": 1.9268985360031365,
+      "maxrss_bytes": 1381601280,
+      "rss_start": 375001088,
+      "rss_end": 342339584,
+      "peak_sampled_rss": 887693312,
+      "io_delta": {
+        "rchar": 5241327094,
+        "wchar": 2916352,
+        "syscr": 20020,
+        "syscw": 13,
+        "read_bytes": 2506752,
+        "write_bytes": 2916352,
+        "cancelled_write_bytes": 2916352
+      },
+      "disk_before": 10102942109,
+      "disk_after": 10102942109,
+      "peak_sampled_disk": 10102942109,
+      "result": null,
+      "status": "failed",
+      "error": "DataPoolError(\"Out of Memory Error: failed to pin block of size 256.0 KiB (488.0 MiB/488.2 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"
+    },
+    {
+      "name": "phase_growth-samples",
+      "time": 1790510174.553287,
+      "seconds": 39.05998590300442,
+      "maxrss_bytes": 1381601280,
+      "rss_start": 147120128,
+      "rss_end": 342667264,
+      "peak_sampled_rss": 1361285120,
+      "io_delta": {
+        "rchar": 27719361946,
+        "wchar": 10105950969,
+        "syscr": 80758,
+        "syscw": 12967,
+        "read_bytes": 14411354112,
+        "write_bytes": 10119204864,
+        "cancelled_write_bytes": 2920448
+      },
+      "disk_before": 64964901596,
+      "disk_after": 75067936209,
+      "peak_sampled_disk": 75067932937,
+      "result": null,
+      "status": "failed",
+      "error": "DataPoolError(\"Out of Memory Error: failed to pin block of size 256.0 KiB (488.0 MiB/488.2 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"
+    },
+    {
+      "name": "growth_5x_full_market_insert",
+      "time": 1790510714.7384934,
+      "seconds": 46.79555771499872,
+      "maxrss_bytes": 1244684288,
+      "rss_start": 184029184,
+      "rss_end": 211857408,
+      "peak_sampled_rss": 1241243648,
+      "io_delta": {
+        "rchar": 913954056,
+        "wchar": 9633792,
+        "syscr": 3768,
+        "syscw": 91,
+        "read_bytes": 901324800,
+        "write_bytes": 9502720,
+        "cancelled_write_bytes": 9502720
+      },
+      "disk_before": 10102942109,
+      "disk_after": 10102942109,
+      "peak_sampled_disk": 10109757853,
+      "result": null,
+      "status": "failed",
+      "error": "TransactionException('TransactionContext Error: cannot rollback - no transaction is active')"
+    },
+    {
+      "name": "phase_growth-writes",
+      "time": 1790510715.274856,
+      "seconds": 47.57341581900255,
+      "maxrss_bytes": 1244684288,
+      "rss_start": 147734528,
+      "rss_end": 211857408,
+      "peak_sampled_rss": 1191927808,
+      "io_delta": {
+        "rchar": 956450886,
+        "wchar": 9634988,
+        "syscr": 3972,
+        "syscw": 93,
+        "read_bytes": 901324800,
+        "write_bytes": 9510912,
+        "cancelled_write_bytes": 9502720
+      },
+      "disk_before": 75068590837,
+      "disk_after": 75068592033,
+      "peak_sampled_disk": 75068590837,
+      "result": null,
+      "status": "failed",
+      "error": "TransactionException('TransactionContext Error: cannot rollback - no transaction is active')"
+    },
+    {
+      "name": "native_5x_one_thread_fullmarket",
+      "time": 1790514058.5073495,
+      "seconds": 65.65971731199534,
+      "maxrss_bytes": 1231499264,
+      "rss_start": 170295296,
+      "rss_end": 199856128,
+      "peak_sampled_rss": 1221238784,
+      "io_delta": {
+        "rchar": 916654728,
+        "wchar": 14647296,
+        "syscr": 5156,
+        "syscw": 101,
+        "read_bytes": 922124288,
+        "write_bytes": 14123008,
+        "cancelled_write_bytes": 14123008
+      },
+      "disk_before": 10102942109,
+      "disk_after": 10102942109,
+      "peak_sampled_disk": 10105235869,
+      "result": null,
+      "status": "failed",
+      "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.4 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"
+    },
+    {
+      "name": "phase_native_one_thread_counterfactual",
+      "time": 1790514059.6529362,
+      "seconds": 67.21952222099935,
+      "maxrss_bytes": 1231499264,
+      "rss_start": 144699392,
+      "rss_end": 199856128,
+      "peak_sampled_rss": 1130442752,
+      "io_delta": {
+        "rchar": 950797082,
+        "wchar": 14649192,
+        "syscr": 5371,
+        "syscw": 103,
+        "read_bytes": 957411328,
+        "write_bytes": 14131200,
+        "cancelled_write_bytes": 14123008
+      },
+      "disk_before": 134545266389,
+      "disk_after": 134545268285,
+      "peak_sampled_disk": 134545266389,
+      "result": null,
+      "status": "failed",
+      "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.4 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"
+    }
+  ],
+  "physical_bounds": [
+    {
+      "name": "growth_1x_physical_before",
+      "time": 1790509621.2983882,
+      "row_groups": 146,
+      "total_rows": 17862387,
+      "day_eligible_groups": 2,
+      "day_row_upper_bound": 167667,
+      "updated_segments": 0
+    },
+    {
+      "name": "growth_1x_physical_after",
+      "time": 1790509697.6214345,
+      "row_groups": 146,
+      "total_rows": 17869653,
+      "day_eligible_groups": 2,
+      "day_row_upper_bound": 174933,
+      "updated_segments": 0
+    },
+    {
+      "name": "growth_2x_physical_before",
+      "time": 1790510005.1045413,
+      "row_groups": 292,
+      "total_rows": 35724774,
+      "day_eligible_groups": 2,
+      "day_row_upper_bound": 167667,
+      "updated_segments": 0
+    },
+    {
+      "name": "growth_2x_physical_after",
+      "time": 1790510095.2371042,
+      "row_groups": 292,
+      "total_rows": 35732040,
+      "day_eligible_groups": 3,
+      "day_row_upper_bound": 219720,
+      "updated_segments": 0
+    },
+    {
+      "name": "growth_5x_physical_before",
+      "time": 1790510156.1795013,
+      "row_groups": 759,
+      "total_rows": 89311935,
+      "day_eligible_groups": 2,
+      "day_row_upper_bound": 167667,
+      "updated_segments": 0
+    },
+    {
+      "name": "growth_5x_physical_after_point_updates",
+      "time": 1790512323.1509209,
+      "row_groups": 759,
+      "total_rows": 89311935,
+      "day_eligible_groups": 2,
+      "day_row_upper_bound": 167667,
+      "updated_segments": 0
+    }
+  ],
+  "complete_schema_scan_bounds": [
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511280.2719033,
+      "factor": 1,
+      "workload": "day",
+      "returned_rows": 7266,
+      "columns": 42,
+      "eligible_groups": 2,
+      "row_upper_bound": 167667,
+      "total_rows": 17862387,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 167667,
+          "operator_cardinality": 7266,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2026-09-24'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "3572477"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_1x_full_schema_day.json"
+    },
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511281.0387013,
+      "factor": 1,
+      "workload": "60days",
+      "returned_rows": 316220,
+      "columns": 42,
+      "eligible_groups": 5,
+      "row_upper_bound": 536307,
+      "total_rows": 17862387,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 536307,
+          "operator_cardinality": 316220,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2026-07-27'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "3572477"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_1x_full_schema_60days.json"
+    },
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511285.740326,
+      "factor": 1,
+      "workload": "five_years",
+      "returned_rows": 7395619,
+      "columns": 42,
+      "eligible_groups": 62,
+      "row_upper_bound": 7540467,
+      "total_rows": 17862387,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 7540467,
+          "operator_cardinality": 7395619,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2021-09-25'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "3572477"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_1x_full_schema_five_years.json"
+    },
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511286.8671913,
+      "factor": 2,
+      "workload": "day",
+      "returned_rows": 7266,
+      "columns": 42,
+      "eligible_groups": 2,
+      "row_upper_bound": 167667,
+      "total_rows": 35724774,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 167667,
+          "operator_cardinality": 7266,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2026-09-24'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "7144954"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_2x_full_schema_day.json"
+    },
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511287.7021182,
+      "factor": 2,
+      "workload": "60days",
+      "returned_rows": 316220,
+      "columns": 42,
+      "eligible_groups": 5,
+      "row_upper_bound": 536307,
+      "total_rows": 35724774,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 536307,
+          "operator_cardinality": 316220,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2026-07-27'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "7144954"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_2x_full_schema_60days.json"
+    },
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511292.2291608,
+      "factor": 2,
+      "workload": "five_years",
+      "returned_rows": 7395619,
+      "columns": 42,
+      "eligible_groups": 62,
+      "row_upper_bound": 7540467,
+      "total_rows": 35724774,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 7540467,
+          "operator_cardinality": 7395619,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2021-09-25'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "7144954"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_2x_full_schema_five_years.json"
+    },
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511293.7198517,
+      "factor": 5,
+      "workload": "day",
+      "returned_rows": 7266,
+      "columns": 42,
+      "eligible_groups": 2,
+      "row_upper_bound": 167667,
+      "total_rows": 89311935,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 167667,
+          "operator_cardinality": 7266,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2026-09-24'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "17862387"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_5x_full_schema_day.json"
+    },
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511294.7212644,
+      "factor": 5,
+      "workload": "60days",
+      "returned_rows": 316220,
+      "columns": 42,
+      "eligible_groups": 5,
+      "row_upper_bound": 536307,
+      "total_rows": 89311935,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 536307,
+          "operator_cardinality": 316220,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2026-07-27'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "17862387"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_5x_full_schema_60days.json"
+    },
+    {
+      "name": "full_schema_scan_bound",
+      "time": 1790511299.2393098,
+      "factor": 5,
+      "workload": "five_years",
+      "returned_rows": 7395619,
+      "columns": 42,
+      "eligible_groups": 62,
+      "row_upper_bound": 7540467,
+      "total_rows": 89311935,
+      "scans": [
+        {
+          "operator_name": "SEQ_SCAN",
+          "operator_rows_scanned": 7540467,
+          "operator_cardinality": 7395619,
+          "extra_info": {
+            "Table": "\"catalog\".main.dg03_daily",
+            "Type": "Sequential Scan",
+            "Projections": [
+              "trade_date",
+              "amount",
+              "amplitude",
+              "close",
+              "code",
+              "date",
+              "float_mv",
+              "float_share",
+              "high",
+              "is_st",
+              "low",
+              "name",
+              "open",
+              "pb",
+              "pct_chg",
+              "pe_ttm",
+              "pre_close",
+              "total_mv",
+              "total_share",
+              "turnover",
+              "volume",
+              "symbol",
+              "vol_ratio",
+              "datetime",
+              "vol",
+              "float_shares",
+              "is_st_source",
+              "is_st_name_date",
+              "pre_close_source",
+              "pct_chg_source",
+              "amplitude_source",
+              "vol_ratio_source",
+              "float_share_source",
+              "float_mv_source",
+              "total_share_source",
+              "total_mv_source",
+              "turnover_rate",
+              "turnover_rate_source",
+              "asset_type",
+              "ohlcv_source",
+              "__market",
+              "__code"
+            ],
+            "Filters": "trade_date>='2021-09-25'::DATE AND trade_date<='2026-09-24'::DATE",
+            "Estimated Cardinality": "17862387"
+          }
+        }
+      ],
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/growth_5x_full_schema_five_years.json"
+    },
+    {
+      "name": "history_bounded_full_api",
+      "time": 1790512207.3441358,
+      "rows": 31590,
+      "fields": 35,
+      "statements": 15,
+      "raw_scan_counter_sum": 66102229,
+      "sql_memory_limit": "512MB",
+      "note": "counters are not unique physical rows/device bytes"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790512766.98899,
+      "factor": 1,
+      "workload": "day",
+      "files": 1,
+      "eligible_rows": 129979,
+      "file_bytes": 10273968,
+      "returned": 7266,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_1x_day_profile.json"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790512767.1973703,
+      "factor": 1,
+      "workload": "60days",
+      "files": 3,
+      "eligible_rows": 444277,
+      "file_bytes": 31849135,
+      "returned": 316220,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_1x_60days_profile.json"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790512770.517109,
+      "factor": 1,
+      "workload": "fiveyears",
+      "files": 61,
+      "eligible_rows": 7473288,
+      "file_bytes": 531419513,
+      "returned": 7395619,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_1x_fiveyears_profile.json"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790513790.0935662,
+      "factor": 2,
+      "workload": "day",
+      "files": 1,
+      "eligible_rows": 129979,
+      "file_bytes": 10273968,
+      "returned": 7266,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_2x_day_profile.json"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790513790.2771254,
+      "factor": 2,
+      "workload": "60days",
+      "files": 3,
+      "eligible_rows": 444277,
+      "file_bytes": 31849135,
+      "returned": 316220,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_2x_60days_profile.json"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790513793.5273912,
+      "factor": 2,
+      "workload": "fiveyears",
+      "files": 61,
+      "eligible_rows": 7473288,
+      "file_bytes": 531419513,
+      "returned": 7395619,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_2x_fiveyears_profile.json"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790513799.104809,
+      "factor": 5,
+      "workload": "day",
+      "files": 1,
+      "eligible_rows": 129979,
+      "file_bytes": 10273968,
+      "returned": 7266,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_5x_day_profile.json"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790513799.2919197,
+      "factor": 5,
+      "workload": "60days",
+      "files": 3,
+      "eligible_rows": 444277,
+      "file_bytes": 31849135,
+      "returned": 316220,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_5x_60days_profile.json"
+    },
+    {
+      "name": "monthly_scan_bounds",
+      "time": 1790513802.8750517,
+      "factor": 5,
+      "workload": "fiveyears",
+      "files": 61,
+      "eligible_rows": 7473288,
+      "file_bytes": 531419513,
+      "returned": 7395619,
+      "fields": 42,
+      "profile": "/home/ubuntu/aspool-labs/dg03-20260927/monthly_5x_fiveyears_profile.json"
+    }
+  ],
+  "monthly_rewrite_bounds": [
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513886.7524214,
+      "factor": 1,
+      "operation": "fullmarket_insert",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 129979,
+      "new_rows": 137245,
+      "new_file_bytes": 10403054,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_fullmarket_insert_parity",
+      "time": 1790513886.9793868,
+      "factor": 1,
+      "rows": 7266,
+      "fields": 42,
+      "exact": true,
+      "atomic_revision": 1
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513912.402795,
+      "factor": 1,
+      "operation": "fullmarket_noop",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513916.8066227,
+      "factor": 1,
+      "operation": "correction_0",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513918.4439344,
+      "factor": 1,
+      "operation": "noop_0",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513921.1891284,
+      "factor": 1,
+      "operation": "correction_1",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513922.8086536,
+      "factor": 1,
+      "operation": "noop_1",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513925.4232564,
+      "factor": 1,
+      "operation": "correction_2",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513926.949029,
+      "factor": 1,
+      "operation": "noop_2",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513929.9263778,
+      "factor": 1,
+      "operation": "correction_3",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513931.4891,
+      "factor": 1,
+      "operation": "noop_3",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513934.5460277,
+      "factor": 1,
+      "operation": "correction_4",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513936.1535537,
+      "factor": 1,
+      "operation": "noop_4",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513939.1631596,
+      "factor": 1,
+      "operation": "correction_5",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513940.4779956,
+      "factor": 1,
+      "operation": "noop_5",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513943.7402804,
+      "factor": 1,
+      "operation": "correction_6",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513945.368851,
+      "factor": 1,
+      "operation": "noop_6",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513947.9235818,
+      "factor": 1,
+      "operation": "correction_7",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513949.5379899,
+      "factor": 1,
+      "operation": "noop_7",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513952.6764228,
+      "factor": 1,
+      "operation": "correction_8",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513954.3041174,
+      "factor": 1,
+      "operation": "noop_8",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513956.9759705,
+      "factor": 1,
+      "operation": "correction_9",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403056,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513958.5880232,
+      "factor": 1,
+      "operation": "noop_9",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513961.1459808,
+      "factor": 1,
+      "operation": "correction_10",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513962.7137764,
+      "factor": 1,
+      "operation": "noop_10",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513965.8387089,
+      "factor": 1,
+      "operation": "correction_11",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513967.4615352,
+      "factor": 1,
+      "operation": "noop_11",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513970.8384469,
+      "factor": 1,
+      "operation": "delete",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137244,
+      "new_file_bytes": 10403147,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 320
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513972.5199254,
+      "factor": 1,
+      "operation": "backfill_two_months",
+      "changed_months": [
+        "1800-12",
+        "1801-01"
+      ],
+      "old_rows": 0,
+      "new_rows": 20,
+      "new_file_bytes": 19300,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 321
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790513973.5206842,
+      "factor": 1,
+      "operation": "backfill_noop",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 323
+    },
+    {
+      "name": "monthly_cold_files_unchanged",
+      "time": 1790513973.667684,
+      "factor": 1,
+      "months": 320,
+      "verified": "manifest/path/SHA plus inode,size,mtime unchanged across all operations"
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514207.9831753,
+      "factor": 2,
+      "operation": "fullmarket_insert",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 129979,
+      "new_rows": 137245,
+      "new_file_bytes": 10403054,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_fullmarket_insert_parity",
+      "time": 1790514208.2011108,
+      "factor": 2,
+      "rows": 7266,
+      "fields": 42,
+      "exact": true,
+      "atomic_revision": 1
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514231.9237468,
+      "factor": 2,
+      "operation": "fullmarket_noop",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514235.014444,
+      "factor": 2,
+      "operation": "correction_0",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514236.769933,
+      "factor": 2,
+      "operation": "noop_0",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514239.4750946,
+      "factor": 2,
+      "operation": "correction_1",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514241.2898564,
+      "factor": 2,
+      "operation": "noop_1",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514244.5217292,
+      "factor": 2,
+      "operation": "correction_2",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514246.3043523,
+      "factor": 2,
+      "operation": "noop_2",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514249.1131625,
+      "factor": 2,
+      "operation": "correction_3",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514250.975989,
+      "factor": 2,
+      "operation": "noop_3",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514254.1573343,
+      "factor": 2,
+      "operation": "correction_4",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514255.998768,
+      "factor": 2,
+      "operation": "noop_4",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514259.2184298,
+      "factor": 2,
+      "operation": "correction_5",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514260.8686638,
+      "factor": 2,
+      "operation": "noop_5",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514264.025561,
+      "factor": 2,
+      "operation": "correction_6",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514265.5179644,
+      "factor": 2,
+      "operation": "noop_6",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514269.0164514,
+      "factor": 2,
+      "operation": "correction_7",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514270.669851,
+      "factor": 2,
+      "operation": "noop_7",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514273.32645,
+      "factor": 2,
+      "operation": "correction_8",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514274.9407783,
+      "factor": 2,
+      "operation": "noop_8",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514278.1362686,
+      "factor": 2,
+      "operation": "correction_9",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403056,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514279.8298302,
+      "factor": 2,
+      "operation": "noop_9",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514283.5124426,
+      "factor": 2,
+      "operation": "correction_10",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514285.3606982,
+      "factor": 2,
+      "operation": "noop_10",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514288.7464385,
+      "factor": 2,
+      "operation": "correction_11",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514290.589597,
+      "factor": 2,
+      "operation": "noop_11",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514294.7311275,
+      "factor": 2,
+      "operation": "delete",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137244,
+      "new_file_bytes": 10403147,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 641
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514296.8356996,
+      "factor": 2,
+      "operation": "backfill_two_months",
+      "changed_months": [
+        "1800-12",
+        "1801-01"
+      ],
+      "old_rows": 0,
+      "new_rows": 20,
+      "new_file_bytes": 19300,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 642
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514297.9892213,
+      "factor": 2,
+      "operation": "backfill_noop",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 644
+    },
+    {
+      "name": "monthly_cold_files_unchanged",
+      "time": 1790514298.026079,
+      "factor": 2,
+      "months": 641,
+      "verified": "manifest/path/SHA plus inode,size,mtime unchanged across all operations"
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514435.8180828,
+      "factor": 5,
+      "operation": "fullmarket_insert",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 129979,
+      "new_rows": 137245,
+      "new_file_bytes": 10403054,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_fullmarket_insert_parity",
+      "time": 1790514436.0451744,
+      "factor": 5,
+      "rows": 7266,
+      "fields": 42,
+      "exact": true,
+      "atomic_revision": 1
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514461.6939228,
+      "factor": 5,
+      "operation": "fullmarket_noop",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514466.1346066,
+      "factor": 5,
+      "operation": "correction_0",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514468.1013803,
+      "factor": 5,
+      "operation": "noop_0",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514472.0404234,
+      "factor": 5,
+      "operation": "correction_1",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514474.700267,
+      "factor": 5,
+      "operation": "noop_1",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514478.5652132,
+      "factor": 5,
+      "operation": "correction_2",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514481.3407845,
+      "factor": 5,
+      "operation": "noop_2",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514485.3364515,
+      "factor": 5,
+      "operation": "correction_3",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514487.413087,
+      "factor": 5,
+      "operation": "noop_3",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514490.9709368,
+      "factor": 5,
+      "operation": "correction_4",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514492.551351,
+      "factor": 5,
+      "operation": "noop_4",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514496.7101681,
+      "factor": 5,
+      "operation": "correction_5",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514498.97422,
+      "factor": 5,
+      "operation": "noop_5",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514501.8786547,
+      "factor": 5,
+      "operation": "correction_6",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514503.866286,
+      "factor": 5,
+      "operation": "noop_6",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514507.8128676,
+      "factor": 5,
+      "operation": "correction_7",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514510.5596461,
+      "factor": 5,
+      "operation": "noop_7",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514514.0046797,
+      "factor": 5,
+      "operation": "correction_8",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514516.2817125,
+      "factor": 5,
+      "operation": "noop_8",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514520.09395,
+      "factor": 5,
+      "operation": "correction_9",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403056,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514522.7478669,
+      "factor": 5,
+      "operation": "noop_9",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514526.3797278,
+      "factor": 5,
+      "operation": "correction_10",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514528.542863,
+      "factor": 5,
+      "operation": "noop_10",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514532.1559696,
+      "factor": 5,
+      "operation": "correction_11",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137245,
+      "new_file_bytes": 10403057,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514534.3995938,
+      "factor": 5,
+      "operation": "noop_11",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514540.5296612,
+      "factor": 5,
+      "operation": "delete",
+      "changed_months": [
+        "2026-09"
+      ],
+      "old_rows": 137245,
+      "new_rows": 137244,
+      "new_file_bytes": 10403147,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1604
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514543.300306,
+      "factor": 5,
+      "operation": "backfill_two_months",
+      "changed_months": [
+        "1800-12",
+        "1801-01"
+      ],
+      "old_rows": 0,
+      "new_rows": 20,
+      "new_file_bytes": 19300,
+      "catalog_copied_bytes": 933507072,
+      "unchanged_manifest_months": 1605
+    },
+    {
+      "name": "monthly_rewrite_bound",
+      "time": 1790514544.9837983,
+      "factor": 5,
+      "operation": "backfill_noop",
+      "changed_months": [],
+      "old_rows": 0,
+      "new_rows": 0,
+      "new_file_bytes": 0,
+      "catalog_copied_bytes": 0,
+      "unchanged_manifest_months": 1607
+    },
+    {
+      "name": "monthly_cold_files_unchanged",
+      "time": 1790514545.3271039,
+      "factor": 5,
+      "months": 1604,
+      "verified": "manifest/path/SHA plus inode,size,mtime unchanged across all operations"
+    }
+  ],
+  "process_and_recovery": [
+    {
+      "name": "crash_uncommitted",
+      "time": 1790511902.3847463,
+      "returncode": -9,
+      "wal_before_kill": 0,
+      "recovered_rows": 0,
+      "recovered_stale_count": 605,
+      "recovered_amount": 36209948.0,
+      "recovered_revision": 0,
+      "recovery_seconds": 0.12330099200335098
+    },
+    {
+      "name": "crash_committed",
+      "time": 1790511915.1609735,
+      "returncode": -9,
+      "wal_before_kill": 18372,
+      "recovered_rows": 1,
+      "recovered_stale_count": 1296,
+      "recovered_amount": 36209955.0,
+      "recovered_revision": 1,
+      "recovery_seconds": 0.165549123994424
+    },
+    {
+      "name": "controlled_native_read",
+      "time": 1790511919.9766088,
+      "holder_locked": {
+        "event": "locked",
+        "monotonic_ns": 38758306345379,
+        "write": true
+      },
+      "rejected": {
+        "event": "native_rejected",
+        "monotonic_ns": 38758556416684,
+        "error": "IO Error: Could not set lock on file \"/home/ubuntu/aspool-labs/dg03-20260927/concurrency/catalog.duckdb\": Conflicting lock is held in /home/ubuntu/.local/share/mise/installs/python/3.12.14/bin/python3.12 (PID 2742472). See also https://duckdb.org/docs/stable/connect/concurrency",
+        "write": false
+      },
+      "holder_released": {
+        "event": "released",
+        "monotonic_ns": 38758680490467,
+        "write": true,
+        "release_sent_ns": 38758612201397
+      },
+      "native_conflict_proven": true
+    },
+    {
+      "name": "controlled_native_write",
+      "time": 1790511920.5824142,
+      "holder_locked": {
+        "event": "locked",
+        "monotonic_ns": 38758965339157,
+        "write": true
+      },
+      "rejected": {
+        "event": "native_rejected",
+        "monotonic_ns": 38759197356823,
+        "error": "IO Error: Could not set lock on file \"/home/ubuntu/aspool-labs/dg03-20260927/concurrency/catalog.duckdb\": Conflicting lock is held in /home/ubuntu/.local/share/mise/installs/python/3.12.14/bin/python3.12 (PID 2742572). See also https://duckdb.org/docs/stable/connect/concurrency",
+        "write": true
+      },
+      "holder_released": {
+        "event": "released",
+        "monotonic_ns": 38759284090294,
+        "write": true,
+        "release_sent_ns": 38759235188285
+      },
+      "native_conflict_proven": true
+    },
+    {
+      "name": "controlled_write_read",
+      "time": 1790511921.4551854,
+      "probe": {
+        "event": "probe",
+        "monotonic_ns": 38759864313534,
+        "blocked": true
+      },
+      "holder_locked": {
+        "event": "locked",
+        "monotonic_ns": 38759598636840,
+        "write": true
+      },
+      "contender_attempt": {
+        "event": "attempt",
+        "monotonic_ns": 38759864345797,
+        "write": false
+      },
+      "contender_locked": {
+        "event": "locked",
+        "monotonic_ns": 38760125380436,
+        "write": false
+      },
+      "holder_released": {
+        "event": "released",
+        "monotonic_ns": 38760110561595,
+        "write": true,
+        "release_sent_ns": 38760064675292
+      },
+      "contender_released": {
+        "event": "released",
+        "monotonic_ns": 38760159684073,
+        "write": false,
+        "release_sent_ns": 38760157655186
+      },
+      "shared_overlap": false,
+      "protocol_verified": true
+    },
+    {
+      "name": "controlled_read_read",
+      "time": 1790511922.1268651,
+      "probe": {
+        "event": "probe",
+        "monotonic_ns": 38760748252154,
+        "blocked": false
+      },
+      "holder_locked": {
+        "event": "locked",
+        "monotonic_ns": 38760491895162,
+        "write": false
+      },
+      "contender_attempt": {
+        "event": "attempt",
+        "monotonic_ns": 38760748281642,
+        "write": false
+      },
+      "contender_locked": {
+        "event": "locked",
+        "monotonic_ns": 38760761518465,
+        "write": false
+      },
+      "holder_released": {
+        "event": "released",
+        "monotonic_ns": 38760827412795,
+        "write": false,
+        "release_sent_ns": 38760823824550
+      },
+      "contender_released": {
+        "event": "released",
+        "monotonic_ns": 38760764378511,
+        "write": false,
+        "release_sent_ns": 38760761792057
+      },
+      "shared_overlap": true,
+      "protocol_verified": true
+    },
+    {
+      "name": "controlled_write_write",
+      "time": 1790511923.0096276,
+      "probe": {
+        "event": "probe",
+        "monotonic_ns": 38761381821105,
+        "blocked": true
+      },
+      "holder_locked": {
+        "event": "locked",
+        "monotonic_ns": 38761142425848,
+        "write": true
+      },
+      "contender_attempt": {
+        "event": "attempt",
+        "monotonic_ns": 38761381859635,
+        "write": true
+      },
+      "contender_locked": {
+        "event": "locked",
+        "monotonic_ns": 38761644275817,
+        "write": true
+      },
+      "holder_released": {
+        "event": "released",
+        "monotonic_ns": 38761630356094,
+        "write": true,
+        "release_sent_ns": 38761582348560
+      },
+      "contender_released": {
+        "event": "released",
+        "monotonic_ns": 38761711644047,
+        "write": true,
+        "release_sent_ns": 38761673755349
+      },
+      "shared_overlap": false,
+      "protocol_verified": true
+    },
+    {
+      "name": "controlled_read_write",
+      "time": 1790511923.821855,
+      "probe": {
+        "event": "probe",
+        "monotonic_ns": 38762237943332,
+        "blocked": true
+      },
+      "holder_locked": {
+        "event": "locked",
+        "monotonic_ns": 38762007315845,
+        "write": false
+      },
+      "contender_attempt": {
+        "event": "attempt",
+        "monotonic_ns": 38762237983306,
+        "write": true
+      },
+      "contender_locked": {
+        "event": "locked",
+        "monotonic_ns": 38762454736282,
+        "write": true
+      },
+      "holder_released": {
+        "event": "released",
+        "monotonic_ns": 38762441052063,
+        "write": false,
+        "release_sent_ns": 38762438316310
+      },
+      "contender_released": {
+        "event": "released",
+        "monotonic_ns": 38762524892336,
+        "write": true,
+        "release_sent_ns": 38762484887004
+      },
+      "shared_overlap": false,
+      "protocol_verified": true
+    },
+    {
+      "name": "controlled_writer_commits",
+      "time": 1790511923.840996,
+      "before": 0,
+      "after": 6,
+      "committed_without_loss": 6
+    },
+    {
+      "name": "snapshot_restore",
+      "time": 1790511936.2236757,
+      "seconds": 12.112638375998358,
+      "bytes": 4881295773,
+      "exact": true
+    },
+    {
+      "name": "monthly_portable_backup_restore",
+      "time": 1790512802.0860403,
+      "seconds": 8.176208160002716,
+      "maxrss_bytes": 161009664,
+      "rss_start": 145772544,
+      "rss_end": 159342592,
+      "peak_sampled_rss": 160268288,
+      "io_delta": {
+        "rchar": 5351532191,
+        "wchar": 2307346094,
+        "syscr": 17351,
+        "syscw": 13554,
+        "read_bytes": 554754048,
+        "write_bytes": 2321264640,
+        "cancelled_write_bytes": 0
+      },
+      "disk_before": 0,
+      "disk_after": 2307346094,
+      "peak_sampled_disk": 2307346094,
+      "result": {
+        "active_files": 321,
+        "rows": 17862387,
+        "disk": 2307346094,
+        "catalog_exact": true,
+        "all_part_hashes_exact": true
+      },
+      "status": "passed",
+      "error": null
+    },
+    {
+      "name": "monthly_restore_manifest",
+      "time": 1790512802.0862837,
+      "active_files": 321,
+      "rows": 17862387,
+      "disk": 2307346094,
+      "catalog_exact": true,
+      "all_part_hashes_exact": true
+    },
+    {
+      "name": "monthly_actual_writer_reader",
+      "time": 1790512804.5961,
+      "prepared": {
+        "event": "prepared",
+        "monotonic_ns": 39642785332768
+      },
+      "reader_attempt": {
+        "event": "attempt",
+        "monotonic_ns": 39643033584012
+      },
+      "published": {
+        "event": "published",
+        "monotonic_ns": 39643242934167,
+        "result": {
+          "changed": 1,
+          "revision": 1,
+          "published_months": 1,
+          "catalog_copied_bytes": 933507072,
+          "previous_catalog": "/home/ubuntu/aspool-labs/dg03-20260927/monthly-restored/history/catalog-25ca08a45016455ab66d9acfe0adf62e.duckdb"
+        }
+      },
+      "observed": {
+        "event": "read",
+        "monotonic_ns": 39643296671412,
+        "amount": 1234567.0
+      },
+      "release_ns": 39643233959649,
+      "serialized": true
+    },
+    {
+      "name": "monthly_nonempty_revision_gate",
+      "time": 1790512804.6265118,
+      "first_rows": 282,
+      "error_code": "LIMIT_REVISION_CHANGED"
+    },
+    {
+      "name": "native_one_thread_failure_state_verified",
+      "time": 1790514118.7393436,
+      "state": {
+        "raw_count": 89311935,
+        "new_date_count": 0,
+        "security_daily_facts": {
+          "rows": 410467,
+          "sha256": "e9a26c74eb8fa8751ad6d4c7fe485ea2539b02d21752a562d3dab6f8cca17a5e"
+        },
+        "coverage": {
+          "rows": 7288,
+          "sha256": "681fd810e7b08eb3cce75727c1f3d780dc5a85e045f5238f5a36ea0033704e71"
+        },
+        "daily_limit_staleness": {
+          "rows": 605,
+          "sha256": "93af9d08cf067f979e865b809915b76db8194226e40ca7776b65c10d13af6da7"
+        },
+        "dg03_revision": {
+          "rows": 1,
+          "sha256": "ae463229313b50328f4d448e6ab132ae49d6a0103734b8c4a59b2dbd4cad11b6"
+        },
+        "dg03_changes": {
+          "rows": 12,
+          "sha256": "f20c6b24499ac2f28f6ab3e1a2ac856aeead01e6000f947fae1d50c357751312"
+        }
+      },
+      "prior_point_corrections_exact": 12,
+      "new_market_day_absent": true,
+      "facts_coverage_equal_prepared": true,
+      "stale_only_prior_point_suffix": true,
+      "scope": "post-trial logical state; no saved pre-trial hash from first harness version"
+    }
+  ],
+  "growth_sizes": [
+    {
+      "name": "growth_size",
+      "time": 1790509621.1539793,
+      "factor": 1,
+      "rows": 17862387,
+      "securities": 7288,
+      "disk": 4881295773
+    },
+    {
+      "name": "facts_growth_population",
+      "time": 1790509700.8306181,
+      "factor": 1,
+      "facts": 410467,
+      "raw_rows": 17862387,
+      "derived": "unchanged immutable snapshot"
+    },
+    {
+      "name": "facts_growth_population",
+      "time": 1790509719.4026968,
+      "factor": 2,
+      "facts": 820934,
+      "raw_rows": 17862387,
+      "derived": "unchanged immutable snapshot"
+    },
+    {
+      "name": "facts_growth_population",
+      "time": 1790509741.375708,
+      "factor": 5,
+      "facts": 2052335,
+      "raw_rows": 17862387,
+      "derived": "unchanged immutable snapshot"
+    },
+    {
+      "name": "facts_growth_population",
+      "time": 1790509938.2152414,
+      "factor": 1,
+      "facts": 410467,
+      "raw_rows": 17862387,
+      "derived": "unchanged immutable snapshot"
+    },
+    {
+      "name": "facts_growth_population",
+      "time": 1790509944.562111,
+      "factor": 2,
+      "facts": 820934,
+      "raw_rows": 17862387,
+      "derived": "unchanged immutable snapshot"
+    },
+    {
+      "name": "facts_growth_population",
+      "time": 1790509950.8223994,
+      "factor": 5,
+      "facts": 2052335,
+      "raw_rows": 17862387,
+      "derived": "unchanged immutable snapshot"
+    },
+    {
+      "name": "growth_size",
+      "time": 1790510004.8792713,
+      "factor": 2,
+      "rows": 35724774,
+      "securities": 7288,
+      "disk": 4645890461
+    },
+    {
+      "name": "growth_size",
+      "time": 1790510155.2529097,
+      "factor": 5,
+      "rows": 89311935,
+      "securities": 7288,
+      "disk": 10102942109
+    },
+    {
+      "name": "more_securities",
+      "time": 1790511973.0397472,
+      "rows": 35724774,
+      "securities": 14576,
+      "disk": 4875790749
+    },
+    {
+      "name": "monthly_built",
+      "time": 1790512537.0958014,
+      "factor": 1,
+      "rows": 17862387,
+      "manifest": [
+        17862387,
+        321,
+        "2000-01-04",
+        "2026-09-24"
+      ],
+      "fields": 42,
+      "original_tables": 18,
+      "root": "/home/ubuntu/aspool-labs/dg03-20260927/monthly-1x",
+      "disk": 2307346094,
+      "catalog": 933507072
+    },
+    {
+      "name": "monthly_built",
+      "time": 1790513027.7941413,
+      "factor": 2,
+      "rows": 35724774,
+      "manifest": [
+        35724774,
+        642,
+        "1960-01-04",
+        "2026-09-24"
+      ],
+      "fields": 42,
+      "original_tables": 18,
+      "root": "/home/ubuntu/aspool-labs/dg03-20260927/monthly-2x",
+      "disk": 3481642169,
+      "catalog": 933507072
+    },
+    {
+      "name": "monthly_built",
+      "time": 1790513581.9845064,
+      "factor": 5,
+      "rows": 89311935,
+      "manifest": [
+        89311935,
+        1605,
+        "1840-01-04",
+        "2026-09-24"
+      ],
+      "fields": 42,
+      "original_tables": 18,
+      "root": "/home/ubuntu/aspool-labs/dg03-20260927/monthly-5x",
+      "disk": 7004368719,
+      "catalog": 933507072
+    }
+  ]
+}

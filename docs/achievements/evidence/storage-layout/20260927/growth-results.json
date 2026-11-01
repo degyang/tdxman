@@ -1,0 +1,124 @@
+{
+  "started_at": "2026-09-27T04:29:57.009579+00:00",
+  "method": "64 securities stratified by history length; full schemas; 1x/2x/5x history synthesized by non-overlapping date shifts. Actual merge_daily, temporary roots without catalog/derived publication. Construction excluded. Not a future market forecast or full sync benchmark.",
+  "cases": [
+    {
+      "history_factor": 1,
+      "iteration": 0,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 187389,
+      "seconds": 1.2656166279994068,
+      "input_file_bytes": 17235082,
+      "rewritten_file_bytes": 17236647,
+      "row_rewrite_amplification": 2928.953125
+    },
+    {
+      "history_factor": 1,
+      "iteration": 1,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 187453,
+      "seconds": 0.4929265739974653,
+      "input_file_bytes": 17236647,
+      "rewritten_file_bytes": 17239451,
+      "row_rewrite_amplification": 2929.953125
+    },
+    {
+      "history_factor": 1,
+      "iteration": 2,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 187517,
+      "seconds": 0.45629920499413856,
+      "input_file_bytes": 17239451,
+      "rewritten_file_bytes": 17240637,
+      "row_rewrite_amplification": 2930.953125
+    },
+    {
+      "history_factor": 2,
+      "iteration": 0,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 374778,
+      "seconds": 0.6459660639939102,
+      "input_file_bytes": 21554661,
+      "rewritten_file_bytes": 21558353,
+      "row_rewrite_amplification": 5856.90625
+    },
+    {
+      "history_factor": 2,
+      "iteration": 1,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 374842,
+      "seconds": 0.6338127280123445,
+      "input_file_bytes": 21558353,
+      "rewritten_file_bytes": 21558528,
+      "row_rewrite_amplification": 5857.90625
+    },
+    {
+      "history_factor": 2,
+      "iteration": 2,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 374906,
+      "seconds": 0.6311081900021236,
+      "input_file_bytes": 21558528,
+      "rewritten_file_bytes": 21562302,
+      "row_rewrite_amplification": 5858.90625
+    },
+    {
+      "history_factor": 5,
+      "iteration": 0,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 936945,
+      "seconds": 1.2150513689957734,
+      "input_file_bytes": 32300649,
+      "rewritten_file_bytes": 32304814,
+      "row_rewrite_amplification": 14640.765625
+    },
+    {
+      "history_factor": 5,
+      "iteration": 1,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 937009,
+      "seconds": 1.1868189189954137,
+      "input_file_bytes": 32304814,
+      "rewritten_file_bytes": 32306418,
+      "row_rewrite_amplification": 14641.765625
+    },
+    {
+      "history_factor": 5,
+      "iteration": 2,
+      "securities": 64,
+      "changed_rows": 64,
+      "input_history_rows": 937073,
+      "seconds": 1.1838795410094463,
+      "input_file_bytes": 32306418,
+      "rewritten_file_bytes": 32307458,
+      "row_rewrite_amplification": 14642.765625
+    }
+  ],
+  "no_op": [
+    {
+      "history_factor": 1,
+      "seconds": 0.19503893600085576,
+      "changed_rows": 0
+    },
+    {
+      "history_factor": 2,
+      "seconds": 0.31239541699869733,
+      "changed_rows": 0
+    },
+    {
+      "history_factor": 5,
+      "seconds": 0.6673388149993116,
+      "changed_rows": 0
+    }
+  ],
+  "peak_rss_bytes": 657735680,
+  "finished_at": "2026-09-27T04:30:07.622833+00:00"
+}

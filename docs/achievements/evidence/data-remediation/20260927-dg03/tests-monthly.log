@@ -1,0 +1,17 @@
+
+==================================== ERRORS ====================================
+_______________ ERROR collecting tests/unit/test_dg03_monthly.py _______________
+ImportError while importing test module '/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/tests/unit/test_dg03_monthly.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../../.local/share/mise/installs/python/3.12.14/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_dg03_monthly.py:10: in <module>
+    from test_dg03_candidate import candidate  # noqa: F401
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'test_dg03_candidate'
+=========================== short test summary info ============================
+ERROR tests/unit/test_dg03_monthly.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.31s

@@ -1,0 +1,88 @@
+{
+    "total_bytes_written": 0,
+    "total_bytes_read": 0,
+    "system_peak_temp_dir_size": 0,
+    "system_peak_buffer_memory": 403275776,
+    "rows_returned": 1,
+    "wal_replay_entry_count": 0,
+    "result_set_size": 8,
+    "query_name": "UPDATE dg03_daily SET amount=amount+1 WHERE __market='SZ' AND __code='000001' AND trade_date=DATE '2026-09-24'",
+    "waiting_to_attach_latency": 0.0,
+    "attach_load_storage_latency": 0.0,
+    "blocked_thread_time": 0.0,
+    "cpu_time": 0.0005359490000000001,
+    "extra_info": {},
+    "total_memory_allocated": 0,
+    "cumulative_cardinality": 3,
+    "checkpoint_latency": 0.0,
+    "cumulative_rows_scanned": 174933,
+    "write_to_wal_latency": 0.0,
+    "latency": 0.003928442,
+    "attach_replay_wal_latency": 0.0,
+    "commit_local_storage_latency": 0.0,
+    "children": [
+        {
+            "system_peak_temp_dir_size": 0,
+            "system_peak_buffer_memory": 0,
+            "result_set_size": 8,
+            "operator_timing": 0.000029291,
+            "operator_type": "UPDATE",
+            "cpu_time": 0.000534899,
+            "extra_info": {},
+            "cumulative_cardinality": 3,
+            "cumulative_rows_scanned": 174933,
+            "operator_cardinality": 1,
+            "operator_name": "UPDATE",
+            "operator_rows_scanned": 0,
+            "children": [
+                {
+                    "system_peak_temp_dir_size": 0,
+                    "system_peak_buffer_memory": 0,
+                    "result_set_size": 16,
+                    "operator_timing": 0.000002465,
+                    "operator_type": "PROJECTION",
+                    "cpu_time": 0.0005056080000000001,
+                    "extra_info": {
+                        "Projections": [
+                            "(amount + 1.0)",
+                            "rowid"
+                        ],
+                        "Estimated Cardinality": "3399"
+                    },
+                    "cumulative_cardinality": 2,
+                    "cumulative_rows_scanned": 174933,
+                    "operator_cardinality": 1,
+                    "operator_name": "PROJECTION",
+                    "operator_rows_scanned": 0,
+                    "children": [
+                        {
+                            "system_peak_temp_dir_size": 0,
+                            "system_peak_buffer_memory": 0,
+                            "result_set_size": 16,
+                            "operator_timing": 0.0005031430000000001,
+                            "operator_type": "TABLE_SCAN",
+                            "cpu_time": 0.0005031430000000001,
+                            "extra_info": {
+                                "Table": "\"catalog\".main.dg03_daily",
+                                "Type": "Sequential Scan",
+                                "Projections": "amount",
+                                "Filters": [
+                                    "__market='SZ'",
+                                    "__code='000001'",
+                                    "trade_date='2026-09-24'::DATE"
+                                ],
+                                "Estimated Cardinality": "3399"
+                            },
+                            "cumulative_cardinality": 1,
+                            "cumulative_rows_scanned": 174933,
+                            "operator_cardinality": 1,
+                            "operator_name": "SEQ_SCAN",
+                            "operator_rows_scanned": 174933,
+                            "children": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

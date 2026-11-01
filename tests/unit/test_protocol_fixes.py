@@ -43,13 +43,17 @@ def test_history_fund_flow_exact_layout():
 
 
 def test_security_list_request_length():
-    """验证证券列表请求包载荷长度为 6 字节。"""
-    cmd = GetSecurityListCmd(Market.SH, 0)
-    req = cmd.build_request()
-    # Header 12 + Payload 6 = 18
-    assert len(req) == 18
-    payload_len = struct.unpack("<H", req[6:8])[0]
-    assert payload_len == 6
+    """Declared length includes the command ID; trailing bytes break the next request."""
+    for market, offset in [(Market.SH, 0), (Market.SH, 1000), (Market.SZ, 2000)]:
+        req = GetSecurityListCmd(market, offset).build_request()
+        length, repeated_length, command, actual_market, actual_offset = struct.unpack(
+            "<HHHHH", req[6:]
+        )
+        assert length == repeated_length == 6
+        assert len(req) == 10 + length
+        assert command == 0x0450
+        assert actual_market == int(market)
+        assert actual_offset == offset
 
 
 def test_security_quotes_limit_mapping():
@@ -81,7 +85,7 @@ def test_security_quotes_limit_mapping():
     body.extend(put_price(3))
     for _ in range(20):
         body.extend(put_price(0))
-    body.extend(struct.pack("<H", 0))
+    body.extend(struct.pack("<H", 0x120))
     body.extend(put_price(96))
     body.extend(put_price(-106))
     body.extend(put_price(0))
@@ -93,6 +97,7 @@ def test_security_quotes_limit_mapping():
     assert q.limit_up is None
     assert q.limit_down is None
     assert q.pre_close == 10.05
+    assert q.trading_status_raw == 0x120
 
 
 def test_security_quotes_server_time_format():

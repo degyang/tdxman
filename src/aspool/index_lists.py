@@ -34,7 +34,7 @@ def atomic_json(path, value):
 def collect(client):
     records = {}
     excluded = []
-    for source in ("HY2", "GN", "FG", "ZS"):
+    for source in ("HY2", "HY", "GN", "FG", "ZS"):
         frame = (
             client.get_stock_quotes_list(
                 Category.ZS, count=10000, sort_type=SortType.CODE, sort_order=SortOrder.ASC

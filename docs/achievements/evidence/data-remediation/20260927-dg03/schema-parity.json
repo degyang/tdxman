@@ -1,0 +1,939 @@
+{
+  "name": "phase_parity",
+  "time": 1790504120.6658218,
+  "seconds": 45.46084378500018,
+  "maxrss_bytes": 2420334592,
+  "io_delta": {
+    "rchar": 12465543725,
+    "wchar": 6297125064,
+    "syscr": 76870,
+    "syscw": 41767,
+    "read_bytes": 2645200896,
+    "write_bytes": 5493264384,
+    "cancelled_write_bytes": 686587904
+  },
+  "disk_before": 2809967549,
+  "disk_after": 2809967749,
+  "peak_sampled_disk": 7768978565,
+  "result": {
+    "files_exact": 7288,
+    "rows_exact": 17862387,
+    "catalog_tables_exact": {
+      "coverage": 7288,
+      "coverage_minutes": 0,
+      "daily_limit_batches": 1296,
+      "daily_limit_events": 182504,
+      "daily_limit_exceptions": 22445,
+      "daily_limit_gap_states": 1059,
+      "daily_limit_publication": 1296,
+      "daily_limit_references": 277429,
+      "daily_limit_scope": 6594702,
+      "daily_limit_staleness": 605,
+      "daily_limit_streak_boundaries": 156,
+      "daily_limit_summary": 1296,
+      "index_coverage": 865,
+      "security_calendar": 13064,
+      "security_daily_facts": 410467,
+      "security_lifecycle": 5906,
+      "sync_runs": 7,
+      "universe": 7298
+    },
+    "schema": [
+      [
+        "amount",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "amplitude",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "close",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "code",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "date",
+        "BIGINT",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "float_mv",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "float_share",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "high",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "is_st",
+        "BOOLEAN",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "low",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "name",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "open",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "pb",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "pct_chg",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "pe_ttm",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "pre_close",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "total_mv",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "total_share",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "turnover",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "volume",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "symbol",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "trade_date",
+        "DATE",
+        "NO",
+        "PRI",
+        null,
+        null
+      ],
+      [
+        "vol_ratio",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "datetime",
+        "TIMESTAMP",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "vol",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "float_shares",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "is_st_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "is_st_name_date",
+        "DATE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "pre_close_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "pct_chg_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "amplitude_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "vol_ratio_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "float_share_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "float_mv_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "total_share_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "total_mv_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "turnover_rate",
+        "DOUBLE",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "turnover_rate_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "asset_type",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "ohlcv_source",
+        "VARCHAR",
+        "YES",
+        null,
+        null,
+        null
+      ],
+      [
+        "__market",
+        "VARCHAR",
+        "NO",
+        "PRI",
+        null,
+        null
+      ],
+      [
+        "__code",
+        "VARCHAR",
+        "NO",
+        "PRI",
+        null,
+        null
+      ]
+    ],
+    "constraints": [
+      [
+        "coverage",
+        "PRIMARY KEY",
+        "PRIMARY KEY(symbol)"
+      ],
+      [
+        "coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage_minutes",
+        "PRIMARY KEY",
+        "PRIMARY KEY(symbol)"
+      ],
+      [
+        "coverage_minutes",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage_minutes",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage_minutes",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage_minutes",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage_minutes",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage_minutes",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "coverage_minutes",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "PRIMARY KEY",
+        "PRIMARY KEY(batch_id)"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_batches",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_events",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_events",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_events",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_events",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date, symbol, batch_id)"
+      ],
+      [
+        "daily_limit_exceptions",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_exceptions",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_exceptions",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_exceptions",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_exceptions",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_exceptions",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date, symbol, batch_id, kind)"
+      ],
+      [
+        "daily_limit_gap_states",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_gap_states",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_gap_states",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_gap_states",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_gap_states",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_gap_states",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date, symbol, batch_id)"
+      ],
+      [
+        "daily_limit_publication",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date)"
+      ],
+      [
+        "daily_limit_publication",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_publication",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_publication",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_references",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_references",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_references",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_references",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_references",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date, symbol, batch_id)"
+      ],
+      [
+        "daily_limit_scope",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_scope",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_scope",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_scope",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date, symbol)"
+      ],
+      [
+        "daily_limit_staleness",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date)"
+      ],
+      [
+        "daily_limit_staleness",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_staleness",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_staleness",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_streak_boundaries",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_streak_boundaries",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_streak_boundaries",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_streak_boundaries",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_streak_boundaries",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date, symbol, batch_id)"
+      ],
+      [
+        "daily_limit_summary",
+        "PRIMARY KEY",
+        "PRIMARY KEY(batch_id)"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "daily_limit_summary",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "dg03_daily",
+        "PRIMARY KEY",
+        "PRIMARY KEY(__market, __code, trade_date)"
+      ],
+      [
+        "dg03_daily",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "dg03_daily",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "dg03_daily",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "dg03_revision",
+        "PRIMARY KEY",
+        "PRIMARY KEY(id)"
+      ],
+      [
+        "dg03_revision",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "index_coverage",
+        "PRIMARY KEY",
+        "PRIMARY KEY(market, code)"
+      ],
+      [
+        "index_coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "index_coverage",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "security_calendar",
+        "PRIMARY KEY",
+        "PRIMARY KEY(trade_date)"
+      ],
+      [
+        "security_calendar",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "security_daily_facts",
+        "PRIMARY KEY",
+        "PRIMARY KEY(symbol, trade_date)"
+      ],
+      [
+        "security_daily_facts",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "security_daily_facts",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "security_lifecycle",
+        "PRIMARY KEY",
+        "PRIMARY KEY(symbol)"
+      ],
+      [
+        "security_lifecycle",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "sync_runs",
+        "PRIMARY KEY",
+        "PRIMARY KEY(run_id)"
+      ],
+      [
+        "sync_runs",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "sync_runs",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "sync_runs",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "sync_runs",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "sync_runs",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "universe",
+        "PRIMARY KEY",
+        "PRIMARY KEY(symbol)"
+      ],
+      [
+        "universe",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "universe",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "universe",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "universe",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "universe",
+        "NOT NULL",
+        "NOT NULL"
+      ],
+      [
+        "universe",
+        "NOT NULL",
+        "NOT NULL"
+      ]
+    ],
+    "indexes": [
+      [
+        "dg03_security",
+        "CREATE INDEX dg03_security ON dg03_daily(__code);"
+      ]
+    ],
+    "metadata": "Original Arrow schemas retained; values cast losslessly and compared exactly"
+  }
+}

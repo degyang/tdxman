@@ -56,9 +56,18 @@ def classify_trading(row: Mapping) -> str:
     """Missing bars and confirmed suspension share the same statistical treatment."""
     if row.get("bar_date") is None:
         return "NO_TRADE"
-    if row.get("trading_status") in ("SUSPENDED", "停牌", "NO_TRADE", "NOT_LISTED"):
-        if any(finite(row.get(key)) and row[key] > 0 for key in ("volume", "amount")):
-            raise DataPoolError("SOURCE_CONFLICT", "Suspended bar has actual turnover")
+    if row.get("trading_status") in (
+        "SUSPENDED",
+        "停牌",
+        "NO_TRADE",
+        "NOT_LISTED",
+        "UNKNOWN",
+        "MISSING",
+        "INVALID",
+        "UNCONFIRMED",
+        "未知",
+        "不确定",
+    ):
         return "NO_TRADE"
     prices = [row.get(key) for key in ("open", "high", "low", "close")]
     if not all(finite(value, positive=True) for value in prices):
@@ -88,7 +97,15 @@ def derive_daily_row(
         return result, previous_streak
     if status == "INVALID":
         result.update(limit_status="INVALID", limit_reason="invalid_ohlc", streak_known=0)
-        return result, None
+        return result, previous_streak
+
+    history = list(prior_closes[-19:]) + [(row["close"], current_factor)]
+    if len(history) == 20 and all(finite(factor, positive=True) for _, factor in history):
+        adjusted = [close * (factor / current_factor) for close, factor in history]
+        if all(finite(value, positive=True) for value in adjusted):
+            mean = math.fsum(value / 20 for value in adjusted)
+            if finite(mean, positive=True):
+                result.update(ma20=mean, above_ma20=int(row["close"] > mean))
 
     code, market = row["symbol"].split(".")
     if market == "BJ":
@@ -110,7 +127,7 @@ def derive_daily_row(
         code,
         "",
         date.fromisoformat(row["trade_date"]),
-        st_status=bool(raw_st) if raw_st in (0, 1) else None,
+        st_status=bool(raw_st) if raw_st in (0, 1) else False,
         listed_days=listed_days,
         observed_sessions=observed_sessions,
     )
@@ -173,13 +190,6 @@ def derive_daily_row(
                 streak_known=int(next_streak is not None),
             )
 
-    history = list(prior_closes[-19:]) + [(row["close"], current_factor)]
-    if len(history) == 20 and all(finite(factor, positive=True) for _, factor in history):
-        adjusted = [close * (factor / current_factor) for close, factor in history]
-        if all(finite(value, positive=True) for value in adjusted):
-            mean = math.fsum(value / 20 for value in adjusted)
-            if finite(mean, positive=True):
-                result.update(ma20=mean, above_ma20=int(row["close"] > mean))
     return result, next_streak
 
 
@@ -213,6 +223,8 @@ def recompute_symbol_features(
     propagate: bool = False,
     successor_window: int = 20,
     max_affected_dates: int = 60,
+    limits_only: bool = False,
+    factor_lookup=None,
 ) -> dict:
     """Recompute an explicit range, using bounded warmup and the caller's transaction.
 
@@ -221,6 +233,7 @@ def recompute_symbol_features(
     Use successor_window=0 only for changes that cannot affect MA20 membership
     or adjustment. References/factors must already reflect their dependencies.
     Without propagation, only the explicit range is written (maintenance use).
+    limits_only preserves existing MA20 values during explicit ST maintenance.
     """
     if not conn.in_transaction:
         raise ValueError("An outer write transaction is required")
@@ -235,6 +248,15 @@ def recompute_symbol_features(
         or successor_window not in (0, 20)
     ):
         raise ValueError("Invalid range or row budget")
+    owned_columns = tuple(
+        field for field in DERIVED_COLUMNS if not limits_only or field not in {"ma20", "above_ma20"}
+    )
+
+    def factor_at(day):
+        if limits_only:
+            return None
+        return factor_lookup(day) if factor_lookup else _factor_at(conn, symbol, day)
+
     visited = 0
 
     def counted(rows):
@@ -260,12 +282,17 @@ def recompute_symbol_features(
         try:
             for row in counted(warm):
                 status = classify_trading(row)
-                if not found_predecessor and status != "NO_TRADE":
+                if not found_predecessor and status == "TRADED":
                     found_predecessor = True
-                    if status == "TRADED" and row["streak_known"] == 1:
+                    if row["streak_known"] == 1:
                         previous_streak = row["consecutive_up"]
                 if status == "TRADED":
-                    history.appendleft((row["close"], _factor_at(conn, symbol, row["trade_date"])))
+                    history.appendleft(
+                        (
+                            row["close"],
+                            factor_at(row["trade_date"]),
+                        )
+                    )
                     if len(history) == 19:
                         break
         finally:
@@ -275,6 +302,7 @@ def recompute_symbol_features(
         observed = min(len(history), 6)
         changed_dates = []
         promotion_changed_dates = []
+        trading_changed_dates = []
         processed = 0
         successors = 0
         predicate = "f.trade_date>=?" if propagate else "f.trade_date BETWEEN ? AND ?"
@@ -290,7 +318,7 @@ def recompute_symbol_features(
         try:
             for row in counted(rows):
                 day = row["trade_date"]
-                factor = _factor_at(conn, symbol, day)
+                factor = factor_at(day)
                 status = classify_trading(row)
                 if status == "TRADED":
                     observed = min(observed + 1, 6)
@@ -307,7 +335,8 @@ def recompute_symbol_features(
                 if status == "TRADED":
                     history.append((row["close"], factor))
                     successors += day > end
-                different = any(values[field] != row[field] for field in DERIVED_COLUMNS)
+                columns = DERIVED_COLUMNS if values["calc_status"] != "TRADED" else owned_columns
+                different = any(values[field] != row[field] for field in columns)
                 if different:
                     if propagate and len(changed_dates) >= max_affected_dates:
                         raise DataPoolError(
@@ -316,11 +345,13 @@ def recompute_symbol_features(
                     stamp = max(time.time_ns() // 1000, row["updated_at"] + 1)
                     conn.execute(
                         "UPDATE daily_features SET "
-                        + ",".join(field + "=?" for field in DERIVED_COLUMNS)
+                        + ",".join(field + "=?" for field in columns)
                         + ",updated_at=? WHERE symbol=? AND trade_date=?",
-                        (*(values[field] for field in DERIVED_COLUMNS), stamp, symbol, day),
+                        (*(values[field] for field in columns), stamp, symbol, day),
                     )
                     changed_dates.append(day)
+                    if values["calc_status"] != row["calc_status"]:
+                        trading_changed_dates.append(day)
                     if any(
                         values[key] != row[key]
                         for key in (
@@ -353,4 +384,5 @@ def recompute_symbol_features(
         "changed_rows": len(changed_dates),
         "changed_dates": changed_dates,
         "promotion_changed_dates": promotion_changed_dates,
+        "trading_changed_dates": trading_changed_dates,
     }

@@ -1,0 +1,13 @@
+{
+  "rows": 16366762,
+  "days": 6482,
+  "start": "2000-01-04",
+  "end": "2026-09-30",
+  "source_rows_without_existing_feature_row": 0,
+  "existing_feature_rows": 16367333,
+  "feature_only_rows": 571,
+  "source_values_and_adjustment_factors_not_modified": true,
+  "covering_date_index_inventory": true,
+  "key_coverage_seconds": 236.16190810000262,
+  "inventory_seconds": 13.969641206000233
+}

@@ -1,0 +1,855 @@
+{
+  "root": "/mnt/d/Workstation/Services/tdxman/data",
+  "production_writes": false,
+  "calls": [
+    {
+      "name": "fixed_snapshot_members",
+      "rows": 25,
+      "columns": [
+        "kind",
+        "board_id",
+        "board_name",
+        "symbol",
+        "snapshot_id",
+        "membership_as_of",
+        "membership_basis"
+      ],
+      "attrs": {
+        "contract_version": 3,
+        "price_adjustment": "raw",
+        "volume_unit": "share",
+        "amount_unit": "CNY",
+        "point_in_time": false,
+        "source": "board_snapshots",
+        "classification": "tdx_hy2_gn",
+        "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+        "membership_as_of": "2026-10-01T09:09:47.968296+00:00",
+        "membership_basis": "current_snapshot",
+        "total_members": 25,
+        "board_ids": [
+          "880710",
+          "880903"
+        ],
+        "offset": 0,
+        "limit": 100000,
+        "complete": true,
+        "next_offset": null
+      },
+      "sample": [
+        {
+          "kind": "concept",
+          "board_id": "880710",
+          "board_name": "种业",
+          "symbol": "000713.SZ",
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "membership_as_of": "2026-10-01T09:09:47.968296+00:00",
+          "membership_basis": "current_snapshot"
+        },
+        {
+          "kind": "concept",
+          "board_id": "880710",
+          "board_name": "种业",
+          "symbol": "000998.SZ",
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "membership_as_of": "2026-10-01T09:09:47.968296+00:00",
+          "membership_basis": "current_snapshot"
+        },
+        {
+          "kind": "concept",
+          "board_id": "880710",
+          "board_name": "种业",
+          "symbol": "002041.SZ",
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "membership_as_of": "2026-10-01T09:09:47.968296+00:00",
+          "membership_basis": "current_snapshot"
+        }
+      ],
+      "tail": [
+        {
+          "kind": "concept",
+          "board_id": "880903",
+          "board_name": "水产品",
+          "symbol": "603668.SH",
+          "snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+          "membership_as_of": "2026-10-01T09:09:47.968296+00:00",
+          "membership_basis": "current_snapshot"
+        }
+      ],
+      "seconds": 0.148
+    },
+    {
+      "name": "financial_date_semantics",
+      "rows": 1,
+      "columns": [
+        "symbol",
+        "period_end",
+        "source",
+        "liutong_guben",
+        "zong_guben",
+        "guojia_gu",
+        "faqiren_faren_gu",
+        "faren_gu",
+        "b_gu",
+        "h_gu",
+        "zhigong_gu",
+        "province",
+        "industry",
+        "ipo_date",
+        "zong_zichan",
+        "liudong_zichan",
+        "guding_zichan",
+        "wuxing_zichan",
+        "liudong_fuzhai",
+        "changqi_fuzhai",
+        "ziben_gongjijin",
+        "jing_zichan",
+        "zhuying_shouru",
+        "zhuying_lirun",
+        "yingshou_zhangkuan",
+        "yingye_lirun",
+        "touzi_shouyu",
+        "jingying_xianjinliu",
+        "zong_xianjinliu",
+        "cunhuo",
+        "lirun_zonghe",
+        "shuihou_lirun",
+        "jing_lirun",
+        "weifen_lirun",
+        "meigujing_zichan",
+        "source_hash",
+        "payload_json",
+        "published_at",
+        "fetched_at",
+        "updated_at",
+        "source_updated_date",
+        "report_period_end"
+      ],
+      "attrs": {
+        "source": "aspool.fundamentals.sqlite",
+        "point_in_time": false,
+        "date_filter_basis": "source_updated_date",
+        "legacy_period_end_semantics": "source_updated_date",
+        "report_period_status": "not_provided",
+        "known_at_field": "published_at",
+        "shares_unit": "share",
+        "financial_unit_status": "provider_conversion",
+        "missing_announcement_semantics": "not_known_at_historical_date"
+      },
+      "sample": [
+        {
+          "symbol": "000001.SZ",
+          "period_end": "2026-08-15T00:00:00.000",
+          "source": "tdxman:finance",
+          "liutong_guben": 19405685000.0,
+          "zong_guben": 19405918750.0,
+          "guojia_gu": 19660000.0,
+          "faqiren_faren_gu": 248700000000.0,
+          "faren_gu": 693850000000.0,
+          "b_gu": 0.0,
+          "h_gu": 0.0,
+          "zhigong_gu": 12400.0000953674,
+          "province": 18,
+          "industry": 1,
+          "ipo_date": "1991-04-03",
+          "zong_zichan": 60287851520000.0,
+          "liudong_zichan": 0.0,
+          "guding_zichan": 104640000000.0,
+          "wuxing_zichan": 54150000000.0,
+          "liudong_fuzhai": 0.0,
+          "changqi_fuzhai": 0.0,
+          "ziben_gongjijin": 804280000000.0,
+          "jing_zichan": 5482140160000.0,
+          "zhuying_shouru": 706170000000.0,
+          "zhuying_lirun": 397890000000.0,
+          "yingshou_zhangkuan": 0.0,
+          "yingye_lirun": 308280000000.0,
+          "touzi_shouyu": 115260000000.0,
+          "jingying_xianjinliu": 2150120000000.0,
+          "zong_xianjinliu": -514950000000.0,
+          "cunhuo": 0.0,
+          "lirun_zonghe": 307950000000.0,
+          "shuihou_lirun": 256960000000.0,
+          "jing_lirun": 256960000000.0,
+          "weifen_lirun": 2878569920000.0,
+          "meigujing_zichan": 24.1299991608,
+          "source_hash": "ae687d5b823f137f54734802fa16fbc1c8d4e5a486a58963d1d9465843205357",
+          "payload_json": "{\"b_gu\":0.0,\"changqi_fuzhai\":0.0,\"cunhuo\":0.0,\"faqiren_faren_gu\":248700000000.0,\"faren_gu\":693850000000.0,\"guding_zichan\":104640000000.0,\"guojia_gu\":19660000.0,\"h_gu\":0.0,\"industry\":1,\"ipo_date\":\"1991-04-03\",\"jing_lirun\":256960000000.0,\"jing_zichan\":5482140160000.0,\"jingying_xianjinliu\":2150120000000.0,\"lirun_zonghe\":307950000000.0,\"liudong_fuzhai\":0.0,\"liudong_zichan\":0.0,\"liutong_guben\":19405685000.0,\"meigujing_zichan\":24.1299991607666,\"period_end\":\"2026-08-15\",\"province\":18,\"shuihou_lirun\":256960000000.0,\"symbol\":\"000001.SZ\",\"touzi_shouyu\":115260000000.0,\"weifen_lirun\":2878569920000.0,\"wuxing_zichan\":54150000000.0,\"yingshou_zhangkuan\":0.0,\"yingye_lirun\":308280000000.0,\"zhigong_gu\":12400.000095367432,\"zhuying_lirun\":397890000000.0,\"zhuying_shouru\":706170000000.0,\"ziben_gongjijin\":804280000000.0,\"zong_guben\":19405918750.0,\"zong_xianjinliu\":-514950000000.0,\"zong_zichan\":60287851520000.0}",
+          "published_at": null,
+          "fetched_at": "2026-09-29T07:10:21",
+          "updated_at": 1790665821144182,
+          "source_updated_date": "2026-08-15T00:00:00.000",
+          "report_period_end": null
+        }
+      ],
+      "tail": [
+        {
+          "symbol": "000001.SZ",
+          "period_end": "2026-08-15T00:00:00.000",
+          "source": "tdxman:finance",
+          "liutong_guben": 19405685000.0,
+          "zong_guben": 19405918750.0,
+          "guojia_gu": 19660000.0,
+          "faqiren_faren_gu": 248700000000.0,
+          "faren_gu": 693850000000.0,
+          "b_gu": 0.0,
+          "h_gu": 0.0,
+          "zhigong_gu": 12400.0000953674,
+          "province": 18,
+          "industry": 1,
+          "ipo_date": "1991-04-03",
+          "zong_zichan": 60287851520000.0,
+          "liudong_zichan": 0.0,
+          "guding_zichan": 104640000000.0,
+          "wuxing_zichan": 54150000000.0,
+          "liudong_fuzhai": 0.0,
+          "changqi_fuzhai": 0.0,
+          "ziben_gongjijin": 804280000000.0,
+          "jing_zichan": 5482140160000.0,
+          "zhuying_shouru": 706170000000.0,
+          "zhuying_lirun": 397890000000.0,
+          "yingshou_zhangkuan": 0.0,
+          "yingye_lirun": 308280000000.0,
+          "touzi_shouyu": 115260000000.0,
+          "jingying_xianjinliu": 2150120000000.0,
+          "zong_xianjinliu": -514950000000.0,
+          "cunhuo": 0.0,
+          "lirun_zonghe": 307950000000.0,
+          "shuihou_lirun": 256960000000.0,
+          "jing_lirun": 256960000000.0,
+          "weifen_lirun": 2878569920000.0,
+          "meigujing_zichan": 24.1299991608,
+          "source_hash": "ae687d5b823f137f54734802fa16fbc1c8d4e5a486a58963d1d9465843205357",
+          "payload_json": "{\"b_gu\":0.0,\"changqi_fuzhai\":0.0,\"cunhuo\":0.0,\"faqiren_faren_gu\":248700000000.0,\"faren_gu\":693850000000.0,\"guding_zichan\":104640000000.0,\"guojia_gu\":19660000.0,\"h_gu\":0.0,\"industry\":1,\"ipo_date\":\"1991-04-03\",\"jing_lirun\":256960000000.0,\"jing_zichan\":5482140160000.0,\"jingying_xianjinliu\":2150120000000.0,\"lirun_zonghe\":307950000000.0,\"liudong_fuzhai\":0.0,\"liudong_zichan\":0.0,\"liutong_guben\":19405685000.0,\"meigujing_zichan\":24.1299991607666,\"period_end\":\"2026-08-15\",\"province\":18,\"shuihou_lirun\":256960000000.0,\"symbol\":\"000001.SZ\",\"touzi_shouyu\":115260000000.0,\"weifen_lirun\":2878569920000.0,\"wuxing_zichan\":54150000000.0,\"yingshou_zhangkuan\":0.0,\"yingye_lirun\":308280000000.0,\"zhigong_gu\":12400.000095367432,\"zhuying_lirun\":397890000000.0,\"zhuying_shouru\":706170000000.0,\"ziben_gongjijin\":804280000000.0,\"zong_guben\":19405918750.0,\"zong_xianjinliu\":-514950000000.0,\"zong_zichan\":60287851520000.0}",
+          "published_at": null,
+          "fetched_at": "2026-09-29T07:10:21",
+          "updated_at": 1790665821144182,
+          "source_updated_date": "2026-08-15T00:00:00.000",
+          "report_period_end": null
+        }
+      ],
+      "seconds": 0.0228
+    },
+    {
+      "name": "GN_directory",
+      "rows": 269,
+      "columns": [
+        "market",
+        "code",
+        "name",
+        "price",
+        "rise_speed",
+        "pre_close",
+        "symbol_market",
+        "symbol_code",
+        "symbol_name",
+        "symbol_price",
+        "symbol_rise_speed",
+        "symbol_pre_close"
+      ],
+      "attrs": {
+        "requested_count": 600,
+        "returned_count": 269,
+        "start": 0,
+        "next_offset": null,
+        "source_exhausted": true,
+        "complete": true,
+        "truncated": false,
+        "source_consistency": "best_effort",
+        "source_total": 269,
+        "source_total_changed": false
+      },
+      "sample": [
+        {
+          "market": 1,
+          "code": "880710",
+          "name": "种业",
+          "price": 1634.4000244141,
+          "rise_speed": 0.0,
+          "pre_close": 1575.1099853516,
+          "symbol_market": 0,
+          "symbol_code": "002041",
+          "symbol_name": "登海种业",
+          "symbol_price": 10.2299995422,
+          "symbol_rise_speed": 0.0,
+          "symbol_pre_close": 9.3000001907
+        },
+        {
+          "market": 1,
+          "code": "880706",
+          "name": "分散染料",
+          "price": 927.6599731445,
+          "rise_speed": 0.0,
+          "pre_close": 894.9299926758,
+          "symbol_market": 0,
+          "symbol_code": "301190",
+          "symbol_name": "善水科技",
+          "symbol_price": 35.9300003052,
+          "symbol_rise_speed": 0.0,
+          "symbol_pre_close": 29.9400005341
+        },
+        {
+          "market": 1,
+          "code": "880920",
+          "name": "免疫治疗",
+          "price": 1215.4699707031,
+          "rise_speed": 0.0,
+          "pre_close": 1174.1099853516,
+          "symbol_market": 2,
+          "symbol_code": "920344",
+          "symbol_name": "三元基因",
+          "symbol_price": 24.3500003815,
+          "symbol_rise_speed": 0.0,
+          "symbol_pre_close": 21.0300006866
+        }
+      ],
+      "tail": [
+        {
+          "market": 1,
+          "code": "880672",
+          "name": "存储芯片",
+          "price": 2775.8701171875,
+          "rise_speed": 0.0,
+          "pre_close": 2851.5500488281,
+          "symbol_market": 1,
+          "symbol_code": "605303",
+          "symbol_name": "园林股份",
+          "symbol_price": 28.6599998474,
+          "symbol_rise_speed": 0.0,
+          "symbol_pre_close": 26.0499992371
+        }
+      ],
+      "seconds": 0.1568
+    },
+    {
+      "name": "rank80",
+      "rows": 80,
+      "columns": [
+        "market",
+        "code",
+        "name",
+        "pre_close",
+        "open",
+        "high",
+        "low",
+        "close",
+        "vol",
+        "vol_ratio",
+        "amount",
+        "turnover"
+      ],
+      "attrs": {
+        "requested_count": 80,
+        "returned_count": 80,
+        "start": 0,
+        "next_offset": 80,
+        "source_exhausted": false,
+        "complete": false,
+        "truncated": true,
+        "source_consistency": "best_effort"
+      },
+      "sample": [
+        {
+          "market": 1,
+          "code": "880710",
+          "name": "种业",
+          "pre_close": 1575.1099853516,
+          "open": 1584.0899658203,
+          "high": 1648.8800048828,
+          "low": 1584.0899658203,
+          "close": 1634.4000244141,
+          "vol": 5169280,
+          "vol_ratio": 1.0108932257,
+          "amount": 4169014784.0,
+          "turnover": 4.797524929
+        },
+        {
+          "market": 1,
+          "code": "880706",
+          "name": "分散染料",
+          "pre_close": 894.9299926758,
+          "open": 902.0700073242,
+          "high": 938.8400268555,
+          "low": 902.0700073242,
+          "close": 927.6599731445,
+          "vol": 4853750,
+          "vol_ratio": 1.4244815111,
+          "amount": 5619942400.0,
+          "turnover": 3.4125959873
+        },
+        {
+          "market": 1,
+          "code": "880920",
+          "name": "免疫治疗",
+          "pre_close": 1174.1099853516,
+          "open": 1175.7399902344,
+          "high": 1227.4000244141,
+          "low": 1170.5,
+          "close": 1215.4699707031,
+          "vol": 14698102,
+          "vol_ratio": 1.1767648458,
+          "amount": 34932699136.0,
+          "turnover": 3.3889501095
+        }
+      ],
+      "tail": [
+        {
+          "market": 1,
+          "code": "880611",
+          "name": "核污染防治",
+          "pre_close": 1373.4300537109,
+          "open": 1378.5100097656,
+          "high": 1382.3000488281,
+          "low": 1370.1600341797,
+          "close": 1374.2099609375,
+          "vol": 8468123,
+          "vol_ratio": 0.7555803061,
+          "amount": 11301287936.0,
+          "turnover": 0.8664433956
+        }
+      ],
+      "seconds": 0.0466
+    },
+    {
+      "name": "rank81",
+      "rows": 81,
+      "columns": [
+        "market",
+        "code",
+        "name",
+        "pre_close",
+        "open",
+        "high",
+        "low",
+        "close",
+        "vol",
+        "vol_ratio",
+        "amount",
+        "turnover"
+      ],
+      "attrs": {
+        "requested_count": 81,
+        "returned_count": 81,
+        "start": 0,
+        "next_offset": 81,
+        "source_exhausted": false,
+        "complete": false,
+        "truncated": true,
+        "source_consistency": "best_effort"
+      },
+      "sample": [
+        {
+          "market": 1,
+          "code": "880710",
+          "name": "种业",
+          "pre_close": 1575.1099853516,
+          "open": 1584.0899658203,
+          "high": 1648.8800048828,
+          "low": 1584.0899658203,
+          "close": 1634.4000244141,
+          "vol": 5169280,
+          "vol_ratio": 1.0108932257,
+          "amount": 4169014784.0,
+          "turnover": 4.797524929
+        },
+        {
+          "market": 1,
+          "code": "880706",
+          "name": "分散染料",
+          "pre_close": 894.9299926758,
+          "open": 902.0700073242,
+          "high": 938.8400268555,
+          "low": 902.0700073242,
+          "close": 927.6599731445,
+          "vol": 4853750,
+          "vol_ratio": 1.4244815111,
+          "amount": 5619942400.0,
+          "turnover": 3.4125959873
+        },
+        {
+          "market": 1,
+          "code": "880920",
+          "name": "免疫治疗",
+          "pre_close": 1174.1099853516,
+          "open": 1175.7399902344,
+          "high": 1227.4000244141,
+          "low": 1170.5,
+          "close": 1215.4699707031,
+          "vol": 14698102,
+          "vol_ratio": 1.1767648458,
+          "amount": 34932699136.0,
+          "turnover": 3.3889501095
+        }
+      ],
+      "tail": [
+        {
+          "market": 1,
+          "code": "880713",
+          "name": "ETC概念",
+          "pre_close": 1846.2600097656,
+          "open": 1856.6700439453,
+          "high": 1860.4300537109,
+          "low": 1842.1600341797,
+          "close": 1847.0,
+          "vol": 5282620,
+          "vol_ratio": 0.739061594,
+          "amount": 5797413888.0,
+          "turnover": 1.4883646965
+        }
+      ],
+      "seconds": 0.0718
+    },
+    {
+      "name": "GN_minutes_whole_day",
+      "rows": 240,
+      "columns": [
+        "datetime",
+        "open",
+        "high",
+        "low",
+        "close",
+        "amount"
+      ],
+      "attrs": {
+        "requested_date": "2026-09-30",
+        "requested_since": "2026-09-30T00:00:00",
+        "source_oldest": "2026-09-29 09:31:00",
+        "source_latest": "2026-09-30 15:00:00",
+        "actual_start": "2026-09-30 09:31:00",
+        "actual_end": "2026-09-30 15:00:00",
+        "returned_rows": 240,
+        "protocol_requests": 2,
+        "request_count_basis": "page_dispatches_excluding_transport_retries",
+        "page_size": 240,
+        "window_start_reached": true,
+        "budget_exhausted": false,
+        "minute_continuity": "not_validated",
+        "finality": "not_provided",
+        "availability": "available",
+        "timezone": "Asia/Shanghai",
+        "revision_policy": "latest_source_values",
+        "price_unit": "point",
+        "amount_unit": "CNY",
+        "volume_unit": "not_provided",
+        "asset_type": "index",
+        "source_consistency": "best_effort"
+      },
+      "sample": [
+        {
+          "datetime": "2026-09-30T09:31:00.000",
+          "open": 1584.0899658203,
+          "high": 1595.9699707031,
+          "low": 1584.0899658203,
+          "close": 1591.6700439453,
+          "amount": 148344800.0
+        },
+        {
+          "datetime": "2026-09-30T09:32:00.000",
+          "open": 1591.8399658203,
+          "high": 1595.1500244141,
+          "low": 1590.2900390625,
+          "close": 1592.6600341797,
+          "amount": 68012880.0
+        },
+        {
+          "datetime": "2026-09-30T09:33:00.000",
+          "open": 1591.8900146484,
+          "high": 1591.8900146484,
+          "low": 1587.1800537109,
+          "close": 1591.2700195312,
+          "amount": 48222504.0
+        }
+      ],
+      "tail": [
+        {
+          "datetime": "2026-09-30T15:00:00.000",
+          "open": 1634.4000244141,
+          "high": 1634.4000244141,
+          "low": 1634.4000244141,
+          "close": 1634.4000244141,
+          "amount": 58052184.0
+        }
+      ],
+      "seconds": 0.0873
+    },
+    {
+      "name": "GN_minutes_tail",
+      "rows": 16,
+      "columns": [
+        "datetime",
+        "open",
+        "high",
+        "low",
+        "close",
+        "amount"
+      ],
+      "attrs": {
+        "requested_date": "2026-09-30",
+        "requested_since": "2026-09-30T14:45:00",
+        "source_oldest": "2026-09-30 14:41:00",
+        "source_latest": "2026-09-30 15:00:00",
+        "actual_start": "2026-09-30 14:45:00",
+        "actual_end": "2026-09-30 15:00:00",
+        "returned_rows": 16,
+        "protocol_requests": 1,
+        "request_count_basis": "page_dispatches_excluding_transport_retries",
+        "page_size": 20,
+        "window_start_reached": true,
+        "budget_exhausted": false,
+        "minute_continuity": "not_validated",
+        "finality": "not_provided",
+        "availability": "available",
+        "timezone": "Asia/Shanghai",
+        "revision_policy": "latest_source_values",
+        "price_unit": "point",
+        "amount_unit": "CNY",
+        "volume_unit": "not_provided",
+        "asset_type": "index",
+        "source_consistency": "best_effort"
+      },
+      "sample": [
+        {
+          "datetime": "2026-09-30T14:45:00.000",
+          "open": 1638.8499755859,
+          "high": 1639.6199951172,
+          "low": 1638.3399658203,
+          "close": 1639.2800292969,
+          "amount": 15449569.0
+        },
+        {
+          "datetime": "2026-09-30T14:46:00.000",
+          "open": 1639.3100585938,
+          "high": 1640.0,
+          "low": 1638.0100097656,
+          "close": 1638.0899658203,
+          "amount": 37542760.0
+        },
+        {
+          "datetime": "2026-09-30T14:47:00.000",
+          "open": 1637.9300537109,
+          "high": 1638.7800292969,
+          "low": 1636.7399902344,
+          "close": 1637.4499511719,
+          "amount": 11745078.0
+        }
+      ],
+      "tail": [
+        {
+          "datetime": "2026-09-30T15:00:00.000",
+          "open": 1634.4000244141,
+          "high": 1634.4000244141,
+          "low": 1634.4000244141,
+          "close": 1634.4000244141,
+          "amount": 58052184.0
+        }
+      ],
+      "seconds": 0.0379
+    },
+    {
+      "name": "historical_chart_20260930",
+      "rows": 240,
+      "columns": [
+        "time",
+        "price",
+        "avg",
+        "vol",
+        "momentum",
+        "date",
+        "pre_close",
+        "datetime"
+      ],
+      "attrs": {
+        "requested_date": "2026-09-30",
+        "source_date": "2026-09-30",
+        "date_verified": true,
+        "price_unit": "asset_dependent",
+        "pre_close_basis": "requested_day_header",
+        "volume_unit": "provider_raw_unverified",
+        "amount_provided": false,
+        "ohlc_provided": false,
+        "source_consistency": "best_effort"
+      },
+      "sample": [
+        {
+          "time": "09:30:00",
+          "price": 1238.25,
+          "avg": 1240.6696777344,
+          "vol": 993,
+          "momentum": 0.0,
+          "date": "2026-09-30T00:00:00.000",
+          "pre_close": 1235.5799560547,
+          "datetime": "2026-09-30T09:30:00.000"
+        },
+        {
+          "time": "09:31:00",
+          "price": 1237.5,
+          "avg": 1240.2198486328,
+          "vol": 255,
+          "momentum": 0.0,
+          "date": "2026-09-30T00:00:00.000",
+          "pre_close": 1235.5799560547,
+          "datetime": "2026-09-30T09:31:00.000"
+        },
+        {
+          "time": "09:32:00",
+          "price": 1236.0500488281,
+          "avg": 1239.6810302734,
+          "vol": 259,
+          "momentum": 0.0,
+          "date": "2026-09-30T00:00:00.000",
+          "pre_close": 1235.5799560547,
+          "datetime": "2026-09-30T09:32:00.000"
+        }
+      ],
+      "tail": [
+        {
+          "time": "14:59:00",
+          "price": 1258.6199951172,
+          "avg": 1251.5324707031,
+          "vol": 644,
+          "momentum": 0.0,
+          "date": "2026-09-30T00:00:00.000",
+          "pre_close": 1235.5799560547,
+          "datetime": "2026-09-30T14:59:00.000"
+        }
+      ],
+      "seconds": 0.0376
+    },
+    {
+      "name": "historical_chart_20260901",
+      "rows": 240,
+      "columns": [
+        "time",
+        "price",
+        "avg",
+        "vol",
+        "momentum",
+        "date",
+        "pre_close",
+        "datetime"
+      ],
+      "attrs": {
+        "requested_date": "2026-09-01",
+        "source_date": "2026-09-01",
+        "date_verified": true,
+        "price_unit": "asset_dependent",
+        "pre_close_basis": "requested_day_header",
+        "volume_unit": "provider_raw_unverified",
+        "amount_provided": false,
+        "ohlc_provided": false,
+        "source_consistency": "best_effort"
+      },
+      "sample": [
+        {
+          "time": "09:30:00",
+          "price": 1289.2399902344,
+          "avg": 1291.1513671875,
+          "vol": 1217,
+          "momentum": 0.0,
+          "date": "2026-09-01T00:00:00.000",
+          "pre_close": 1299.5200195312,
+          "datetime": "2026-09-01T09:30:00.000"
+        },
+        {
+          "time": "09:31:00",
+          "price": 1289.1800537109,
+          "avg": 1290.7945556641,
+          "vol": 269,
+          "momentum": 0.0,
+          "date": "2026-09-01T00:00:00.000",
+          "pre_close": 1299.5200195312,
+          "datetime": "2026-09-01T09:31:00.000"
+        },
+        {
+          "time": "09:32:00",
+          "price": 1289.5500488281,
+          "avg": 1290.5954589844,
+          "vol": 283,
+          "momentum": 0.0,
+          "date": "2026-09-01T00:00:00.000",
+          "pre_close": 1299.5200195312,
+          "datetime": "2026-09-01T09:32:00.000"
+        }
+      ],
+      "tail": [
+        {
+          "time": "14:59:00",
+          "price": 1299.5600585938,
+          "avg": 1298.8201904297,
+          "vol": 266,
+          "momentum": 0.0,
+          "date": "2026-09-01T00:00:00.000",
+          "pre_close": 1299.5200195312,
+          "datetime": "2026-09-01T14:59:00.000"
+        }
+      ],
+      "seconds": 0.0382
+    },
+    {
+      "name": "dated_share_source",
+      "rows": 2,
+      "columns": [
+        "market",
+        "code",
+        "name",
+        "close",
+        "total_shares",
+        "float_shares",
+        "server_update_date",
+        "server_update_time"
+      ],
+      "attrs": {
+        "requested_count": 2,
+        "returned_count": 2,
+        "complete": true,
+        "missing_identities": [],
+        "missing_fields": [],
+        "source_consistency": "best_effort",
+        "source_time_basis": "server_update_fields",
+        "amount_unit": "CNY",
+        "price_unit": "asset_dependent",
+        "volume_unit": "asset_dependent",
+        "shares_unit": "10000 shares for stocks"
+      },
+      "sample": [
+        {
+          "market": 0,
+          "code": "000001",
+          "name": "平安银行",
+          "close": 11.5699996948,
+          "total_shares": 1940591.875,
+          "float_shares": 1940568.5,
+          "server_update_date": 20260930,
+          "server_update_time": 153357
+        },
+        {
+          "market": 1,
+          "code": "600519",
+          "name": "贵州茅台",
+          "close": 1258.6199951172,
+          "total_shares": 125008.15625,
+          "float_shares": 125008.15625,
+          "server_update_date": 20260930,
+          "server_update_time": 153002
+        }
+      ],
+      "tail": [
+        {
+          "market": 1,
+          "code": "600519",
+          "name": "贵州茅台",
+          "close": 1258.6199951172,
+          "total_shares": 125008.15625,
+          "float_shares": 125008.15625,
+          "server_update_date": 20260930,
+          "server_update_time": 153002
+        }
+      ],
+      "seconds": 0.0365
+    }
+  ],
+  "signatures": {
+    "members": "(self, *, snapshot_id, kind, board_ids, limit=100000, offset=0)",
+    "minutes": "(self, market: 'int', code: 'str', *, date, since=None, max_pages=4, page_size=240, asset_type='stock') -> 'pd.DataFrame'"
+  },
+  "rank_prefix_preserved": true
+}

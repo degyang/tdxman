@@ -1,0 +1,114 @@
+{
+  "all_stocks": {
+    "schema": {
+      "fields": [
+        {
+          "name": "index",
+          "type": "integer"
+        },
+        {
+          "name": "close_limit_up_count",
+          "type": "integer",
+          "extDtype": "Int64"
+        },
+        {
+          "name": "limit_known_count",
+          "type": "integer",
+          "extDtype": "Int64"
+        },
+        {
+          "name": "limit_unknown_count",
+          "type": "integer",
+          "extDtype": "Int64"
+        }
+      ],
+      "primaryKey": [
+        "index"
+      ],
+      "pandas_version": "1.4.0"
+    },
+    "data": [
+      {
+        "index": 0,
+        "close_limit_up_count": 142,
+        "limit_known_count": 5399,
+        "limit_unknown_count": 105
+      },
+      {
+        "index": 1,
+        "close_limit_up_count": 154,
+        "limit_known_count": 5404,
+        "limit_unknown_count": 105
+      },
+      {
+        "index": 2,
+        "close_limit_up_count": 95,
+        "limit_known_count": 5409,
+        "limit_unknown_count": 104
+      },
+      {
+        "index": 3,
+        "close_limit_up_count": 108,
+        "limit_known_count": 5409,
+        "limit_unknown_count": 105
+      }
+    ]
+  },
+  "exclude_known_st": {
+    "schema": {
+      "fields": [
+        {
+          "name": "index",
+          "type": "integer"
+        },
+        {
+          "name": "close_limit_up_count",
+          "type": "integer",
+          "extDtype": "Int64"
+        },
+        {
+          "name": "limit_known_count",
+          "type": "integer",
+          "extDtype": "Int64"
+        },
+        {
+          "name": "limit_unknown_count",
+          "type": "integer",
+          "extDtype": "Int64"
+        }
+      ],
+      "primaryKey": [
+        "index"
+      ],
+      "pandas_version": "1.4.0"
+    },
+    "data": [
+      {
+        "index": 0,
+        "close_limit_up_count": 142,
+        "limit_known_count": 5396,
+        "limit_unknown_count": 105
+      },
+      {
+        "index": 1,
+        "close_limit_up_count": 154,
+        "limit_known_count": 5401,
+        "limit_unknown_count": 105
+      },
+      {
+        "index": 2,
+        "close_limit_up_count": 94,
+        "limit_known_count": 5406,
+        "limit_unknown_count": 104
+      },
+      {
+        "index": 3,
+        "close_limit_up_count": 107,
+        "limit_known_count": 5406,
+        "limit_unknown_count": 105
+      }
+    ]
+  },
+  "missing_st": 0,
+  "assumed_selected": 368633
+}

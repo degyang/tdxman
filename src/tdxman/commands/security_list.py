@@ -23,10 +23,10 @@ class GetSecurityListCmd(BaseCommand[list[SecurityInfo]]):
         self.start = start
 
     def build_request(self) -> bytes:
-        # Header (12 bytes) + Payload (6 bytes) = 18 bytes
-        # Payload: Market(H), Start(H), Unknown(H)=0
+        # The length fields include the 2-byte command ID: 10 + 6 = 16 bytes.
+        # Payload after the command ID: Market(H), Start(H).
         header = bytes.fromhex("0c0118640101060006005004".replace(" ", ""))
-        return header + struct.pack("<HHH", int(self.market), self.start, 0)
+        return header + struct.pack("<HH", int(self.market), self.start)
 
     def parse_response(self, body: bytes) -> list[SecurityInfo]:
         (num,) = unpack_from("<H", body, 0, "security_list header")

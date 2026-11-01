@@ -1,0 +1,112 @@
+{
+  "checked_at_utc": "2026-09-27T17:21:17.158742+00:00",
+  "scope": "requirements_design_review_incremental_validation_only",
+  "business_tables": [
+    "corporate_actions",
+    "daily_bars",
+    "daily_features",
+    "market_daily_summary"
+  ],
+  "new_constraint_checks": [
+    {
+      "name": "valid_known_limit_state",
+      "passed": true
+    },
+    {
+      "name": "dual_close_limit_rejected",
+      "passed": true
+    },
+    {
+      "name": "close_limit_implies_touch",
+      "passed": true
+    },
+    {
+      "name": "known_limit_requires_positive_reference",
+      "passed": true
+    },
+    {
+      "name": "known_streak_requires_integer_height",
+      "passed": true
+    },
+    {
+      "name": "unknown_streak_cannot_carry_height",
+      "passed": true
+    },
+    {
+      "name": "invalid_observation_has_unknown_streak",
+      "passed": true
+    },
+    {
+      "name": "invalid_observation_cannot_keep_ma20",
+      "passed": true
+    },
+    {
+      "name": "invalid_observation_requires_limit_invalid",
+      "passed": true
+    },
+    {
+      "name": "unknown_limit_is_not_false",
+      "passed": true
+    },
+    {
+      "name": "no_limit_known_reset",
+      "passed": true
+    },
+    {
+      "name": "no_limit_flags_cannot_be_null",
+      "passed": true
+    },
+    {
+      "name": "factor_interval_begins_at_effective_date",
+      "passed": true
+    },
+    {
+      "name": "factor_cannot_claim_earlier_interval",
+      "passed": true
+    }
+  ],
+  "field_map_target_count": 43,
+  "api_python_blocks_parse": 5,
+  "snapshot_and_pagination_alias_present": true,
+  "template_fields_match_ddl": true,
+  "daily_formula_template_hash_unchanged": true,
+  "local_link_targets_checked": 6,
+  "work_packages": "FW-01..FW-10; Fundwise M1 prioritized",
+  "reused_not_rerun": [
+    "231 daily formula reference cases",
+    "37 return distribution reference cases",
+    "previous agents application tests"
+  ],
+  "sha256": {
+    "docs/design/stocks_schema.sql": "433ff99b2160cdd281168fc9c907d2d75ca41ce9001a26c771e463f23726e12f",
+    "docs/design/market_four_dimensions.v1.json": "2d163003cfa8571f7448ec26c8effd482dfa1153d714a7660c6e32923124094f",
+    "docs/sqlite_stock_requirements_design.md": "dddf16c52d411f06277980681e5a942e38ecf0c839844fbd8d626d84423f73b2",
+    "docs/sqlite_design_review.md": "7cc82d38dd23fd650fcffbc43200d38faffd1fadc07da72ce4369eb45f35bf43",
+    "docs/sqlite_four_table_implementation_plan.md": "c2d3e567486053e37ef911cbbedc80cf7f3308e37636b53d84adf9073d3d3a69",
+    "docs/sqlite_migration_api_assessment.md": "abaaaf969bb7a44b5bd6dbfca6478598308056c914b52989044c7da9af7e2d59",
+    "docs/regime_model_template_design.md": "f5b95746567eea9dbbd2a0384846f87e8fbcd04ec16e7e75585d7774c55e2751",
+    "docs/daily_data_simplification.md": "864445b56cd0f420af1d21c7dec5b9b76ced8db3635c9d3a1e2fa7ea6124bc9f",
+    ".gitignore": "66ee487ff4a311246deb612ccffbd6096081b4a4c1edd2b58268ce6c9dbc1f72"
+  },
+  "not_verified": [
+    "real_migration",
+    "new_backend",
+    "Fundwise_new_backend_workflow",
+    "five_year_RSS",
+    "period_calibration",
+    "VPS_replication",
+    "production_restore"
+  ],
+  "production_data_written": false,
+  "followup_directory_checks": {
+    "checked_at_utc": "2026-09-27T17:23:41.255428+00:00",
+    "authoritative_root": "/mnt/d/Workstation/Services/tdxman/data",
+    "migration_root": "data/_staging/fw02",
+    "data_directory_created_empty": true,
+    "gitignore_checked": true,
+    "observed_mount_type": "9p",
+    "actual_filesystem_wal_lock_durability_and_performance": "pending_FW-01_FW-06",
+    "unchanged_ddl_and_template_checks_reused": true,
+    "docs_local_links_and_whitespace_checked": true
+  }
+}

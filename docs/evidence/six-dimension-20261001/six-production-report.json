@@ -1,0 +1,966 @@
+{
+  "root": "/mnt/d/Workstation/Services/tdxman/data",
+  "start": "2000-01-04",
+  "end": "2026-09-30",
+  "target_days": 6482,
+  "completed_days": 6482,
+  "scope_count": 2,
+  "summary_rows": 12964,
+  "board_rows": 7959896,
+  "read_rows": 113054367,
+  "batches": [
+    {
+      "start": "2000-01-04",
+      "end": "2000-04-10",
+      "days": 0,
+      "summary_rows": 0,
+      "board_rows": 0,
+      "seconds": 0.0
+    },
+    {
+      "start": "2000-04-11",
+      "end": "2000-07-10",
+      "days": 0,
+      "summary_rows": 0,
+      "board_rows": 0,
+      "seconds": 0.0
+    },
+    {
+      "start": "2000-07-11",
+      "end": "2000-10-09",
+      "days": 0,
+      "summary_rows": 0,
+      "board_rows": 0,
+      "seconds": 0.0
+    },
+    {
+      "start": "2000-10-10",
+      "end": "2001-01-02",
+      "days": 0,
+      "summary_rows": 0,
+      "board_rows": 0,
+      "seconds": 0.0
+    },
+    {
+      "start": "2001-01-03",
+      "end": "2001-04-10",
+      "days": 42,
+      "summary_rows": 84,
+      "board_rows": 51744,
+      "seconds": 8.664
+    },
+    {
+      "start": "2001-04-11",
+      "end": "2001-07-10",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 11.609
+    },
+    {
+      "start": "2001-07-11",
+      "end": "2001-10-09",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 11.742
+    },
+    {
+      "start": "2001-10-10",
+      "end": "2002-01-04",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 11.784
+    },
+    {
+      "start": "2002-01-07",
+      "end": "2002-04-12",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 11.916
+    },
+    {
+      "start": "2002-04-15",
+      "end": "2002-07-12",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 11.948
+    },
+    {
+      "start": "2002-07-15",
+      "end": "2002-10-14",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.374
+    },
+    {
+      "start": "2002-10-15",
+      "end": "2003-01-07",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.334
+    },
+    {
+      "start": "2003-01-08",
+      "end": "2003-04-10",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.511
+    },
+    {
+      "start": "2003-04-11",
+      "end": "2003-07-14",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.564
+    },
+    {
+      "start": "2003-07-15",
+      "end": "2003-10-13",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.772
+    },
+    {
+      "start": "2003-10-14",
+      "end": "2004-01-06",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.73
+    },
+    {
+      "start": "2004-01-07",
+      "end": "2004-04-09",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.898
+    },
+    {
+      "start": "2004-04-12",
+      "end": "2004-07-09",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.046
+    },
+    {
+      "start": "2004-07-12",
+      "end": "2004-10-08",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.312
+    },
+    {
+      "start": "2004-10-11",
+      "end": "2004-12-31",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.591
+    },
+    {
+      "start": "2005-01-04",
+      "end": "2005-04-06",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.353
+    },
+    {
+      "start": "2005-04-07",
+      "end": "2005-07-06",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.272
+    },
+    {
+      "start": "2005-07-07",
+      "end": "2005-09-28",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.372
+    },
+    {
+      "start": "2005-09-29",
+      "end": "2005-12-28",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.23
+    },
+    {
+      "start": "2005-12-29",
+      "end": "2006-04-04",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.854
+    },
+    {
+      "start": "2006-04-05",
+      "end": "2006-07-04",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 12.772
+    },
+    {
+      "start": "2006-07-05",
+      "end": "2006-09-26",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.11
+    },
+    {
+      "start": "2006-09-27",
+      "end": "2006-12-26",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.459
+    },
+    {
+      "start": "2006-12-27",
+      "end": "2007-03-30",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.763
+    },
+    {
+      "start": "2007-04-02",
+      "end": "2007-06-29",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.595
+    },
+    {
+      "start": "2007-07-02",
+      "end": "2007-09-21",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 14.344
+    },
+    {
+      "start": "2007-09-24",
+      "end": "2007-12-21",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 13.505
+    },
+    {
+      "start": "2007-12-24",
+      "end": "2008-03-25",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 15.728
+    },
+    {
+      "start": "2008-03-26",
+      "end": "2008-06-23",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 14.259
+    },
+    {
+      "start": "2008-06-24",
+      "end": "2008-09-16",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 15.037
+    },
+    {
+      "start": "2008-09-17",
+      "end": "2008-12-16",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 14.902
+    },
+    {
+      "start": "2008-12-17",
+      "end": "2009-03-19",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 15.649
+    },
+    {
+      "start": "2009-03-20",
+      "end": "2009-06-17",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 14.982
+    },
+    {
+      "start": "2009-06-18",
+      "end": "2009-09-09",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 14.851
+    },
+    {
+      "start": "2009-09-10",
+      "end": "2009-12-10",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 15.251
+    },
+    {
+      "start": "2009-12-11",
+      "end": "2010-03-12",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 15.825
+    },
+    {
+      "start": "2010-03-15",
+      "end": "2010-06-08",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 16.028
+    },
+    {
+      "start": "2010-06-09",
+      "end": "2010-09-03",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 16.342
+    },
+    {
+      "start": "2010-09-06",
+      "end": "2010-12-08",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 16.883
+    },
+    {
+      "start": "2010-12-09",
+      "end": "2011-03-10",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 17.678
+    },
+    {
+      "start": "2011-03-11",
+      "end": "2011-06-08",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 17.758
+    },
+    {
+      "start": "2011-06-09",
+      "end": "2011-08-31",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 18.298
+    },
+    {
+      "start": "2011-09-01",
+      "end": "2011-12-01",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 18.888
+    },
+    {
+      "start": "2011-12-02",
+      "end": "2012-03-05",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.04
+    },
+    {
+      "start": "2012-03-06",
+      "end": "2012-06-04",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 18.992
+    },
+    {
+      "start": "2012-06-05",
+      "end": "2012-08-28",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 20.252
+    },
+    {
+      "start": "2012-08-29",
+      "end": "2012-11-27",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.894
+    },
+    {
+      "start": "2012-11-28",
+      "end": "2013-03-01",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 20.097
+    },
+    {
+      "start": "2013-03-04",
+      "end": "2013-05-31",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 20.07
+    },
+    {
+      "start": "2013-06-03",
+      "end": "2013-08-28",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.484
+    },
+    {
+      "start": "2013-08-29",
+      "end": "2013-11-29",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.43
+    },
+    {
+      "start": "2013-12-02",
+      "end": "2014-03-03",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.972
+    },
+    {
+      "start": "2014-03-04",
+      "end": "2014-05-29",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.418
+    },
+    {
+      "start": "2014-05-30",
+      "end": "2014-08-22",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.24
+    },
+    {
+      "start": "2014-08-25",
+      "end": "2014-11-24",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.856
+    },
+    {
+      "start": "2014-11-25",
+      "end": "2015-02-25",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.824
+    },
+    {
+      "start": "2015-02-26",
+      "end": "2015-05-22",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 20.796
+    },
+    {
+      "start": "2015-05-25",
+      "end": "2015-08-17",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 19.215
+    },
+    {
+      "start": "2015-08-18",
+      "end": "2015-11-18",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 20.008
+    },
+    {
+      "start": "2015-11-19",
+      "end": "2016-02-18",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 20.591
+    },
+    {
+      "start": "2016-02-19",
+      "end": "2016-05-16",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 21.411
+    },
+    {
+      "start": "2016-05-17",
+      "end": "2016-08-10",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 21.87
+    },
+    {
+      "start": "2016-08-11",
+      "end": "2016-11-11",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 22.051
+    },
+    {
+      "start": "2016-11-14",
+      "end": "2017-02-13",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 22.87
+    },
+    {
+      "start": "2017-02-14",
+      "end": "2017-05-11",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 23.122
+    },
+    {
+      "start": "2017-05-12",
+      "end": "2017-08-07",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 23.881
+    },
+    {
+      "start": "2017-08-08",
+      "end": "2017-11-06",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 25.749
+    },
+    {
+      "start": "2017-11-07",
+      "end": "2018-01-30",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 29.452
+    },
+    {
+      "start": "2018-01-31",
+      "end": "2018-05-07",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 28.587
+    },
+    {
+      "start": "2018-05-08",
+      "end": "2018-07-31",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 26.641
+    },
+    {
+      "start": "2018-08-01",
+      "end": "2018-10-31",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 27.831
+    },
+    {
+      "start": "2018-11-01",
+      "end": "2019-01-25",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 28.075
+    },
+    {
+      "start": "2019-01-28",
+      "end": "2019-04-29",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 27.435
+    },
+    {
+      "start": "2019-04-30",
+      "end": "2019-07-26",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 27.733
+    },
+    {
+      "start": "2019-07-29",
+      "end": "2019-10-28",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 27.202
+    },
+    {
+      "start": "2019-10-29",
+      "end": "2020-01-21",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 27.964
+    },
+    {
+      "start": "2020-01-22",
+      "end": "2020-04-23",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 28.444
+    },
+    {
+      "start": "2020-04-24",
+      "end": "2020-07-23",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 28.876
+    },
+    {
+      "start": "2020-07-24",
+      "end": "2020-10-23",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 34.907
+    },
+    {
+      "start": "2020-10-26",
+      "end": "2021-01-18",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 30.393
+    },
+    {
+      "start": "2021-01-19",
+      "end": "2021-04-20",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 32.917
+    },
+    {
+      "start": "2021-04-21",
+      "end": "2021-07-19",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 32.797
+    },
+    {
+      "start": "2021-07-20",
+      "end": "2021-10-20",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 34.421
+    },
+    {
+      "start": "2021-10-21",
+      "end": "2022-01-13",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 36.279
+    },
+    {
+      "start": "2022-01-14",
+      "end": "2022-04-18",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 37.434
+    },
+    {
+      "start": "2022-04-19",
+      "end": "2022-07-15",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 37.804
+    },
+    {
+      "start": "2022-07-18",
+      "end": "2022-10-17",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 38.522
+    },
+    {
+      "start": "2022-10-18",
+      "end": "2023-01-10",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 38.655
+    },
+    {
+      "start": "2023-01-11",
+      "end": "2023-04-12",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 38.854
+    },
+    {
+      "start": "2023-04-13",
+      "end": "2023-07-12",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 39.433
+    },
+    {
+      "start": "2023-07-13",
+      "end": "2023-10-12",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 39.291
+    },
+    {
+      "start": "2023-10-13",
+      "end": "2024-01-05",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 39.42
+    },
+    {
+      "start": "2024-01-08",
+      "end": "2024-04-10",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 39.425
+    },
+    {
+      "start": "2024-04-11",
+      "end": "2024-07-09",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 39.691
+    },
+    {
+      "start": "2024-07-10",
+      "end": "2024-10-10",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 40.457
+    },
+    {
+      "start": "2024-10-11",
+      "end": "2025-01-03",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 43.532
+    },
+    {
+      "start": "2025-01-06",
+      "end": "2025-04-08",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 44.37
+    },
+    {
+      "start": "2025-04-09",
+      "end": "2025-07-07",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 43.21
+    },
+    {
+      "start": "2025-07-08",
+      "end": "2025-09-29",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 41.828
+    },
+    {
+      "start": "2025-09-30",
+      "end": "2025-12-30",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 42.316
+    },
+    {
+      "start": "2025-12-31",
+      "end": "2026-04-03",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 43.04
+    },
+    {
+      "start": "2026-04-07",
+      "end": "2026-07-03",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 43.135
+    },
+    {
+      "start": "2026-07-06",
+      "end": "2026-09-28",
+      "days": 60,
+      "summary_rows": 120,
+      "board_rows": 73920,
+      "seconds": 41.857
+    },
+    {
+      "start": "2026-09-29",
+      "end": "2026-09-30",
+      "days": 2,
+      "summary_rows": 4,
+      "board_rows": 2464,
+      "seconds": 1.349
+    }
+  ],
+  "status": "completed",
+  "basis": "current_snapshot",
+  "source_collection_time": "2026-10-01T09:09:47.968296+00:00",
+  "sdk_source_commit": "e14eb62356d207c398b361de9d74166e2d9eb761",
+  "industry_snapshot_id": "971020c354da3319e6ae78e64babc46cd028644ef3a9cd42d9a503b6d74f6cac",
+  "concept_snapshot_id": "223785d26172ed3060464df137f0c42744643eb24fc6b98caa2d450a9e888c4a",
+  "seconds": 2471.448,
+  "peak_rss_kib": 735832,
+  "current_day": "2026-09-30",
+  "market_coverage": [
+    {
+      "scope": "all_stocks",
+      "days": 6482,
+      "volume_computed_days": 6482,
+      "volume_nonempty_days": 6477,
+      "upper_median_days": 6482
+    },
+    {
+      "scope": "exclude_known_st",
+      "days": 6482,
+      "volume_computed_days": 6482,
+      "volume_nonempty_days": 6477,
+      "upper_median_days": 6482
+    }
+  ],
+  "board_coverage": [
+    {
+      "scope": "all_stocks",
+      "kind": "concept",
+      "days": 6482,
+      "rows": 1743658
+    },
+    {
+      "scope": "all_stocks",
+      "kind": "industry",
+      "days": 6482,
+      "rows": 2236290
+    },
+    {
+      "scope": "exclude_known_st",
+      "kind": "concept",
+      "days": 6482,
+      "rows": 1743658
+    },
+    {
+      "scope": "exclude_known_st",
+      "kind": "industry",
+      "days": 6482,
+      "rows": 2236290
+    }
+  ],
+  "category_status": [
+    {
+      "scope": "all_stocks",
+      "kind": "concept",
+      "status": "ready",
+      "days": 6482
+    },
+    {
+      "scope": "all_stocks",
+      "kind": "industry",
+      "status": "ready",
+      "days": 6482
+    },
+    {
+      "scope": "exclude_known_st",
+      "kind": "concept",
+      "status": "ready",
+      "days": 6482
+    },
+    {
+      "scope": "exclude_known_st",
+      "kind": "industry",
+      "status": "ready",
+      "days": 6482
+    }
+  ],
+  "four_dimensional_facts_unchanged": true,
+  "sdk_wheel_sha256": "549fe609c4f62a1768668aad9fb0ac76c0ecf22a45684d4a823cea5dc23575e0",
+  "board_status_rows": 25928,
+  "duration_note": "seconds/peak_rss describe the final cached run; earlier safely interrupted runs resumed without recomputing completed dates"
+}

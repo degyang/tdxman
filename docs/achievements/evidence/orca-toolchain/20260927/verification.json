@@ -1,0 +1,97 @@
+{
+  "observed_at": "2026-09-27T05:33:47.253347+00:00",
+  "scope": "Orca toolchain installation and isolated WSL worktree smoke test; no business data operations",
+  "repo_commit": "9a217a2bdb08fb8ffa6f278291497550a11fe3f7",
+  "working_tree_has_uncommitted_remediation_docs": true,
+  "install": {
+    "command": "npx --yes skills add https://github.com/stablyai/orca --skill orca-cli --skill computer-use --skill orchestration --agent codex --global --yes",
+    "exit_code": 0,
+    "skills_cli_version": "1.7.0",
+    "skills_list_recognizes_codex": true,
+    "skills": [
+      {
+        "name": "orca-cli",
+        "path": "/home/ubuntu/.agents/skills/orca-cli/SKILL.md",
+        "sha256": "aa76f86505010096e8ea9edda1705a78aae7af45e54485f3fe0460664c1d9e4a",
+        "guide_exit": 0,
+        "guide_bytes": 20301
+      },
+      {
+        "name": "computer-use",
+        "path": "/home/ubuntu/.agents/skills/computer-use/SKILL.md",
+        "sha256": "2839933fd35216845461466403e6061488005f6df57126d0cd0f769ea45753f3",
+        "guide_exit": 0,
+        "guide_bytes": 11470
+      },
+      {
+        "name": "orchestration",
+        "path": "/home/ubuntu/.agents/skills/orchestration/SKILL.md",
+        "sha256": "cd1b364bf35781bad06bf75ab1766afa8d6cec69cb2060529691d89871a2098a",
+        "guide_exit": 0,
+        "guide_bytes": 13006
+      }
+    ]
+  },
+  "runtime": {
+    "appVersion": "1.4.212",
+    "state": "ready",
+    "reachable": true,
+    "connectionState": "connected"
+  },
+  "worktree": {
+    "create_ok": true,
+    "base_ref": "refs/remotes/origin/main",
+    "head": "9a217a2bdb08fb8ffa6f278291497550a11fe3f7",
+    "wsl_git_clean": true,
+    "current_selector_matches": true,
+    "new_worktree_inherits_untracked_docs": false,
+    "new_worktree_has_project_venv": false,
+    "terminal_probe": {
+      "cwd": "/home/ubuntu/orca/workspaces/tdxman/orca-toolchain-smoke-20260927",
+      "platform": "linux",
+      "wsl_distro": "Ubuntu-24.04",
+      "home": "/home/ubuntu",
+      "python": "/home/ubuntu/.local/share/mise/installs/python/3.12/bin/python3",
+      "git": "/usr/bin/git",
+      "codex": "/home/ubuntu/.local/share/mise/installs/node/24/bin/codex",
+      "codex_version": "codex-cli 0.157.1",
+      "git_status_exit": 0,
+      "git_clean": true,
+      "orca_cli_command": "orca-ide",
+      "skills": {
+        "orca-cli": true,
+        "computer-use": true,
+        "orchestration": true
+      },
+      "project_venv_exists": false
+    },
+    "terminal_output_marker_verified": true,
+    "terminal_closed": true,
+    "remove_ok": true,
+    "worktree_absent_after_cleanup": true,
+    "test_branch_absent_after_cleanup": true,
+    "remaining_worktree_count": 1
+  },
+  "orchestration": {
+    "version_matched_guide_read": true,
+    "run_list_ok": true,
+    "workers_started": 0,
+    "lifecycle_mutations": 0,
+    "end_to_end_agent_scheduling_tested": false
+  },
+  "computer_use": {
+    "capabilities_ok": true,
+    "platform": "win32",
+    "provider": "orca-computer-use-windows",
+    "provider_version": "1.0.0",
+    "ui_actions_tested": false
+  },
+  "not_tested": [
+    "Codex authentication and model calls",
+    "Multi-agent scheduling and completion",
+    "GUI screenshot/click/input",
+    "Project virtualenv installation and business test suite",
+    "Production data repair, migration, five-year RSS revalidation"
+  ],
+  "result": "passed_for_declared_scope"
+}

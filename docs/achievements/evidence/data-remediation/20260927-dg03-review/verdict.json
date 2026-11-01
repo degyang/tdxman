@@ -1,0 +1,25 @@
+{
+  "task": "task_1ef9487d36e2",
+  "dispatch": "ctx_0ce55fe1c106",
+  "worker_done": "msg_a4ce04405e69",
+  "source_commit": "c1a46fb05cd3f119eecfb36a4d59d6c61a10a8db",
+  "outcome": "review completed; implementation acceptance pending focused F1/F2 closure and growth samples",
+  "findings": [
+    "F1/P2 joint raw-facts-coverage-stale crash assertions missing",
+    "F2/P2 process contention/release handshake missing"
+  ],
+  "fix_owner": "task_43714f545a49 / ctx_eaf6fc0a6fb8",
+  "tests_repeated": false,
+  "closure": {
+    "implementation_commit": "f170efa90a4cda2ac65f161527a3cb44a58d52ec",
+    "reviewer_fix_owner": "original implementation worker",
+    "coordinator_checked": "source assertions against F1/F2 checklist and original worker result; no coordinator test rerun",
+    "changes": [
+      "six-domain before/after COMMIT SIGKILL state assertions incl. unchanged existing raw rows",
+      "nonblocking flock conflict probe, explicit holder release and attempted/locked/released handshake",
+      "shared readers overlap and expected six writer commits verified"
+    ],
+    "validation": "docs/evidence/data-remediation/20260927-dg03/tests-joint-protocol.log",
+    "remaining": "actual growth/maintenance/recovery size and dated facts sampling"
+  }
+}

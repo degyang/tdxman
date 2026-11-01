@@ -1,0 +1,11 @@
+{
+  "plan_id": "107fcabe21d55519917e6987e1483b4118dfc2ab1201c7f351a0a47003187bff",
+  "source": "eff91eab10e43c3b1df52c78320f51c2e26653e99159d9320daca41a6e937bdd",
+  "after": "ff7cff8b970e2b9290dd2bb855211e9763552f831c28a52b5e065c1b55a00587",
+  "symbols": 245,
+  "records": 2506,
+  "changed_rows": 2726,
+  "changed_facts": 2461,
+  "recovery_manifest": "/home/ubuntu/aspool-labs/dg04-20260927/recovery-after-initial-manifest.json",
+  "recovery_sha256": "df0c77fa3d78d4d34dbb7413574f442bea2cceaa53915ba0d799576f55a8f9a6"
+}

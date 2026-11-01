@@ -31,6 +31,8 @@ _BASIC_TABLE_COLUMNS = (
     "amount",
     "turnover_rate",
     "is_st",
+    "st_type",
+    "is_suspended",
     "trading_status",
     "source",
     "listing_date",
@@ -57,6 +59,12 @@ _BASIC_TABLE_COLUMNS = (
     "zhuying_shouru",
     "jing_lirun",
     "meigujing_zichan",
+    "category",
+    "fenhong",
+    "peigujia",
+    "songzhuangu",
+    "peigu",
+    "suogu",
 )
 
 
@@ -323,7 +331,9 @@ def _render_table(df: pd.DataFrame) -> str:
     display_df = _format_price_display(df)
     for col in display_df.columns:
         if display_df[col].dtype == object:
-            display_df[col] = display_df[col].astype(str).str.slice(0, 30)
+            display_df[col] = (
+                display_df[col].where(display_df[col].notna(), "").astype(str).str.slice(0, 30)
+            )
 
     try:
         import tabulate
@@ -350,6 +360,8 @@ def _render_markdown(df: pd.DataFrame) -> str:
     columns = [str(column) for column in display_df.columns]
 
     def cell(value: object) -> str:
+        if pd.api.types.is_scalar(value) and pd.isna(value):
+            return ""
         return str(value).replace("|", "\\|").replace("\n", "<br>")
 
     lines = [

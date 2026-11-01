@@ -1,0 +1,57 @@
+{
+  "database_bytes": 9218285568,
+  "database_sha256": "6eb13bafe07ce0fcc1a24047761dd91b26ba31302dedcc6369276993487b2808",
+  "integrity_check": "ok",
+  "daily_calculation_complete": true,
+  "production_ready": false,
+  "rows": {
+    "daily_bars": 16350085,
+    "daily_features": 16350599,
+    "market_daily_summary": 12958,
+    "corporate_actions": 301404
+  },
+  "corporate_action_kinds": {
+    "event": 186622,
+    "factor": 57391,
+    "factor_anchor": 57391
+  },
+  "market_sessions": 6479,
+  "scopes": {
+    "all_stocks": {
+      "trading_count": 16350006,
+      "limit_invalid_count": 16,
+      "limit_known_count": 2854195,
+      "no_limit_count": 6513,
+      "limit_unknown_count": 13489298,
+      "close_limit_up_count": 48230,
+      "touch_limit_up_count": 54903,
+      "close_limit_down_count": 3188,
+      "touch_limit_down_count": 5547,
+      "ma20_valid_count": 15353002,
+      "above_ma20_count": 7561309,
+      "st_unknown_count": 15936030,
+      "valid_return_count": 16098557,
+      "invalid_return_count": 251449
+    },
+    "exclude_known_st": {
+      "trading_count": 16346668,
+      "limit_invalid_count": 16,
+      "limit_known_count": 2850857,
+      "no_limit_count": 6513,
+      "limit_unknown_count": 13489298,
+      "close_limit_up_count": 48145,
+      "touch_limit_up_count": 54771,
+      "close_limit_down_count": 3138,
+      "touch_limit_down_count": 5469,
+      "ma20_valid_count": 15349664,
+      "above_ma20_count": 7559851,
+      "st_unknown_count": 15936030,
+      "valid_return_count": 16095219,
+      "invalid_return_count": 251449
+    }
+  },
+  "source_manifest_sha256": "37ed77ffe5bafd00b1ffe6a8b7263219b7e445c68568c209bfa49ecccb44abce",
+  "unknowns_retained": true,
+  "verification_seconds": 762.197,
+  "verification_peak_rss_kib": 295792
+}

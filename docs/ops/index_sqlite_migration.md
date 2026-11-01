@@ -1,5 +1,8 @@
 # 指数 SQLite 迁移与原命令接入
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](../design/data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 2026-09-28。用户明确要求将指数也迁至 SQLite，并保留原有命令。
 本文替代此前“指数首期仍存 Parquet”的存储安排；股票四表不变。
 随后已补齐 [ETF 与辅助数据迁移](etf_reference_sqlite_migration.md)，生产池不再保留 lake 分区。

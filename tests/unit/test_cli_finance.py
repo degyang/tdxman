@@ -25,6 +25,39 @@ def test_finance_routes_to_standard_client() -> None:
     client.get_finance_info.assert_called_once_with(Market.SH, "600519")
 
 
+def test_xdxr_exposes_corporate_actions_in_json_and_table() -> None:
+    data = pd.DataFrame(
+        [
+            {
+                "date": pd.Timestamp("2026-06-26"),
+                "market": Market.SH,
+                "code": "600519",
+                "category": 1,
+                "name": "除权除息",
+                "fenhong": 28.0242,
+                "peigujia": 0.0,
+                "songzhuangu": 0.0,
+                "peigu": 0.0,
+                "suogu": None,
+            }
+        ]
+    )
+    with patch("tdxman.cli.conn.get_tdx_client") as factory:
+        client = factory.return_value.__enter__.return_value
+        client.get_xdxr_info.return_value = data
+        as_json = CliRunner().invoke(cli, ["xdxr", "600519.SH"])
+        as_table = CliRunner().invoke(cli, ["xdxr", "SH", "600519", "--format", "table"])
+
+    assert as_json.exit_code == 0, as_json.output
+    assert json.loads(as_json.output)[0]["fenhong"] == 28.0242
+    assert as_table.exit_code == 0, as_table.output
+    assert "fenhong" in as_table.output
+    assert "除权除息" in as_table.output
+    assert "nan" not in as_table.output.lower()
+    assert client.get_xdxr_info.call_count == 2
+    client.get_xdxr_info.assert_called_with(Market.SH, "600519")
+
+
 def test_fund_flow_routes_to_standard_client_with_output_options() -> None:
     with patch("tdxman.cli.conn.get_tdx_client") as factory:
         client = factory.return_value.__enter__.return_value

@@ -1,0 +1,66 @@
+{
+  "fundwise_commit": "1b2565859f7c5c24a7ecd13e2a1625a196c402d8",
+  "aspool_import": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg04-repair/src/aspool/__init__.py",
+  "source": {
+    "root": "/home/ubuntu/.aspool",
+    "revision": "b0548235e9ad41ab58f5865d9a545314c2f9816cf0dc04f5c918d682e0462e89",
+    "reader_revision": "8439bffb32fe2e86258c75ac369dc5a535f5151f52e94eaf91f0985e9cc2cdb8",
+    "state": "ready",
+    "error": null,
+    "checked_at": "2026-09-27T11:21:04.072777+00:00",
+    "limit_days": 1296,
+    "limit_start": "2021-05-27",
+    "limit_end": "2026-09-24",
+    "limit_stale_days": 0,
+    "limit_computed_at": "2026-09-27 11:20:20.149131"
+  },
+  "start": "2026-08-26",
+  "end": "2026-09-24",
+  "warmup": "2026-06-27",
+  "service_result": {
+    "ok": true,
+    "computed": 22,
+    "phase_days": 0,
+    "mainline_rows": 0,
+    "mainline": {
+      "status": "not_computed"
+    }
+  },
+  "service_rows": 22,
+  "market_rows": 354337,
+  "index_sessions": 64,
+  "current_snapshot_rows": 5570,
+  "remaining_nulls": {
+    "pre_close": 26,
+    "pct_chg": 26,
+    "amount": 0,
+    "is_st": 3402,
+    "turnover_rate": 1
+  },
+  "rankable_events": 1400,
+  "event_amount_nulls": 0,
+  "mainline_progress": {
+    "event_cache_hits": 0,
+    "event_batches": 2,
+    "amount_batches": 5,
+    "event_window": "2026-09-01 \u2192 2026-09-24"
+  },
+  "limit_partial_days": 22,
+  "seconds": 38.81030828600342,
+  "rss_mib": 1425.9609375,
+  "limitation": "Actual unchanged Fundwise market service and mainline event consumer for recent30 natural days with60 natural-day warmup; no board membership refresh, full default five-year recomputation, or live cache writes",
+  "partial_reason_counts": {
+    "unknown_scope": 21,
+    "unknown_scope,invalid_scope": 1
+  },
+  "process_timing": {
+    "start_utc": "2026-09-27T11:21:03.033024+00:00",
+    "end_utc": "2026-09-27T11:21:42.422085+00:00",
+    "seconds": 39.389065434996155,
+    "exit_code": 0,
+    "stderr": "peak_rss_kib=1460184\n"
+  },
+  "scope_note": "Actual consumer environment projection, not the five-year stock-only raw/date-fact audit; missing counts are separate metrics.",
+  "phase_pipeline": "Executed attach_ladder/classify_phases;22partialdays produce missing required ladder drivers and phase_days0. Public phases read returns unknown_days22.",
+  "mainline_ranking": "Not computed; actual existing614board snapshot expired (>86400s), so unchanged pipeline requires network refresh. Deferred explicit DG07 integration; no fabricated timestamp/reader override."
+}

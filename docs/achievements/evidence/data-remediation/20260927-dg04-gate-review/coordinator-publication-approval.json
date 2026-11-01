@@ -1,0 +1,16 @@
+{
+  "plan_id": "36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5",
+  "source": "ddd0c37c09a299c8addaf9e4f09ba6928178079f1ced11f960b463018ab1e44b",
+  "single_writer": true,
+  "recovery_verified": true,
+  "writer_dispatch": "ctx_6b4aa5a0b9c2",
+  "implementation_commit": "9308d5509ed0b0f378b94a098e0ea8b5357f65ff",
+  "tested_commit": "13d627c2d71dd73cf139f49b23448552469295f7",
+  "max_days": 256,
+  "scope": "Only frozen1213sessions2021-09-24..2026-09-24 publication; then read-only checks/Fundwise isolated cache",
+  "prior_state_hash": "00aaa72f98803d6cecb5370d478db204675e89342eda36e6e51055764e4a1ec8",
+  "independent_review_task": "task_d77082c8d20c",
+  "review_message": "msg_569b062d16d2",
+  "recovery_manifest_sha256": "0231763157911fea7b6d24590db2b359dcd0a7541850220107b590d818a4e237",
+  "issued_utc": "2026-09-27T11:07:54.967318+00:00"
+}

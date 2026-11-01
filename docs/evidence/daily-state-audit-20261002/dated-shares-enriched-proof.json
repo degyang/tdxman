@@ -1,0 +1,14 @@
+[
+  {
+    "symbol":"688383.SH",
+    "date":"2022-08-29T00:00:00.000",
+    "close":127.8000030518,
+    "volume":836397.0,
+    "float_share":28709943.84765625,
+    "float_share_source":"tdxman:kline",
+    "float_mv":3669130911.3462643623,
+    "float_mv_source":"derived:raw_close*tdxman:kline",
+    "turnover_rate":2.913265886,
+    "turnover_rate_source":"derived:dated_float_share"
+  }
+]

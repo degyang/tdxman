@@ -1,0 +1,69 @@
+{
+  "2026-07-03": [
+    {
+      "limit_reason": "missing_reference",
+      "rows": 95,
+      "dated_st_candidates": 80,
+      "positive_reference_candidates": null,
+      "dated_name_candidates": 0
+    },
+    {
+      "limit_reason": "missing_st",
+      "rows": 3097,
+      "dated_st_candidates": 3097,
+      "positive_reference_candidates": 2,
+      "dated_name_candidates": null
+    }
+  ],
+  "2026-07-06": [
+    {
+      "limit_reason": "missing_reference",
+      "rows": 106,
+      "dated_st_candidates": 91,
+      "positive_reference_candidates": null,
+      "dated_name_candidates": 0
+    }
+  ],
+  "observed_missing_intervals": {
+    "st_unknown_count": {
+      "first": "2000-01-04",
+      "last": "2026-09-23",
+      "days": 6476
+    },
+    "limit_unknown_count": {
+      "first": "2000-01-04",
+      "last": "2026-09-24",
+      "days": 6479
+    },
+    "limit_invalid_count": {
+      "first": "2026-06-24",
+      "last": "2026-09-24",
+      "days": 2
+    },
+    "streak_unknown_count": {
+      "first": "2020-08-24",
+      "last": "2026-07-14",
+      "days": 300
+    }
+  },
+  "missing_st_provenance_2026_07_03": [
+    {
+      "source_is_st": 0,
+      "source": "raw_fallback:legacy_unspecified",
+      "rows": 2950
+    },
+    {
+      "source_is_st": 1,
+      "source": "raw_fallback:legacy_unspecified",
+      "rows": 147
+    }
+  ],
+  "actual_dated_name_candidates": {
+    "2026-07-03": 0,
+    "2026-07-06": 0
+  },
+  "interpretation": "Legacy ST values have raw_fallback:legacy_unspecified provenance, not confirmed dated facts. No current-name backfill is authorized; source provenance must be established first.",
+  "column_notes": {
+    "dated_st_candidates": "Legacy query label: counts non-null source ST candidates, NOT verified dated ST facts. See provenance and actual_dated_name_candidates."
+  }
+}

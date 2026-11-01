@@ -29,6 +29,15 @@ def test_aspool_help_documents_conditional_sync_options():
     assert "aspool sync --source free-stockdb --period daily" in output
 
 
+def test_all_sync_keeps_index_bootstrap_unbounded(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr("aspool.cli._run_all", lambda target, **kwargs: calls.append(kwargs))
+    result = CliRunner().invoke(cli, ["sync", "--type", "all", "--root", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    assert calls[0]["count"] == 10
+    assert calls[0]["index_count"] is None
+
+
 def test_aspool_query_rejects_invalid_symbol_without_traceback():
     result = CliRunner().invoke(cli, ["query", "INVALID"])
     assert result.exit_code == 2

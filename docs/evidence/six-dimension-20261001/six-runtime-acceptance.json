@@ -1,0 +1,67 @@
+{
+  "real_eod_replay": {
+    "date": "2026-09-30",
+    "bars": 5560,
+    "source_fact_rows": 5577,
+    "batches": 22,
+    "seconds": 24.634,
+    "market_and_board_values_equal_initialization": true,
+    "affected_sessions": [
+      "2026-09-30"
+    ]
+  },
+  "unchanged_replay": {
+    "changed_rows": 0,
+    "changed_metric_rows": 0,
+    "changed_factor_rows": 0,
+    "affected_sessions": [],
+    "recomputed_feature_rows": 0,
+    "changed_feature_rows": 0,
+    "summary_rows": 0,
+    "read_rows": 0,
+    "feature_elapsed_ms": 0,
+    "summary_elapsed_ms": 0,
+    "elapsed_ms": 177,
+    "verified_seconds": 0.208
+  },
+  "volume_revision": {
+    "changed_rows": 1,
+    "changed_metric_rows": 0,
+    "changed_factor_rows": 0,
+    "affected_sessions": [
+      "2026-09-21",
+      "2026-09-22",
+      "2026-09-23",
+      "2026-09-24",
+      "2026-09-28",
+      "2026-09-29"
+    ],
+    "recomputed_feature_rows": 0,
+    "changed_feature_rows": 0,
+    "summary_rows": 12,
+    "read_rows": 233836,
+    "feature_elapsed_ms": 0,
+    "summary_elapsed_ms": 1254,
+    "elapsed_ms": 1333
+  },
+  "missing_stock_volume": {
+    "changed_rows": 1,
+    "changed_metric_rows": 0,
+    "changed_factor_rows": 0,
+    "affected_sessions": [
+      "2026-09-30"
+    ],
+    "recomputed_feature_rows": 0,
+    "changed_feature_rows": 0,
+    "summary_rows": 2,
+    "read_rows": 39016,
+    "feature_elapsed_ms": 0,
+    "summary_elapsed_ms": 215,
+    "elapsed_ms": 292,
+    "global_trading_count": 5560,
+    "volume_valid_count": 5548,
+    "remaining_global_volume_mean": 0.9243087308956953
+  },
+  "peak_rss_kib": 442488,
+  "scope": "isolated real-input replay; no production writes or invented future session"
+}

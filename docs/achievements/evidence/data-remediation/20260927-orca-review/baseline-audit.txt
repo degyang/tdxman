@@ -1,0 +1,111 @@
+FF.FF                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_stock_default_still_uses_existing_pipeline ________________
+
+tmp_path = PosixPath('/home/ubuntu/aspool-labs/20260927-orca-review/task_e156082ba705/baseline-tests/test_stock_default_still_uses_0')
+
+    def test_stock_default_still_uses_existing_pipeline(tmp_path):
+        from aspool.store import initialize, record_coverage
+    
+        initialize(tmp_path)
+        record_coverage(tmp_path, "000001", "SZ", date(2010, 1, 4), date(2010, 1, 4), 1, "test")
+        with (
+            patch("aspool.cli.update_online", return_value=(1, 30)) as stock,
+            patch("aspool.index_pool.sync_indices") as index,
+        ):
+            result = CliRunner().invoke(cli, ["sync", "--root", str(tmp_path)])
+>       assert result.exit_code == 0, result.output
+E       AssertionError: 通达信 K 线校准：1 个标的，写入变化记录 30 条 daily K
+E         
+E       assert 1 == 0
+E        +  where 1 = <Result FileNotFoundError(2, 'No such file or directory')>.exit_code
+
+../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_aspool_index.py:205: AssertionError
+__________________ TestComputePriceLimits.test_main_board_st ___________________
+
+self = <tests.unit.test_daily_derived.TestComputePriceLimits testMethod=test_main_board_st>
+
+    def test_main_board_st(self):
+        """主板ST股票 ±5%。"""
+        result = compute_price_limits_wrapper(22.53, "MAIN", True, "ST益丰")
+        self.assertEqual(result["price_limit_status"], "KNOWN")
+>       self.assertAlmostEqual(result["limit_pct"], 0.05, places=2)
+E       AssertionError: 0.0999 != 0.05 within 2 places (0.0499 difference)
+
+../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_daily_derived.py:287: AssertionError
+_________ TestSampleData.test_single_day_samples (sample='ST股票涨停（主板）') _________
+
+self = <tests.unit.test_daily_derived.TestSampleData testMethod=test_single_day_samples>
+
+    def test_single_day_samples(self):
+        """测试单日样例数据的计算结果。"""
+        fixtures_path = Path(__file__).parent.parent / "fixtures" / "daily_derived_samples.json"
+        with open(fixtures_path) as f:
+            data = json.load(f)
+    
+        for sample in data["samples"]:
+            if "sequence" in sample:
+                continue  # 跳过连板序列样例
+    
+            with self.subTest(sample=sample["name"]):
+                board_type = sample.get("board_type", get_board_type(sample["symbol"]))
+                is_st = sample.get("is_st", False)
+                name = sample.get("name", "")
+                listed_days = sample.get("listed_days")
+                if listed_days is None and "listing_date" in sample and "trade_date" in sample:
+                    listing_date = date.fromisoformat(sample["listing_date"])
+                    trade_date = date.fromisoformat(sample["trade_date"])
+                    listed_days = (trade_date - listing_date).days + 1
+    
+                # 计算涨跌停价格
+                price_result = compute_price_limits_wrapper(
+                    sample["input"].get("pre_close"),
+                    board_type,
+                    is_st,
+                    name,
+                    listed_days,
+                )
+    
+                # 验证涨跌停价格
+                expected = sample["expected"]
+                self.assertEqual(
+                    price_result["price_limit_status"],
+                    expected["price_limit_status"],
+                    f"{sample['name']}: price_limit_status mismatch",
+                )
+>               self.assertEqual(
+                    price_result["limit_up"],
+                    expected["limit_up"],
+                    f"{sample['name']}: limit_up mismatch",
+                )
+E               AssertionError: 5.5 != 5.25 : ST股票涨停（主板）: limit_up mismatch
+
+../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_daily_derived.py:810: AssertionError
+_____________________ test_compute_price_limits_for_stocks _____________________
+
+    def test_compute_price_limits_for_stocks():
+        """普通股票 / ST / 创业板 / 科创板 / 北交所规则应可正确计算。"""
+        assert compute_price_limits(Market.SH, "600000", "浦发银行", 10.05) == (11.06, 9.05)
+>       assert compute_price_limits(Market.SH, "603939", "ST益丰", 22.53) == (23.66, 21.4)
+E       assert (24.78, 20.28) == (23.66, 21.4)
+E         
+E         At index 0 diff: 24.78 != 23.66
+E         Use -v to get more diff
+
+../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_protocol_fixes.py:108: AssertionError
+____________ test_board_list_rejects_unknown_type_without_traceback ____________
+
+    def test_board_list_rejects_unknown_type_without_traceback():
+        result = CliRunner().invoke(cli, ["board-list", "--type", "not-a-type"])
+>       assert result.exit_code == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = <Result RuntimeError('Offline review blocks external connections')>.exit_code
+
+../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_cli_board.py:29: AssertionError
+=========================== short test summary info ============================
+FAILED ../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_aspool_index.py::test_stock_default_still_uses_existing_pipeline
+FAILED ../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_daily_derived.py::TestComputePriceLimits::test_main_board_st
+SUBFAILED(sample='ST股票涨停（主板）') ../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_daily_derived.py::TestSampleData::test_single_day_samples
+FAILED ../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_protocol_fixes.py::test_compute_price_limits_for_stocks
+FAILED ../../../../aspool-labs/20260927-orca-review/task_e156082ba705/baseline/tests/unit/test_cli_board.py::test_board_list_rejects_unknown_type_without_traceback
+5 failed, 1 passed, 11 subtests passed in 0.61s

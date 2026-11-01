@@ -1,0 +1,10 @@
+{
+  "manifest": "/home/ubuntu/aspool-labs/dg04-20260927/recovery-after-initial-manifest.json",
+  "manifest_sha256": "df0c77fa3d78d4d34dbb7413574f442bea2cceaa53915ba0d799576f55a8f9a6",
+  "base_manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b",
+  "delta_files": 77,
+  "delta_bytes": 942644782,
+  "input_inventory": "eff91eab10e43c3b1df52c78320f51c2e26653e99159d9320daca41a6e937bdd",
+  "verification": "Every delta object copied and hashed vs source under shared pool lock; WAL absent and assert_readable passed; base previously fully verified, not repeated.",
+  "restore": "Copy immutable base snapshot into independent root, then overlay these catalog/30 changed daily files/all change-state; preserve extra remainder from base. No rollback over subsequent writes."
+}

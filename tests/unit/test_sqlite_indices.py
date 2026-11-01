@@ -224,11 +224,42 @@ def test_existing_cli_routes_sqlite_retry_and_keeps_data_clean(tmp_path, monkeyp
     )
     assert result.exit_code == 0, result.output
     assert len(calls) == 2
+    assert calls[1]["count"] == 30
     assert DataPool(root).read_index_daily(lookback=1).date.dt.date.tolist() == [date(2026, 9, 28)]
     assert not (root / "reports").exists() and not (root / "change-state").exists()
     again, path = sync_indices(root, items=[ITEM], retry_delay=0)
     assert again["success"][0]["added"] == again["success"][0]["changed"] == 0
     assert root not in path.parents
+
+
+def test_new_index_cli_sync_bootstraps_full_available_history(tmp_path, monkeypatch):
+    from aspool.securities import publish_index_directory
+    from tdxman.mac.client import MacClient
+
+    root = tmp_path / "data"
+    publish_index_directory(root, [{**ITEM, "source": ["HY"]}])
+    calls = []
+
+    class Client:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def get_stock_kline(self, *args, **kwargs):
+            calls.append(kwargs)
+            if kwargs["start"]:
+                return pd.DataFrame()
+            return pd.DataFrame([mac_bar("2011-01-04"), mac_bar("2026-09-30")])
+
+    monkeypatch.setattr(MacClient, "from_best_host", lambda **kwargs: Client())
+    monkeypatch.setattr("aspool.universe.refresh_index_universe", lambda _: {})
+    result = CliRunner().invoke(cli, ["sync", "--type", "index", "--root", str(root)])
+    assert result.exit_code == 0, result.output
+    assert calls[0]["count"] == 700
+    assert [call["start"] for call in calls] == [0, 2]
+    assert DataPool(root).list_indices().row_count.tolist() == [2]
 
 
 def test_corrupt_sqlite_does_not_silently_fall_back(tmp_path):

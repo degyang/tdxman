@@ -1,10 +1,13 @@
 # 数据先行：可迁移的 VPS 开发环境
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](../design/data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 2026-09-28 用户调整优先级：先完成数据迁移与异机开发数据准备，再开展派生计算和接口接入。新版数据统一放各设备主项目 `tdxman/data/`；任务 worktree 显式引用主项目数据，不隐式生成另一套池。
 
 2026-09-28 M0 已交付：本机及 JakartaVPS 均有经验证的 `data/_staging/fw02/`，详情见[M0 执行记录](../achievements/sqlite_migration_m0_execution.md)。
 
-当前：本机已完成日派生并安装到 `data/`，仅 stocks.sqlite、catalog.duckdb、lake；报告和恢复源移到 `.local/`。Jakarta 已全量复制并安装同一派生成品，Fundwise 消费验收通过，见[异机结果](../achievements/fw04_jakarta_full_copy_acceptance.md)。当前操作与验收见 [FW-04](../achievements/fw04_sqlite_public_api_execution.md)，以下保留 M0 原始操作记录。
+历史 FW-04 状态：本机当时已完成日派生并安装到 `data/`，仅 stocks.sqlite、catalog.duckdb、lake；报告和恢复源移到 `.local/`。Jakarta 已全量复制并安装同一派生成品，Fundwise 消费验收通过，见[异机结果](../achievements/fw04_jakarta_full_copy_acceptance.md)。当前操作与验收见 [FW-04](../achievements/fw04_sqlite_public_api_execution.md)，以下保留 M0 原始操作记录。
 
 ## M0 历史交付边界
 

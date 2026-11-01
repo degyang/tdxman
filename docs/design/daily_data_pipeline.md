@@ -1,5 +1,8 @@
 # 每日更新与尾部修补流程
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 入口是 `scripts/ops/run_daily_data_pipeline.sh`。它只调用公开 `aspool` CLI，因此可在交互终端、tmux、cron 或 systemd timer 中使用同一套流程。
 
 两个 shell 入口（`run_daily_data_pipeline.sh`、`repair_recent_data_gaps.sh`）都先解析并进入项目根目录，
@@ -39,7 +42,7 @@ bash scripts/ops/run_daily_data_pipeline.sh --root /path/to/data
 
 最终闭合要求目标日证券集合完全一致，并且收益、涨跌停、连板状态没有未知或无效记录。
 复权因子缺口单独报告为 `factor_ready=false`，MA20 使用 `ma20_valid_count` 作为明确分母；
-新股或无可信锚点造成的 MA20 不可用不应抹掉已经闭合的涨跌停与 Regime 基础数据。
+新股或无可信锚点造成的 MA20 不可用不应抹掉已经闭合的涨跌停与 Regime Enriched 公共输入。
 
 目录的“待初始化”通过 `daily_bars(symbol, trade_date)` 主键逐证券跳转，禁止用
 `DISTINCT symbol` 扫描多年日线。股票按 128 只提交一次，使 Windows/WSL 数据盘上的
@@ -106,7 +109,7 @@ bash scripts/ops/repair_recent_data_gaps.sh --count 30 --repair
 残留缺口非零或任一操作未达 `ok` 时以非零退出。完成上述 index 日历刷新后，若只发现股票缺口，
 后续只会运行 `aspool sync --type stock --count 30`；ETF 同理。ETF 单标的无日线不直接判为缺口，因为 ETF 可以合法无交易，仍由同步器的带日期报价确认 `NO_TRADE`。
 
-每次运行会在 `.local/reports/daily-pipeline/<UTC 时间>.json` 写入阶段命令、状态、数据块覆盖和最新股票派生闭合情况。报告不进入 `data/`，因此不污染设备间的基础数据同步。
+每次运行会在 `.local/reports/daily-pipeline/<UTC 时间>.json` 写入阶段命令、状态、数据块覆盖和最新股票派生闭合情况。报告不进入 `data/`，因此不进入基础数据或 Enriched 数据的同步载荷。
 
 基本面虽是低频来源，仍在每日运行中检查并写入有变化的最新快照；报告保留财报和股东人数的变化数量。ETF 复权因子也不由在线 TDX 更新，仍属于已审核迁移参考数据；报告会保留它的覆盖范围，不会把 ETF 日线同步成功误报为因子已更新。
 

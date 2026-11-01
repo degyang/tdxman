@@ -34,6 +34,7 @@ class BoardListCmd(BaseCommand[list[BoardInfo]]):
         start: int = 0,
         page_size: int = 150,
     ) -> None:
+        self.total: int | None = None
         self._board_type = board_type
         self._start = start
         self._page_size = page_size
@@ -53,6 +54,7 @@ class BoardListCmd(BaseCommand[list[BoardInfo]]):
 
     def parse_response(self, body: bytes) -> list[BoardInfo]:
         count_all, total = unpack_from("<HH", body, 0, "board_list header")
+        self.total = total
         # 服务器返回 count_all = 2 * actual_count（board_info + symbol_info 各一份）
         count = count_all // 2
 

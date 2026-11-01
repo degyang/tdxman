@@ -1,0 +1,14 @@
+{
+  "git_head": "9a217a2bdb08fb8ffa6f278291497550a11fe3f7",
+  "production_root": "/home/ubuntu/.aspool",
+  "note": "Only assessment documentation and evidence added. Scripts copied from executed scratch experiments; cwd import and optional output-directory argument added for reproducibility. Use a fresh output directory, execute assess.py, then growth.py, then public_read.py sequentially. No production mutation is performed. Native table was built during an earlier attempt; final results note its reuse. Only final completed benchmark results retained.",
+  "files": {
+    "assess.py": "254d7c01ca36fe361cc7866e91aa0bc14d1705c5cd7109de5ce1dafcefe3b46e",
+    "growth-results.json": "9718eef3352cc9fcc01ba92b7b38e17523012d4a12679366234fd24b1f88bcab",
+    "growth.py": "919d9847452c3cd1aab36bb36854481574726d0f04d8934e913e17ada8745e27",
+    "public-results.json": "b641bae1bedf1efd12df18bd94e0f8d06ee3e288c5d257296ecfee07aba6bbdb",
+    "public_read.py": "93115b1087d239504ad47971ef10f5dcef3172c469835d0a0cf96c2e573ab73d",
+    "raw_day_profile.json": "3e5cff1cb1a873f859c9eaa8d31eaf65a882723146c671c1a668cc968cabc21b",
+    "results.json": "bef5d33a26e1fea6d533575d49d1b7650b22db2d43790274a47049d4684c47a6"
+  }
+}

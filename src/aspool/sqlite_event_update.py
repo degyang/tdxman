@@ -60,6 +60,17 @@ def merge_recent_events(conn, *, symbol, verified_start, verified_end, events, s
     incoming = _recent_events(events, source)
     if any(not verified_start <= day <= verified_end for day, _ in incoming):
         raise ValueError("Event outside requested window")
+    if hasattr(conn, "root"):
+        from .base_delta import store_event_coverage
+
+        store_event_coverage(
+            conn.root,
+            symbol=symbol,
+            verified_start=verified_start,
+            verified_end=verified_end,
+            source=source,
+            events=incoming.values(),
+        )
     stored = {}
     stamps = {}
     for day, origin, key, category, payload, stamp in conn.execute(

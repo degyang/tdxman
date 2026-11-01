@@ -1,0 +1,190 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_________ test_observation_utc_independent_of_catalog_session_timezone _________
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red4/test_observation_utc_independe0')
+
+    def test_observation_utc_independent_of_catalog_session_timezone(pool):
+        from aspool.change_protocol import observe
+    
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        with catalog(pool) as conn:
+            conn.execute("SET TimeZone='Asia/Shanghai'")
+            observe(conn, "lifecycle:000001.SZ")
+            observed = conn.execute(
+                "SELECT observed_at FROM fetch_observations WHERE object_key='lifecycle:000001.SZ'"
+            ).fetchone()[0]
+>       assert abs((observed - now).total_seconds()) < 5
+E       assert 28800.009697 < 5
+E        +  where 28800.009697 = abs(28800.009697)
+E        +    where 28800.009697 = <built-in method total_seconds of datetime.timedelta object at 0x731bf19a3870>()
+E        +      where <built-in method total_seconds of datetime.timedelta object at 0x731bf19a3870> = (datetime.datetime(2026, 9, 27, 15, 47, 22, 533975) - datetime.datetime(2026, 9, 27, 7, 47, 22, 524278)).total_seconds
+
+tests/unit/test_change_protocol_review.py:121: AssertionError
+________ test_universe_observation_ttl_uses_utc_not_business_last_seen _________
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red4/test_universe_observation_ttl_0')
+
+    def test_universe_observation_ttl_uses_utc_not_business_last_seen(pool):
+        from aspool.universe import universe_is_stale
+    
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        with catalog(pool) as conn:
+            conn.execute("UPDATE universe SET last_seen=?", [now - timedelta(days=30)])
+            conn.execute("UPDATE fetch_observations SET observed_at=? WHERE object_key='universe:stock'",
+                         [now - timedelta(days=7) + timedelta(hours=1)])
+>       assert not universe_is_stale(pool, asset_type="stock")
+E       AssertionError: assert not True
+E        +  where True = <function universe_is_stale at 0x731ba2eb5120>(PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red4/test_universe_observation_ttl_0'), asset_type='stock')
+
+tests/unit/test_change_protocol_review.py:132: AssertionError
+_ test_enrichment_source_outage_preserves_capital_facts_and_skips_compute[False] _
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red4/test_enrichment_source_outage_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x731ba28a7a70>
+empty = False
+
+    @pytest.mark.parametrize("empty", [False, True])
+    def test_enrichment_source_outage_preserves_capital_facts_and_skips_compute(pool, monkeypatch, empty):
+        from aspool.enrichment import enrich_daily
+    
+        merge_daily(pool, "SZ", "000001", [dict(bar(), float_share=1000.,
+                    float_share_source="tdx:xdxr_capital", float_mv=10000.)], "test")
+        with catalog(pool) as conn:
+            conn.execute("DELETE FROM daily_limit_staleness")
+        target = daily_path(pool, "SZ", "000001")
+        before = state(pool), counts(pool), target.read_bytes(), target.stat().st_mtime_ns
+        monkeypatch.setattr("aspool.enrichment.client_factory", lambda *args: (None, None))
+        monkeypatch.setattr("aspool.enrichment.fetch_sync", lambda *args: [
+            (("000001", "SZ"), {} if empty else None, None if empty else OSError("source down"), 0)])
+    
+        def forbidden(*args, **kwargs):
+            pytest.fail("Failed source fetch must not trigger automatic publication")
+    
+        monkeypatch.setattr("aspool.limit_events.compute_limit_events", forbidden)
+>       report, _ = enrich_daily(pool, start=DAY, end=DAY, compare_baostock=False)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_change_protocol_review.py:157: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/aspool/change_protocol.py:920: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red4/test_enrichment_source_outage_0')
+start = datetime.date(2026, 5, 4), end = datetime.date(2026, 5, 4)
+lookback = 30, limit = None, workers = 4, recompute = True
+compare_baostock = False
+
+    @maintenance
+    def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers=4,
+                     recompute=True, compare_baostock=True):
+        """Enrich existing stock history, cache raw evidence and report residual gaps."""
+        from tdxman.client import TdxClient
+    
+        root = Path(root)
+        today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+        end = end or today
+        if end > today or (start and start > end):
+            raise ValueError("Invalid enrichment date range")
+        path = root / "reports/maintenance" / f"enrichment-{uuid4().hex}.json"
+        cache = root / "lake/fundamentals/dated_inputs"
+        cache.mkdir(parents=True, exist_ok=True)
+        with pool_lock(root), read_only_catalog(root) as conn:
+            universe = conn.execute(
+                "select count(*) from information_schema.tables where table_name='universe'"
+            ).fetchone()[0]
+            query = "select c.symbol,c.market from coverage c"
+            if universe:
+                query += (" left join universe u on u.symbol=c.symbol "
+                          "where coalesce(u.asset_type,'stock')='stock'")
+            securities = conn.execute(query + " order by c.symbol").fetchall()
+            if limit:
+                securities = securities[:limit]
+            sessions = sorted(
+                day for day, opened in calendar_days(root).items() if opened and day <= end
+            )
+        if not sessions:
+>           raise ValueError("Missing trading calendar; run BaoStock supplementation first")
+E           ValueError: Missing trading calendar; run BaoStock supplementation first
+
+src/aspool/enrichment.py:495: ValueError
+_ test_enrichment_source_outage_preserves_capital_facts_and_skips_compute[True] _
+
+pool = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red4/test_enrichment_source_outage_1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x731ba271e9f0>
+empty = True
+
+    @pytest.mark.parametrize("empty", [False, True])
+    def test_enrichment_source_outage_preserves_capital_facts_and_skips_compute(pool, monkeypatch, empty):
+        from aspool.enrichment import enrich_daily
+    
+        merge_daily(pool, "SZ", "000001", [dict(bar(), float_share=1000.,
+                    float_share_source="tdx:xdxr_capital", float_mv=10000.)], "test")
+        with catalog(pool) as conn:
+            conn.execute("DELETE FROM daily_limit_staleness")
+        target = daily_path(pool, "SZ", "000001")
+        before = state(pool), counts(pool), target.read_bytes(), target.stat().st_mtime_ns
+        monkeypatch.setattr("aspool.enrichment.client_factory", lambda *args: (None, None))
+        monkeypatch.setattr("aspool.enrichment.fetch_sync", lambda *args: [
+            (("000001", "SZ"), {} if empty else None, None if empty else OSError("source down"), 0)])
+    
+        def forbidden(*args, **kwargs):
+            pytest.fail("Failed source fetch must not trigger automatic publication")
+    
+        monkeypatch.setattr("aspool.limit_events.compute_limit_events", forbidden)
+>       report, _ = enrich_daily(pool, start=DAY, end=DAY, compare_baostock=False)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_change_protocol_review.py:157: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/aspool/change_protocol.py:920: in wrapped
+    result = function(root, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/red4/test_enrichment_source_outage_1')
+start = datetime.date(2026, 5, 4), end = datetime.date(2026, 5, 4)
+lookback = 30, limit = None, workers = 4, recompute = True
+compare_baostock = False
+
+    @maintenance
+    def enrich_daily(root, *, start=None, end=None, lookback=30, limit=None, workers=4,
+                     recompute=True, compare_baostock=True):
+        """Enrich existing stock history, cache raw evidence and report residual gaps."""
+        from tdxman.client import TdxClient
+    
+        root = Path(root)
+        today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+        end = end or today
+        if end > today or (start and start > end):
+            raise ValueError("Invalid enrichment date range")
+        path = root / "reports/maintenance" / f"enrichment-{uuid4().hex}.json"
+        cache = root / "lake/fundamentals/dated_inputs"
+        cache.mkdir(parents=True, exist_ok=True)
+        with pool_lock(root), read_only_catalog(root) as conn:
+            universe = conn.execute(
+                "select count(*) from information_schema.tables where table_name='universe'"
+            ).fetchone()[0]
+            query = "select c.symbol,c.market from coverage c"
+            if universe:
+                query += (" left join universe u on u.symbol=c.symbol "
+                          "where coalesce(u.asset_type,'stock')='stock'")
+            securities = conn.execute(query + " order by c.symbol").fetchall()
+            if limit:
+                securities = securities[:limit]
+            sessions = sorted(
+                day for day, opened in calendar_days(root).items() if opened and day <= end
+            )
+        if not sessions:
+>           raise ValueError("Missing trading calendar; run BaoStock supplementation first")
+E           ValueError: Missing trading calendar; run BaoStock supplementation first
+
+src/aspool/enrichment.py:495: ValueError
+=========================== short test summary info ============================
+FAILED tests/unit/test_change_protocol_review.py::test_observation_utc_independent_of_catalog_session_timezone
+FAILED tests/unit/test_change_protocol_review.py::test_universe_observation_ttl_uses_utc_not_business_last_seen
+FAILED tests/unit/test_change_protocol_review.py::test_enrichment_source_outage_preserves_capital_facts_and_skips_compute[False]
+FAILED tests/unit/test_change_protocol_review.py::test_enrichment_source_outage_preserves_capital_facts_and_skips_compute[True]
+4 failed, 7 deselected in 4.84s

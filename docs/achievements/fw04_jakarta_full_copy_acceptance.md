@@ -1,5 +1,8 @@
 # Jakarta 全量副本与 Fundwise 消费验收
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 2026-09-28 13:12（UTC+8）完成。新版全量数据已安装到 `/home/ubuntu/Services/tdxman/data`，Fundwise 已参与真实 SDK 和 HTTP 验收。没有启用增量同步，没有更改默认生产池配置。
 
 ## 数据与安装

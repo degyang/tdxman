@@ -1,0 +1,5 @@
+1.1.3
+/home/ubuntu/tdxman-ca-113-venv/lib/python3.12/site-packages/tdxman/__init__.py
+(self, *, snapshot_id, kind, board_ids, limit=100000, offset=0)
+(self, market: 'int', code: 'str', *, date, since=None, max_pages=4, page_size=240, asset_type='stock') -> 'pd.DataFrame'
+(self, market: 'int', code: 'str', *, date, since=None, max_pages=4, page_size=240, asset_type='stock') -> 'pd.DataFrame'

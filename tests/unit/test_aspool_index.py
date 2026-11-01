@@ -131,7 +131,7 @@ def test_list_blacklist_sources_and_changes():
     assert len(result["indices"]) == 2
     assert len(excluded) == 1
     coal = next(r for r in result["indices"] if r["code"] == "881001")
-    assert coal["source"] == ["HY2", "GN", "FG"]
+    assert coal["source"] == ["HY2", "HY", "GN", "FG"]
     assert difference(result, result)["changed"] == []
     renamed = json.loads(json.dumps(result))
     renamed["indices"][0]["name"] = "renamed"

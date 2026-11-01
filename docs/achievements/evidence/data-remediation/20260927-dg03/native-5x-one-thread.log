@@ -1,0 +1,37 @@
+{"name": "provenance", "time": 1790513990.4786003, "git_head": "d680ed903d4c4248a3a987dc1a7fa6b5a19b7f7b", "imports": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/__init__.py", "python": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/.venv/bin/python", "source_hashes": {"src/aspool/dg03_candidate.py": "fddaa4ed4973f45e5e962192af2ad84a395eff74070b4a447c7d0a15b31bb800", "src/aspool/dg03_etf.py": "1feb50c64f2451858ab88e697abf138c7d29918ac7ca0a21b530bbb9bc97901a", "scripts/dg03/bench.py": "3cde7f666ffc8bb96e88a651ee732fdade04338b4d0cd83c062e767408942ad4"}, "snapshot": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot", "lab": "/home/ubuntu/aspool-labs/dg03-20260927", "candidate": "/home/ubuntu/aspool-labs/dg03-20260927/month-clustered", "manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b", "versions": {"duckdb": "1.5.5", "pandas": "3.0.5", "pyarrow": "25.0.1", "numpy": "2.2.6"}, "memory_limit": "1GB", "threads": 1, "nice": 0, "cache": "OS cache not evicted; raw repeats retained"}
+{"name": "native_one_thread_source", "time": 1790513990.4787633, "sha256": "cfc232dbc46c701b1dc0b7a4771ae315f40e353fe159a432e43c4c41c500a44c"}
+{"name": "native_5x_one_thread_fullmarket", "time": 1790514058.5073495, "seconds": 65.65971731199534, "maxrss_bytes": 1231499264, "rss_start": 170295296, "rss_end": 199856128, "peak_sampled_rss": 1221238784, "io_delta": {"rchar": 916654728, "wchar": 14647296, "syscr": 5156, "syscw": 101, "read_bytes": 922124288, "write_bytes": 14123008, "cancelled_write_bytes": 14123008}, "disk_before": 10102942109, "disk_after": 10102942109, "peak_sampled_disk": 10105235869, "result": null, "status": "failed", "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.4 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"}
+{"name": "phase_native_one_thread_counterfactual", "time": 1790514059.6529362, "seconds": 67.21952222099935, "maxrss_bytes": 1231499264, "rss_start": 144699392, "rss_end": 199856128, "peak_sampled_rss": 1130442752, "io_delta": {"rchar": 950797082, "wchar": 14649192, "syscr": 5371, "syscw": 103, "read_bytes": 957411328, "write_bytes": 14131200, "cancelled_write_bytes": 14123008}, "disk_before": 134545266389, "disk_after": 134545268285, "peak_sampled_disk": 134545266389, "result": null, "status": "failed", "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.4 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"}
+Traceback (most recent call last):
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/native_one_thread.py", line 87, in <module>
+    provenance()
+        ^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 129, in measured
+    raise failure
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 105, in measured
+    result = fn()
+             ^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/native_one_thread.py", line 49, in run
+    try:
+        
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 129, in measured
+    raise failure
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 105, in measured
+    result = fn()
+             ^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/native_one_thread.py", line 51, in <lambda>
+    "native_5x_one_thread_fullmarket",
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/dg03_candidate.py", line 390, in apply
+    duckdb.connect(str(self.root / "catalog.duckdb")) as c,
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/dg03_candidate.py", line 526, in apply
+    c.execute("COMMIT")
+_duckdb.TransactionException: TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.4 MiB/953.6 MiB used)
+
+Possible solutions:
+* Reducing the number of threads (SET threads=X)
+* Disabling insertion-order preservation (SET preserve_insertion_order=false)
+* Increasing the memory limit (SET memory_limit='...GB')
+
+See also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads

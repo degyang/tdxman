@@ -1,0 +1,12 @@
+{
+  "plan_id": "13414aedffc0ad72e3e33e6cc0f1faea8e9b4fe24e818461505932a364819641",
+  "source": "244df2024ea64ba0ea2ad42bc18b6698d385b2189515ccd73f7d576ddbe9cd0d",
+  "single_writer": true,
+  "recovery_verified": true,
+  "writer_dispatch": "ctx_6b4aa5a0b9c2",
+  "code_commit": "a410d735a26b77b72650a6b26930eaea86922080",
+  "scope": "repair only, max_symbols=8; no republication",
+  "expected_after": "eff91eab10e43c3b1df52c78320f51c2e26653e99159d9320daca41a6e937bdd",
+  "review_task": "task_c34f15539dbd",
+  "recovery_manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b"
+}

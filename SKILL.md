@@ -40,6 +40,8 @@ tdxman quote "SZ 000001,SH 600519" --format table
 tdxman quote 600519.SH --source baostock --count 30 --format table
 tdxman kline SH 600519 --period DAILY --count 30 --format table
 tdxman tick SH 600519 --days 5 --format table
+tdxman workdays --date 2026-09-29 --format table
+tdxman f10 600519.SH --section report --report-type zcfzb --format json
 ```
 
 CLI output normalizes numeric presentation: prices, amounts, market caps, finance amounts, and fund-flow amounts use two decimal places; quantities and counts use integers; other ratios retain up to four decimal places. JSON values remain numeric, so insignificant trailing zeroes may not appear.
@@ -242,6 +244,7 @@ tdxman symbol-info SZ 000001 --format table
 
 # Financial data
 tdxman finance SH 600519 --format table
+tdxman xdxr 600519.SH --format table
 tdxman fund-flow SZ 000001 --count 20 --closed-only --format table
 
 # Hong Kong, US, and futures markets
@@ -253,6 +256,11 @@ tdxman ex tick HK_MAIN_BOARD 00700 --format table
 ```
 
 `finance` returns the latest structured financial summary, including share capital, balance sheet, profit, and per-share fields. It does not return the complete text-based F10 document catalogue.
+`xdxr` returns 7709 corporate-action events used as adjustment evidence, not daily adjustment factors. For adjusted prices use `kline --adjust QFQ|HFQ`.
+
+`workdays` reads observed Shanghai Composite daily K-line dates. A single-date query returns
+`is_open`, `previous`, `next`, and coverage bounds; a date beyond coverage is unknown rather than
+closed. `f10` queries the separate 7615 TQLEX read-only gateway. Use `--section profile|report|business|dividends|shareholders|topics|announcements|news|governance|forecast`.
 
 `fund-flow` returns historical daily flows grouped into `super_*`, `large_*`, `medium_*`, and `small_*` fields, in yuan. `--start` is the offset from the newest record, not a date; the server returns the selected rows in chronological order. Use `--closed-only` to omit the current trading day's potentially incomplete row. It is for individual securities, not indices: index transactions have neutral direction and cannot produce directional fund flows.
 

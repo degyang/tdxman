@@ -1,8 +1,11 @@
 # asPool 完整数据与 CLI 落地契约
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 日期：2026-09-30。布局 3 的唯一存储职责及一致发布见 [单一权威存储整改](../implements/single_authority_storage.md)。公共 API 的逻辑数据名保持不变，不表示旧物理表仍存在。布局 2 仅作为迁移输入，恢复材料在生产池外。
 
-## 1. 数据根和十个生产数据块
+## 1. 数据根、两层职责和十个生产数据块
 
 权威数据根是当前项目 `tdxman/data/`：
 
@@ -18,13 +21,15 @@ data/
 └── snapshots.sqlite       # optional cache
 ```
 
+基础数据层包括目录、个股/指数/ETF 历史 K 线、公司行为、下载的复权依据及外部来源锚点、财务与股东人数；Enriched 数据层包括本地计算的复权因子、逐股衍生、市场汇总、板块日聚合和计算快照。板块来源成分快照逻辑上属于基础数据，即使物理存于 `features.sqlite`，也须随历史绑定保留。
+
 运行报告、断点和恢复材料放在 `tdxman/.local/`，不进入运行数据根。
 
 | 数据块 | 输入 | 写入入口 | 输出 |
 |---|---|---|---|
-| `securities` / `index_memberships` | TDX 沪深北股票、ETF、HY2/GN/FG/ZS 完整目录 | `update/sync` 自动刷新；`directory` 独立刷新 | 当日预期证券集合、当前名称及指数分类关系 |
+| `securities` / `index_memberships` | TDX 沪深北股票、ETF、HY/HY2/GN/FG/ZS 完整目录 | `update/sync` 自动刷新；`directory` 独立刷新 | 当日预期证券集合、当前名称及指数分类关系 |
 | `security_calendar` | 上证指数日 K 线的实际日期 | 指数 `update/sync` | 市场交易会话轴 |
-| `fundamental_snapshots` | TDX quote 基本面字段 | `fundamentals`；`--type all` 复用/补取当前 quote | 最新股本及估值基础快照 |
+| `fundamentals.stock_financial_reports` / `stock_shareholder_counts` | TDX 财报与股东人数来源字段 | `fundamentals`；每日流程检查最新快照 | 基础数据：财务报告与股东人数历史；catalog 的旧 `fundamental_snapshots` 仅留作审计 |
 | `stocks.daily_bars` | TDX 当日 quote；TDX/BaoStock 历史 K 线 | 股票 `update/sync` | 未复权股票日线 |
 | `stocks.corporate_actions` | TDX 除权事件 | 股票 `update/sync` | 参考昨收和稀疏复权因子输入 |
 | `features.stock_daily_features` | 股票日线、事件、名称/ST、交易状态 | 与股票事实通过共同发布机制提交 | `TRADED/NO_TRADE/MISSING/INVALID`、涨跌停、连板、MA20 |
@@ -61,12 +66,12 @@ securities
 ```text
 index_memberships
 ├── symbol          TEXT，关联 securities.symbol
-├── category        TEXT，HY2/GN/FG/ZS/benchmark
+├── category        TEXT，HY/HY2/GN/FG/ZS/benchmark
 ├── active          BOOLEAN
 └── updated_at      TIMESTAMP
 ```
 
-指数目录由 `HY2 + GN + FG + ZS` 在线完整目录构成；只在 `FG` 中排除名称以“昨日”开头的临时指数。源端 `999999.SH` 统一规范为 `000001.SH`。ETF 和指数离线补齐读取最近一次成功发布的 catalog 目录，`settings/etf_list.json` 和 `settings/board_index.json` 不参与生产运行选择。
+指数目录由 `HY + HY2 + GN + FG + ZS` 在线完整目录构成；只在 `FG` 中排除名称以“昨日”开头的临时指数。源端 `999999.SH` 统一规范为 `000001.SH`。ETF 和指数离线补齐读取最近一次成功发布的 catalog 目录，`settings/etf_list.json` 和 `settings/board_index.json` 不参与生产运行选择。
 
 ## 3. 数据状态和闭合验收
 

@@ -16,6 +16,7 @@ class DataFlow:
     outputs: str
     read_cli: str
     lifecycle: str
+    layer: str = "base"
 
 
 DATA_FLOWS = (
@@ -75,12 +76,13 @@ DATA_FLOWS = (
     ),
     DataFlow(
         "stock_adjustment_factors",
-        "adjustments.sqlite: stock_adjustment_factors; stock_factor_anchors",
+        "adjustments.sqlite: stock_adjustment_factors",
         "verified stock actions, listing-episode bootstrap and external factor anchors",
         "aspool update|sync --type stock; aspool factors-bootstrap",
         "DataPool.read_daily(adjust='qfq'|'hfq')",
         "aspool platform status",
         "deterministic derived reference",
+        layer="enriched",
     ),
     DataFlow(
         "stock_daily_features",
@@ -90,6 +92,7 @@ DATA_FLOWS = (
         "DataPool.read_security_daily(); DataPool.read_limit_events()",
         "aspool query --dataset stock-features|limit-events",
         "atomic derived output",
+        layer="enriched",
     ),
     DataFlow(
         "market_daily_summary",
@@ -99,11 +102,12 @@ DATA_FLOWS = (
         "DataPool.read_market_summary(); Regime public feature input",
         "aspool query --dataset market-summary",
         "atomic derived output",
+        layer="enriched",
     ),
     DataFlow(
         "index_daily_bars",
         "indices.sqlite: daily_bars",
-        "catalog active HY2/GN/FG/ZS index directory and TDX index K-lines",
+        "catalog active HY/HY2/GN/FG/ZS index directory and TDX index K-lines",
         "aspool update|sync --type index",
         "DataPool.read_index_daily(); DataPool.list_indices()",
         "aspool query --dataset index-bars SYMBOL",
@@ -125,7 +129,53 @@ DATA_FLOWS = (
         "scripts/ops/migrate_etfs_sqlite.py",
         "DataPool.read_etf_daily(adjust='qfq'|'hfq')",
         "aspool status; aspool platform verify",
-        "derived reference",
+        "imported source reference",
+    ),
+    DataFlow(
+        "stock_factor_anchors",
+        "adjustments.sqlite: stock_factor_anchors",
+        "external cumulative anchors and source payloads",
+        "aspool replica apply",
+        "local factor selection",
+        "aspool replica export --dataset factor-anchors",
+        "source revisions",
+    ),
+    DataFlow(
+        "factor_source_evidence",
+        ".local/base-evidence/<pool>/sha256.json",
+        "downloaded NONE/QFQ/HFQ prices and source events",
+        "aspool factors-bootstrap; aspool replica apply",
+        "offline validation evidence",
+        "aspool replica export --dataset factor-source-evidence",
+        "immutable source observations",
+    ),
+    DataFlow(
+        "board_source_snapshots",
+        "features.sqlite: board_snapshots; board_snapshot_sets; board_sync_state",
+        "downloaded historical membership snapshots",
+        "aspool replica apply",
+        "historical board computation inputs",
+        "aspool replica export --dataset board-snapshots",
+        "source snapshot bindings",
+    ),
+    DataFlow(
+        "board_daily",
+        "features.sqlite: board_daily; board_daily_status",
+        "stock enriched inputs and original membership snapshot",
+        "stock writer; aspool replica apply",
+        "DataPool.read_board_daily()",
+        "aspool query --dataset market-summary",
+        "dependent enriched output",
+        layer="enriched",
+    ),
+    DataFlow(
+        "event_coverage",
+        ".local/base-evidence/<pool>/coverage.sqlite",
+        "downloaded complete event intervals including confirmed empty responses",
+        "stock writer; aspool replica apply",
+        "verified factor coverage extension",
+        "aspool replica export --dataset event-coverage",
+        "source observations",
     ),
 )
 

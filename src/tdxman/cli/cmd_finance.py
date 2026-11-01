@@ -45,6 +45,31 @@ def finance(
     print_output(df, fmt, output_path, filename=parsed_code)
 
 
+@click.command("xdxr", cls=StandardHelpCommand)
+@click.argument("symbol_or_market")
+@click.argument("code", required=False)
+@output_options
+def xdxr(
+    symbol_or_market: str,
+    code: str | None,
+    output_fmt: str,
+    output_path: Path | None,
+) -> None:
+    """获取除权除息和股本变动历史记录。"""
+    from ..exceptions import TdxError
+    from .conn import get_tdx_client
+    from .output import print_output
+    from .parsers import parse_symbol_or_market_code
+
+    mkt, parsed_code = parse_symbol_or_market_code(symbol_or_market, code)
+    try:
+        with get_tdx_client() as client:
+            df = client.get_xdxr_info(mkt, parsed_code)
+    except TdxError as exc:
+        raise click.ClickException(f"获取除权除息记录失败：{exc}") from exc
+    print_output(df, output_fmt, output_path, filename=parsed_code)
+
+
 @click.command("fund-flow", cls=StandardHelpCommand)
 @click.argument("symbol_or_market")
 @click.argument("code", required=False)

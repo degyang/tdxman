@@ -1,0 +1,34 @@
+{
+  "review_source_sha256": "48f18518374fd9101a93d74105e77424de0d1fccd241579e5bcac1f999282b0e",
+  "owner_fix_commit": "1b8c751; 22748a7 (facts-only mixed no-op); 3805d41 (security predicate)",
+  "coordinator_method": "Read changed source and agent test log only; no tests rerun.",
+  "test_evidence": "/home/ubuntu/aspool-labs/dg03-20260927/tests-monthly-relative.log",
+  "tests": "3 passed in 3.15s",
+  "findings": {
+    "F1": "UPSERT coverage after cross-month boundary recalculation; actual multipart crash/delete test passed.",
+    "F2": "Actual monthly five-year event+amount acceptance passed, plus nonempty iterator refuses changed revision.",
+    "F3": "public_read on ETF overrides; missing part read/list errors asserted DAILY_INVALID in new test.",
+    "F4": "changed_months derived from semantic raw differences; mixed changed/noop test confirms unchanged month path retained. Separate facts-only + unchanged bars new focused case passed in tests-monthly-facts-noop.log."
+  },
+  "recovery": "Relative part paths and actual relocated fixture restore with source root unavailable passed; full-scale monthly recovery/locks/orphans admission pending.",
+  "production_cutover_approved": false,
+  "amount_acceptance": {
+    "source_log": "/home/ubuntu/aspool-labs/dg03-20260927/monthly-events.log",
+    "rows": 82772,
+    "batches": 258,
+    "max_batch": 1004,
+    "null_amounts": 0,
+    "rss_bytes": 212905984,
+    "seconds": 36.91771470099775
+  },
+  "monthly_recovery": {
+    "source_log": "/home/ubuntu/aspool-labs/dg03-20260927/monthly-recovery-full.log",
+    "active_files": 321,
+    "rows": 17862387,
+    "catalog_exact": true,
+    "all_part_hashes_exact": true,
+    "writer_reader_serialized": true,
+    "nonempty_iterator_revision_error": "LIMIT_REVISION_CHANGED",
+    "production_admission": false
+  }
+}

@@ -67,14 +67,15 @@ def _recover_interrupted_bj_migration(conn) -> None:
 
 @contextmanager
 def index_connection(root, *, read_only=True):
+    from .base_delta import assert_replica_complete
+
+    assert_replica_complete(root)
     path = Path(root).resolve() / "indices.sqlite"
     if not read_only:
         path.parent.mkdir(parents=True, exist_ok=True)
     creating = not path.exists()
     mode = "ro" if read_only else ("rwc" if creating else "rw")
-    conn = sqlite3.connect(
-        path.as_uri() + f"?mode={mode}", uri=True, timeout=30
-    )
+    conn = sqlite3.connect(path.as_uri() + f"?mode={mode}", uri=True, timeout=30)
     try:
         if creating:
             if read_only:

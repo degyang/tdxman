@@ -1,5 +1,8 @@
 # FW-04：SQLite 公开接口与 Fundwise 日频接入
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 2026-09-28。实现日频接口及消费者接入；全历史日派生已算完。**新版成品已全量复制并安装到 Jakarta，Fundwise SDK/HTTP 消费验收通过；默认生产配置尚未切换。** 见[异机验收](fw04_jakarta_full_copy_acceptance.md)。 周/月和多模型执行仍属 FW-08。
 
 ## 运行数据与同步

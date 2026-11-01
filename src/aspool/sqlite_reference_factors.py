@@ -206,6 +206,11 @@ def select_reference_pre_close(
             raise ValueError("Invalid combined corporate action reference")
         return reference, "derived:previous_close+corporate_actions"
     value, source = raw_candidate
+    if source == "raw_fallback:legacy_unspecified":
+        # Imported legacy references have no verified price basis and may be
+        # forward-adjusted while the stored OHLC are unadjusted. Keep evidence
+        # in source fields; never select it as a daily reference price.
+        return None, None
     value = _positive(value, "raw pre_close")
     return (value, source or "raw_fallback:unspecified") if value is not None else (None, None)
 
@@ -217,7 +222,7 @@ def select_is_st(
     name_as_of: str | None = None,
     trade_date: str,
 ) -> tuple[bool | None, str | None, str | None]:
-    """Use dated ST, then a name proved for that exact day; otherwise unknown."""
+    """Use dated ST, then a same-day name; default missing evidence to non-ST."""
     day = _day(trade_date)
     known = [
         (bool(value), source)
@@ -232,7 +237,7 @@ def select_is_st(
         value = classify_st_name(name)
         if value is not None:
             return value, "dated_name", day
-    return None, None, None
+    return False, "assumed:not_st", None
 
 
 def build_selected_factors(
@@ -555,6 +560,15 @@ def update_reference_factors(
             or verified_no_event_range is not None
             or factor_range is not None
         )
+        if factor_update_requested and not action_rows and not anchor_rows:
+            # A generic price refresh must not reselect retained legacy anchors.
+            baseline_selected = conn.execute(
+                "SELECT 1 FROM corporate_actions WHERE symbol=? AND record_kind='factor' "
+                "AND source='derived:baseline_event_chain' LIMIT 1",
+                (symbol,),
+            ).fetchone()
+            if baseline_selected:
+                factor_update_requested = False
         if factor_update_requested:
             stored_anchors = [
                 {
@@ -870,7 +884,8 @@ def _coverage_previous_close(conn: sqlite3.Connection, symbol: str, before: str)
           AND abs(b.low)<1e308 AND abs(b.close)<1e308
           AND b.low<=min(b.open,b.close) AND b.high>=max(b.open,b.close)
           AND upper(coalesce(f.trading_status,'')) NOT IN
-              ('SUSPENDED','停牌','NO_TRADE','INVALID','0')
+              ('SUSPENDED','停牌','NO_TRADE','NOT_LISTED','UNKNOWN','MISSING',
+               'INVALID','UNCONFIRMED','未知','不确定','0')
           AND (b.volume>0 OR b.amount>0 OR upper(f.trading_status) IN
               ('TRADING','TRADED','NORMAL','正常交易','1'))
         ORDER BY b.trade_date DESC LIMIT 1""",
@@ -904,6 +919,17 @@ def advance_factor_coverage(
     incoming = _coverage_events(events, source)
     if any(not start <= day <= end for day, _ in incoming):
         raise ValueError("Coverage event outside verified interval")
+    if hasattr(conn, "root"):
+        from .base_delta import store_event_coverage
+
+        store_event_coverage(
+            conn.root,
+            symbol=symbol,
+            verified_start=verified_start,
+            verified_end=verified_end,
+            source=source,
+            events=incoming.values(),
+        )
     savepoint = "fw03_advance_factor_coverage"
     conn.execute(f"SAVEPOINT {savepoint}")
     try:

@@ -1,0 +1,125 @@
+{
+  "status": "verified",
+  "files": 8156,
+  "bytes": 261841805,
+  "legacy_reference_rows": 277429,
+  "sample_rows": {
+    "index": 5,
+    "etf": 5,
+    "security": 1,
+    "calendar": 7
+  },
+  "samples": {
+    "index": [
+      {
+        "symbol": "000001.SH",
+        "date": "2026-09-18T00:00:00.000",
+        "close": 3911.87,
+        "amount": 994169454592.0
+      },
+      {
+        "symbol": "000001.SH",
+        "date": "2026-09-21T00:00:00.000",
+        "close": 3949.91,
+        "amount": 946819104768.0
+      },
+      {
+        "symbol": "000001.SH",
+        "date": "2026-09-22T00:00:00.000",
+        "close": 3952.13,
+        "amount": 1007995584512.0
+      },
+      {
+        "symbol": "000001.SH",
+        "date": "2026-09-23T00:00:00.000",
+        "close": 3936.52,
+        "amount": 834132836352.0
+      },
+      {
+        "symbol": "000001.SH",
+        "date": "2026-09-24T00:00:00.000",
+        "close": 3888.37,
+        "amount": 783612968960.0
+      }
+    ],
+    "etf": [
+      {
+        "symbol": "159915.SZ",
+        "date": "2026-09-18T00:00:00.000",
+        "close": 3.391000032424927,
+        "amount": 6247375360.0
+      },
+      {
+        "symbol": "159915.SZ",
+        "date": "2026-09-21T00:00:00.000",
+        "close": 3.417999982833862,
+        "amount": 5181806592.0
+      },
+      {
+        "symbol": "159915.SZ",
+        "date": "2026-09-22T00:00:00.000",
+        "close": 3.420000076293945,
+        "amount": 5932490752.0
+      },
+      {
+        "symbol": "159915.SZ",
+        "date": "2026-09-23T00:00:00.000",
+        "close": 3.398999929428101,
+        "amount": 4517803008.0
+      },
+      {
+        "symbol": "159915.SZ",
+        "date": "2026-09-24T00:00:00.000",
+        "close": 3.312000036239624,
+        "amount": 4434638336.0
+      }
+    ],
+    "security": [
+      {
+        "symbol": "000001.SZ",
+        "listing_date": "1991-04-03T00:00:00.000",
+        "delisting_date": null,
+        "name": "平安银行",
+        "source": "baostock",
+        "fetched_at": "2026-09-24T22:11:25.857"
+      }
+    ],
+    "calendar": [
+      {
+        "trade_date": "2026-09-18T00:00:00.000",
+        "is_open": true,
+        "source": "baostock"
+      },
+      {
+        "trade_date": "2026-09-19T00:00:00.000",
+        "is_open": false,
+        "source": "baostock"
+      },
+      {
+        "trade_date": "2026-09-20T00:00:00.000",
+        "is_open": false,
+        "source": "baostock"
+      },
+      {
+        "trade_date": "2026-09-21T00:00:00.000",
+        "is_open": true,
+        "source": "baostock"
+      },
+      {
+        "trade_date": "2026-09-22T00:00:00.000",
+        "is_open": true,
+        "source": "baostock"
+      },
+      {
+        "trade_date": "2026-09-23T00:00:00.000",
+        "is_open": true,
+        "source": "baostock"
+      },
+      {
+        "trade_date": "2026-09-24T00:00:00.000",
+        "is_open": true,
+        "source": "baostock"
+      }
+    ]
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "date": "2026-09-27",
+  "result": "implementation_and_isolated_acceptance_passed",
+  "scope": "DG-01 remaining daily-source paths, durable commit/recovery and bounded task accounting",
+  "base_commit": "981ab5f96ab0d4bb3c872f79fe936938240861e3",
+  "implementation_commit": "c3c45f96c05c343fab86ca090b9395dcbf63a0ef",
+  "feature_branch": "degyang/aspool-dg00-contract",
+  "worktree": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg00-contract",
+  "python": "3.12.14",
+  "dependencies": {
+    "duckdb": "1.5.5",
+    "pyarrow": "25.0.1",
+    "pandas": "3.0.5",
+    "pytest": "9.1.1"
+  },
+  "rule_version": "cn-a-share-limit-v8",
+  "source_fingerprints": "real-sample.json code_files_sha256 and laboratory_script_sha256 match implementation commit",
+  "offline_full": {
+    "command": ".venv/bin/python docs/evidence/data-remediation/20260927-dg01-complete/run_offline.py tests/ -q --basetemp=/home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/final-independent",
+    "exit_code": 0,
+    "passed": 617,
+    "skipped": 4,
+    "subtests_passed": 18,
+    "elapsed_seconds": 144.88,
+    "skips": {
+      "live_network_XMTDX_LIVE_disabled": 2,
+      "external_tick_stock_panel_host_not_provided": 2
+    },
+    "log": "full-offline-final.txt",
+    "guard_boundary": "Python audit hook rejects external socket and production/recovery writes; not a native/subprocess OS sandbox",
+    "development_logs": "Earlier failures/interrupted/reused-temporary-root runs retained separately and excluded from final acceptance"
+  },
+  "regression": {
+    "categories": [
+      "merge",
+      "direct",
+      "online",
+      "enrichment",
+      "quote",
+      "snapshot",
+      "index",
+      "offline",
+      "free-stockdb",
+      "calendar",
+      "lifecycle",
+      "facts",
+      "universe"
+    ],
+    "file_fault_phases": [
+      "after_prepared",
+      "before_replace",
+      "after_replace",
+      "after_coverage",
+      "before_catalog_commit",
+      "after_catalog_commit",
+      "after_applied",
+      "after_redo_release"
+    ],
+    "additional_faults": [
+      "before_prepare_manifest",
+      "before_pending",
+      "missing_pending_manifest",
+      "missing_redo",
+      "corrupt_redo",
+      "missing_evidence",
+      "real subprocess os._exit",
+      "post-commit observation/report failure"
+    ],
+    "public_retry_reference": "Fault retries compare exact public/raw/coverage consistency against clean isolated reference; no double revision",
+    "source_outage": "Empty/failed online, quote, BaoStock, universe and free-stockdb preserve known facts",
+    "deletion": "Generic delete/retract, directory deactivation, omitted full-object rows and duplicate keys rejected; explicit optional None and validated BaoStock overlay retraction tested",
+    "growth_and_accounting": [
+      "incremental JSONL row spool",
+      "many hot updates release obsolete complete redo objects",
+      "20,000 unrelated task totals use Index Scan",
+      "real lock contention",
+      "no self-deadlock under raw write lock",
+      "snapshot rejects pending without source recovery",
+      "snapshot inventories change-state"
+    ]
+  },
+  "scoped_lint": {
+    "command": ".venv/bin/ruff check scripts/aspool_dg01_lab.py scripts/aspool_recovery_baseline.py scripts/aspool_verify_baseline.py src/aspool/baostock_source.py src/aspool/change_observation.py src/aspool/change_protocol.py src/aspool/daily_storage.py src/aspool/enrichment.py src/aspool/free_stockdb.py src/aspool/fundamentals.py src/aspool/index_pool.py src/aspool/limit_events.py src/aspool/pool.py src/aspool/security_facts.py src/aspool/store.py src/aspool/tdx_online.py src/aspool/universe.py tests/unit/test_aspool_performance.py tests/unit/test_aspool_pool.py tests/unit/test_change_protocol.py tests/unit/test_daily_remediation.py tests/unit/test_limit_amount.py docs/evidence/data-remediation/20260927-dg01-complete/run_offline.py",
+    "exit_code": 0,
+    "log": "lint.txt"
+  },
+  "format": {
+    "command": ".venv/bin/ruff format --check src/aspool/change_protocol.py src/aspool/change_observation.py scripts/aspool_dg01_lab.py tests/unit/test_change_protocol.py docs/evidence/data-remediation/20260927-dg01-complete/run_offline.py",
+    "exit_code": 0,
+    "log": "format.txt",
+    "files": 5
+  },
+  "diff_check": {
+    "scope": "This implementation source/tests/scripts and updated/new documents; no editing historical failure-log whitespace",
+    "exit_code": 0
+  },
+  "real_sample": {
+    "command": ".venv/bin/python scripts/aspool_dg01_lab.py --manifest /home/ubuntu/aspool-recovery/20260927-data-remediation/manifest.json --lab-root /home/ubuntu/aspool-labs/20260927-dg01/task_c544312049ac/real-sample/pool --output docs/evidence/data-remediation/20260927-dg01-complete/real-sample.json",
+    "result": "passed",
+    "sample_rows": 12,
+    "start": "2026-09-09",
+    "end": "2026-09-24",
+    "reference_exact": true,
+    "changed_row_events": 1,
+    "replay_changed_rows": 0,
+    "first_seconds": 0.21997763300169026,
+    "replay_seconds": 0.05110870499993325,
+    "manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b",
+    "source_sha256": "b7404e0948c573d934606647a014be1e9713613268adc1c635ff8b4105fbc1a1",
+    "source_unmodified": true,
+    "full_pool_copy": false,
+    "details": "real-sample.json"
+  },
+  "metric_limits": {
+    "row_fields": "Actual committed change events, not unique keys across stages",
+    "read_and_rewrite": "Decoded row visits, logical file byte proxies and bounded path samples, not physical device I/O",
+    "peak_rss": "Process ru_maxrss high water; includes earlier process work",
+    "temporary_space": "Peak live prepared Parquet plus row evidence proxy, excluding WAL/native temps/page cache",
+    "downstream_cache_evictions": "unavailable; DG-06 owns Fundwise integration",
+    "crashed_original_process": "Missing elapsed/RSS/lock/temp metrics explicitly unavailable; committed totals recover from run primary key"
+  },
+  "atomicity": "One target replace is atomic; one DuckDB coverage/stale/change/revision/totals transaction is atomic; whole command and file plus catalog require recovery, not a cross-object transaction",
+  "approved_boundary": "Coordinator live ask retained explicit compute_limit_events forced publish; healthy source no-op skips automatic recompute. Public revision/cache and dependency publication work remains DG-05/06.",
+  "ownership": {
+    "implementation": "worker feature worktree",
+    "independent_recovery_review_and_integration": "coordinator",
+    "push": false,
+    "main_merge": false,
+    "production_mutation": false,
+    "market_fetch": false
+  },
+  "remaining_limits": [
+    "Independent critical recovery review and main integration pending coordinator",
+    "No real power-loss/storage-device or remote-disaster recovery proof",
+    "Linux/WSL same-filesystem fsync/rename/hardlink dependency",
+    "Corrupt required prepared objects safely block and require trusted restore",
+    "No production performance SLA, full-market/PIT sample proof or downstream integration",
+    "Existing whole-security/touched-year reads remain; DG-02/05 must bound them"
+  ],
+  "artifact_sha256": {
+    "full-offline-final.txt": "5ebc4ec8ca8ee865acbec195e4c935e778c7221e83c251d289bdf6de26f66a5b",
+    "real-sample.json": "155465059e4d268bc82a702179c83faa9e18598c38655f305cc29cf5478bcd65",
+    "lint.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "format.txt": "f114d83b30c5c657ee43a847a45bafccaea255d82673feb87c26d252c61e29c1",
+    "session.json": "4b2084007a2f8aa7904b2ddfe27514add34d4c2b54fb244c40781fdab43786d7",
+    "run_offline.py": "c454df7b5d4dacc9b2074b527e2fdc8bade7dd2e781014242414672bce222b4a"
+  }
+}

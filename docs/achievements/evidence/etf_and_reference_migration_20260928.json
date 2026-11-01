@@ -1,0 +1,60 @@
+{
+  "status": "verified",
+  "date": "2026-09-28",
+  "etf": {
+    "migrated_symbols": 1702,
+    "migrated_rows": 1512767,
+    "symbols": 1705,
+    "rows": 1514458,
+    "latest_bar_rows": 1691,
+    "no_trade": 41,
+    "directory_size": 1732,
+    "added": 1691,
+    "factor_rows": 1286,
+    "bytes": 377577472,
+    "fields": [
+      "symbol",
+      "date",
+      "close",
+      "volume",
+      "turnover_rate",
+      "vol_ratio"
+    ],
+    "cold_samples": [
+      "510010.SH",
+      "510050.SH",
+      "159915.SZ"
+    ],
+    "query_plan": [
+      [
+        4,
+        0,
+        48,
+        "SEARCH daily_bars USING PRIMARY KEY (symbol=? AND trade_date<?)"
+      ]
+    ],
+    "changed_keys_in_allowed_windows": 10075,
+    "turnover_missing": 4,
+    "volume_ratio_missing": 18
+  },
+  "references": {
+    "factors": 58677,
+    "events": 186622,
+    "event_files": 5586,
+    "snapshots": 5570
+  },
+  "imported_missing_event": "920017.BJ / 2026-09-28 / category=5:slot=1",
+  "retained_source_revision": "301668.SZ / 2026-09-28 / panhou_liutong",
+  "runtime_files": {
+    "catalog.duckdb": 5255168,
+    "etfs.sqlite": 377577472,
+    "indices.sqlite": 434597888,
+    "stocks.sqlite": 9224953856
+  },
+  "legacy_lake_exists": false,
+  "evidence": ".local/reports/execution-20260928-etfs/",
+  "recovery": [
+    ".local/recovery/20260928-etfs-sqlite/",
+    ".local/recovery/20260928-reference-retirement-final/"
+  ]
+}

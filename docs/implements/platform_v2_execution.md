@@ -1,5 +1,8 @@
 # asPool 数据域分层实施记录
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](../design/data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 日期：2026-09-29。本文记录 [分层需求](../design/data_platform_v2_requirements.md) 与
 [分层设计](../design/data_platform_v2_design.md) 的实际实施边界，不以目标文档代替运行证据。
 

@@ -15,6 +15,8 @@ BUSINESS_TABLES = {
     "daily_bars", "daily_features", "corporate_actions", "market_daily_summary"
 }
 TABLES = BUSINESS_TABLES | {"dataset_state"}
+OPTIONAL_TABLES = {"market_sessions", "board_snapshots", "board_snapshot_sets",
+                   "board_sync_state", "board_daily", "board_daily_status"}
 INDEXES = {"daily_bars_by_date", "daily_features_by_date", "daily_features_events",
            "corporate_actions_selected_factor", "market_summary_by_range"}
 
@@ -47,7 +49,7 @@ def verify(root, *, reuse_source_integrity=False):
             "SELECT name FROM sqlite_master WHERE type='table'")}
         indexes = {name for (name,) in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='index'")}
-        if tables != TABLES or not INDEXES <= indexes:
+        if not TABLES <= tables or tables - TABLES - OPTIONAL_TABLES or not INDEXES <= indexes:
             raise ValueError("Missing/extra tables or missing indexes")
         if reuse_source_integrity:
             if report.get("integrity_check") != "ok":

@@ -1,0 +1,36 @@
+{
+  "plan_id": "36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5",
+  "source": "ddd0c37c09a299c8addaf9e4f09ba6928178079f1ced11f960b463018ab1e44b",
+  "plan_sha256": "a24d04decd729f9aa90fd53b04568549f1f9e5920161e2b9ce083d323f9fdc96",
+  "implementation_commit": "9308d5509ed0b0f378b94a098e0ea8b5357f65ff",
+  "checkout_commit": "13d627c2d71dd73cf139f49b23448552469295f7",
+  "recovery_sha256": "0231763157911fea7b6d24590db2b359dcd0a7541850220107b590d818a4e237",
+  "recovery_objects": 812,
+  "recovery_bytes": 997684831,
+  "bad_recovery_objects": [],
+  "actual_catalog_next": 245,
+  "actual_catalog_pending": null,
+  "actual_catalog_completed": 245,
+  "actual_catalog_changed_rows": 2726,
+  "actual_catalog_changed_facts": 2461,
+  "actual_prior_size": 4372,
+  "actual_prior_hash": "00aaa72f98803d6cecb5370d478db204675e89342eda36e6e51055764e4a1ec8",
+  "stale": [
+    1213,
+    "2021-09-24",
+    "2026-09-24"
+  ],
+  "checks": {
+    "plan_signature": true,
+    "implementation": true,
+    "recovery_signature": true,
+    "base_manifest": true,
+    "prior_signature": true,
+    "authoritative_checkpoint": true,
+    "completed_sequence": true,
+    "actual_receipt_inventory": true,
+    "actual_receipt_source": true,
+    "only_recovery_change": true
+  },
+  "source_verification": "Actual inventory/compute source from owner execution receipt; independently read production authoritative ledger and initial prior, no repeated whole-pool source audit"
+}

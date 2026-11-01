@@ -1,0 +1,55 @@
+{
+  "observed_at": "2026-09-27T05:03:12.617219+00:00",
+  "root": "/home/ubuntu/.aspool",
+  "snapshot": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot",
+  "restored": "/home/ubuntu/aspool-recovery/20260927-data-remediation/restored",
+  "snapshot_seconds": 14.070434097999168,
+  "restore_and_verify_seconds": 10.349470914001358,
+  "local_restore_and_verify_seconds": 2.636399688999518,
+  "file_count": 13742,
+  "bytes": 2702716946,
+  "coverage_days": 1296,
+  "stale_days": 605,
+  "coverage_start": "2021-05-27 00:00:00",
+  "coverage_end": "2026-09-24 00:00:00",
+  "catalog_rows": {
+    "coverage": 7288,
+    "coverage_minutes": 0,
+    "daily_limit_batches": 1296,
+    "daily_limit_events": 182504,
+    "daily_limit_exceptions": 22445,
+    "daily_limit_gap_states": 1059,
+    "daily_limit_publication": 1296,
+    "daily_limit_references": 277429,
+    "daily_limit_scope": 6594702,
+    "daily_limit_staleness": 605,
+    "daily_limit_streak_boundaries": 156,
+    "daily_limit_summary": 1296,
+    "index_coverage": 865,
+    "security_calendar": 13064,
+    "security_daily_facts": 410467,
+    "security_lifecycle": 5906,
+    "sync_runs": 7,
+    "universe": 7298
+  },
+  "verified_public_frames": {
+    "stocks": 10,
+    "index": 5,
+    "etf": 5,
+    "coverage": 1296,
+    "summary": 1296,
+    "events": 87,
+    "security": 1
+  },
+  "included": [
+    "catalog.duckdb",
+    "lake/**"
+  ],
+  "excluded": {
+    "reports/**": "Retained in original pool; investigation evidence is not deleted."
+  },
+  "recovery_scope": "Exact baseline, single-host local copy; not protection against host/disk loss.",
+  "result": "passed",
+  "manifest": "/home/ubuntu/aspool-recovery/20260927-data-remediation/manifest.json",
+  "manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b"
+}

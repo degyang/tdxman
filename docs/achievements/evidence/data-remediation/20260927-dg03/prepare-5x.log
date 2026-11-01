@@ -1,0 +1,38 @@
+{"name": "provenance", "time": 1790507943.2203233, "git_head": "88275cb75c28649c6584176d39fe1a1f16e73ad1", "imports": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/src/aspool/__init__.py", "python": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/.venv/bin/python", "source_hashes": {"src/aspool/dg03_candidate.py": "2bc432e582f3993e06629d708633dcba34e3ac75655cb845c0db0973b9cd411d", "src/aspool/dg03_etf.py": "5549a56d203d0a7ce98e260baa8327c61074ab81091127598e0761e591963ffd", "scripts/dg03/bench.py": "e7c1db7c0d838f2ae16c4e28d3d38acb8bcc6a2c32aa068a4d85f837235448b9"}, "snapshot": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot", "lab": "/home/ubuntu/aspool-labs/dg03-20260927", "candidate": "/home/ubuntu/aspool-labs/dg03-20260927/month-clustered", "manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b", "versions": {"duckdb": "1.5.5", "pandas": "3.0.5", "pyarrow": "25.0.1", "numpy": "2.2.6"}, "memory_limit": "1GB", "threads": 1, "nice": 19, "cache": "OS cache not evicted; raw repeats retained"}
+{"name": "prepare_5x_copy", "time": 1790507948.6635282, "seconds": 4.873871201001748, "maxrss_bytes": 153849856, "rss_start": 146849792, "rss_end": 152928256, "peak_sampled_rss": 153522176, "io_delta": {"rchar": 4645958807, "wchar": 4645890461, "syscr": 13007, "syscw": 12912, "read_bytes": 207994880, "write_bytes": 4659105792, "cancelled_write_bytes": 0}, "disk_before": 0, "disk_after": 4645890461, "peak_sampled_disk": 4645601868, "result": null, "status": "passed", "error": null}
+{"name": "prepare_5x_add_2", "time": 1790507999.528629, "seconds": 50.56033087600372, "maxrss_bytes": 1226817536, "rss_start": 170758144, "rss_end": 1223655424, "peak_sampled_rss": 1226817536, "io_delta": {"rchar": 1909240417, "wchar": 1430257664, "syscr": 9810, "syscw": 5456, "read_bytes": 3067904, "write_bytes": 1430257664, "cancelled_write_bytes": 0}, "disk_before": 4645890626, "disk_after": 6055438914, "peak_sampled_disk": 6055438914, "result": null, "status": "failed", "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.5 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"}
+{"name": "phase_prepare-growth", "time": 1790507999.7488387, "seconds": 56.25906761999795, "maxrss_bytes": 1226817536, "rss_start": 146849792, "rss_end": 172912640, "peak_sampled_rss": 1226817536, "io_delta": {"rchar": 6562838365, "wchar": 6076151116, "syscr": 22887, "syscw": 18373, "read_bytes": 211070976, "write_bytes": 6089388032, "cancelled_write_bytes": 0}, "disk_before": 17220530787, "disk_after": 23275972527, "peak_sampled_disk": 23275970673, "result": null, "status": "failed", "error": "TransactionException(\"TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.5 MiB/953.6 MiB used)\\n\\nPossible solutions:\\n* Reducing the number of threads (SET threads=X)\\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\\n* Increasing the memory limit (SET memory_limit='...GB')\\n\\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads\")"}
+Traceback (most recent call last):
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 994, in <module>
+    main()
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 971, in main
+    measured(
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 129, in measured
+    raise failure
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 105, in measured
+    result = fn()
+             ^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 978, in <lambda>
+    "prepare-growth": lambda: prepare_growth(args.factor, args.resume),
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 518, in prepare_growth
+    with connect(root) as c, preparation_guard(c):
+         ^^^^^^^^^^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 524, in prepare_growth
+    measured(
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 129, in measured
+    raise failure
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 105, in measured
+    result = fn()
+             ^^^^
+  File "/home/ubuntu/orca/workspaces/tdxman/aspool-dg03-storage/scripts/dg03/bench.py", line 526, in <lambda>
+    lambda i=i: c.execute(
+                ^^^^^^^^^^
+_duckdb.TransactionException: TransactionContext Error: Failed to commit: failed to pin block of size 256.0 KiB (953.5 MiB/953.6 MiB used)
+
+Possible solutions:
+* Reducing the number of threads (SET threads=X)
+* Disabling insertion-order preservation (SET preserve_insertion_order=false)
+* Increasing the memory limit (SET memory_limit='...GB')
+
+See also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads

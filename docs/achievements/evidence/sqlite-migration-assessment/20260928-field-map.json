@@ -1,0 +1,475 @@
+{
+  "date": "2026-09-28",
+  "basis": "20260928-inventory.json and src/aspool/api_contract.py at 3f5054e2",
+  "observed_source_columns": 43,
+  "public_daily_fields": [
+    "symbol",
+    "market",
+    "code",
+    "date",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "amount",
+    "turnover_rate",
+    "name",
+    "pre_close",
+    "vol_ratio",
+    "pct_chg",
+    "amplitude",
+    "is_st",
+    "trading_status",
+    "pre_close_source",
+    "is_st_source",
+    "trading_status_source",
+    "vol_ratio_source",
+    "turnover_rate_source",
+    "amplitude_source",
+    "pct_chg_source",
+    "float_share_source",
+    "total_share_source",
+    "float_mv_source",
+    "total_mv_source",
+    "total_share",
+    "float_share",
+    "total_mv",
+    "float_mv",
+    "pe_ttm",
+    "pb"
+  ],
+  "mappings": [
+    {
+      "source_column": "amount",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.amount",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "amplitude",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.amplitude",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "amplitude_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.amplitude_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "asset_type",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.symbol/trade_date (normalization or asset routing)",
+      "mapping_rule": "Validate against path and source keys; preserve leading zeros; archive original aliases in migration evidence; asset_type=etf stays outside stocks.sqlite.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "close",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.close",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "code",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.symbol/trade_date (normalization or asset routing)",
+      "mapping_rule": "Validate against path and source keys; preserve leading zeros; archive original aliases in migration evidence; asset_type=etf stays outside stocks.sqlite.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "date",
+      "source_arrow_types": [
+        "int64"
+      ],
+      "target": "daily_bars.symbol/trade_date (normalization or asset routing)",
+      "mapping_rule": "Validate against path and source keys; preserve leading zeros; archive original aliases in migration evidence; asset_type=etf stays outside stocks.sqlite.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "datetime",
+      "source_arrow_types": [
+        "timestamp[us]"
+      ],
+      "target": "daily_bars.symbol/trade_date (normalization or asset routing)",
+      "mapping_rule": "Validate against path and source keys; preserve leading zeros; archive original aliases in migration evidence; asset_type=etf stays outside stocks.sqlite.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "float_mv",
+      "source_arrow_types": [
+        "double",
+        "null"
+      ],
+      "target": "daily_bars.float_mv",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "float_mv_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.float_mv_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "float_share",
+      "source_arrow_types": [
+        "double",
+        "int64",
+        "null"
+      ],
+      "target": "daily_bars.float_share",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "float_share_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.float_share_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "float_shares",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.float_shares",
+      "mapping_rule": "Preserve separately until source/unit/date meaning is verified; do not auto-merge with float_share.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "high",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.high",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "is_st",
+      "source_arrow_types": [
+        "bool"
+      ],
+      "target": "daily_features.source_is_st",
+      "mapping_rule": "Merge by dated-source precedence; retain provenance, never backfill current snapshot into history. Preserve the selected authoritative source candidate here; effective daily_features.is_st is computed separately. Existing locally derived values must be identified, not relabeled as authoritative source facts.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "is_st_name_date",
+      "source_arrow_types": [
+        "date32[day]"
+      ],
+      "target": "daily_features.is_st_name_date",
+      "mapping_rule": "Merge by dated-source precedence; retain provenance, never backfill current snapshot into history. Also populate daily_bars.name_as_of only when provenance actually dates that stored name.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "is_st_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_features.source_is_st_source",
+      "mapping_rule": "Merge by dated-source precedence; retain provenance, never backfill current snapshot into history. Preserve the selected authoritative source candidate here; effective daily_features.is_st_source is computed separately. Existing locally derived values must be identified, not relabeled as authoritative source facts.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "low",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.low",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "market",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.symbol/trade_date (normalization or asset routing)",
+      "mapping_rule": "Validate against path and source keys; preserve leading zeros; archive original aliases in migration evidence; asset_type=etf stays outside stocks.sqlite.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "name",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.name",
+      "mapping_rule": "Preserve the source name and its date provenance; use for ST only when reliable for that date, never infer historical ST from a current-name snapshot.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "ohlcv_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.ohlcv_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "open",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.open",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "pb",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.pb",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "pct_chg",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.pct_chg",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "pct_chg_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.pct_chg_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "pe_ttm",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.pe_ttm",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "pre_close",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_features.source_pre_close",
+      "mapping_rule": "Combine source dated facts, active reference corrections and raw candidates with dependency/source tracking; derived values remain recalculable. Preserve the selected authoritative source candidate here; effective daily_features.pre_close is computed separately. Existing locally derived values must be identified, not relabeled as authoritative source facts.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "pre_close_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_features.source_pre_close_source",
+      "mapping_rule": "Merge by dated-source precedence; retain provenance, never backfill current snapshot into history. Preserve the selected authoritative source candidate here; effective daily_features.pre_close_source is computed separately. Existing locally derived values must be identified, not relabeled as authoritative source facts.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "symbol",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.symbol/trade_date (normalization or asset routing)",
+      "mapping_rule": "Validate against path and source keys; preserve leading zeros; archive original aliases in migration evidence; asset_type=etf stays outside stocks.sqlite.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "total_mv",
+      "source_arrow_types": [
+        "double",
+        "null"
+      ],
+      "target": "daily_bars.total_mv",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "total_mv_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.total_mv_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "total_share",
+      "source_arrow_types": [
+        "double",
+        "int64",
+        "null"
+      ],
+      "target": "daily_bars.total_share",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "total_share_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.total_share_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "trade_date",
+      "source_arrow_types": [
+        "date32[day]"
+      ],
+      "target": "daily_bars.symbol/trade_date (normalization or asset routing)",
+      "mapping_rule": "Validate against path and source keys; preserve leading zeros; archive original aliases in migration evidence; asset_type=etf stays outside stocks.sqlite.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "trading_status",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_features.trading_status",
+      "mapping_rule": "Merge by dated-source precedence; retain provenance, never backfill current snapshot into history.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "trading_status_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_features.trading_status_source",
+      "mapping_rule": "Merge by dated-source precedence; retain provenance, never backfill current snapshot into history.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "turnover",
+      "source_arrow_types": [
+        "double",
+        "null"
+      ],
+      "target": "daily_bars.turnover_rate",
+      "mapping_rule": "Fallback only when canonical value is missing; unequal aliases must be reported, not silently discarded.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "turnover_rate",
+      "source_arrow_types": [
+        "double",
+        "null"
+      ],
+      "target": "daily_bars.turnover_rate",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "turnover_rate_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.turnover_rate_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "vol",
+      "source_arrow_types": [
+        "double"
+      ],
+      "target": "daily_bars.volume",
+      "mapping_rule": "Fallback only when canonical value is missing; unequal aliases must be reported, not silently discarded.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "vol_ratio",
+      "source_arrow_types": [
+        "double",
+        "null"
+      ],
+      "target": "daily_bars.vol_ratio",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "vol_ratio_source",
+      "source_arrow_types": [
+        "string"
+      ],
+      "target": "daily_bars.vol_ratio_source",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    },
+    {
+      "source_column": "volume",
+      "source_arrow_types": [
+        "double",
+        "int64"
+      ],
+      "target": "daily_bars.volume",
+      "mapping_rule": "Preserve existing semantic value and source unit; normalize int/double/null with explicit nullable type.",
+      "status": "planned_not_migrated"
+    }
+  ],
+  "extra_inputs": [
+    {
+      "source": "catalog.security_daily_facts",
+      "target": "daily_features",
+      "rule": "Include facts without bars; preserve per-field source."
+    },
+    {
+      "source": "active daily_limit_references",
+      "target": "daily_features reference candidate",
+      "rule": "Resolve source precedence; do not turn inferred values into unconditional source facts."
+    },
+    {
+      "source": "lake/fundamentals/dated_inputs/*.json events",
+      "target": "corporate_actions record_kind=event",
+      "rule": "Preserve category, same-day multiple records, source units and deterministic source key."
+    },
+    {
+      "source": "lake/adjustments/factors.parquet",
+      "target": "corporate_actions record_kind=factor_anchor",
+      "rule": "Keep independent cumulative-factor source; do not multiply again with event-derived factors."
+    },
+    {
+      "source": "old limits/scope/exceptions/summary",
+      "target": "recompute daily_features derived columns and market_daily_summary",
+      "rule": "Use newly defined gap/ST/MA20/period rules; old outputs are comparison evidence only."
+    }
+  ],
+  "computed_factor_policy": {
+    "target": "corporate_actions",
+    "storage": "Sparse per-symbol effective-date event factors and rebuildable cumulative-factor columns; no extra table or per-trading-day expansion.",
+    "reference": "tick-stock-panel d71cafc8: kline_sync.sync_adj_factor, fuyao.get_adj_factors, pipeline._apply_adj_factor",
+    "conversion": "Imported cumulative anchors must not be cumprod again; normalize only after confirming source convention."
+  },
+  "design_reference": "../../sqlite_stock_requirements_design.md"
+}

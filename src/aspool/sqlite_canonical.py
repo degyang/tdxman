@@ -32,7 +32,17 @@ ACTION_COLUMNS = (
     "factor_basis",
     "updated_at",
 )
+OPTIONAL_TABLES = {
+    "market_sessions",
+    "board_snapshots",
+    "board_snapshot_sets",
+    "board_sync_state",
+    "board_daily",
+    "board_daily_status",
+}
+
 RELATIONS = {
+    **{name: "features." + name for name in OPTIONAL_TABLES},
     "daily_features": "features.stock_daily_features",
     "market_daily_summary": "features.market_regime_features",
 }
@@ -49,7 +59,18 @@ def canonical_operation(conn, operation):
     if not isinstance(conn, CanonicalConnection):
         yield
         return
-    if operation not in {"daily_update", "summary_repair", "summary_recompute", "factor_bootstrap"}:
+    if operation not in {
+        "daily_update",
+        "summary_repair",
+        "summary_recompute",
+        "factor_bootstrap",
+        "board_update",
+        "six_dimension_init",
+        "six_dimension_extend",
+        "st_default_repair",
+        "daily_state_normalize",
+        "qfq_audit",
+    }:
         raise ValueError("Unknown canonical writer")
     previous = getattr(conn, "_operation", None)
     conn._operation = operation
@@ -163,6 +184,13 @@ class CanonicalConnection(sqlite3.Connection):
             self.create_function("aspool_changed", -1, self._record_change)
             for alias, tables in publication.TABLES.items():
                 for table in sorted(tables):
+                    if (
+                        table in OPTIONAL_TABLES or table == "stock_qfq_bars"
+                    ) and not self.native.execute(
+                        f"SELECT 1 FROM {alias}.sqlite_master WHERE type='table' AND name=?",
+                        (table,),
+                    ).fetchone():
+                        continue
                     columns, keys = publication.table_shape(self.native, alias, table)
                     self._shapes[(alias, table)] = (columns, keys)
                     old = ",".join(f'OLD."{name}"' for name in columns)
@@ -185,6 +213,31 @@ class CanonicalConnection(sqlite3.Connection):
         length = len(columns)
         before = tuple(values[:length]) if operation != "INSERT" else None
         after = tuple(values[length:]) if operation != "DELETE" else None
+        if getattr(self, "_operation", None) == "daily_state_normalize":
+            allowed = {
+                "stock_daily_features": {"trading_status", "trading_status_source", "updated_at"},
+                "market_regime_features": {"updated_at"},
+                "board_daily": {"updated_at"},
+                "feature_state": {"updated_at"},
+            }
+            if alias != "features" or table not in allowed or operation != "UPDATE":
+                raise ValueError("State normalization must update only existing feature rows")
+            if table == "stock_daily_features":
+                state = columns.index("trading_status")
+                source = columns.index("trading_status_source")
+                calc = columns.index("calc_status")
+                if (
+                    before[state] not in (None, "")
+                    or after[state] != "TRADING"
+                    or after[source] != "derived:stored_ohlcv"
+                    or before[calc] != "TRADED"
+                ):
+                    raise ValueError("State normalization accepts only equivalent missing states")
+            if any(
+                old != new and name not in allowed[table]
+                for name, old, new in zip(columns, before, after)
+            ):
+                raise ValueError("State normalization cannot change numeric dependencies")
         positions = [columns.index(key) for key in keys]
         if before is not None:
             key = tuple(before[position] for position in positions)
@@ -193,6 +246,11 @@ class CanonicalConnection(sqlite3.Connection):
             key = tuple(after[position] for position in positions)
             if before is None or key != tuple(before[position] for position in positions):
                 self._changes.append(((alias, table, key), None))
+        if (
+            getattr(self, "_operation", None) == "daily_state_normalize"
+            and len(self._changes) > 25000
+        ):
+            raise ValueError("State normalization exceeds publication row budget")
         return 0
 
     def _begin_guard(self):
@@ -325,7 +383,17 @@ class CanonicalConnection(sqlite3.Connection):
             "SELECT revision,max_date FROM dataset_state WHERE dataset='stock_raw'"
         ).fetchone()
         baseline = self._baseline_revision[0] if self._baseline_revision else 0
-        revision = max(state[0] if state else 0, baseline + 1)
+        raw_changed = any(
+            (r["alias"], r["table"])
+            in {
+                ("main", "daily_bars"),
+                ("main", "stock_qfq_bars"),
+                ("main", "corporate_actions"),
+                ("adjustments", "stock_factor_anchors"),
+            }
+            for r in business
+        )
+        revision = max(state[0] if state else 0, baseline + int(raw_changed))
         stamp = time.time_ns() // 1000
         if state is None or revision != state[0]:
             maximum = self.native.execute("SELECT max(trade_date) FROM daily_bars").fetchone()[0]
@@ -342,7 +410,10 @@ class CanonicalConnection(sqlite3.Connection):
         if factor is None:
             raise DataPoolError("LAYOUT_INVALID", "Canonical factor state is absent")
         factor_revision = factor[0]
-        if any(r["alias"] == "adjustments" for r in business):
+        if any(
+            (r["alias"], r["table"]) == ("adjustments", "stock_adjustment_factors")
+            for r in business
+        ):
             factor_revision += 1
             maximum = self.native.execute(
                 "SELECT max(valid_through) FROM adjustments.stock_adjustment_factors"
@@ -362,7 +433,46 @@ class CanonicalConnection(sqlite3.Connection):
         if self.read_only or not self.in_transaction:
             return sqlite3.Connection.commit(self)
         try:
+            if self._operation in {
+                "six_dimension_extend",
+                "st_default_repair",
+                "daily_state_normalize",
+            }:
+                # Explicit historical initialization changes only this one WAL file.
+                # Its single-file transaction is atomic without a cross-file intent.
+                permitted = {
+                    "market_regime_features",
+                    "market_sessions",
+                    "board_daily",
+                    "board_daily_status",
+                }
+                if self._operation == "st_default_repair":
+                    permitted = {
+                        "stock_daily_features",
+                        "market_regime_features",
+                        "board_daily",
+                        "board_daily_status",
+                    }
+                if self._operation == "daily_state_normalize":
+                    permitted = {
+                        "stock_daily_features",
+                        "market_regime_features",
+                        "board_daily",
+                        "feature_state",
+                    }
+                if any(
+                    alias != "features" or table not in permitted
+                    for (alias, table, _), _old in self._changes
+                ):
+                    raise DataPoolError(
+                        "WRITE_SCOPE_REQUIRED", "Historical extension must change only features"
+                    )
+                sqlite3.Connection.commit(self)
+                return
             rows, _ = self._changed_rows()
+            from .factor_lineage import refresh_factor_lineage
+
+            refresh_factor_lineage(self.native, rows, root=self.root)
             self._coherent_states(rows)
             rows, shapes = self._changed_rows()
             if rows:

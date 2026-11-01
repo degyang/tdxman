@@ -1,0 +1,15 @@
+{
+  "name": "failed_5x_atomic_write_state",
+  "time": 1790511263.7459564,
+  "raw_rows": 89311935,
+  "new_date_rows": 0,
+  "catalog_domain_differences": {
+    "security_daily_facts": 0,
+    "coverage": 0,
+    "daily_limit_staleness": 0,
+    "dg03_revision": 0,
+    "dg03_changes": 0
+  },
+  "raw_operation": "insert-only into absent date; no preexisting raw values targeted",
+  "atomic_failure": true
+}

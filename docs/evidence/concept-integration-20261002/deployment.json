@@ -1,0 +1,12 @@
+{
+  "sdk_commit": "9f93a0cd661054e51094042c1473abf3d24ae479",
+  "wheel_sha256": "6685dadd658ebae1c06f6bc0724186da895ebb78cf2799e23cdb7ab00f3898d4",
+  "fundwise_python": "/mnt/d/Workstation/Projects/Fundwise/.venv/bin/python",
+  "tdxman_python": "/mnt/d/Workstation/Services/tdxman/.venv/bin/python",
+  "installed_sdk": "1.1.3",
+  "service_pid": 982781,
+  "service_port": 8765,
+  "business_source_modified": false,
+  "production_databases_modified": false,
+  "raw_receipt_directory": "/home/ubuntu/tdxman-ca-113-integration"
+}

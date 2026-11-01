@@ -12,6 +12,7 @@ def _help(*args: str) -> str:
 def test_all_leaf_command_help_uses_options_reference_examples_order():
     commands = [
         ("auction",),
+        ("abnormal-list",),
         ("belong-board",),
         ("board-members",),
         ("capital-flow",),

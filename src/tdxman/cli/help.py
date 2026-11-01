@@ -10,6 +10,13 @@ HelpRows = Sequence[tuple[str, str]]
 
 
 _COMMAND_REFERENCES: dict[str, HelpRows] = {
+    "tdxman abnormal-list": (
+        ("MARKET / --scope", "默认 ALL/all；SH/SZ/BJ 与板别范围同 stock-codes"),
+        ("--type", "all=ST/*ST 与停牌并集；st=只查 ST；suspended=只查停牌"),
+        ("--code / --name", "代码可重复或逗号分隔；名称可重复且精确匹配"),
+        ("状态口径", "ST 按简称前缀；停牌按标准报价 0x053e 状态位 0x20"),
+        ("checked_at", "本次检查时间；不是行情交易日或异常起始日"),
+    ),
     "tdxman auction": (
         ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
         ("CODE", "可选；使用旧格式时传六位证券代码"),
@@ -19,6 +26,22 @@ _COMMAND_REFERENCES: dict[str, HelpRows] = {
         ("CODE", "可选；使用旧格式时传六位证券代码"),
     ),
     "tdxman finance": (("MARKET", "SH、SZ 或 BJ"), ("CODE", "六位证券代码")),
+    "tdxman xdxr": (
+        ("SYMBOL_OR_MARKET", '规范标识 "600519.SH"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券代码"),
+        ("数据范围", "通达信返回的全部除权除息和股本变动事件；不是逐日复权因子"),
+    ),
+    "tdxman f10": (
+        ("SYMBOL_OR_MARKET", '规范标识 "600519.SH"，或旧格式的市场参数 SH/SZ/BJ'),
+        ("CODE", "可选；使用旧格式时传六位证券代码"),
+        (
+            "--section",
+            "profile、report、business、dividends、shareholders、topics、"
+            "announcements、news、governance、forecast",
+        ),
+        ("--report-type", "report 栏目的报表类型；默认 zcfzb（资产负债表）"),
+        ("--report-date", "business 栏目的报告期；不传则读取最新可用报告期"),
+    ),
     "tdxman fund-flow": (
         ("SYMBOL_OR_MARKET", '规范标识 "000001.SZ"，或旧格式的市场参数 SH/SZ/BJ'),
         ("CODE", "可选；使用旧格式时传六位证券代码；指数不支持历史资金流向"),
@@ -32,6 +55,13 @@ _COMMAND_REFERENCES: dict[str, HelpRows] = {
         ("--adjust", "NONE、QFQ（前复权）或 HFQ（后复权）；指数仅支持 NONE"),
         ("--start", "距最新 K 线的起始偏移，0 为最新"),
         ("--source", "tdx（默认）或 baostock；baostock 只支持沪深股票 DAILY、NONE"),
+    ),
+    "tdxman stock-codes": (
+        ("MARKET", "ALL（默认）、SH、SZ 或 BJ；获取当前股票清单，含 CDR，不入库"),
+        ("--scope", "all/main/star/chinext/bse/cdr；主板、科创板、创业板、北交所或 CDR"),
+        ("--code / --name", "代码、名称筛选取交集；同类多值取并集，名称精确匹配"),
+        ("来源", "沪深标准证券目录；北交所 MAC 分类目录；不提供历史证券全集"),
+        ("--output", "指定目录时文件名为 stock-codes，按输出格式添加扩展名"),
     ),
     "tdxman markets": (("市场代码", "SH=上海、SZ=深圳、BJ=北京证券交易所"),),
     "tdxman offline": (
@@ -59,6 +89,11 @@ _COMMAND_REFERENCES: dict[str, HelpRows] = {
         ("CODE", "可选；使用旧格式时传六位证券或指数代码"),
         ("--start", "距最新逐笔记录的起始偏移，0 为最新"),
         ("--date", "YYYYMMDD；缺省为今天"),
+    ),
+    "tdxman workdays": (
+        ("--date", "查询单个自然日，返回交易状态及前后已观察到的交易日；默认今天"),
+        ("--start / --end", "查询日期范围内逐日交易状态，必须同时提供"),
+        ("--max-bars", "最多读取的上证指数日 K 根数；超出覆盖范围不推断"),
     ),
     "tdxman unusual": (("MARKET", "SH、SZ 或 BJ"), ("--start", "请求记录的起始偏移")),
     "tdxman market-stat": (("数据范围", "当前 A 股全市场涨跌统计快照，不提供历史 --count"),),
@@ -98,9 +133,24 @@ _COMMAND_REFERENCES: dict[str, HelpRows] = {
 }
 
 _COMMAND_EXAMPLES: dict[str, tuple[str, ...]] = {
+    "tdxman abnormal-list": (
+        "tdxman abnormal-list SH --format table",
+        "tdxman abnormal-list --type st --format table",
+        "tdxman abnormal-list --type suspended --format json",
+    ),
+    "tdxman stock-codes": (
+        "tdxman stock-codes SH --format table --fields all",
+        "tdxman stock-codes --scope bse --format json",
+        "tdxman stock-codes SZ --code 000001.SZ --name 平安银行",
+    ),
     "tdxman auction": ("tdxman auction 000001.SZ --format table",),
     "tdxman capital-flow": ("tdxman capital-flow 600519.SH --format table",),
     "tdxman finance": ("tdxman finance SH 600519 --format table",),
+    "tdxman xdxr": ("tdxman xdxr 600519.SH --format table",),
+    "tdxman f10": (
+        "tdxman f10 600519.SH --section profile --format table",
+        "tdxman f10 600519.SH --section report --report-type zcfzb --format json",
+    ),
     "tdxman fund-flow": ("tdxman fund-flow SH 600519 --count 20 --closed-only --format table",),
     "tdxman kline": (
         "tdxman kline SH 600519 --period DAILY --count 30 --format table",
@@ -115,6 +165,10 @@ _COMMAND_EXAMPLES: dict[str, tuple[str, ...]] = {
     ),
     "tdxman tick": ("tdxman tick SH 600519 --days 5 --format table",),
     "tdxman transaction": ("tdxman transaction SH 600519 --count 100 --format table",),
+    "tdxman workdays": (
+        "tdxman workdays --date 2026-09-29 --format table",
+        "tdxman workdays --start 2026-09-01 --end 2026-09-30 --format csv",
+    ),
     "tdxman unusual": ("tdxman unusual SH --count 100 --format table",),
     "tdxman market-stat": ("tdxman market-stat --format table",),
     "tdxman server-info": ("tdxman server-info --format table",),

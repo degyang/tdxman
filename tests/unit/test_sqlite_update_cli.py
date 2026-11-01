@@ -309,7 +309,7 @@ def test_sync_uses_kline_and_fills_missing_metrics(tmp_path, monkeypatch):
         )
 
 
-def test_successful_kline_window_marks_absent_session_as_no_trade(tmp_path):
+def test_successful_kline_window_marks_absent_session_as_missing(tmp_path):
     days = store(tmp_path)
     with stock_connection(tmp_path, read_only=False) as conn:
         conn.execute(
@@ -352,7 +352,7 @@ def test_successful_kline_window_marks_absent_session_as_no_trade(tmp_path):
         assert conn.execute(
             "SELECT trading_status,calc_status FROM daily_features "
             "WHERE symbol='000001.SZ' AND trade_date='2026-09-29'"
-        ).fetchone() == ("NO_TRADE", "NO_TRADE")
+        ).fetchone() == ("MISSING", "NO_TRADE")
 
 
 def test_volume_repair_updates_five_successors_and_rolls_back(tmp_path, monkeypatch):
@@ -857,3 +857,35 @@ def test_dated_sync_cli_reaches_real_writer_without_count(tmp_path, monkeypatch)
     assert report["status"] == "ok"
     assert report["requested"] == 0
     assert report["summary_repair"] == {"dates": days[-2:], "changed_rows": 4}
+
+
+@pytest.mark.parametrize(
+    "volume,low,expected", [(100, 9, "TRADING"), (0, 9, None), (100, 12, None)]
+)
+def test_mac_kline_sets_status_only_for_valid_real_trades(volume, low, expected):
+    from aspool.sqlite_update_cli import KlineSource
+
+    class Client:
+        def get_stock_kline(self, *args, **kwargs):
+            return pd.DataFrame(
+                [
+                    dict(
+                        datetime=datetime(2026, 9, 22),
+                        open=10,
+                        high=11,
+                        low=low,
+                        close=10,
+                        vol=volume,
+                        amount=1000,
+                    )
+                ]
+            )
+
+    class Session:
+        def read(self, request, **kwargs):
+            return request(Client())
+
+    frame = KlineSource(Session()).get_daily(
+        2, "920087", start=date(2026, 9, 22), end=date(2026, 9, 22), count=1
+    )
+    assert frame.iloc[0].get("trading_status") == expected

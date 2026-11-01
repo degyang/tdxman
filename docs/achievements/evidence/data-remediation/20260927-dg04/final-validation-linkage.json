@@ -1,0 +1,40 @@
+{
+  "base_commit": "be60d78fff940db173156beb095fd21224e69c92",
+  "execution_implementation_commit": "9308d5509ed0b0f378b94a098e0ea8b5357f65ff",
+  "new_nonempty_resume_tests_commit": "13d627c2d71dd73cf139f49b23448552469295f7",
+  "source_files": {
+    "src/aspool/remediation.py": "3fed8f0f39d899d74782c4cd4fa209ec2548045c027af01e4da84513278a0d9b",
+    "src/aspool/remediation_repair.py": "a39378ec3a9bb18fe836668981613427c4d359c14f01c20ab5f334a8195cdf87",
+    "scripts/repair_limit_publication.py": "db1a6157a15ad20419306e9ec5dea4306df1a796e46b02c87a4c8dd5f5603f7c",
+    "tests/unit/test_remediation_publication.py": "7b16f38c483aa3fc6d5b3b6723983d10cbc0ebb3b1c99adfbf8c8dc98d0ae76c",
+    "tests/unit/test_remediation_repair.py": "1db4ba0ce4a255ed1666d8f8b2a7c71398af9f05bad8a26ff06aa70f4ead1637"
+  },
+  "python_import": "/home/ubuntu/orca/workspaces/tdxman/aspool-dg04-repair/src/aspool/__init__.py",
+  "publication_plan": "36794742ac1e3c4a373c52773a77ec40449c9de2e676062b4c926f11fed061c5",
+  "source": "ddd0c37c09a299c8addaf9e4f09ba6928178079f1ced11f960b463018ab1e44b",
+  "commands": {
+    "production": ".venv/bin/python scripts/repair_limit_publication.py run --plan /home/ubuntu/aspool-labs/dg04-20260927/production-authorized-publication-plan.json --state /home/ubuntu/aspool-labs/dg04-20260927/production-publication-state-final.json --max-days 256 --approval /home/ubuntu/aspool-labs/dg04-20260927/coordinator-publication-approval.json (five sequential successful invocations)",
+    "production_check": ".venv/bin/python /home/ubuntu/aspool-labs/dg04-20260927/verify-production.py",
+    "fundwise": ".venv/bin/python /home/ubuntu/aspool-labs/dg04-20260927/verify-fundwise-window.py",
+    "lint": ".venv/bin/ruff check src/aspool/remediation.py src/aspool/remediation_repair.py scripts/repair_limit_publication.py tests/unit/test_remediation_publication.py tests/unit/test_remediation_repair.py",
+    "format": ".venv/bin/ruff format --check src/aspool/remediation.py src/aspool/remediation_repair.py scripts/repair_limit_publication.py tests/unit/test_remediation_publication.py tests/unit/test_remediation_repair.py",
+    "initial_repair": ".venv/bin/python scripts/repair_limit_publication.py repair --plan /home/ubuntu/aspool-labs/dg04-20260927/production-repair-plan-v2.json --state /home/ubuntu/aspool-labs/dg04-20260927/production-repair-state.json --max-symbols 8 --approval /home/ubuntu/aspool-labs/dg04-20260927/coordinator-repair-approval.json (four sequential invocations)",
+    "supplement": ".venv/bin/python scripts/repair_limit_publication.py repair --plan /home/ubuntu/aspool-labs/dg04-20260927/production-base-gap-plan.json --state /home/ubuntu/aspool-labs/dg04-20260927/production-base-gap-state.json --max-symbols 8 --approval /home/ubuntu/aspool-labs/dg04-20260927/coordinator-base-gap-approval.json (31 sequential invocations)",
+    "consumer_pipeline_boundary": ".venv/bin/python /home/ubuntu/aspool-labs/dg04-20260927/verify-pipeline-boundary.py"
+  },
+  "results": {
+    "production": "all1213 completed; global/targetstale0, components/counts/boundary checks passed",
+    "fundwise": "actual market22sessions and eventreader1400records, ready/stable revision, transparent partials/unknown",
+    "lint": "all checks passed",
+    "format": "5files already formatted",
+    "pipeline_boundary": "Public phase/mainline reads passed on existing isolated cache:22unknownphase days,mainline not_computed. Actual localmembership age241325.575s exceeds86400s; fullmainline ranking deferredDG07 requiring freshcrediblecache and serializedvalidation."
+  },
+  "test_evidence_reuse": [
+    "targeted-tests.log (initial13 including3repair cases)",
+    "predecessor-guard-tests.log (14publication cases on9308)",
+    "nonempty-prior-resume-tests.log (2additional publication cases on13d)"
+  ],
+  "test_reuse_reason": "Execution source unchanged since9308; later commits tests/docs only; no DG00-02 suites or successful fullscope three-day calculation repeated.",
+  "external_lab": "/home/ubuntu/aspool-labs/dg04-20260927",
+  "raw_data_in_git": false
+}

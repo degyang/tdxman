@@ -130,7 +130,7 @@ class GetSecurityQuotesCmd(BaseCommand[list[SecurityQuote]]):
             av5, pos = get_price(body, pos)
 
             # 尾部：2字节 H + 4个 get_price + 2字节 h + 2字节 H
-            (unknown_4,) = unpack_from("<H", body, pos, "security_quotes tail flag")
+            (trading_status_raw,) = unpack_from("<H", body, pos, "security_quotes tail flag")
             pos += 2
             unknown_5, pos = get_price(body, pos)
             unknown_6, pos = get_price(body, pos)
@@ -166,6 +166,7 @@ class GetSecurityQuotesCmd(BaseCommand[list[SecurityQuote]]):
                     b_vol=float(b_vol),
                     active1=active1,
                     active2=active2,
+                    trading_status_raw=trading_status_raw,
                     bid1=(price_raw + bid1_d) / 100.0,
                     bid_vol1=float(bv1),
                     bid2=(price_raw + bid2_d) / 100.0,

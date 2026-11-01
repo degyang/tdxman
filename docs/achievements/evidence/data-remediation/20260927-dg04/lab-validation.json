@@ -1,0 +1,41 @@
+{
+  "checks": {
+    "daily_limit_events": {
+      "rows": 288,
+      "equal": true
+    },
+    "daily_limit_exceptions": {
+      "rows": 15,
+      "equal": true
+    },
+    "daily_limit_scope": {
+      "rows": 16673,
+      "equal": true
+    },
+    "daily_limit_references": {
+      "rows": 0,
+      "equal": true
+    },
+    "daily_limit_gap_states": {
+      "rows": 0,
+      "equal": true
+    },
+    "daily_limit_streak_boundaries": {
+      "rows": 0,
+      "equal": true
+    },
+    "daily_limit_summary": {
+      "rows": 3,
+      "equal": true
+    }
+  },
+  "source": "1c073dfcfc455ef78901fea6a7e9f04b518dbcfa9ff5fb8c8584e2a87ad51674",
+  "rule": "cn-a-share-limit-v8",
+  "sessions": [
+    "2026-09-22",
+    "2026-09-23",
+    "2026-09-24"
+  ],
+  "seconds": 270.52686575199914,
+  "rss_mib": 410.9921875
+}

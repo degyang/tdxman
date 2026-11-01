@@ -64,6 +64,9 @@ def _normalize_symbols(values):
 def pool_lock(root: Path, *, write: bool = False):
     """Coordinate batch writers and readers without opening the DuckDB catalog."""
     root = Path(root).expanduser().resolve()
+    from .base_delta import assert_replica_complete
+
+    assert_replica_complete(root)
     held = next((mode for path, mode in _pool_locks.get() if path == root), None)
     if held is not None:
         if write and not held:
@@ -232,6 +235,24 @@ class DataPool:
             return reader.read_market_summary(start=start, end=end, frequency=frequency,
                                              scope=scope, fields=fields, closed_only=closed_only)
 
+    @public_read
+    def read_board_daily(self, *, start, end, kind=None, scope="all_stocks", fields=None,
+                         limit=100000, offset=0):
+        """Read published HY2/GN facts only; metadata lives in DataFrame.attrs."""
+        from .sqlite_board_daily import read_board_daily
+        with self.stock_snapshot() as reader:
+            return read_board_daily(reader, start=start, end=end, kind=kind, scope=scope,
+                                    fields=fields, limit=limit, offset=offset)
+
+    @public_read
+    def read_board_members(self, *, snapshot_id, kind, board_ids, limit=100000, offset=0):
+        """Read complete or explicitly paged source memberships without network access."""
+        from .sqlite_board_daily import read_board_members
+
+        with self.stock_snapshot() as reader:
+            return read_board_members(reader, snapshot_id=snapshot_id, kind=kind,
+                                      board_ids=board_ids, limit=limit, offset=offset)
+
     def read_market_daily(self, *, start, end, scope="all_stocks", fields=None):
         return self.read_market_summary(start=start, end=end, scope=scope, fields=fields)
 
@@ -263,10 +284,14 @@ class DataPool:
                         "SELECT symbol,code,market,asset_type,name,active,listing_date,"
                         "delisting_date,updated_at FROM securities"
                         + where
-                        + " ORDER BY symbol",
+                        + " ORDER BY symbol LIMIT 50001",
                         params,
                     ).fetchdf()
-                    frame.attrs.update(source="catalog.securities", point_in_time=False)
+                    if len(frame) > 50000:
+                        raise DataPoolError("DIRECTORY_TOO_LARGE", "Use a bounded symbol scope")
+                    frame.attrs.update(source="catalog.securities", point_in_time=False,
+                                       complete=True, returned_count=len(frame), read_limit=50000,
+                                       name_basis="current_catalog")
                     return frame
         from .security_facts import BASIC_TABLE, read_facts
 
@@ -584,6 +609,15 @@ class DataPool:
     # ------------------------------------------------------------------ #
     # 日终涨跌停派生（已发布批次）
     # ------------------------------------------------------------------ #
+
+    @public_read
+    def read_downloaded_qfq(self, *, start, end, symbols=None, max_rows=100_000):
+        """Read source qfq OHLC retained as rebuildable base input."""
+        from .sqlite_qfq import read_downloaded_qfq
+
+        return read_downloaded_qfq(
+            self.root, start=start, end=end, symbols=symbols, max_rows=max_rows
+        )
 
     @public_read
     def read_limit_summary(self, *, start=None, end=None):

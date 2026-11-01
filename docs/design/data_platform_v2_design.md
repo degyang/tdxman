@@ -1,5 +1,8 @@
 # asPool 数据域分层设计
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 > 2026-09-30 存储整改：当前布局 3 的唯一物理所有权、一致发布和旧表退役以 [单一权威存储整改](../implements/single_authority_storage.md) 为准。本文旧镜像迁移步骤仅用于解释历史设计，不能据此新建第二套生产表。
 
 日期：2026-09-29。状态：实施中。需求基线见
@@ -9,15 +12,15 @@
 
 ## 1. 设计决策
 
-采用三个层次：
+采用两个逻辑数据层（缓存是 Enriched 层内的存储形式）：
 
 ```text
-来源层        catalog + stocks + indices + etfs + fundamentals
-参考/派生层  adjustments + features
-缓存层        snapshots
+基础数据      catalog + stocks + indices + etfs + fundamentals + 外部复权依据/锚点
+Enriched 数据 adjustments（计算因子）+ features（衍生结果）+ snapshots（计算缓存）
 ```
 
-来源层保留不可从本地可靠重建的数据；参考/派生层保存确定性计算结果；缓存层允许随时删除重建。
+基础数据保存来源事实及下载的复权依据，Enriched 数据保存依赖基础数据的计算结果。
+本地计算出的复权因子归 Enriched 数据；外部来源锚点仍归基础数据；计算缓存只有在输入、规则和历史依据仍可取得时才可重建。
 股票日级派生接近股票日线的行数，和原始库分离后，其结构扩展、全量重建和文件压缩不再影响原始
 行情的恢复点。
 

@@ -10,40 +10,42 @@ from .cmd_auction import auction
 from .cmd_board import belong_board, board_list, board_members
 from .cmd_capital import capital_flow
 from .cmd_ex import ex
-from .cmd_finance import finance, fund_flow
+from .cmd_f10 import f10
+from .cmd_finance import finance, fund_flow, xdxr
 from .cmd_info import markets, server_info, symbol_info
 from .cmd_kline import kline
 from .cmd_monitor import market_stat, unusual
 from .cmd_offline import offline
 from .cmd_quote import quote, quote_list
+from .cmd_stock_codes import stock_codes
+from .cmd_stock_status import stock_abnormal_list
 from .cmd_tick import tick
 from .cmd_transaction import transaction
+from .cmd_workdays import workdays
 
 
 class TdxmanGroup(click.Group):
     """Render root help in the order used by the command-line manual."""
 
     _COMMAND_GROUPS = (
+        ("实时行情", ("workdays", "tick", "quote", "capital-flow", "transaction")),
+        ("实时市场全景", ("auction", "market-stat", "quote-list", "unusual")),
+        ("历史行情", ("kline", "offline", "fund-flow")),
         (
-            "实时行情",
+            "个股数据",
             (
-                "auction",
-                "capital-flow",
-                "market-stat",
-                "quote",
-                "quote-list",
+                "markets",
+                "stock-codes",
+                "abnormal-list",
                 "symbol-info",
-                "tick",
-                "transaction",
-                "unusual",
+                "finance",
+                "xdxr",
+                "f10",
             ),
         ),
-        ("历史与财务", ("ex", "finance", "fund-flow", "kline", "offline")),
-        (
-            "市场资料与板块",
-            ("belong-board", "board-list", "board-members", "server-info"),
-        ),
-        ("工具", ("bestip", "markets", "ping", "version")),
+        ("板块数据", ("belong-board", "board-list", "board-members")),
+        ("扩展市场", ("ex",)),
+        ("工具", ("server-info", "bestip", "ping", "version")),
     )
 
     def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
@@ -105,7 +107,12 @@ cli.add_command(market_stat)
 cli.add_command(server_info)
 cli.add_command(symbol_info)
 cli.add_command(markets)
+cli.add_command(stock_codes)
+cli.add_command(stock_abnormal_list)
 cli.add_command(finance)
+cli.add_command(xdxr)
 cli.add_command(fund_flow)
 cli.add_command(offline)
 cli.add_command(ex)
+cli.add_command(workdays)
+cli.add_command(f10)

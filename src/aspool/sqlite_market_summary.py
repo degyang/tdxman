@@ -102,20 +102,17 @@ class _Summary:
         self.distribution = dict.fromkeys(BUCKETS, 0)
         self.ladder = Counter()
         self.returns, self.amounts, self.turnovers = [], [], []
+        self.volumes = []
 
     def add(self, row):
         counts = self.counts
         status = row["calc_status"]
-        if status == "NO_TRADE":
+        if (
+            status != "TRADED"
+            or row["limit_status"] not in ("KNOWN", "NO_LIMIT", "UNKNOWN")
+            or not finite(row["close"], positive=True)
+        ):
             return
-        if status == "INVALID":
-            self.reasons["INVALID"][row["limit_reason"] or "unclassified"] += 1
-            counts["limit_invalid_count"] += 1
-            return
-        if status != "TRADED" or row["limit_status"] not in ("KNOWN", "NO_LIMIT", "UNKNOWN"):
-            raise DataPoolError("FEATURE_NOT_READY", "Daily limits have not been computed")
-        if not finite(row["close"], positive=True):
-            raise DataPoolError("DAILY_INVALID", "Traded feature has no valid close")
         if row["limit_status"] == "UNKNOWN":
             self.reasons["UNKNOWN"][row["limit_reason"] or "unclassified"] += 1
         counts["trading_count"] += 1
@@ -169,6 +166,9 @@ class _Summary:
             if row["close_limit_up"] == 1 or row["close_limit_down"] == 1:
                 raise DataPoolError("DAILY_INVALID", "Closing limit has no valid reference")
             counts["invalid_return_count"] += 1
+        value = row.get("eod_vol_ratio")
+        if finite(value) and value >= 0:
+            self.volumes.append(value)
         for field, values in (("amount", self.amounts), ("turnover_rate", self.turnovers)):
             if finite(row[field]) and row[field] >= 0:
                 values.append(row[field])
@@ -205,7 +205,9 @@ class _Summary:
         return result
 
 
-def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_rows=100_000):
+def recompute_daily_summary(
+    conn, *, trade_date: str, inputs_changed=False, max_rows=100_000, extend_only=False
+):
     """Aggregate one explicit market session in the caller's write transaction.
 
     The caller supplies only confirmed market sessions. inputs_changed=True
@@ -219,6 +221,14 @@ def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_
         raise ValueError("Invalid row budget")
     summaries = {scope: _Summary() for scope in SCOPES}
     with_quality = set(QUALITY_FIELDS) <= quality_columns(conn)
+    from .sqlite_six_dimension import six_columns, volume_inputs
+
+    available = six_columns(conn)
+    if extend_only and not available:
+        raise DataPoolError("SCHEMA_MAINTENANCE_REQUIRED", "Six-dimension columns required")
+    volumes, volume_reads, volume_ready, volume_stamp = (
+        volume_inputs(conn, trade_date, max_rows) if available else ({}, 0, False, 0)
+    )
     current = {}
     cursor = conn.execute(
         "SELECT f.symbol,f.limit_reason,f.calc_status,f.limit_status,f.is_st,f.pre_close,"
@@ -230,14 +240,15 @@ def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_
         (trade_date,),
     )
     fields = [column[0] for column in cursor.description]
-    read_rows = 0
-    input_stamp = 0
+    read_rows = volume_reads
+    input_stamp = volume_stamp
     try:
         for raw in cursor:
             read_rows += 1
             if read_rows > max_rows:
                 raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Summary row budget exceeded")
             row = dict(zip(fields, raw))
+            row["eod_vol_ratio"] = volumes.get(row["symbol"])
             if with_quality:
                 current[row["symbol"]] = row
             input_stamp = max(input_stamp, row["feature_stamp"], row["bar_stamp"] or 0)
@@ -276,12 +287,49 @@ def recompute_daily_summary(conn, *, trade_date: str, inputs_changed=False, max_
                 values.update(
                     limit_reason_counts_json=encode(reasons), promotion_quality_json=encode(quality)
                 )
+            if available:
+                values.update(
+                    upper_median_return=(
+                        sorted(summary.returns)[len(summary.returns) // 2]
+                        if summary.returns else None
+                    ),
+                    avg_vol_ratio_5d=(
+                        statistics.fmean(summary.volumes) if summary.volumes else None
+                    ),
+                    vol_ratio_5d_valid_count=len(summary.volumes) if volume_ready else None,
+                    high_vol_ratio_5d_count=(
+                        sum(value >= 1.5 for value in summary.volumes) if volume_ready else None
+                    ),
+                )
             columns = list(values)
             old = conn.execute(
                 "SELECT " + ",".join(columns) + ",updated_at FROM market_daily_summary "
                 "WHERE frequency='D' AND period_key=? AND scope=?",
                 (trade_date, scope),
             ).fetchone()
+            if extend_only:
+                from .sqlite_market_metadata import SIX_FIELDS
+
+                if old is None:
+                    raise DataPoolError("SUMMARY_NOT_FOUND", "Existing daily summary required")
+                prior = dict(zip(columns, old[:-1]))
+                for name in ("trading_count", "valid_return_count"):
+                    if prior[name] != values[name]:
+                        raise DataPoolError(
+                            "SOURCE_CHANGED", "Existing summary sample differs from its facts"
+                        )
+                additions = {name: values[name] for name in SIX_FIELDS}
+                if all(prior[name] == value for name, value in additions.items()):
+                    continue
+                stamp = max(time.time_ns() // 1000, input_stamp + 1, old[-1] + 1)
+                conn.execute(
+                    "UPDATE market_daily_summary SET "
+                    + ",".join(name + "=?" for name in additions)
+                    + ",updated_at=? WHERE frequency='D' AND period_key=? AND scope=?",
+                    (*additions.values(), stamp, trade_date, scope),
+                )
+                changed += 1
+                continue
             if old is not None and tuple(values.values()) == old[:-1] and not inputs_changed:
                 continue
             stamp = max(time.time_ns() // 1000, input_stamp + 1, old[-1] + 1 if old else 1)
@@ -333,6 +381,9 @@ def recompute_market_window(
     changed_days = set()
     conn.execute("SAVEPOINT daily_market_window")
     try:
+        from .sqlite_six_dimension import save_sessions
+
+        save_sessions(conn, days)
         for symbol in sorted(set(symbols)):
             if read_rows >= max_rows:
                 raise DataPoolError("LOCAL_UPDATE_BUDGET_EXCEEDED", "Window row budget exceeded")

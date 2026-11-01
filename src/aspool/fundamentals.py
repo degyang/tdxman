@@ -275,6 +275,15 @@ def _quote_bar(quote: dict[str, object], trade_date: date) -> dict[str, object]:
         "vol_ratio": quote.get("vol_ratio"),
         "turnover": quote.get("turnover"),
     }
+    # Source quote shares are ten-thousand shares, not lots or inferred turnover shares.
+    for observed, field in (("total_shares", "total_share"), ("float_shares", "float_share")):
+        value = quote.get(observed)
+        if value is not None and not is_missing_value(value):
+            value = float(value)
+            if not math.isfinite(value) or value < 0:
+                raise ValueError("Invalid quoted share count")
+            row[field] = value * 10000
+            row[field + "_source"] = "tdxman:quote"
     from .st_source import classify_st_name
 
     st_status = classify_st_name(quote.get("name"))

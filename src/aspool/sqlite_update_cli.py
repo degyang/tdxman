@@ -254,6 +254,22 @@ class KlineSource:
                             row[field] = raw[field]
                     # MAC K-line volume is shares; quote volume is lots.
                     row["volume"] = raw["vol"]
+                    # Valid positive-volume historical bars prove actual trading.
+                    prices = [row.get(key) for key in ("open", "high", "low", "close")]
+                    if (
+                        all(
+                            isinstance(value, (int, float)) and math.isfinite(value) and value > 0
+                            for value in prices
+                        )
+                        and prices[2]
+                        <= min(prices[0], prices[3])
+                        <= max(prices[0], prices[3])
+                        <= prices[1]
+                        and isinstance(row["volume"], (int, float))
+                        and math.isfinite(row["volume"])
+                        and row["volume"] > 0
+                    ):
+                        row["trading_status"] = "TRADING"
                     floating = raw.get("float_shares")
                     if floating is not None and pd.notna(floating) and floating > 0:
                         row.update(
@@ -621,6 +637,11 @@ def run_update(
                 return actions.read(fetch, label="actions:" + symbol)
             finally:
                 action_elapsed_ms += round((perf_counter() - action_tick) * 1000)
+
+        if source == "tdx" and mode == "update":
+            from .sqlite_board_daily import refresh_board_snapshots
+
+            report["boards"] = refresh_board_snapshots(root, mac)
 
         result = sync_daily_source(
             root,

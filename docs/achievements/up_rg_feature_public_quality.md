@@ -1,5 +1,8 @@
 # UP-RG-FEATURE 上游实现回执
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 2026-09-28。对应 Fundwise `docs/northstar/tasks/UP-regime-public-features.md`。
 上游实现已完成，生产库尚未升级或补算；Fundwise 可开始接口适配，不能据此将生产质量字段标为已就绪。
 

@@ -1,0 +1,25 @@
+{
+  "plan_id": "107fcabe21d55519917e6987e1483b4118dfc2ab1201c7f351a0a47003187bff",
+  "checks": {
+    "plan_signature": true,
+    "implementation": true,
+    "repair_code": true,
+    "recovery_manifest": true,
+    "after": "ff7cff8b970e2b9290dd2bb855211e9763552f831c28a52b5e065c1b55a00587",
+    "base_manifest": true
+  },
+  "counts": {
+    "recovery_objects": 77,
+    "existing_rows_compared": 519796,
+    "records": 2506,
+    "existing_fact_records": 45,
+    "evidence_files": 245
+  },
+  "issues": [],
+  "dispositions": {
+    "unconfirmed": 3695,
+    "supplement": 2506,
+    "defer": 10
+  },
+  "earliest": "2021-09-24"
+}

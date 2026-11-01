@@ -1,0 +1,14 @@
+test_bundled_defaults_do_not_require_repository_settings (__main__.WheelInstallationTests.test_bundled_defaults_do_not_require_repository_settings) ... ok
+test_describe_from_installed_package (__main__.WheelInstallationTests.test_describe_from_installed_package) ... ok
+test_explicit_configuration_and_validation (__main__.WheelInstallationTests.test_explicit_configuration_and_validation) ... ok
+test_installed_console_entrypoints (__main__.WheelInstallationTests.test_installed_console_entrypoints) ... ok
+test_installed_distribution_and_runtime_version (__main__.WheelInstallationTests.test_installed_distribution_and_runtime_version) ... ok
+test_integrated_quality_metadata_and_calculation (__main__.WheelInstallationTests.test_integrated_quality_metadata_and_calculation) ... ok
+test_paginated_events_without_loss_or_duplicates (__main__.WheelInstallationTests.test_paginated_events_without_loss_or_duplicates) ... ok
+test_snapshot_keeps_join_on_one_version (__main__.WheelInstallationTests.test_snapshot_keeps_join_on_one_version) ... ok
+test_sqlite_daily_summary_projection (__main__.WheelInstallationTests.test_sqlite_daily_summary_projection) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 1.944s
+
+OK

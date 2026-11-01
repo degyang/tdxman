@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-02",
+  "status": "assessment_complete_not_implementation",
+  "ca_rows": [
+    "CA-01",
+    "CA-02",
+    "CA-03",
+    "CA-04",
+    "CA-05",
+    "CA-06",
+    "CA-07",
+    "CA-08",
+    "CA-09",
+    "CA-10",
+    "CA-11",
+    "CA-12",
+    "CA-13"
+  ],
+  "sample_consistency": "passed",
+  "original_assessment_preserved": "passed",
+  "production_writes": false,
+  "fundwise_business_code_modified": false,
+  "fundwise_task_states_modified": false,
+  "sample_json_sha256": "1eb56c8cee1373e1288b6c0f019089169340f7268acc91e819eb92ccd5d14ccb",
+  "fundwise_assessment_sha256": "0799af79df34754d7e5b2093264c68db24b68a698095ac255f6dd97f1bac4d4e",
+  "new_api_implemented": false,
+  "intraday_incremental_collection_verified": false,
+  "checks": [
+    "13 CA rows present with method references, coverage, calls and limitations",
+    "matrix counts AND category publication readiness",
+    "cost arithmetic",
+    "dated share/MV and announcement-time missingness",
+    "Ruff probes",
+    "original sheet text preserved"
+  ],
+  "runtime_limitations": [
+    "Standard TDX connection failed; MAC supplementary path succeeded",
+    "Fundwise editable SDK lacks candidate board_daily reader",
+    "Running Fundwise service module path not verified"
+  ]
+}

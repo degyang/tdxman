@@ -1,0 +1,47 @@
+{
+  "observed_at": "2026-09-27T10:04:35.599988+00:00",
+  "manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b",
+  "root": "/home/ubuntu/.aspool",
+  "basis": "current read-only source, independent facts separately from published reference",
+  "baseline_difference": {
+    "added": [],
+    "missing": [],
+    "changed": []
+  },
+  "source_matches_baseline": true,
+  "stale": {
+    "count": 605,
+    "start": "2024-04-01",
+    "end": "2026-09-24"
+  },
+  "publication": {
+    "count": 1296,
+    "start": "2021-05-27",
+    "end": "2026-09-24"
+  },
+  "facts": {
+    "rows": 410467,
+    "pre_close_null": 1456,
+    "st_null": 0,
+    "status_null": 0
+  },
+  "calendar_missing_natural_days": [],
+  "projected_base_audit": {
+    "rows": 6229645,
+    "absent_bar": 10135,
+    "absent_status_unconfirmed": 9652,
+    "independent_unknown_is_st": 5183,
+    "raw_missing_pct_chg": 193,
+    "independent_unknown_pre_close": 193,
+    "invalid_open": 67,
+    "invalid_high": 67,
+    "invalid_low": 67,
+    "listing_unknown": 2,
+    "unknown_turnover_rate": 1271,
+    "absent_known_suspended": 483,
+    "invalid_close": 19
+  },
+  "symbols": 5586,
+  "lab_copy": "/home/ubuntu/aspool-labs/dg04-20260927/pool",
+  "elapsed_seconds": 45.35947892300101
+}

@@ -1,0 +1,24 @@
+{
+  "root": "/mnt/d/Workstation/Services/tdxman/data",
+  "files": [
+    {
+      "name": "stocks.sqlite",
+      "bytes": 9234522112,
+      "quick_check": "ok",
+      "seconds": 437.9
+    },
+    {
+      "name": "features.sqlite",
+      "bytes": 6625144832,
+      "quick_check": "ok",
+      "seconds": 314.85
+    },
+    {
+      "name": "adjustments.sqlite",
+      "bytes": 41418752,
+      "quick_check": "ok",
+      "seconds": 1.55
+    }
+  ],
+  "public_read_verified": true
+}

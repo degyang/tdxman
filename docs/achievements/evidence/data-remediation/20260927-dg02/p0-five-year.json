@@ -1,0 +1,70 @@
+{
+  "status": "passed",
+  "started_at": "2026-09-27T08:17:00.699629+00:00",
+  "code": {
+    "source_sha256": "7b07e04b05299e9b3f70b887124d0c6f073169d1b5c49e81febdff7a59f090a8",
+    "git_head": "6c851137e514c3e0795d3217385fcdbec945ec45",
+    "python": "3.12.14",
+    "duckdb": "1.5.5",
+    "pandas": "3.0.5",
+    "pyarrow": "25.0.1",
+    "openblas_threads": "1",
+    "omp_threads": "1"
+  },
+  "root": "/home/ubuntu/aspool-recovery/20260927-data-remediation/snapshot",
+  "start": "2021-09-24",
+  "end": "2026-09-24",
+  "sessions": 1213,
+  "source_sha256": "5885619ddc38c9a2906de5cccbfa01e68dabafa204a977915a532c6bf7feaa25",
+  "verify": true,
+  "all_events": false,
+  "settings": {
+    "batch_days": 7,
+    "max_rows": 25000,
+    "memory_limit": "512MB",
+    "threads": 2,
+    "sample_seconds": 0.02,
+    "virtual_memory_limit": 5368709120,
+    "rss_limit": 2147483648
+  },
+  "warmup": false,
+  "runs": [
+    {
+      "rows": 82772,
+      "batches": 258,
+      "max_batch_rows": 1004,
+      "null_amounts": 0,
+      "compared_rows": 82772,
+      "compared_windows": 261,
+      "amount_checked": 30,
+      "seconds": 71.178,
+      "process_highwater_rss": 298508288,
+      "baseline": {
+        "rss": 168284160,
+        "swap": 0,
+        "cache_bytes": 0,
+        "spill_bytes": 0,
+        "fds": 4,
+        "threads": 21
+      },
+      "peak": {
+        "rss": 298192896,
+        "swap": 0,
+        "cache_bytes": 4818642,
+        "spill_bytes": 0,
+        "fds": 13,
+        "threads": 41
+      },
+      "ended": {
+        "rss": 203751424,
+        "swap": 0,
+        "cache_bytes": 4838443,
+        "spill_bytes": 0,
+        "fds": 4,
+        "threads": 21
+      },
+      "monitor_errors": []
+    }
+  ],
+  "finished_at": "2026-09-27T08:18:12.009958+00:00"
+}

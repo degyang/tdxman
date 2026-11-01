@@ -1,0 +1,45 @@
+FF.F                                                         [100%]
+=================================== FAILURES ===================================
+_______________ test_stock_default_still_uses_existing_pipeline ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-4/test_stock_default_still_uses_0')
+
+>   ???
+E   AssertionError: 通达信 K 线校准：1 个标的，写入变化记录 30 条 daily K
+E     补齐日期基础数据、量价指标，再重算涨跌停及连板……
+E
+E   assert 1 == 0
+E    +  where 1 = <Result ValueError('Missing trading calendar; run BaoStock supplementation first')>.exit_code
+
+/mnt/d/Workstation/Projects/tdxman/tests/unit/test_aspool_index.py:205: AssertionError
+__________________ TestComputePriceLimits.test_main_board_st ___________________
+
+self = <tests.unit.test_daily_derived.TestComputePriceLimits testMethod=test_main_board_st>
+
+>   ???
+E   AssertionError: 0.0999 != 0.05 within 2 places (0.0499 difference)
+
+/mnt/d/Workstation/Projects/tdxman/tests/unit/test_daily_derived.py:287: AssertionError
+_________ TestSampleData.test_single_day_samples (sample='ST股票涨停（主板）') _________
+
+self = <tests.unit.test_daily_derived.TestSampleData testMethod=test_single_day_samples>
+
+>   ???
+E   AssertionError: 5.5 != 5.25 : ST股票涨停（主板）: limit_up mismatch
+
+/mnt/d/Workstation/Projects/tdxman/tests/unit/test_daily_derived.py:810: AssertionError
+_____________________ test_compute_price_limits_for_stocks _____________________
+
+>   ???
+E   assert (24.78, 20.28) == (23.66, 21.4)
+E
+E     At index 0 diff: 24.78 != 23.66
+E     Use -v to get more diff
+
+/mnt/d/Workstation/Projects/tdxman/tests/unit/test_protocol_fixes.py:108: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_aspool_index.py::test_stock_default_still_uses_existing_pipeline
+FAILED tests/unit/test_daily_derived.py::TestComputePriceLimits::test_main_board_st
+SUBFAILED(sample='ST股票涨停（主板）') tests/unit/test_daily_derived.py::TestSampleData::test_single_day_samples
+FAILED tests/unit/test_protocol_fixes.py::test_compute_price_limits_for_stocks
+4 failed, 1 passed, 11 subtests passed in 4.70s

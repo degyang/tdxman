@@ -40,6 +40,9 @@ CREATE TABLE adjustment_factors (
 
 @contextmanager
 def connection(root, *, read_only=True):
+    from .base_delta import assert_replica_complete
+
+    assert_replica_complete(root)
     path = Path(root).resolve() / "etfs.sqlite"
     conn = sqlite3.connect(
         path.as_uri() + ("?mode=ro" if read_only else "?mode=rw"), uri=True, timeout=30
@@ -138,8 +141,10 @@ def save_rows(conn, item, records, *, source):
             if i >= 5:
                 average = sum(r["volume"] for r in rows[i - 5 : i]) / 5
                 row["vol_ratio"] = row["volume"] / average if average > 0 else None
+                row["vol_ratio_source"] = "derived:five_observations"
             if row.get("float_shares") and row["float_shares"] > 0:
                 row["turnover_rate"] = row["volume"] / (row["float_shares"] * 100)
+                row["turnover_rate_source"] = "derived:dated_float_share"
             previous = old.get(row["trade_date"])
             values = tuple(row.get(k) for k in FIELDS)
             if previous and values == tuple(previous.get(k) for k in FIELDS):

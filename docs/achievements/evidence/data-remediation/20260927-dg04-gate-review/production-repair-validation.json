@@ -1,0 +1,18 @@
+{
+  "plan_id": "13414aedffc0ad72e3e33e6cc0f1faea8e9b4fe24e818461505932a364819641",
+  "tested_commit": "a410d735a26b77b72650a6b26930eaea86922080",
+  "source_after": "eff91eab10e43c3b1df52c78320f51c2e26653e99159d9320daca41a6e937bdd",
+  "expected_after_match": true,
+  "completed_symbols": 30,
+  "changed_rows": 748,
+  "changed_facts": 594,
+  "stale": [
+    1124,
+    "2022-02-11",
+    "2026-09-24"
+  ],
+  "pending": null,
+  "recovery_manifest_sha256": "123a53ecf9461d65ddcafe43bf73e3edb16278f9fc5ad1b84e014547b079a76b",
+  "approval": "/home/ubuntu/aspool-labs/dg04-20260927/coordinator-repair-approval.json",
+  "single_writer_dispatch": "ctx_6b4aa5a0b9c2"
+}

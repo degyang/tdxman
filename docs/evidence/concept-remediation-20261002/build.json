@@ -1,0 +1,32 @@
+{
+  "version": "1.1.3",
+  "wheel": "/home/ubuntu/tdxman-ca-113-build/tdxman-1.1.3-py3-none-any.whl",
+  "wheel_sha256": "6685dadd658ebae1c06f6bc0724186da895ebb78cf2799e23cdb7ab00f3898d4",
+  "baseline_commit": "38c5ab532d3e2701384dea2f8f7ebf6ec106809e",
+  "source_files_sha256": {
+    "src/aspool/base_delta.py": "7edbf84d64e1d2f91bb3de660c6f73581510611f268418534370ba12e45edba7",
+    "src/aspool/fundamentals.py": "95a711142bfe483e0e1633fde6ac92ba5fc52c41e5c74ac510ee2c4008b64967",
+    "src/aspool/fundamentals_store.py": "ab640041fccc52a1948b4c36593885b76fd382a24d05c8427758cd92d0c9bc47",
+    "src/aspool/pool.py": "e27b0049c197696908d138dcc3e5142d18cd5f6c79f219859851697fd36e2dea",
+    "src/aspool/sqlite_board_daily.py": "39b6d52aa5298e3d6051accbb4d8626aaa9fa893482ad01b1505f15bf806798f",
+    "src/aspool/sqlite_daily_sync.py": "0accd1e2a06d4d3e15cff8e75816571a4514904715c5d2b7ecbee70febf49692",
+    "src/aspool/sqlite_daily_update.py": "d114602bffc586308d940eb88cdf6f207eb0f3d8b12c26167b26e4c5edaa173f",
+    "src/tdxman/__init__.py": "4d86de559727310e10f742ad2ae56a99027beb8d972d199c339c2a1841360d13",
+    "src/tdxman/mac/client.py": "2380a1302e038caf188ccf112bb8af2a83af0fc5ca5c7dffb22bd90a015890a7",
+    "src/tdxman/mac/commands/board_list.py": "213da28dbd2e4ed1ade1fe1b19e7a6ed4154bc70d8c22c5d1d024974be24f66a",
+    "src/tdxman/mac/commands/symbol_tick_chart.py": "254572c71c71573f49d3b93f9ff488541eb5d6920b030b1776fae55f8b540472",
+    "src/tdxman/mac/models.py": "c624c77510f4d682674d2fa569bb8cdd393b0dfe46b0a4d8dd868bd842d59289",
+    "tests/unit/test_wheel_installation.py": "7c8de7ac2a18f06c422bae9b853183f704850aac8cc823158f95ebf6c2300f2d",
+    "src/tdxman/mac/minute_window.py": "5f89d16e05bf6618d26d52f44f0e772feb32b35b5c061c9a3477c363a45954c6"
+  },
+  "installed_interpreter": "/home/ubuntu/tdxman-ca-113-venv/bin/python",
+  "installed_signatures": [
+    "1.1.3",
+    "/home/ubuntu/tdxman-ca-113-venv/lib/python3.12/site-packages/tdxman/__init__.py",
+    "(self, *, snapshot_id, kind, board_ids, limit=100000, offset=0)",
+    "(self, market: 'int', code: 'str', *, date, since=None, max_pages=4, page_size=240, asset_type='stock') -> 'pd.DataFrame'",
+    "(self, market: 'int', code: 'str', *, date, since=None, max_pages=4, page_size=240, asset_type='stock') -> 'pd.DataFrame'"
+  ],
+  "production_deployed": false,
+  "fundwise_implementation_modified": false
+}

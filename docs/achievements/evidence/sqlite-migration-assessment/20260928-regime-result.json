@@ -1,0 +1,82 @@
+{
+  "market": {
+    "ok": true,
+    "computed": 6479,
+    "phase_days": 0,
+    "mainline_rows": 0,
+    "mainline": {
+      "status": "not_computed"
+    }
+  },
+  "coverage": {
+    "rows": 6479,
+    "earliest_date": "2000-01-04",
+    "latest_date": "2026-09-24",
+    "score_days": 1727,
+    "phase_days": 0,
+    "limit_days": 6479,
+    "computed_at": "2026-09-28T04:24:28.338545+00:00",
+    "source": "aspool.read_market_daily/read_index_daily",
+    "progress": {
+      "running": false,
+      "completed_days": 6479,
+      "error": null
+    },
+    "mainline_computed_at": null,
+    "mainline_progress": {
+      "running": false,
+      "error": null
+    },
+    "mainline_needs_recompute": true,
+    "upstream": {
+      "root": "/mnt/d/Workstation/Services/tdxman/data",
+      "revision": "62842cc83995e4baac69062f4682bff0ee0be74c6ff63f700fc27f9ca797d1d6",
+      "reader_revision": "90d1d80bdd1263e5e5073efa641f0fd65119b96c6691128065d48537938a9ae7",
+      "contract_version": 3,
+      "state": "ready",
+      "error": null,
+      "checked_at": "2026-09-28T04:24:14.798294+00:00",
+      "limit_start": "2000-01-04",
+      "limit_end": "2026-09-24",
+      "limit_computed_at": 1790565209552709
+    },
+    "source_snapshot": {
+      "root": "/mnt/d/Workstation/Services/tdxman/data",
+      "revision": "62842cc83995e4baac69062f4682bff0ee0be74c6ff63f700fc27f9ca797d1d6",
+      "reader_revision": "90d1d80bdd1263e5e5073efa641f0fd65119b96c6691128065d48537938a9ae7",
+      "contract_version": 3,
+      "state": "ready",
+      "error": null,
+      "checked_at": "2026-09-28T04:24:14.798294+00:00",
+      "limit_start": "2000-01-04",
+      "limit_end": "2026-09-24",
+      "limit_computed_at": 1790565209552709
+    },
+    "checking_source": false,
+    "refresh_error": null,
+    "dimension_days": {
+      "profit_score": 6479,
+      "speculation_score": 1727,
+      "resilience_score": 6479,
+      "trend_score": 6460,
+      "score": 1727
+    },
+    "subset_score_days": 1727,
+    "mainline": {
+      "status": "not_computed"
+    },
+    "filter": {
+      "min_members": 4,
+      "max_members": 600,
+      "blacklist": [],
+      "exclude_st": true
+    },
+    "applied_filter": {
+      "min_members": 4,
+      "max_members": 600,
+      "blacklist": [],
+      "exclude_st": true
+    },
+    "needs_recompute": false
+  }
+}

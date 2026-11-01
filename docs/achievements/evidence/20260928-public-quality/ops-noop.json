@@ -1,0 +1,11 @@
+{
+  "status": "completed",
+  "root": "/mnt/d/workstation/services/tdxman/.local/up-rg-feature/ops-check",
+  "start": "2024-01-02",
+  "end": "2024-01-02",
+  "days": 1,
+  "changed_rows": 0,
+  "read_rows": 2,
+  "seconds": 0.028,
+  "peak_rss_kib": 135028
+}

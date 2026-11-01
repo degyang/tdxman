@@ -1,0 +1,1112 @@
+{
+  "observed_at": "2026-09-27T16:14:51.027111+00:00",
+  "root": "/home/ubuntu/.aspool",
+  "mode": "read-only metadata and catalog queries; no source mutation",
+  "sqlite_runtime": "3.53.1",
+  "git_head": "3f5054e2a7d9b2d027889287a6a6ed0a76b288c3",
+  "daily": {
+    "files": 7288,
+    "rows": 17862852,
+    "bytes": 1587617703,
+    "schema_variants_including_metadata": 35,
+    "column_types": {
+      "amount": [
+        "double"
+      ],
+      "amplitude": [
+        "double"
+      ],
+      "amplitude_source": [
+        "string"
+      ],
+      "asset_type": [
+        "string"
+      ],
+      "close": [
+        "double"
+      ],
+      "code": [
+        "string"
+      ],
+      "date": [
+        "int64"
+      ],
+      "datetime": [
+        "timestamp[us]"
+      ],
+      "float_mv": [
+        "double",
+        "null"
+      ],
+      "float_mv_source": [
+        "string"
+      ],
+      "float_share": [
+        "double",
+        "int64",
+        "null"
+      ],
+      "float_share_source": [
+        "string"
+      ],
+      "float_shares": [
+        "double"
+      ],
+      "high": [
+        "double"
+      ],
+      "is_st": [
+        "bool"
+      ],
+      "is_st_name_date": [
+        "date32[day]"
+      ],
+      "is_st_source": [
+        "string"
+      ],
+      "low": [
+        "double"
+      ],
+      "market": [
+        "string"
+      ],
+      "name": [
+        "string"
+      ],
+      "ohlcv_source": [
+        "string"
+      ],
+      "open": [
+        "double"
+      ],
+      "pb": [
+        "double"
+      ],
+      "pct_chg": [
+        "double"
+      ],
+      "pct_chg_source": [
+        "string"
+      ],
+      "pe_ttm": [
+        "double"
+      ],
+      "pre_close": [
+        "double"
+      ],
+      "pre_close_source": [
+        "string"
+      ],
+      "symbol": [
+        "string"
+      ],
+      "total_mv": [
+        "double",
+        "null"
+      ],
+      "total_mv_source": [
+        "string"
+      ],
+      "total_share": [
+        "double",
+        "int64",
+        "null"
+      ],
+      "total_share_source": [
+        "string"
+      ],
+      "trade_date": [
+        "date32[day]"
+      ],
+      "trading_status": [
+        "string"
+      ],
+      "trading_status_source": [
+        "string"
+      ],
+      "turnover": [
+        "double",
+        "null"
+      ],
+      "turnover_rate": [
+        "double",
+        "null"
+      ],
+      "turnover_rate_source": [
+        "string"
+      ],
+      "vol": [
+        "double"
+      ],
+      "vol_ratio": [
+        "double",
+        "null"
+      ],
+      "vol_ratio_source": [
+        "string"
+      ],
+      "volume": [
+        "double",
+        "int64"
+      ]
+    },
+    "rows_by_footer_asset_class": {
+      "absent_asset_type": 16350085,
+      "etf": 1512767
+    }
+  },
+  "catalog": {
+    "bytes": 933507072,
+    "tables": {
+      "business_changes": {
+        "rows": 498,
+        "columns": [
+          {
+            "name": "operation_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "object_key",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "input_revision",
+            "type": "BIGINT"
+          },
+          {
+            "name": "output_revision",
+            "type": "BIGINT"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "reason",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "changed_rows",
+            "type": "BIGINT"
+          },
+          {
+            "name": "changed_fields",
+            "type": "BIGINT"
+          },
+          {
+            "name": "evidence",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "state",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "applied_at",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "run_id",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "business_revisions": {
+        "rows": 269,
+        "columns": [
+          {
+            "name": "object_key",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "revision",
+            "type": "BIGINT"
+          }
+        ]
+      },
+      "catalog_change_rows": {
+        "rows": 3055,
+        "columns": [
+          {
+            "name": "operation_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "ordinal",
+            "type": "BIGINT"
+          },
+          {
+            "name": "evidence",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "coverage": {
+        "rows": 7288,
+        "columns": [
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "market",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "start_date",
+            "type": "DATE"
+          },
+          {
+            "name": "end_date",
+            "type": "DATE"
+          },
+          {
+            "name": "row_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "updated_at",
+            "type": "TIMESTAMP"
+          }
+        ]
+      },
+      "coverage_changes": {
+        "rows": 268,
+        "columns": [
+          {
+            "name": "operation_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "object_key",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "input_revision",
+            "type": "BIGINT"
+          },
+          {
+            "name": "output_revision",
+            "type": "BIGINT"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "reason",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "fields",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "before_values",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "after_values",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "state",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "run_id",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "coverage_minutes": {
+        "rows": 0,
+        "columns": [
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "market",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "start_date",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "end_date",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "row_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "updated_at",
+            "type": "TIMESTAMP"
+          }
+        ]
+      },
+      "coverage_totals": {
+        "rows": 268,
+        "columns": [
+          {
+            "name": "run_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "changed_rows",
+            "type": "BIGINT"
+          }
+        ]
+      },
+      "daily_limit_batches": {
+        "rows": 1296,
+        "columns": [
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "scope_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "rule_version",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "computed_at",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "processed_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "known_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "unknown_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "no_limit_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "invalid_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "out_of_scope_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "status",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "error",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "daily_limit_events": {
+        "rows": 182536,
+        "columns": [
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "close_limit_up",
+            "type": "BOOLEAN"
+          },
+          {
+            "name": "close_limit_down",
+            "type": "BOOLEAN"
+          },
+          {
+            "name": "touched_limit_up",
+            "type": "BOOLEAN"
+          },
+          {
+            "name": "touched_limit_down",
+            "type": "BOOLEAN"
+          },
+          {
+            "name": "limit_up_price",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "limit_down_price",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "consecutive_up",
+            "type": "INTEGER"
+          },
+          {
+            "name": "consecutive_gap_sessions",
+            "type": "INTEGER"
+          }
+        ]
+      },
+      "daily_limit_exceptions": {
+        "rows": 21715,
+        "columns": [
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "kind",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "reason",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "affected_fields",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "daily_limit_gap_states": {
+        "rows": 1058,
+        "columns": [
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "consecutive_up",
+            "type": "INTEGER"
+          },
+          {
+            "name": "consecutive_gap_sessions",
+            "type": "INTEGER"
+          }
+        ]
+      },
+      "daily_limit_publication": {
+        "rows": 1296,
+        "columns": [
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "published_at",
+            "type": "TIMESTAMP"
+          }
+        ]
+      },
+      "daily_limit_references": {
+        "rows": 277429,
+        "columns": [
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "stored_pre_close",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "reference_pre_close",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "close",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "pct_chg",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "candidate_min",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "candidate_max",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "basis",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "daily_limit_scope": {
+        "rows": 6594702,
+        "columns": [
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "daily_limit_staleness": {
+        "rows": 0,
+        "columns": [
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "reason",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "marked_at",
+            "type": "TIMESTAMP"
+          }
+        ]
+      },
+      "daily_limit_streak_boundaries": {
+        "rows": 156,
+        "columns": [
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "basis",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "daily_limit_summary": {
+        "rows": 1296,
+        "columns": [
+          {
+            "name": "batch_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "scope_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "close_limit_up_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "close_limit_down_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "touched_limit_up_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "touched_limit_down_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "touched_unsealed_up_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "touched_unsealed_down_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "max_consecutive_up",
+            "type": "INTEGER"
+          },
+          {
+            "name": "max_consecutive_up_note",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "sealed_ratio",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "known_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "unknown_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "no_limit_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "invalid_count",
+            "type": "BIGINT"
+          }
+        ]
+      },
+      "fetch_observations": {
+        "rows": 1,
+        "columns": [
+          {
+            "name": "object_key",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "observed_at",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "status",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "index_coverage": {
+        "rows": 865,
+        "columns": [
+          {
+            "name": "market",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "start_date",
+            "type": "DATE"
+          },
+          {
+            "name": "end_date",
+            "type": "DATE"
+          },
+          {
+            "name": "row_count",
+            "type": "BIGINT"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "updated_at",
+            "type": "TIMESTAMP"
+          }
+        ]
+      },
+      "maintenance_runs": {
+        "rows": 543,
+        "columns": [
+          {
+            "name": "run_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "command",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "state",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "metrics",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "maintenance_totals": {
+        "rows": 498,
+        "columns": [
+          {
+            "name": "run_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "changed_rows",
+            "type": "BIGINT"
+          },
+          {
+            "name": "changed_fields",
+            "type": "BIGINT"
+          },
+          {
+            "name": "applied_operations",
+            "type": "BIGINT"
+          }
+        ]
+      },
+      "metadata_revisions": {
+        "rows": 268,
+        "columns": [
+          {
+            "name": "object_key",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "revision",
+            "type": "BIGINT"
+          }
+        ]
+      },
+      "remediation_runs": {
+        "rows": 3,
+        "columns": [
+          {
+            "name": "plan_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "state_json",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "state_hash",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "previous_hash",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "security_calendar": {
+        "rows": 13064,
+        "columns": [
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "is_open",
+            "type": "BOOLEAN"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "security_daily_facts": {
+        "rows": 413515,
+        "columns": [
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "trade_date",
+            "type": "DATE"
+          },
+          {
+            "name": "pre_close",
+            "type": "DOUBLE"
+          },
+          {
+            "name": "is_st",
+            "type": "BOOLEAN"
+          },
+          {
+            "name": "trading_status",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "fetched_at",
+            "type": "TIMESTAMP"
+          }
+        ]
+      },
+      "security_lifecycle": {
+        "rows": 5906,
+        "columns": [
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "listing_date",
+            "type": "DATE"
+          },
+          {
+            "name": "delisting_date",
+            "type": "DATE"
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "fetched_at",
+            "type": "TIMESTAMP"
+          }
+        ]
+      },
+      "sync_runs": {
+        "rows": 7,
+        "columns": [
+          {
+            "name": "run_id",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "command",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "started_at",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "finished_at",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "symbols",
+            "type": "BIGINT"
+          },
+          {
+            "name": "rows_written",
+            "type": "BIGINT"
+          },
+          {
+            "name": "status",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "error",
+            "type": "VARCHAR"
+          }
+        ]
+      },
+      "universe": {
+        "rows": 7298,
+        "columns": [
+          {
+            "name": "symbol",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "market",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "active",
+            "type": "BOOLEAN"
+          },
+          {
+            "name": "first_seen",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "last_seen",
+            "type": "TIMESTAMP"
+          },
+          {
+            "name": "source",
+            "type": "VARCHAR"
+          },
+          {
+            "name": "asset_type",
+            "type": "VARCHAR"
+          }
+        ]
+      }
+    }
+  },
+  "publication_range": [
+    [
+      "2021-05-27",
+      "2026-09-24",
+      1296
+    ]
+  ],
+  "facts_fields": [
+    [
+      413515,
+      412066,
+      413515,
+      413515,
+      "2021-05-27",
+      "2026-09-24"
+    ]
+  ],
+  "facts_statuses": [
+    [
+      "TRADING",
+      412939
+    ],
+    [
+      "SUSPENDED",
+      576
+    ]
+  ],
+  "exception_kinds": [
+    [
+      "INVALID",
+      17
+    ],
+    [
+      "UNKNOWN",
+      16686
+    ],
+    [
+      "NO_LIMIT",
+      5012
+    ]
+  ],
+  "active_events": [
+    [
+      182536
+    ]
+  ],
+  "active_references": [
+    [
+      277429,
+      277429
+    ]
+  ],
+  "factors": {
+    "exists": true,
+    "rows": 58677,
+    "bytes": 288593,
+    "schema": "symbol: string\nmarket: string\ntrade_date: date32[day]\ncumulative_factor: double"
+  },
+  "dated_inputs": {
+    "files": 5586,
+    "bytes": 91743761,
+    "events": 186622,
+    "categories": {
+      "5": 111053,
+      "1": 58687,
+      "9": 7502,
+      "3": 4311,
+      "2": 3939,
+      "6": 65,
+      "8": 649,
+      "15": 90,
+      "10": 274,
+      "13": 9,
+      "14": 15,
+      "7": 17,
+      "11": 1,
+      "12": 8,
+      "4": 2
+    },
+    "event_fields": [
+      "category",
+      "code",
+      "date",
+      "fenhong",
+      "fenshu",
+      "hou_zongguben",
+      "market",
+      "name",
+      "panhou_liutong",
+      "panqian_liutong",
+      "peigu",
+      "peigujia",
+      "qian_zongguben",
+      "songzhuangu",
+      "suogu",
+      "xingquanjia"
+    ],
+    "unreadable": []
+  },
+  "other_lake_domains": {
+    "fundamentals": 91994815,
+    "bars": 1587617703,
+    "indices": 89516524,
+    "adjustments": 288593
+  }
+}

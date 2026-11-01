@@ -1,0 +1,9 @@
+{
+  "operation_first_utc": "2026-09-27T10:40:25.697004+00:00",
+  "operation_last_utc": "2026-09-27T10:41:32.091206+00:00",
+  "change_operations": 445,
+  "rehearsal_plan_written_utc": "2026-09-27T10:48:13.931459+00:00",
+  "validation_artifact_written_utc": "2026-09-27T10:48:13.939459+00:00",
+  "limit": "Exact process start/end not instrumented; these are durable mutation/artifact timestamps, metadata updates may occur later. Correctness-only rehearsal/source hashing overlapped DG03 slot; no throughput or uncontended benchmark claim.",
+  "conditional_plan_written_utc": "2026-09-27T10:43:39.698633+00:00"
+}

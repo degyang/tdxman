@@ -1,0 +1,36 @@
+[
+  {
+    "start": "2021-05-27",
+    "end": "2026-09-24",
+    "batch_days": 7,
+    "max_rows": 25000,
+    "rows": 88468,
+    "batches": 278,
+    "seconds": 42.044,
+    "process_highwater_rss": 291155968,
+    "baseline": {
+      "rss": 138407936,
+      "swap": 0,
+      "cache_bytes": 0,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    },
+    "peak": {
+      "rss": 291155968,
+      "swap": 0,
+      "cache_bytes": 5283235,
+      "spill_bytes": 0,
+      "fds": 13,
+      "threads": 41
+    },
+    "ended": {
+      "rss": 189300736,
+      "swap": 0,
+      "cache_bytes": 5283235,
+      "spill_bytes": 0,
+      "fds": 4,
+      "threads": 21
+    }
+  }
+]

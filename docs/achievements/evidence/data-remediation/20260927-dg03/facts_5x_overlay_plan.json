@@ -1,0 +1,705 @@
+{
+    "total_bytes_written": 0,
+    "total_bytes_read": 4456448,
+    "system_peak_temp_dir_size": 0,
+    "system_peak_buffer_memory": 512671744,
+    "rows_returned": 243936,
+    "wal_replay_entry_count": 0,
+    "result_set_size": 96842592,
+    "query_name": "select b.* replace (coalesce(f.is_st, b.is_st) as is_st, case when f.is_st is not null then f.source else b.is_st_source end as is_st_source, coalesce(f.trading_status, b.trading_status) as trading_status, case when f.trading_status is not null then f.source else b.trading_status_source end as trading_status_source, coalesce(f.pre_close, case when r.symbol is not null then case when st.trade_date is null then r.reference_pre_close end else b.pre_close end) as pre_close, case when f.pre_close is not null then f.source else case when r.symbol is not null then 'limit_derived:' || r.basis else b.pre_close_source end end as pre_close_source) from _daily_contract_rows b left join (\n            select r.symbol, r.trade_date, r.reference_pre_close, r.basis\n            from daily_limit_references r\n            join daily_limit_publication p using (trade_date, batch_id)\n            where exists (select 1 from _daily_contract_rows k\n                          where k.symbol=r.symbol and k.date=r.trade_date)\n        ) r on r.symbol=b.symbol and r.trade_date=b.date\n        left join daily_limit_staleness st on st.trade_date=r.trade_date left join (select is_st, pre_close, source, symbol, trade_date, trading_status from security_daily_facts f where exists (select 1 from _daily_contract_rows k where k.symbol=f.symbol and k.date=f.trade_date)) f on f.symbol=b.symbol and f.trade_date=b.date order by b.symbol, b.date",
+    "waiting_to_attach_latency": 0.0,
+    "attach_load_storage_latency": 0.0,
+    "blocked_thread_time": 0.0,
+    "cpu_time": 0.18947372199999998,
+    "extra_info": {},
+    "total_memory_allocated": 204472320,
+    "cumulative_cardinality": 5628849,
+    "checkpoint_latency": 0.0,
+    "cumulative_rows_scanned": 3063473,
+    "write_to_wal_latency": 0.0,
+    "latency": 0.241040817,
+    "attach_replay_wal_latency": 0.0,
+    "commit_local_storage_latency": 0.0,
+    "children": [
+        {
+            "system_peak_temp_dir_size": 0,
+            "system_peak_buffer_memory": 0,
+            "result_set_size": 96842592,
+            "operator_timing": 0.006031427000000001,
+            "operator_type": "PROJECTION",
+            "cpu_time": 0.15671166099999997,
+            "extra_info": {
+                "Projections": [
+                    "__internal_decompress_string(#0)",
+                    "__internal_decompress_string(#1)",
+                    "__internal_decompress_string(#2)",
+                    "#3",
+                    "#4",
+                    "#5",
+                    "#6",
+                    "#7",
+                    "#8",
+                    "#9",
+                    "#10",
+                    "__internal_decompress_string(#11)",
+                    "#12",
+                    "#13",
+                    "#14",
+                    "#15",
+                    "#16",
+                    "__internal_decompress_string(#17)",
+                    "#18",
+                    "#19",
+                    "#20",
+                    "#21",
+                    "#22",
+                    "#23",
+                    "#24",
+                    "#25",
+                    "#26",
+                    "#27",
+                    "#28",
+                    "#29",
+                    "#30",
+                    "#31",
+                    "#32",
+                    "#33",
+                    "#34"
+                ],
+                "Estimated Cardinality": "528413"
+            },
+            "cumulative_cardinality": 5628849,
+            "cumulative_rows_scanned": 3063473,
+            "operator_cardinality": 243936,
+            "operator_name": "PROJECTION",
+            "operator_rows_scanned": 0,
+            "children": [
+                {
+                    "system_peak_temp_dir_size": 0,
+                    "system_peak_buffer_memory": 0,
+                    "result_set_size": 91963872,
+                    "operator_timing": 0.061936833999999996,
+                    "operator_type": "ORDER_BY",
+                    "cpu_time": 0.15068023399999997,
+                    "extra_info": {
+                        "Order By": [
+                            "b.symbol ASC",
+                            "b.date ASC"
+                        ]
+                    },
+                    "cumulative_cardinality": 5384913,
+                    "cumulative_rows_scanned": 3063473,
+                    "operator_cardinality": 243936,
+                    "operator_name": "ORDER_BY",
+                    "operator_rows_scanned": 0,
+                    "children": [
+                        {
+                            "system_peak_temp_dir_size": 0,
+                            "system_peak_buffer_memory": 0,
+                            "result_set_size": 91963872,
+                            "operator_timing": 0.004769917,
+                            "operator_type": "PROJECTION",
+                            "cpu_time": 0.08874339999999999,
+                            "extra_info": {
+                                "Projections": [
+                                    "__internal_compress_string_uhugeint(#0)",
+                                    "__internal_compress_string_uinteger(#1)",
+                                    "__internal_compress_string_ubigint(#2)",
+                                    "#3",
+                                    "#4",
+                                    "#5",
+                                    "#6",
+                                    "#7",
+                                    "#8",
+                                    "#9",
+                                    "#10",
+                                    "__internal_compress_string_uhugeint(#11)",
+                                    "#12",
+                                    "#13",
+                                    "#14",
+                                    "#15",
+                                    "#16",
+                                    "__internal_compress_string_uhugeint(#17)",
+                                    "#18",
+                                    "#19",
+                                    "#20",
+                                    "#21",
+                                    "#22",
+                                    "#23",
+                                    "#24",
+                                    "#25",
+                                    "#26",
+                                    "#27",
+                                    "#28",
+                                    "#29",
+                                    "#30",
+                                    "#31",
+                                    "#32",
+                                    "#33",
+                                    "#34"
+                                ],
+                                "Estimated Cardinality": "528413"
+                            },
+                            "cumulative_cardinality": 5140977,
+                            "cumulative_rows_scanned": 3063473,
+                            "operator_cardinality": 243936,
+                            "operator_name": "PROJECTION",
+                            "operator_rows_scanned": 0,
+                            "children": [
+                                {
+                                    "system_peak_temp_dir_size": 0,
+                                    "system_peak_buffer_memory": 0,
+                                    "result_set_size": 96842592,
+                                    "operator_timing": 0.002740352,
+                                    "operator_type": "PROJECTION",
+                                    "cpu_time": 0.08397348299999999,
+                                    "extra_info": {
+                                        "Projections": [
+                                            "symbol",
+                                            "market",
+                                            "code",
+                                            "date",
+                                            "open",
+                                            "high",
+                                            "low",
+                                            "close",
+                                            "volume",
+                                            "amount",
+                                            "turnover_rate",
+                                            "name",
+                                            "pre_close",
+                                            "vol_ratio",
+                                            "pct_chg",
+                                            "amplitude",
+                                            "is_st",
+                                            "trading_status",
+                                            "pre_close_source",
+                                            "is_st_source",
+                                            "trading_status_source",
+                                            "vol_ratio_source",
+                                            "turnover_rate_source",
+                                            "amplitude_source",
+                                            "pct_chg_source",
+                                            "float_share_source",
+                                            "total_share_source",
+                                            "float_mv_source",
+                                            "total_mv_source",
+                                            "total_share",
+                                            "float_share",
+                                            "total_mv",
+                                            "float_mv",
+                                            "pe_ttm",
+                                            "pb"
+                                        ],
+                                        "Estimated Cardinality": "528413"
+                                    },
+                                    "cumulative_cardinality": 4897041,
+                                    "cumulative_rows_scanned": 3063473,
+                                    "operator_cardinality": 243936,
+                                    "operator_name": "PROJECTION",
+                                    "operator_rows_scanned": 0,
+                                    "children": [
+                                        {
+                                            "system_peak_temp_dir_size": 0,
+                                            "system_peak_buffer_memory": 0,
+                                            "result_set_size": 113918112,
+                                            "operator_timing": 0.0004223219999999998,
+                                            "operator_type": "PROJECTION",
+                                            "cpu_time": 0.08123313099999999,
+                                            "extra_info": {
+                                                "Projections": [
+                                                    "symbol",
+                                                    "market",
+                                                    "code",
+                                                    "date",
+                                                    "open",
+                                                    "high",
+                                                    "low",
+                                                    "close",
+                                                    "volume",
+                                                    "amount",
+                                                    "turnover_rate",
+                                                    "name",
+                                                    "pre_close",
+                                                    "(symbol IS NOT NULL)",
+                                                    "trade_date",
+                                                    "reference_pre_close",
+                                                    "pre_close",
+                                                    "vol_ratio",
+                                                    "pct_chg",
+                                                    "amplitude",
+                                                    "is_st",
+                                                    "is_st",
+                                                    "trading_status",
+                                                    "trading_status",
+                                                    "source",
+                                                    "basis",
+                                                    "pre_close_source",
+                                                    "is_st_source",
+                                                    "trading_status_source",
+                                                    "vol_ratio_source",
+                                                    "turnover_rate_source",
+                                                    "amplitude_source",
+                                                    "pct_chg_source",
+                                                    "float_share_source",
+                                                    "total_share_source",
+                                                    "float_mv_source",
+                                                    "total_mv_source",
+                                                    "total_share",
+                                                    "float_share",
+                                                    "total_mv",
+                                                    "float_mv",
+                                                    "pe_ttm",
+                                                    "pb"
+                                                ],
+                                                "Estimated Cardinality": "528413"
+                                            },
+                                            "cumulative_cardinality": 4653105,
+                                            "cumulative_rows_scanned": 3063473,
+                                            "operator_cardinality": 243936,
+                                            "operator_name": "PROJECTION",
+                                            "operator_rows_scanned": 0,
+                                            "children": [
+                                                {
+                                                    "system_peak_temp_dir_size": 0,
+                                                    "system_peak_buffer_memory": 0,
+                                                    "result_set_size": 117577152,
+                                                    "operator_timing": 0.010661112000000002,
+                                                    "operator_type": "HASH_JOIN",
+                                                    "cpu_time": 0.08081080899999998,
+                                                    "extra_info": {
+                                                        "Join Type": "LEFT",
+                                                        "Conditions": [
+                                                            "symbol = symbol",
+                                                            "date = trade_date"
+                                                        ],
+                                                        "Estimated Cardinality": "528413"
+                                                    },
+                                                    "cumulative_cardinality": 4409169,
+                                                    "cumulative_rows_scanned": 3063473,
+                                                    "operator_cardinality": 243936,
+                                                    "operator_name": "HASH_JOIN",
+                                                    "operator_rows_scanned": 0,
+                                                    "children": [
+                                                        {
+                                                            "system_peak_temp_dir_size": 0,
+                                                            "system_peak_buffer_memory": 0,
+                                                            "result_set_size": 107575776,
+                                                            "operator_timing": 0.0012502809999999991,
+                                                            "operator_type": "HASH_JOIN",
+                                                            "cpu_time": 0.028802928999999998,
+                                                            "extra_info": {
+                                                                "Join Type": "LEFT",
+                                                                "Conditions": "trade_date = trade_date",
+                                                                "Estimated Cardinality": "528413"
+                                                            },
+                                                            "cumulative_cardinality": 1499010,
+                                                            "cumulative_rows_scanned": 767202,
+                                                            "operator_cardinality": 243936,
+                                                            "operator_name": "HASH_JOIN",
+                                                            "operator_rows_scanned": 0,
+                                                            "children": [
+                                                                {
+                                                                    "system_peak_temp_dir_size": 0,
+                                                                    "system_peak_buffer_memory": 0,
+                                                                    "result_set_size": 107575776,
+                                                                    "operator_timing": 0.00026781700000000006,
+                                                                    "operator_type": "HASH_JOIN",
+                                                                    "cpu_time": 0.027496958,
+                                                                    "extra_info": {
+                                                                        "Join Type": "LEFT",
+                                                                        "Conditions": [
+                                                                            "symbol = symbol",
+                                                                            "date = trade_date"
+                                                                        ],
+                                                                        "Estimated Cardinality": "528413"
+                                                                    },
+                                                                    "cumulative_cardinality": 1254469,
+                                                                    "cumulative_rows_scanned": 766597,
+                                                                    "operator_cardinality": 243936,
+                                                                    "operator_name": "HASH_JOIN",
+                                                                    "operator_rows_scanned": 0,
+                                                                    "children": [
+                                                                        {
+                                                                            "system_peak_temp_dir_size": 0,
+                                                                            "system_peak_buffer_memory": 0,
+                                                                            "result_set_size": 96842592,
+                                                                            "operator_timing": 0.011076095000000001,
+                                                                            "operator_type": "TABLE_SCAN",
+                                                                            "cpu_time": 0.011076095000000001,
+                                                                            "extra_info": {
+                                                                                "Table": "\"temp\".main._daily_contract_rows",
+                                                                                "Type": "Sequential Scan",
+                                                                                "Projections": [
+                                                                                    "symbol",
+                                                                                    "date",
+                                                                                    "market",
+                                                                                    "code",
+                                                                                    "open",
+                                                                                    "high",
+                                                                                    "low",
+                                                                                    "close",
+                                                                                    "volume",
+                                                                                    "amount",
+                                                                                    "turnover_rate",
+                                                                                    "name",
+                                                                                    "pre_close",
+                                                                                    "vol_ratio",
+                                                                                    "pct_chg",
+                                                                                    "amplitude",
+                                                                                    "is_st",
+                                                                                    "trading_status",
+                                                                                    "pre_close_source",
+                                                                                    "is_st_source",
+                                                                                    "trading_status_source",
+                                                                                    "vol_ratio_source",
+                                                                                    "turnover_rate_source",
+                                                                                    "amplitude_source",
+                                                                                    "pct_chg_source",
+                                                                                    "float_share_source",
+                                                                                    "total_share_source",
+                                                                                    "float_mv_source",
+                                                                                    "total_mv_source",
+                                                                                    "total_share",
+                                                                                    "float_share",
+                                                                                    "total_mv",
+                                                                                    "float_mv",
+                                                                                    "pe_ttm",
+                                                                                    "pb"
+                                                                                ],
+                                                                                "Estimated Cardinality": "243936"
+                                                                            },
+                                                                            "cumulative_cardinality": 243936,
+                                                                            "cumulative_rows_scanned": 243936,
+                                                                            "operator_cardinality": 243936,
+                                                                            "operator_name": "SEQ_SCAN",
+                                                                            "operator_rows_scanned": 243936,
+                                                                            "children": []
+                                                                        },
+                                                                        {
+                                                                            "system_peak_temp_dir_size": 0,
+                                                                            "system_peak_buffer_memory": 0,
+                                                                            "result_set_size": 0,
+                                                                            "operator_timing": 0.0,
+                                                                            "operator_type": "PROJECTION",
+                                                                            "cpu_time": 0.016153045999999997,
+                                                                            "extra_info": {
+                                                                                "Projections": [
+                                                                                    "symbol",
+                                                                                    "trade_date",
+                                                                                    "reference_pre_close",
+                                                                                    "basis"
+                                                                                ],
+                                                                                "Estimated Cardinality": "528413"
+                                                                            },
+                                                                            "cumulative_cardinality": 766597,
+                                                                            "cumulative_rows_scanned": 522661,
+                                                                            "operator_cardinality": 0,
+                                                                            "operator_name": "PROJECTION",
+                                                                            "operator_rows_scanned": 0,
+                                                                            "children": [
+                                                                                {
+                                                                                    "system_peak_temp_dir_size": 0,
+                                                                                    "system_peak_buffer_memory": 0,
+                                                                                    "result_set_size": 0,
+                                                                                    "operator_timing": 0.000155929,
+                                                                                    "operator_type": "HASH_JOIN",
+                                                                                    "cpu_time": 0.016153045999999997,
+                                                                                    "extra_info": {
+                                                                                        "Join Type": "INNER",
+                                                                                        "Conditions": [
+                                                                                            "trade_date = trade_date",
+                                                                                            "batch_id = batch_id"
+                                                                                        ],
+                                                                                        "Estimated Cardinality": "528413"
+                                                                                    },
+                                                                                    "cumulative_cardinality": 766597,
+                                                                                    "cumulative_rows_scanned": 522661,
+                                                                                    "operator_cardinality": 0,
+                                                                                    "operator_name": "HASH_JOIN",
+                                                                                    "operator_rows_scanned": 0,
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "system_peak_temp_dir_size": 0,
+                                                                                            "system_peak_buffer_memory": 0,
+                                                                                            "result_set_size": 0,
+                                                                                            "operator_timing": 0.010660311,
+                                                                                            "operator_type": "HASH_JOIN",
+                                                                                            "cpu_time": 0.015927568,
+                                                                                            "extra_info": {
+                                                                                                "Join Type": "SEMI",
+                                                                                                "Conditions": [
+                                                                                                    "trade_date IS NOT DISTINCT FROM trade_date",
+                                                                                                    "symbol IS NOT DISTINCT FROM symbol"
+                                                                                                ],
+                                                                                                "Estimated Cardinality": "1056827"
+                                                                                            },
+                                                                                            "cumulative_cardinality": 765301,
+                                                                                            "cumulative_rows_scanned": 521365,
+                                                                                            "operator_cardinality": 0,
+                                                                                            "operator_name": "HASH_JOIN",
+                                                                                            "operator_rows_scanned": 0,
+                                                                                            "children": [
+                                                                                                {
+                                                                                                    "system_peak_temp_dir_size": 0,
+                                                                                                    "system_peak_buffer_memory": 0,
+                                                                                                    "result_set_size": 16645740,
+                                                                                                    "operator_timing": 0.004073359,
+                                                                                                    "operator_type": "TABLE_SCAN",
+                                                                                                    "cpu_time": 0.004073359,
+                                                                                                    "extra_info": {
+                                                                                                        "Table": "candidate.main.daily_limit_references",
+                                                                                                        "Type": "Sequential Scan",
+                                                                                                        "Projections": [
+                                                                                                            "batch_id",
+                                                                                                            "trade_date",
+                                                                                                            "symbol",
+                                                                                                            "reference_pre_close",
+                                                                                                            "basis"
+                                                                                                        ],
+                                                                                                        "Estimated Cardinality": "5284139",
+                                                                                                        "Dynamic Filters": [
+                                                                                                            "optional: batch_id>='daily-limit-20210527-stock' AND optional: batch_id<='daily-limit-20260924-stock'",
+                                                                                                            "optional: trade_date>='2021-05-27'::DATE AND optional: trade_date<='2026-09-24'::DATE"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "cumulative_cardinality": 277429,
+                                                                                                    "cumulative_rows_scanned": 277429,
+                                                                                                    "operator_cardinality": 277429,
+                                                                                                    "operator_name": "SEQ_SCAN",
+                                                                                                    "operator_rows_scanned": 277429,
+                                                                                                    "children": []
+                                                                                                },
+                                                                                                {
+                                                                                                    "system_peak_temp_dir_size": 0,
+                                                                                                    "system_peak_buffer_memory": 0,
+                                                                                                    "result_set_size": 4878720,
+                                                                                                    "operator_timing": 0.00000995,
+                                                                                                    "operator_type": "PROJECTION",
+                                                                                                    "cpu_time": 0.001193898,
+                                                                                                    "extra_info": {
+                                                                                                        "Projections": [
+                                                                                                            "trade_date",
+                                                                                                            "symbol"
+                                                                                                        ],
+                                                                                                        "Estimated Cardinality": "48787"
+                                                                                                    },
+                                                                                                    "cumulative_cardinality": 487872,
+                                                                                                    "cumulative_rows_scanned": 243936,
+                                                                                                    "operator_cardinality": 243936,
+                                                                                                    "operator_name": "PROJECTION",
+                                                                                                    "operator_rows_scanned": 0,
+                                                                                                    "children": [
+                                                                                                        {
+                                                                                                            "system_peak_temp_dir_size": 0,
+                                                                                                            "system_peak_buffer_memory": 0,
+                                                                                                            "result_set_size": 4878720,
+                                                                                                            "operator_timing": 0.001183948,
+                                                                                                            "operator_type": "TABLE_SCAN",
+                                                                                                            "cpu_time": 0.001183948,
+                                                                                                            "extra_info": {
+                                                                                                                "Table": "\"temp\".main._daily_contract_rows",
+                                                                                                                "Type": "Sequential Scan",
+                                                                                                                "Projections": [
+                                                                                                                    "symbol",
+                                                                                                                    "date"
+                                                                                                                ],
+                                                                                                                "Estimated Cardinality": "243936"
+                                                                                                            },
+                                                                                                            "cumulative_cardinality": 243936,
+                                                                                                            "cumulative_rows_scanned": 243936,
+                                                                                                            "operator_cardinality": 243936,
+                                                                                                            "operator_name": "SEQ_SCAN",
+                                                                                                            "operator_rows_scanned": 243936,
+                                                                                                            "children": []
+                                                                                                        }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ]
+                                                                                        },
+                                                                                        {
+                                                                                            "system_peak_temp_dir_size": 0,
+                                                                                            "system_peak_buffer_memory": 0,
+                                                                                            "result_set_size": 25920,
+                                                                                            "operator_timing": 0.000069549,
+                                                                                            "operator_type": "TABLE_SCAN",
+                                                                                            "cpu_time": 0.000069549,
+                                                                                            "extra_info": {
+                                                                                                "Table": "candidate.main.daily_limit_publication",
+                                                                                                "Type": "Sequential Scan",
+                                                                                                "Projections": [
+                                                                                                    "trade_date",
+                                                                                                    "batch_id"
+                                                                                                ],
+                                                                                                "Estimated Cardinality": "1296"
+                                                                                            },
+                                                                                            "cumulative_cardinality": 1296,
+                                                                                            "cumulative_rows_scanned": 1296,
+                                                                                            "operator_cardinality": 1296,
+                                                                                            "operator_name": "SEQ_SCAN",
+                                                                                            "operator_rows_scanned": 1296,
+                                                                                            "children": []
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "system_peak_temp_dir_size": 0,
+                                                                    "system_peak_buffer_memory": 0,
+                                                                    "result_set_size": 2420,
+                                                                    "operator_timing": 0.00005569,
+                                                                    "operator_type": "TABLE_SCAN",
+                                                                    "cpu_time": 0.00005569,
+                                                                    "extra_info": {
+                                                                        "Table": "candidate.main.daily_limit_staleness",
+                                                                        "Type": "Sequential Scan",
+                                                                        "Projections": "trade_date",
+                                                                        "Estimated Cardinality": "605"
+                                                                    },
+                                                                    "cumulative_cardinality": 605,
+                                                                    "cumulative_rows_scanned": 605,
+                                                                    "operator_cardinality": 605,
+                                                                    "operator_name": "SEQ_SCAN",
+                                                                    "operator_rows_scanned": 605,
+                                                                    "children": []
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "system_peak_temp_dir_size": 0,
+                                                            "system_peak_buffer_memory": 0,
+                                                            "result_set_size": 3843488,
+                                                            "operator_timing": 0.00004509800000000002,
+                                                            "operator_type": "PROJECTION",
+                                                            "cpu_time": 0.04134676799999999,
+                                                            "extra_info": {
+                                                                "Projections": [
+                                                                    "is_st",
+                                                                    "pre_close",
+                                                                    "source",
+                                                                    "symbol",
+                                                                    "trade_date",
+                                                                    "trading_status"
+                                                                ],
+                                                                "Estimated Cardinality": "410467"
+                                                            },
+                                                            "cumulative_cardinality": 2666223,
+                                                            "cumulative_rows_scanned": 2296271,
+                                                            "operator_cardinality": 63008,
+                                                            "operator_name": "PROJECTION",
+                                                            "operator_rows_scanned": 0,
+                                                            "children": [
+                                                                {
+                                                                    "system_peak_temp_dir_size": 0,
+                                                                    "system_peak_buffer_memory": 0,
+                                                                    "result_set_size": 3843488,
+                                                                    "operator_timing": 0.031362285,
+                                                                    "operator_type": "HASH_JOIN",
+                                                                    "cpu_time": 0.04130166999999999,
+                                                                    "extra_info": {
+                                                                        "Join Type": "SEMI",
+                                                                        "Conditions": [
+                                                                            "trade_date IS NOT DISTINCT FROM trade_date",
+                                                                            "symbol IS NOT DISTINCT FROM symbol"
+                                                                        ],
+                                                                        "Estimated Cardinality": "410467"
+                                                                    },
+                                                                    "cumulative_cardinality": 2603215,
+                                                                    "cumulative_rows_scanned": 2296271,
+                                                                    "operator_cardinality": 63008,
+                                                                    "operator_name": "HASH_JOIN",
+                                                                    "operator_rows_scanned": 0,
+                                                                    "children": [
+                                                                        {
+                                                                            "system_peak_temp_dir_size": 0,
+                                                                            "system_peak_buffer_memory": 0,
+                                                                            "result_set_size": 125192435,
+                                                                            "operator_timing": 0.008720484999999997,
+                                                                            "operator_type": "TABLE_SCAN",
+                                                                            "cpu_time": 0.008720484999999997,
+                                                                            "extra_info": {
+                                                                                "Table": "candidate.main.security_daily_facts",
+                                                                                "Type": "Sequential Scan",
+                                                                                "Projections": [
+                                                                                    "symbol",
+                                                                                    "trade_date",
+                                                                                    "pre_close",
+                                                                                    "is_st",
+                                                                                    "trading_status",
+                                                                                    "source"
+                                                                                ],
+                                                                                "Estimated Cardinality": "2052335"
+                                                                            },
+                                                                            "cumulative_cardinality": 2052335,
+                                                                            "cumulative_rows_scanned": 2052335,
+                                                                            "operator_cardinality": 2052335,
+                                                                            "operator_name": "SEQ_SCAN",
+                                                                            "operator_rows_scanned": 2052335,
+                                                                            "children": []
+                                                                        },
+                                                                        {
+                                                                            "system_peak_temp_dir_size": 0,
+                                                                            "system_peak_buffer_memory": 0,
+                                                                            "result_set_size": 4878720,
+                                                                            "operator_timing": 0.000011657000000000002,
+                                                                            "operator_type": "PROJECTION",
+                                                                            "cpu_time": 0.0012189,
+                                                                            "extra_info": {
+                                                                                "Projections": [
+                                                                                    "trade_date",
+                                                                                    "symbol"
+                                                                                ],
+                                                                                "Estimated Cardinality": "48787"
+                                                                            },
+                                                                            "cumulative_cardinality": 487872,
+                                                                            "cumulative_rows_scanned": 243936,
+                                                                            "operator_cardinality": 243936,
+                                                                            "operator_name": "PROJECTION",
+                                                                            "operator_rows_scanned": 0,
+                                                                            "children": [
+                                                                                {
+                                                                                    "system_peak_temp_dir_size": 0,
+                                                                                    "system_peak_buffer_memory": 0,
+                                                                                    "result_set_size": 4878720,
+                                                                                    "operator_timing": 0.001207243,
+                                                                                    "operator_type": "TABLE_SCAN",
+                                                                                    "cpu_time": 0.001207243,
+                                                                                    "extra_info": {
+                                                                                        "Table": "\"temp\".main._daily_contract_rows",
+                                                                                        "Type": "Sequential Scan",
+                                                                                        "Projections": [
+                                                                                            "symbol",
+                                                                                            "date"
+                                                                                        ],
+                                                                                        "Estimated Cardinality": "243936"
+                                                                                    },
+                                                                                    "cumulative_cardinality": 243936,
+                                                                                    "cumulative_rows_scanned": 243936,
+                                                                                    "operator_cardinality": 243936,
+                                                                                    "operator_name": "SEQ_SCAN",
+                                                                                    "operator_rows_scanned": 243936,
+                                                                                    "children": []
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

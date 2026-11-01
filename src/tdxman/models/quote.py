@@ -76,5 +76,8 @@ class SecurityQuote:
     # 服务器时间字符串（从 unknown_0 原始整数解析，格式 HH:MM:SS.mmm）
     server_time: str = field(default="", repr=True)
 
+    # Raw 0x053e status word; bit 0x20 denotes suspension.
+    trading_status_raw: int | None = field(default=None)
+
     # 原始字节（该股票记录切片）
     _raw: bytes = field(default=b"", repr=False, compare=False)

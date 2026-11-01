@@ -1,0 +1,3699 @@
+{
+  "audit": "FW-03 source readiness (read-only raw facts)",
+  "generated_at_utc": "2026-09-28T02:40:11.351432+00:00",
+  "source": {
+    "database": "/home/ubuntu/Services/tdxman/data/_staging/fw02/stocks.sqlite",
+    "mode": "mode=ro&immutable=1; query_only=ON",
+    "database_bytes": 7897018368,
+    "database_mode": "0o444",
+    "database_mtime_ns": 1790533586961181000,
+    "prior_verification_evidence": "docs/evidence/sqlite-migration-assessment/20260928-jakarta-stock-verify.json",
+    "verification_reused": true,
+    "hash_or_integrity_rerun": false
+  },
+  "method": {
+    "grain": "daily_features (symbol, trade_date), year = trade_date[0:4]; raw source fields only",
+    "denominator": "All daily_features rows per year; separate calc_status breakdown distinguishes TRADED from NO_TRADE/INVALID",
+    "classification": {
+      "dated_reliable": "Non-NULL valid value with explicit known non-raw source; migration normalize_features selects dated security_daily_facts before raw fallback. This is provenance availability, not independent vendor revalidation.",
+      "raw_fallback": "Non-NULL valid value whose source starts raw_fallback:",
+      "NULL": "Value is NULL regardless of source label",
+      "unverified_source": "Valid non-NULL value with missing/unknown/unspecified/legacy/derived/snapshot-name source",
+      "invalid_value": "Non-finite/non-positive source_pre_close or source_is_st outside 0/1"
+    },
+    "lineage_evidence": [
+      "scripts/ops/migrate_stocks_sqlite.py:source_value",
+      "scripts/ops/migrate_stocks_sqlite.py:normalize_features"
+    ],
+    "execution": "One primary-key-ordered scan in 4096-row batches; retain only annual/category/source counters and bounded symbol sets. SQLite cache 16 MiB, mmap disabled. Anchor aggregation retains per-stock summaries only.",
+    "sql": {
+      "raw_features_stream": "SELECT symbol,trade_date,source_pre_close,source_pre_close_source,\nsource_is_st,source_is_st_source,calc_status FROM daily_features ORDER BY symbol,trade_date",
+      "anchors_per_stock_source": "SELECT symbol,source,count(*),min(effective_date),max(effective_date)\nFROM corporate_actions WHERE record_kind='factor_anchor' GROUP BY symbol,source ORDER BY symbol,source"
+    },
+    "database_changes": false,
+    "existing_tests_run": false,
+    "derived_calculation_performed": false,
+    "observed_dated_reliable_sources": [
+      "baostock"
+    ]
+  },
+  "overall": {
+    "feature_rows": 16350599,
+    "feature_symbols": 5586,
+    "first_trade_date": "2000-01-04",
+    "last_trade_date": "2026-09-24",
+    "source_pre_close": {
+      "dated_reliable": {
+        "count": 412066,
+        "pct": 2.520189
+      },
+      "raw_fallback": {
+        "count": 10104573,
+        "pct": 61.799406
+      },
+      "NULL": {
+        "count": 5833960,
+        "pct": 35.680405
+      },
+      "unverified_source": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "invalid_value": {
+        "count": 0,
+        "pct": 0.0
+      }
+    },
+    "source_is_st": {
+      "dated_reliable": {
+        "count": 413515,
+        "pct": 2.529051
+      },
+      "raw_fallback": {
+        "count": 15932352,
+        "pct": 97.442008
+      },
+      "NULL": {
+        "count": 4732,
+        "pct": 0.028941
+      },
+      "unverified_source": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "invalid_value": {
+        "count": 0,
+        "pct": 0.0
+      }
+    },
+    "source_labels": {
+      "source_pre_close": {
+        "<NULL>": 5833960,
+        "baostock": 412066,
+        "raw_fallback:legacy_unspecified": 10104573
+      },
+      "source_is_st": {
+        "<NULL>": 4732,
+        "baostock": 413515,
+        "raw_fallback:legacy_unspecified": 15932352
+      }
+    },
+    "source_label_classification": {
+      "source_pre_close": [
+        {
+          "source": "<NULL>",
+          "category": "NULL",
+          "count": 5833960
+        },
+        {
+          "source": "baostock",
+          "category": "dated_reliable",
+          "count": 412066
+        },
+        {
+          "source": "raw_fallback:legacy_unspecified",
+          "category": "raw_fallback",
+          "count": 10104573
+        }
+      ],
+      "source_is_st": [
+        {
+          "source": "<NULL>",
+          "category": "NULL",
+          "count": 4732
+        },
+        {
+          "source": "baostock",
+          "category": "dated_reliable",
+          "count": 413515
+        },
+        {
+          "source": "raw_fallback:legacy_unspecified",
+          "category": "raw_fallback",
+          "count": 15932352
+        }
+      ]
+    },
+    "calc_status": {
+      "INVALID": 16,
+      "NO_TRADE": 577,
+      "TRADED": 16350006
+    },
+    "TRADED_source_availability": {
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 412047,
+          "pct": 2.520164
+        },
+        "raw_fallback": {
+          "count": 10104535,
+          "pct": 61.801415
+        },
+        "NULL": {
+          "count": 5833424,
+          "pct": 35.678421
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 412938,
+          "pct": 2.525614
+        },
+        "raw_fallback": {
+          "count": 15932337,
+          "pct": 97.44545
+        },
+        "NULL": {
+          "count": 4731,
+          "pct": 0.028936
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    }
+  },
+  "by_year": [
+    {
+      "year": 2000,
+      "feature_rows": 190086,
+      "feature_symbols": 872,
+      "calc_status": {
+        "TRADED": 190086
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 190086
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 190086
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 190086
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 190086,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 190086,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 190086,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 190086,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 190086,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2001,
+      "feature_rows": 216545,
+      "feature_symbols": 945,
+      "calc_status": {
+        "TRADED": 216545
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 216545
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 216545
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 216545
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 216545,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 216545,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 216545,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 216545,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 216545,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2002,
+      "feature_rows": 226893,
+      "feature_symbols": 1009,
+      "calc_status": {
+        "TRADED": 226893
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 226893
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 226893
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 226893
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 226893,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 226893,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 226893,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 226893,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 226893,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2003,
+      "feature_rows": 246219,
+      "feature_symbols": 1072,
+      "calc_status": {
+        "TRADED": 246219
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 246219
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 246219
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 246219
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 246219,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 246219,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 246219,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 246219,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 246219,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2004,
+      "feature_rows": 269015,
+      "feature_symbols": 1166,
+      "calc_status": {
+        "TRADED": 269015
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 269015
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 269015
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 269015
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 269015,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 269015,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 269015,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 269015,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 269015,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2005,
+      "feature_rows": 272763,
+      "feature_symbols": 1180,
+      "calc_status": {
+        "TRADED": 272763
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 272763
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 272763
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 272763
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 272763,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 272763,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 272763,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 272763,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 272763,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2006,
+      "feature_rows": 254161,
+      "feature_symbols": 1242,
+      "calc_status": {
+        "TRADED": 254161
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 254161
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 254161
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 254161
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 254161,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 254161,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 254161,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 254161,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 254161,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2007,
+      "feature_rows": 289941,
+      "feature_symbols": 1354,
+      "calc_status": {
+        "TRADED": 289941
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 289941
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 289941
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 289941
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 289941,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 289941,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 289941,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 289941,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 289941,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2008,
+      "feature_rows": 325100,
+      "feature_symbols": 1420,
+      "calc_status": {
+        "TRADED": 325100
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 325100
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 325100
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 325100
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 325100,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 325100,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 325100,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 325100,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 325100,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2009,
+      "feature_rows": 339406,
+      "feature_symbols": 1514,
+      "calc_status": {
+        "TRADED": 339406
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 339406
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 339406
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 339406
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 339406,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 339406,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 339406,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 339406,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 339406,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2010,
+      "feature_rows": 392587,
+      "feature_symbols": 1835,
+      "calc_status": {
+        "TRADED": 392587
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 392587
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 392587
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 392587
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 392587,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 392587,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 392587,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 392587,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 392587,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2011,
+      "feature_rows": 467670,
+      "feature_symbols": 2100,
+      "calc_status": {
+        "TRADED": 467670
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 467670
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 467670
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 467670
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 467670,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 467670,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 467670,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 467670,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 467670,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2012,
+      "feature_rows": 518354,
+      "feature_symbols": 2243,
+      "calc_status": {
+        "TRADED": 518354
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 518354
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 518354
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 518354
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 518354,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 518354,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 518354,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 518354,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 518354,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2013,
+      "feature_rows": 517464,
+      "feature_symbols": 2258,
+      "calc_status": {
+        "TRADED": 517464
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 517464
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 517464
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 517464
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 517464,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 517464,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 517464,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 517464,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 517464,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2014,
+      "feature_rows": 524581,
+      "feature_symbols": 2375,
+      "calc_status": {
+        "TRADED": 524581
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 524581
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 524581
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 524581
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 524581,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 524581,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 524581,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 524581,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 524581,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2015,
+      "feature_rows": 529256,
+      "feature_symbols": 2589,
+      "calc_status": {
+        "TRADED": 529256
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 529256
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 529256
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 529256
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 529256,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 529256,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 529256,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 529256,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 529256,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2016,
+      "feature_rows": 596142,
+      "feature_symbols": 2816,
+      "calc_status": {
+        "TRADED": 596142
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 596142
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 596142
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 596142
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 596142,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 596142,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 596142,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 596142,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 596142,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2017,
+      "feature_rows": 698633,
+      "feature_symbols": 3244,
+      "calc_status": {
+        "TRADED": 698633
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 698633
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 698633
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 698633
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 698633,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 698633,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 698633,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 698633,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 698633,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2018,
+      "feature_rows": 770550,
+      "feature_symbols": 3348,
+      "calc_status": {
+        "TRADED": 770550
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 770550
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 770550
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 770550
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 770550,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 770550,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 770550,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 770550,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 770550,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2019,
+      "feature_rows": 834800,
+      "feature_symbols": 3549,
+      "calc_status": {
+        "TRADED": 834800
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 834800
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 834800
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 834800
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 834800,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 834800,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 834800,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 834800,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 834800,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2020,
+      "feature_rows": 902626,
+      "feature_symbols": 3983,
+      "calc_status": {
+        "TRADED": 902626
+      },
+      "joint_availability": {
+        "raw_fallback|raw_fallback": 902626
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "raw_fallback:legacy_unspecified": 902626
+        },
+        "source_is_st": {
+          "raw_fallback:legacy_unspecified": 902626
+        }
+      },
+      "by_calc_status": {
+        "TRADED": {
+          "rows": 902626,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 902626,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 902626,
+              "pct": 100.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 902626,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "raw_fallback": {
+          "count": 902626,
+          "pct": 100.0
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2021,
+      "feature_rows": 1029716,
+      "feature_symbols": 4505,
+      "calc_status": {
+        "NO_TRADE": 44,
+        "TRADED": 1029672
+      },
+      "joint_availability": {
+        "NULL|dated_reliable": 110,
+        "NULL|raw_fallback": 277818,
+        "dated_reliable|dated_reliable": 31662,
+        "raw_fallback|dated_reliable": 83,
+        "raw_fallback|raw_fallback": 720043
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "<NULL>": 277928,
+          "baostock": 31662,
+          "raw_fallback:legacy_unspecified": 720126
+        },
+        "source_is_st": {
+          "baostock": 31855,
+          "raw_fallback:legacy_unspecified": 997861
+        }
+      },
+      "by_calc_status": {
+        "NO_TRADE": {
+          "rows": 44,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 44,
+              "pct": 100.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 44,
+              "pct": 100.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        },
+        "TRADED": {
+          "rows": 1029672,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 31662,
+              "pct": 3.07496
+            },
+            "raw_fallback": {
+              "count": 720126,
+              "pct": 69.937417
+            },
+            "NULL": {
+              "count": 277884,
+              "pct": 26.987623
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 31811,
+              "pct": 3.08943
+            },
+            "raw_fallback": {
+              "count": 997861,
+              "pct": 96.91057
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 31662,
+          "pct": 3.074828
+        },
+        "raw_fallback": {
+          "count": 720126,
+          "pct": 69.934429
+        },
+        "NULL": {
+          "count": 277928,
+          "pct": 26.990743
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 31855,
+          "pct": 3.093571
+        },
+        "raw_fallback": {
+          "count": 997861,
+          "pct": 96.906429
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2022,
+      "feature_rows": 1135514,
+      "feature_symbols": 4933,
+      "calc_status": {
+        "NO_TRADE": 52,
+        "TRADED": 1135462
+      },
+      "joint_availability": {
+        "NULL|dated_reliable": 294,
+        "NULL|raw_fallback": 1075475,
+        "dated_reliable|dated_reliable": 59551,
+        "raw_fallback|raw_fallback": 194
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "<NULL>": 1075769,
+          "baostock": 59551,
+          "raw_fallback:legacy_unspecified": 194
+        },
+        "source_is_st": {
+          "baostock": 59845,
+          "raw_fallback:legacy_unspecified": 1075669
+        }
+      },
+      "by_calc_status": {
+        "NO_TRADE": {
+          "rows": 52,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 52,
+              "pct": 100.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 52,
+              "pct": 100.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        },
+        "TRADED": {
+          "rows": 1135462,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 59551,
+              "pct": 5.244649
+            },
+            "raw_fallback": {
+              "count": 194,
+              "pct": 0.017086
+            },
+            "NULL": {
+              "count": 1075717,
+              "pct": 94.738265
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 59793,
+              "pct": 5.265962
+            },
+            "raw_fallback": {
+              "count": 1075669,
+              "pct": 94.734038
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 59551,
+          "pct": 5.244409
+        },
+        "raw_fallback": {
+          "count": 194,
+          "pct": 0.017085
+        },
+        "NULL": {
+          "count": 1075769,
+          "pct": 94.738506
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 59845,
+          "pct": 5.2703
+        },
+        "raw_fallback": {
+          "count": 1075669,
+          "pct": 94.7297
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2023,
+      "feature_rows": 1233258,
+      "feature_symbols": 5246,
+      "calc_status": {
+        "NO_TRADE": 51,
+        "TRADED": 1233207
+      },
+      "joint_availability": {
+        "NULL|dated_reliable": 283,
+        "NULL|raw_fallback": 1165442,
+        "dated_reliable|dated_reliable": 67380,
+        "raw_fallback|raw_fallback": 153
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "<NULL>": 1165725,
+          "baostock": 67380,
+          "raw_fallback:legacy_unspecified": 153
+        },
+        "source_is_st": {
+          "baostock": 67663,
+          "raw_fallback:legacy_unspecified": 1165595
+        }
+      },
+      "by_calc_status": {
+        "NO_TRADE": {
+          "rows": 51,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 51,
+              "pct": 100.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 51,
+              "pct": 100.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        },
+        "TRADED": {
+          "rows": 1233207,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 67380,
+              "pct": 5.463803
+            },
+            "raw_fallback": {
+              "count": 153,
+              "pct": 0.012407
+            },
+            "NULL": {
+              "count": 1165674,
+              "pct": 94.52379
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 67612,
+              "pct": 5.482616
+            },
+            "raw_fallback": {
+              "count": 1165595,
+              "pct": 94.517384
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 67380,
+          "pct": 5.463577
+        },
+        "raw_fallback": {
+          "count": 153,
+          "pct": 0.012406
+        },
+        "NULL": {
+          "count": 1165725,
+          "pct": 94.524017
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 67663,
+          "pct": 5.486524
+        },
+        "raw_fallback": {
+          "count": 1165595,
+          "pct": 94.513476
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2024,
+      "feature_rows": 1280246,
+      "feature_symbols": 5346,
+      "calc_status": {
+        "NO_TRADE": 33,
+        "TRADED": 1280213
+      },
+      "joint_availability": {
+        "NULL|dated_reliable": 275,
+        "NULL|raw_fallback": 1208573,
+        "dated_reliable|dated_reliable": 71209,
+        "raw_fallback|raw_fallback": 189
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "<NULL>": 1208848,
+          "baostock": 71209,
+          "raw_fallback:legacy_unspecified": 189
+        },
+        "source_is_st": {
+          "baostock": 71484,
+          "raw_fallback:legacy_unspecified": 1208762
+        }
+      },
+      "by_calc_status": {
+        "NO_TRADE": {
+          "rows": 33,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 33,
+              "pct": 100.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 33,
+              "pct": 100.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        },
+        "TRADED": {
+          "rows": 1280213,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 71209,
+              "pct": 5.562278
+            },
+            "raw_fallback": {
+              "count": 189,
+              "pct": 0.014763
+            },
+            "NULL": {
+              "count": 1208815,
+              "pct": 94.422959
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 71451,
+              "pct": 5.581181
+            },
+            "raw_fallback": {
+              "count": 1208762,
+              "pct": 94.418819
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 71209,
+          "pct": 5.562134
+        },
+        "raw_fallback": {
+          "count": 189,
+          "pct": 0.014763
+        },
+        "NULL": {
+          "count": 1208848,
+          "pct": 94.423103
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 71484,
+          "pct": 5.583614
+        },
+        "raw_fallback": {
+          "count": 1208762,
+          "pct": 94.416386
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2025,
+      "feature_rows": 1309634,
+      "feature_symbols": 5462,
+      "calc_status": {
+        "NO_TRADE": 201,
+        "TRADED": 1309433
+      },
+      "joint_availability": {
+        "NULL|dated_reliable": 227,
+        "NULL|raw_fallback": 1233781,
+        "dated_reliable|dated_reliable": 75149,
+        "raw_fallback|raw_fallback": 477
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "<NULL>": 1234008,
+          "baostock": 75149,
+          "raw_fallback:legacy_unspecified": 477
+        },
+        "source_is_st": {
+          "baostock": 75376,
+          "raw_fallback:legacy_unspecified": 1234258
+        }
+      },
+      "by_calc_status": {
+        "NO_TRADE": {
+          "rows": 201,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 201,
+              "pct": 100.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 201,
+              "pct": 100.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        },
+        "TRADED": {
+          "rows": 1309433,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 75149,
+              "pct": 5.739049
+            },
+            "raw_fallback": {
+              "count": 477,
+              "pct": 0.036428
+            },
+            "NULL": {
+              "count": 1233807,
+              "pct": 94.224523
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 75175,
+              "pct": 5.741034
+            },
+            "raw_fallback": {
+              "count": 1234258,
+              "pct": 94.258966
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 75149,
+          "pct": 5.738168
+        },
+        "raw_fallback": {
+          "count": 477,
+          "pct": 0.036422
+        },
+        "NULL": {
+          "count": 1234008,
+          "pct": 94.22541
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 75376,
+          "pct": 5.755501
+        },
+        "raw_fallback": {
+          "count": 1234258,
+          "pct": 94.244499
+        },
+        "NULL": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    },
+    {
+      "year": 2026,
+      "feature_rows": 979439,
+      "feature_symbols": 5582,
+      "calc_status": {
+        "INVALID": 16,
+        "NO_TRADE": 196,
+        "TRADED": 979227
+      },
+      "joint_availability": {
+        "NULL|NULL": 4730,
+        "NULL|dated_reliable": 154,
+        "NULL|raw_fallback": 866798,
+        "dated_reliable|dated_reliable": 107115,
+        "raw_fallback|NULL": 2,
+        "raw_fallback|dated_reliable": 23,
+        "raw_fallback|raw_fallback": 617
+      },
+      "source_labels": {
+        "source_pre_close": {
+          "<NULL>": 871682,
+          "baostock": 107115,
+          "raw_fallback:legacy_unspecified": 642
+        },
+        "source_is_st": {
+          "<NULL>": 4732,
+          "baostock": 107292,
+          "raw_fallback:legacy_unspecified": 867415
+        }
+      },
+      "by_calc_status": {
+        "INVALID": {
+          "rows": 16,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 15,
+              "pct": 93.75
+            },
+            "NULL": {
+              "count": 1,
+              "pct": 6.25
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "raw_fallback": {
+              "count": 15,
+              "pct": 93.75
+            },
+            "NULL": {
+              "count": 1,
+              "pct": 6.25
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        },
+        "NO_TRADE": {
+          "rows": 196,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 19,
+              "pct": 9.693878
+            },
+            "raw_fallback": {
+              "count": 23,
+              "pct": 11.734694
+            },
+            "NULL": {
+              "count": 154,
+              "pct": 78.571429
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 196,
+              "pct": 100.0
+            },
+            "raw_fallback": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "NULL": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        },
+        "TRADED": {
+          "rows": 979227,
+          "source_pre_close": {
+            "dated_reliable": {
+              "count": 107096,
+              "pct": 10.93679
+            },
+            "raw_fallback": {
+              "count": 604,
+              "pct": 0.061681
+            },
+            "NULL": {
+              "count": 871527,
+              "pct": 89.001529
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          },
+          "source_is_st": {
+            "dated_reliable": {
+              "count": 107096,
+              "pct": 10.93679
+            },
+            "raw_fallback": {
+              "count": 867400,
+              "pct": 88.580074
+            },
+            "NULL": {
+              "count": 4731,
+              "pct": 0.483136
+            },
+            "unverified_source": {
+              "count": 0,
+              "pct": 0.0
+            },
+            "invalid_value": {
+              "count": 0,
+              "pct": 0.0
+            }
+          }
+        }
+      },
+      "source_pre_close": {
+        "dated_reliable": {
+          "count": 107115,
+          "pct": 10.936363
+        },
+        "raw_fallback": {
+          "count": 642,
+          "pct": 0.065548
+        },
+        "NULL": {
+          "count": 871682,
+          "pct": 88.99809
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      },
+      "source_is_st": {
+        "dated_reliable": {
+          "count": 107292,
+          "pct": 10.954434
+        },
+        "raw_fallback": {
+          "count": 867415,
+          "pct": 88.562432
+        },
+        "NULL": {
+          "count": 4732,
+          "pct": 0.483134
+        },
+        "unverified_source": {
+          "count": 0,
+          "pct": 0.0
+        },
+        "invalid_value": {
+          "count": 0,
+          "pct": 0.0
+        }
+      }
+    }
+  ],
+  "factor_anchor_coverage": {
+    "anchor_rows": 57391,
+    "symbols_with_anchors": 5424,
+    "feature_symbols": 5586,
+    "feature_symbols_with_anchors": 5424,
+    "feature_symbols_without_anchors": 162,
+    "feature_symbol_coverage_pct": 97.099893,
+    "anchor_symbols_without_features": [],
+    "symbols_with_multiple_anchor_sources": 0,
+    "anchor_rows_per_covered_symbol": {
+      "min": 1,
+      "median": 8.0,
+      "max": 50
+    },
+    "by_source": {
+      "legacy:adjustments/factors.parquet": {
+        "anchor_rows": 57391,
+        "symbols": 5424
+      }
+    },
+    "interpretation": "Having any factor_anchor is stock-level presence only; it does not prove historical as-of coverage, selected-factor readiness, source scale compatibility, or verified no-event coverage.",
+    "first_anchor_year_stock_counts": {
+      "1991": 6,
+      "1992": 22,
+      "1993": 43,
+      "1994": 99,
+      "1995": 65,
+      "1996": 53,
+      "1997": 149,
+      "1998": 135,
+      "1999": 85,
+      "2000": 72,
+      "2001": 149,
+      "2002": 60,
+      "2003": 60,
+      "2004": 69,
+      "2005": 96,
+      "2006": 7,
+      "2007": 85,
+      "2008": 112,
+      "2009": 57,
+      "2010": 168,
+      "2011": 314,
+      "2012": 270,
+      "2013": 70,
+      "2014": 47,
+      "2015": 174,
+      "2016": 154,
+      "2017": 318,
+      "2018": 341,
+      "2019": 107,
+      "2020": 255,
+      "2021": 499,
+      "2022": 440,
+      "2023": 399,
+      "2024": 239,
+      "2025": 113,
+      "2026": 92
+    }
+  },
+  "limitations": [
+    "Source-label availability does not measure final derived UNKNOWN rates; no derived outputs were calculated or queried.",
+    "A missing dated pre-close may still be derivable with a valid previous traded close plus explicitly verified action coverage; absence of events or anchors alone is insufficient.",
+    "Missing dated ST may be recoverable from a name with evidence for that exact day; current snapshot names and raw fallback do not prove historical ST."
+  ],
+  "resource_usage": {
+    "elapsed_seconds": 130.663,
+    "max_rss_kib": 144180
+  },
+  "database_metadata_unchanged": true,
+  "report_reconciliation": {
+    "annual_field_categories_sum_to_annual_rows": true,
+    "annual_rows_sum_to_overall": true,
+    "per_stock_anchor_rows_sum_to_total": true,
+    "note": "Consistency checks on the generated aggregate report only; no existing test suite, hash, integrity check, or extra database scan."
+  },
+  "conclusions": [
+    {
+      "finding": "2000–2020 年 source_pre_close 和 source_is_st 均无可靠 dated 来源；两字段全部只有 raw_fallback 候选。",
+      "evidence": {
+        "years": [
+          2000,
+          2020
+        ],
+        "rows": 9382792,
+        "dated_reliable_count_per_field": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "finding": "可靠日期来源全部标记 baostock，集中在 2021–2026 年。全时期 source_pre_close 可靠来源仅 412066 行（2.520189%），source_is_st 仅 413515 行（2.529051%）。",
+      "confidence": "high"
+    },
+    {
+      "finding": "2022–2026 年 source_pre_close 的 NULL 是主要类别；2026 年 871682/979439 行（约 89.00%）为 NULL。全时期 ST 虽大量有原始值，但 15932352 行（97.442008%）仅为 raw_fallback，不能作为历史可靠 dated ST。",
+      "confidence": "high"
+    },
+    {
+      "finding": "factor_anchor 有 57391 行，覆盖 5424/5586 只股票（97.099893%）；162 只股票没有锚点。锚点来源只有 legacy:adjustments/factors.parquet。股票级有锚点不保证历史 as-of 区间或已核实无事件基准。",
+      "confidence": "high"
+    },
+    {
+      "finding": "上述缺口与主线历史派生 UNKNOWN 一致：ST 的 raw_fallback 不能升级为 dated 事实；前收缺失需有效交易前收和明确核实的除权覆盖才能恢复。这里统计的是原始来源就绪度，不是最终 UNKNOWN 的精确归因或计数。",
+      "claim_type": "inference",
+      "confidence": "bounded by source-only scope"
+    }
+  ]
+}

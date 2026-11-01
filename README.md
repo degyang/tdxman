@@ -1,5 +1,8 @@
 # tdxman
 
+> 数据分层术语以[基础数据与 Enriched 数据分层契约](docs/design/data_layers.md)为准：历史 K 线、下载的复权依据、财务等属于基础数据；计算出的复权因子、逐股衍生、市场/板块聚合及计算快照属于 Enriched 数据。
+
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/tdxman.svg)](https://pypi.org/project/tdxman/)
 
@@ -55,6 +58,18 @@ tdxman offline SH 600519 --vipdoc /mnt/d/Stock/new_tdx/vipdoc
 tdxman ping                    # 服务器测速
 tdxman version                 # 版本号
 tdxman markets                 # A 股市场代码与示例
+tdxman stock-codes SH --format table  # 当前沪市股票清单
+```
+
+### 交易日
+
+`workdays` 从上证指数日 K 提取已观察到的沪深交易日。单日查询返回
+`is_open`、`previous`、`next` 和 K 线覆盖范围；范围查询逐日返回开市标记。
+超过覆盖范围的日期返回 `is_open: null`，范围查询则报错；它不预测未来休市安排。
+
+```bash
+tdxman workdays --date 2026-09-29 --format table
+tdxman workdays --start 2026-09-26 --end 2026-09-30 --format csv
 ```
 
 ### 行情
@@ -184,8 +199,21 @@ tdxman symbol-info SZ 000001 --format table
 
 ```bash
 tdxman finance SH 600519                         # 最新财务摘要
+tdxman xdxr 600519.SH --format table          # 除权除息及股本变动历史
 tdxman fund-flow SH 600519 --closed-only     # 历史资金流向，排除当天未完整数据
+tdxman f10 600519.SH --section profile        # 7615 公司概况
+tdxman f10 600519.SH --section report --report-type zcfzb  # 财务报表
 ```
+
+`f10` 通过独立的 TDX 7615/TQLEX 服务读取详细资料，可选 `profile`、`report`、
+`business`、`dividends`、`shareholders`、`topics`、`announcements`、`news`、
+`governance`、`forecast` 栏目。`business` 可用 `--report-date` 指定报告期；
+默认先向服务端获取最新报告期。查询前会核对服务端返回的市场和代码，避免
+六位代码相同的指数与股票混淆。输出保留每张结果表的 `result_set` 标识。
+
+`xdxr` 使用标准 7709 协议返回全部权息和股本变动事件，包含日期、事件类别、
+每股现金分红、送转股及配股比例等字段。它提供复权依据，不返回逐日复权因子；
+需要复权价格时使用 `kline --adjust QFQ|HFQ`。
 
 ### 扩展市场（港股/美股/期货）
 
@@ -204,6 +232,7 @@ tdxman ex tick HK_MAIN_BOARD 00700 --format table               # 港股分时
 |------|------|
 | `ping` | 服务器延迟测速 |
 | `version` | 版本号 |
+| `workdays` | 从上证指数日 K 查询已观察到的交易日 |
 | `kline` | K 线（日/周/月/分钟，支持复权） |
 | `quote` | 实时报价（单只/批量） |
 | `quote-list` | 市场分类排序报价（A/SH/SZ/KCB/CYB） |
@@ -218,9 +247,13 @@ tdxman ex tick HK_MAIN_BOARD 00700 --format table               # 港股分时
 | `market-stat` | 全市场涨跌统计 |
 | `server-info` | 服务器交易时段 |
 | `symbol-info` | 个股特征快照 |
-| `finance` / `finance` | 最新财务摘要 |
+| `finance` | 最新财务摘要 |
+| `xdxr` | 除权除息和股本变动历史 |
+| `f10` | 7615 公司资料与详细财务报表 |
 | `fund-flow` | 按交易日统计的历史资金流向 |
 | `markets` | 列出 A 股市场代码 |
+| [`abnormal-list`](docs/api/cli/commands/market/abnormal-list.md) | 当前 ST/*ST 与停牌列表，支持异常类型筛选 |
+| [`stock-codes`](docs/api/cli/commands/market/stock-codes.md) | 当前沪深北股票清单，支持市场、板别、代码和名称筛选 |
 | `ex kline` | 扩展市场 K 线 |
 | `ex quote` | 扩展市场报价 |
 | `ex quote-list` | 扩展市场商品列表 |
@@ -246,6 +279,21 @@ with MacClient.from_best_host() as c:
 | `MacExClient` / `AsyncMacExClient` | 7727 | 港股/美股/期货（MAC 协议） |
 | `UnifiedTdxClient` / `AsyncUnifiedTdxClient` | 自动 | A 股 + 扩展市场统一入口 |
 | `TdxClient` / `AsyncTdxClient` | 7709 | A 股行情（标准协议） |
+| `F10Client` | 7615 | 公司资料、财务报表与题材等 F10 数据 |
+
+`WorkdayService` 基于 `MacClient` 的上证指数日 K 提供 `is_workday()`、
+`previous_workday()`、`next_workday()` 与 `range()`。覆盖范围之外返回未知或拒绝范围查询。
+
+```python
+from tdxman import F10Client, MacClient, Market, WorkdayService
+
+with MacClient.from_best_host() as client:
+    days = WorkdayService(client)
+    print(days.next_workday("2026-09-28"))
+
+report = F10Client().query(Market.SH, "600519", "report")
+print(report.to_frame())
+```
 
 ### MAC 协议（推荐）
 
@@ -563,7 +611,7 @@ src/tdxman/
 
 commands 层不依赖 transport，可独立单测。
 
-## aspool：股票与指数数据池
+## aspool：基础数据与 Enriched 数据池
 
 `aspool` 与 `tdxman` 一起安装，代码位于 `src/aspool`。默认数据池是 `~/.aspool`，
 可在各命令中使用 `--root PATH` 指向其他池；同一工作流的所有命令应使用同一个 root。
@@ -573,8 +621,8 @@ commands 层不依赖 transport，可独立单测。
 Fundwise 通过公开 `DataPool` API 读取股票和指数，见 [aspool API](docs/design/aspool_api.md)。
 数据域分层需求与物理设计见
 [数据域分层需求](docs/design/data_platform_v2_requirements.md)和
-[数据域分层设计](docs/design/data_platform_v2_design.md)。当前已提供可恢复的影子迁移、核验和显式激活，
-执行状态见 [数据域分层实施记录](docs/implements/platform_v2_execution.md)；生产运行方式仍以
+[数据域分层设计](docs/design/data_platform_v2_design.md)。历史影子迁移及激活过程见 [数据域分层实施记录](docs/implements/platform_v2_execution.md)；当前生产已切换布局 3，见
+[单一权威存储整改](docs/implements/single_authority_storage.md)。生产运行方式以
 [生产数据流契约](docs/design/production_data_flow_contract.md)为准。
 新版项目数据统一位于 `data/`：股票使用 `stocks.sqlite`，指数使用独立的
 `indices.sqlite`，ETF 使用 `etfs.sqlite`；分层布局另使用 `fundamentals.sqlite`、
@@ -764,3 +812,5 @@ ruff format --check src/ tests/                              # format check
 - [mootdx](https://github.com/mootdx/mootdx) -- 工程化封装参考
 
 详见 [NOTICE](NOTICE) 和 [LICENSE](LICENSE)。
+
+基础数据增量同步使用 `aspool replica export/apply/recover`，支持有界逻辑差异、依赖重算与中断恢复，见[同步说明](docs/ops/base_data_incremental_sync.md)。

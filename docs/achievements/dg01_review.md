@@ -1,5 +1,8 @@
 # DG-01 独立恢复审查
 
+> 术语说明：本文保留当时的实施/审计事实；当前统一采用[基础数据与 Enriched 数据两层定义](../design/data_layers.md)，下载的复权依据归基础数据，计算出的复权因子及其他衍生结果归 Enriched 数据。
+
+
 日期：2026-09-27。**DG-01 feature 实现与独立隔离验收通过，无已发现未修复的本期要求；main 集成待协调者执行。** 审查基线 `981ab5f`，完整审阅实施 `c3c45f9` 及其记录 `9db1718` 的源码、测试、脚本、入口清单和证据；修复提交 `bbb50b0`。最终完整离线 **640 passed、4 skipped、18 subtests passed，177.80 秒**，详见 [验证摘要](../evidence/data-remediation/20260927-dg01-review/validation.json)。
 
 派发 `task_e72b8369e2bb / ctx_a6a121f168bf`，角色为独立关键恢复审查。Orca requested/effective 均核验为 `gpt-6-astra / high`，只保存允许字段；未升级 effort、未启动子 agent。实施派发已完成后独占 feature 修改，无 main 编辑、push、市场抓取、生产池或恢复快照写入。所有测试使用本 worktree `.venv` 和 `/home/ubuntu/aspool-labs/20260927-dg01-review/task_e72b8369e2bb/` 下的独立根。

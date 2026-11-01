@@ -1,0 +1,53 @@
+{
+  "started_at": "2026-09-27T04:30:53.912618+00:00",
+  "cases": [
+    {
+      "workload": "market_1day",
+      "seconds": [
+        8.677023841000846,
+        7.660895428998629,
+        7.664357116000247
+      ],
+      "median_seconds": 7.664357116000247,
+      "rows": 5570
+    },
+    {
+      "workload": "market_60calendar_days",
+      "seconds": [
+        8.050899637000839,
+        8.088914599000418,
+        7.930899164000948
+      ],
+      "median_seconds": 8.050899637000839,
+      "rows": 243936
+    },
+    {
+      "workload": "one_symbol_full_history",
+      "seconds": [
+        0.3473096899997472,
+        0.3303339070007496,
+        0.3374305840006855
+      ],
+      "median_seconds": 0.3374305840006855,
+      "rows": 6318
+    }
+  ],
+  "note": "Local page cache not flushed. Public API includes validation, pandas materialization and dated-fact overlays; raw layout microbenchmarks do not.",
+  "direct_single_symbol": {
+    "seconds": [
+      0.0021020580006734235,
+      0.0010852909999812255,
+      0.0009482570003456203
+    ],
+    "median_seconds": 0.0010852909999812255,
+    "aggregate": [
+      6318,
+      88826.11999992357,
+      5506252410112.38,
+      399750570006.0
+    ]
+  },
+  "symbol_year_partition_count": 73187,
+  "stock_rows": 16349620,
+  "finished_at": "2026-09-27T04:31:43.077158+00:00"
+}
