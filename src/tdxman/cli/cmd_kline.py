@@ -76,7 +76,7 @@ def kline(
 
       tdxman kline SZ 000001 --period 5MIN
     """
-    from .conn import get_mac_client, get_tdx_client
+    from .conn import get_mac_client, get_tdx_quote_client
     from .output import print_output
     from .parsers import parse_adjust, parse_period, parse_symbol_or_market_code
 
@@ -105,7 +105,7 @@ def kline(
     if _is_standard_index(mkt, parsed_code):
         if parsed_adjust != Adjust.NONE:
             raise click.UsageError("指数 K 线不支持复权")
-        with get_tdx_client() as client:
+        with get_tdx_quote_client() as client:
             df = client.get_index_bars(
                 Market(mkt), parsed_code, _index_category(parsed_period), start=start, count=count
             )

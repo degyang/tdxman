@@ -26,10 +26,13 @@ def test_sync_connection_closes_socket_when_setup_fails() -> None:
     sock = _FakeSocket()
     conn = TdxConnection("127.0.0.1", port=7709, timeout=0.2)
 
-    with patch("tdxman.transport.sync.socket.socket", return_value=sock), patch.object(
-        TdxConnection,
-        "_send_setup",
-        side_effect=TdxConnectionError("setup failed"),
+    with (
+        patch("tdxman.transport.sync.socket.socket", return_value=sock),
+        patch.object(
+            TdxConnection,
+            "_send_setup",
+            side_effect=TdxConnectionError("setup failed"),
+        ),
     ):
         try:
             conn.connect()
@@ -70,3 +73,34 @@ def test_ping_all_ignores_a_handshake_failure_from_one_host() -> None:
         side_effect=ping_with_one_closed_host,
     ):
         assert ping_all(["available", "closed"], port=7709, timeout=0.2) == [("available", 0.01)]
+
+
+def test_quote_session_sends_only_first_setup_without_changing_default() -> None:
+    from unittest.mock import MagicMock, call
+
+    from tdxman.commands.setup import SETUP_COMMANDS
+
+    for quote_session, expected in ((True, SETUP_COMMANDS[:1]), (False, SETUP_COMMANDS)):
+        sock = MagicMock()
+        conn = TdxConnection("127.0.0.1", quote_session=quote_session)
+        conn._sock = sock
+        with (
+            patch.object(conn, "_recv_exact", return_value=b""),
+            patch("tdxman.transport.sync.parse_header", return_value=MagicMock(zipsize=0)),
+        ):
+            conn._send_setup()
+        assert sock.sendall.call_args_list == [call(packet) for packet in expected]
+
+
+def test_quote_session_survives_client_reconnect() -> None:
+    from unittest.mock import MagicMock
+
+    from tdxman.client import TdxClient
+
+    client = TdxClient("127.0.0.1", port=7709, timeout=1, quote_session=True, heartbeat_interval=0)
+    client._conn = MagicMock()
+    client._conn.execute.side_effect = TdxConnectionError("disconnected")
+    with patch("tdxman.client.TdxConnection") as connection, patch("tdxman.client.time.sleep"):
+        connection.return_value.execute.return_value = ["reconnected"]
+        assert client._execute(MagicMock()) == ["reconnected"]
+        connection.assert_called_once_with("127.0.0.1", 7709, 1, quote_session=True)

@@ -47,3 +47,14 @@ def get_tdx_client() -> Generator[TdxClient, None, None]:
         yield client
     finally:
         client.close()
+
+
+@contextmanager
+def get_tdx_quote_client() -> Generator[TdxClient, None, None]:
+    """Use the single setup handshake for index bars and legacy quote status scans."""
+    client = TdxClient(quote_session=True, heartbeat_interval=0)
+    try:
+        client.connect()
+        yield client
+    finally:
+        client.close()

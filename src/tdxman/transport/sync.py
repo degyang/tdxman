@@ -132,7 +132,10 @@ class TdxConnection:
         host: str | None = None,
         port: int | None = None,
         timeout: float | None = None,
+        *,
+        quote_session: bool = False,
     ) -> None:
+        self._setup_commands = SETUP_COMMANDS[:1] if quote_session else SETUP_COMMANDS
         self.host = host if host is not None else get_best_host()
         self.port = port if port is not None else get_port()
         self.timeout = timeout if timeout is not None else get_timeout()
@@ -273,9 +276,9 @@ class TdxConnection:
     # ------------------------------------------------------------------ #
 
     def _send_setup(self) -> None:
-        """按序发送三条握手命令并丢弃响应。"""
+        """按连接模式发送握手命令并丢弃响应。"""
         assert self._sock is not None
-        for cmd_bytes in SETUP_COMMANDS:
+        for cmd_bytes in self._setup_commands:
             self._sock.sendall(cmd_bytes)
             # 读取并丢弃握手响应
             try:

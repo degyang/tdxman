@@ -12,7 +12,7 @@ from tdxman.models.enums import KlineCategory, Market
 
 def test_index_kline_uses_standard_protocol_and_keeps_market_breadth() -> None:
     with (
-        patch("tdxman.cli.conn.get_tdx_client") as standard_factory,
+        patch("tdxman.cli.conn.get_tdx_quote_client") as standard_factory,
         patch("tdxman.cli.conn.get_mac_client") as mac_factory,
     ):
         standard_client = standard_factory.return_value.__enter__.return_value

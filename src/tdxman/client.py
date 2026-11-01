@@ -209,6 +209,8 @@ class TdxClient:
         timeout: float | None = None,
         auto_reconnect: bool = True,
         heartbeat_interval: float = 15.0,
+        *,
+        quote_session: bool = False,
     ) -> None:
         endpoint = get_best_standard_endpoint() if host is None and port is None else None
         self._host = host if host is not None else (endpoint[0] if endpoint else get_best_host())
@@ -216,7 +218,8 @@ class TdxClient:
         self._timeout = timeout if timeout is not None else get_timeout()
         self._auto_reconnect = auto_reconnect
         self._heartbeat_interval = heartbeat_interval
-        self._conn = TdxConnection(host, port, timeout)
+        self._quote_session = quote_session
+        self._conn = TdxConnection(host, port, timeout, quote_session=quote_session)
 
     # ------------------------------------------------------------------ #
     # 工厂方法：自动优选最低延迟服务器
@@ -283,7 +286,9 @@ class TdxClient:
         except TdxConnectionError:
             self._conn.stop_heartbeat()
             self._conn.close()
-            self._conn = TdxConnection(self._host, self._port, self._timeout)
+            self._conn = TdxConnection(
+                self._host, self._port, self._timeout, quote_session=self._quote_session
+            )
             self._conn.connect()
             if self._heartbeat_interval > 0:
                 self._conn.start_heartbeat(self._heartbeat_interval)
@@ -315,7 +320,9 @@ class TdxClient:
             for delay in _RETRY_DELAYS:
                 time.sleep(delay)
                 self._conn.close()
-                self._conn = TdxConnection(self._host, self._port, self._timeout)
+                self._conn = TdxConnection(
+                    self._host, self._port, self._timeout, quote_session=self._quote_session
+                )
                 self._conn.connect()
                 if self._heartbeat_interval > 0:
                     self._conn.start_heartbeat(self._heartbeat_interval)
@@ -337,6 +344,7 @@ class TdxClient:
                 self._timeout,
                 auto_reconnect=False,
                 heartbeat_interval=0,
+                quote_session=self._quote_session,
             )
             try:
                 candidate.connect()
